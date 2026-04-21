@@ -132,7 +132,7 @@ export default function NexusShell() {
 
         {/* ── Globe ── */}
         <div style={S.globe}>
-          <GlobeView data={data} selected={selected} onSelect={setSelected} />
+          <GlobeView data={data} />
           {/* Hover hint */}
           {!selected && (
             <div style={{ position:"absolute", bottom:20, left:"50%", transform:"translateX(-50%)", fontSize:10, color:"#1e4060", pointerEvents:"none" }}>
