@@ -28,7 +28,7 @@ export default function Page() {
 
     try {
       const res = await fetch(
-        "https://philos-engine.app.n8n.cloud/webhook-test/philos",
+        "/api/analyze",
         {
           method: "POST",
           headers: {
