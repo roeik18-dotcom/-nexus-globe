@@ -1,32 +1,58 @@
 "use client";
 
-import { useState } from "react";
-import GlobeView from "../globe/GlobeView";
-import { useGraphData } from "../graph/useGraphData";
+import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+
+const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
 
 export default function Page() {
-  const data = useGraphData();
+  const [nodes, setNodes] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
 
+  useEffect(() => {
+    const saved = localStorage.getItem("lastResult");
+    if (!saved) return;
+
+    const r = JSON.parse(saved);
+
+    setNodes([
+      {
+        lat: 32,
+        lng: 34,
+        size: 1,
+        color: "green",
+        text: r.action,
+        category: r.category,
+        conflict: r.conflict,
+      }
+    ]);
+  }, []);
+
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#000", color: "white" }}>
+    <div style={{ display: "flex", height: "100vh", background: "#000", color: "#fff" }}>
       
-      {/* 🌍 גלובוס */}
       <div style={{ flex: 2 }}>
-        <GlobeView data={data} onSelect={setSelected} />
+        <Globe
+          globeImageUrl="https://unpkg.com/three-globe/example/img/earth-dark.jpg"
+          pointsData={nodes}
+          pointLat={(d:any)=>d.lat}
+          pointLng={(d:any)=>d.lng}
+          pointColor={(d:any)=>d.color}
+          pointRadius={0.5}
+          onPointClick={(d:any)=>setSelected(d)}
+        />
       </div>
 
-      {/* 📊 פאנל מידע */}
-      <div style={{ flex: 1, padding: 20, borderLeft: "1px solid #222" }}>
+      <div style={{ flex: 1, padding: 20 }}>
         {selected ? (
           <>
-            <h2>Node Info</h2>
-            <p><b>Action:</b> {selected.text}</p>
-            <p><b>Impact:</b> {selected.impact}</p>
-            <p><b>Intensity:</b> {selected.intensity}</p>
+            <h2>RESULT</h2>
+            <p>{selected.text}</p>
+            <p>{selected.category}</p>
+            <p>{selected.conflict}</p>
           </>
         ) : (
-          <p>Click a point</p>
+          <p>Click point</p>
         )}
       </div>
 
