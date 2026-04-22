@@ -24,7 +24,7 @@ export default function GlobeView({ data }: { data?: { nodes: Node[] } }) {
 
       ref.current.innerHTML = "";
 
-      const globe: any = Globe()(ref.current)
+      const globe: any = new Globe(ref.current)
         .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-dark.jpg")
         .backgroundColor("#000000")
         .pointsData(data?.nodes || [])
