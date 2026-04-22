@@ -1,29 +1,40 @@
-"use client";
+import { useEffect, useState } from "react";
 
-import dynamic from "next/dynamic";
+export function useGraphData() {
+  const [nodes, setNodes] = useState<any[]>([
+    // fallback — תמיד יציג משהו
+    {
+      id: "default",
+      lat: 32.0853,
+      lng: 34.7818,
+      impact: "yes",
+      intensity: 8,
+      text: "default node"
+    }
+  ]);
 
-const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("lastResult");
 
-export default function GlobeView({ data, onSelect }: any) {
-  return (
-    <div style={{ width: "100%", height: "100%" }}>
-      <Globe
-        globeImageUrl="https://unpkg.com/three-globe/example/img/earth-dark.jpg"
-        backgroundColor="#000"
-        pointsData={data?.nodes || []}
-        pointLat={(d: any) => d.lat}
-        pointLng={(d: any) => d.lng}
-        pointColor={(d: any) =>
-          d.impact === "yes"
-            ? "#00ff88"
-            : d.impact === "partial"
-            ? "#ffaa00"
-            : "#ff4444"
+      if (!saved) return;
+
+      const data = JSON.parse(saved);
+
+      setNodes([
+        {
+          id: "main",
+          lat: 32.0853,
+          lng: 34.7818,
+          impact: "yes",
+          intensity: 8,
+          text: data.action || "no action"
         }
-        pointAltitude={(d: any) => (d.intensity || 1) / 10}
-        pointRadius={0.6}
-        onPointClick={(d: any) => onSelect && onSelect(d)}
-      />
-    </div>
-  );
+      ]);
+    } catch (e) {
+      console.log("load error", e);
+    }
+  }, []);
+
+  return { nodes };
 }
