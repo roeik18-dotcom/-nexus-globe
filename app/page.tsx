@@ -1,3 +1,5 @@
+import GlobeView from "./globe/GlobeView";
+import { useGraphData } from "./graph/useGraphData";
 "use client";
 
 import dynamic from "next/dynamic";
