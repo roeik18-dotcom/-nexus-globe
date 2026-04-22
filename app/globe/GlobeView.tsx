@@ -14,38 +14,33 @@ export default function GlobeView({ data }: { data?: { nodes: Node[] } }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    let mounted = true;
+    if (!ref.current) return;
 
-    async function run() {
-      if (!ref.current || !data) return;
+    (async () => {
+      const Globe = (await import("globe.gl")).default;
 
-      const mod = await import("globe.gl");
-      const Globe = mod.default;
-      if (!mounted || !ref.current) return;
-
-      const g: any = Globe()(ref.current)
-        .globeImageUrl("//unpkg.com/three-globe/example/img/earth-dark.jpg")
+      const g: any = Globe()(ref.current!)
+        .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-dark.jpg")
         .backgroundColor("#000")
-        .pointsData(data.nodes)
+        .pointsData(data?.nodes || [])
         .pointLat((d: any) => d.lat)
         .pointLng((d: any) => d.lng)
         .pointColor((d: any) =>
-          d.impact === "yes" ? "#00ff88" : d.impact === "partial" ? "#ffaa00" : "#ff4444"
+          d.impact === "yes" ? "#00ff88" :
+          d.impact === "partial" ? "#ffaa00" :
+          "#ff4444"
         )
-        .pointAltitude((d: any) => d.intensity / 10)
-        .pointRadius(0.3);
+        .pointAltitude((d: any) => (d.intensity || 1) / 10)
+        .pointRadius(0.4);
 
       g.controls().autoRotate = true;
-      g.controls().autoRotateSpeed = 0.5;
-    }
-
-    run();
+      g.controls().autoRotateSpeed = 0.6;
+    })();
 
     return () => {
-      mounted = false;
       if (ref.current) ref.current.innerHTML = "";
     };
   }, [data]);
 
-  return <div ref={ref} style={{ width: "100%", height: "500px" }} />;
+  return <div ref={ref} style={{ width: "100%", height: "100%" }} />;
 }
