@@ -27,7 +27,7 @@ export default function Page() {
       body: JSON.stringify({ event, intensity: Number(intensity), context }),
     });
     const json = await res.json();
-    setResult(json);
+    setResult(json); window.location.href="/nexus";
   }
 
   const metric = useMemo(() => computeExecutionImpact(), [tick]);
