@@ -14,14 +14,19 @@ export default function GlobeView({ data }: { data?: { nodes: Node[] } }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!ref.current) return;
+    let mounted = true;
 
-    (async () => {
+    async function run() {
+      if (!ref.current) return;
+
       const Globe = (await import("globe.gl")).default;
+      if (!mounted || !ref.current) return;
 
-      const g: any = Globe()(ref.current!)
+      ref.current.innerHTML = "";
+
+      const globe: any = Globe()(ref.current)
         .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-dark.jpg")
-        .backgroundColor("#000")
+        .backgroundColor("#000000")
         .pointsData(data?.nodes || [])
         .pointLat((d: any) => d.lat)
         .pointLng((d: any) => d.lng)
@@ -31,16 +36,19 @@ export default function GlobeView({ data }: { data?: { nodes: Node[] } }) {
           "#ff4444"
         )
         .pointAltitude((d: any) => (d.intensity || 1) / 10)
-        .pointRadius(0.4);
+        .pointRadius(0.45);
 
-      g.controls().autoRotate = true;
-      g.controls().autoRotateSpeed = 0.6;
-    })();
+      globe.controls().autoRotate = true;
+      globe.controls().autoRotateSpeed = 0.6;
+    }
+
+    run();
 
     return () => {
+      mounted = false;
       if (ref.current) ref.current.innerHTML = "";
     };
   }, [data]);
 
-  return <div ref={ref} style={{ width: "100%", height: "100%" }} />;
+  return <div ref={ref} style={{ width: "100vw", height: "100vh" }} />;
 }
