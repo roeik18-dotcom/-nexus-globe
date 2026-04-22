@@ -1,40 +1,36 @@
-import { useEffect, useState } from "react";
+"use client";
 
-export function useGraphData() {
-  const [nodes, setNodes] = useState<any[]>([
-    // fallback — תמיד יציג משהו
-    {
-      id: "default",
-      lat: 32.0853,
-      lng: 34.7818,
-      impact: "yes",
-      intensity: 8,
-      text: "default node"
-    }
-  ]);
+import { useState } from "react";
+import dynamic from "next/dynamic";
+import { useGraphData } from "../graph/useGraphData";
 
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("lastResult");
+// 🔥 זה הקריטי — בלי SSR
+const GlobeView = dynamic(() => import("../globe/GlobeView"), {
+  ssr: false,
+});
 
-      if (!saved) return;
+export default function Page() {
+  const data = useGraphData();
+  const [selected, setSelected] = useState<any>(null);
 
-      const data = JSON.parse(saved);
+  return (
+    <div style={{ display: "flex", height: "100vh", background: "#000", color: "#fff" }}>
+      
+      <div style={{ flex: 2 }}>
+        <GlobeView data={data} onSelect={setSelected} />
+      </div>
 
-      setNodes([
-        {
-          id: "main",
-          lat: 32.0853,
-          lng: 34.7818,
-          impact: "yes",
-          intensity: 8,
-          text: data.action || "no action"
-        }
-      ]);
-    } catch (e) {
-      console.log("load error", e);
-    }
-  }, []);
+      <div style={{ flex: 1, padding: 20 }}>
+        {selected ? (
+          <>
+            <h2>NODE</h2>
+            <p>{selected.text}</p>
+          </>
+        ) : (
+          <p>Click point</p>
+        )}
+      </div>
 
-  return { nodes };
+    </div>
+  );
 }
