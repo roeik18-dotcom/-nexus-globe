@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Nexus — Network Map</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin:0; padding:0; height:100%; background:#020d1a; color:#e0f2fe;
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; overflow:hidden; }
+    #wrap { display:flex; height:100vh; }
+    #map  { flex:1; position:relative; background:
+      radial-gradient(ellipse at 50% 40%, #0a2a4a 0%, #020d1a 70%); }
+    svg   { width:100%; height:100%; display:block; }
+    #panel { width:280px; background:#030f1e; border-left:1px solid #0a2a4a;
+      padding:20px; overflow-y:auto; }
+    h1 { font-size:14px; letter-spacing:5px; color:#38bdf8; margin:0 0 4px; font-weight:700; }
+    .sub { font-size:10px; color:#1e4060; letter-spacing:2px;
+      text-transform:uppercase; margin-bottom:18px; }
+    .node { display:flex; align-items:center; gap:10px; padding:9px 11px;
+      border:1px solid #0a2a4a; border-radius:6px; margin-bottom:6px;
+      cursor:pointer; transition:all .15s; background:#040e1c; }
+    .node:hover { background:#0a2a4a; transform:translateX(-2px); }
+    .node.sel { border-color:#00f5d4; background:#0a2a4a; }
+    .dot { width:9px; height:9px; border-radius:50%; flex-shrink:0;
+      box-shadow:0 0 8px currentColor; }
+    .name { font-size:11px; color:#caf0f8; flex:1; font-weight:600; }
+    .role { font-size:9px; color:#1e4060; font-weight:400; }
+    .val { font-size:10px; color:#38bdf8; font-weight:700; }
+    #info { margin-top:20px; padding:14px; border:1px solid #0a2a4a;
+      border-radius:6px; background:#040e1c; min-height:90px; font-size:12px; }
+    #info .muted { color:#1e4060; font-size:10px; }
+    .gpoint { cursor:pointer; transition:all .2s; }
+    .gpoint:hover circle { r:12; }
+    .gpoint.sel circle { r:14; stroke:#fff; stroke-width:2; }
+    .glabel { pointer-events:none; fill:#e0f2fe; font-size:10px;
+      font-weight:600; text-shadow:0 0 4px #020d1a; }
+    .arc { fill:none; stroke-width:1.5; opacity:.55;
+      stroke-dasharray:3 4; animation:dash 20s linear infinite; }
+    @keyframes dash { to { stroke-dashoffset: -300; } }
+    .land  { fill:#0a2a4a; stroke:#1e4060; stroke-width:.5; }
+    .grid  { stroke:#0a2a4a; stroke-width:.5; fill:none; opacity:.4; }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <div id="map">
+      <svg id="svg" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet">
+        <!-- grid -->
+        <g class="grid">
+          <line x1="0" y1="125" x2="1000" y2="125"/>
+          <line x1="0" y1="250" x2="1000" y2="250"/>
+          <line x1="0" y1="375" x2="1000" y2="375"/>
+          <line x1="250" y1="0" x2="250" y2="500"/>
+          <line x1="500" y1="0" x2="500" y2="500"/>
+          <line x1="750" y1="0" x2="750" y2="500"/>
+        </g>
+        <!-- rough continents (simple polygons, good enough as a context map) -->
+        <g class="land">
+          <!-- North America -->
+          <path d="M120,130 L150,110 L230,105 L280,130 L290,170 L260,220 L210,240 L175,230 L155,205 L125,180 Z"/>
+          <!-- South America -->
+          <path d="M280,270 L310,260 L335,280 L330,340 L310,380 L290,400 L275,370 L270,320 Z"/>
+          <!-- Europe -->
+          <path d="M470,130 L520,115 L555,130 L560,160 L530,185 L495,180 L475,160 Z"/>
+          <!-- Africa -->
+          <path d="M490,200 L540,195 L580,220 L595,275 L580,330 L540,370 L510,360 L490,310 L485,255 Z"/>
+          <!-- Asia -->
+          <path d="M565,120 L680,105 L790,120 L830,160 L820,210 L770,240 L700,240 L640,220 L600,200 L580,165 Z"/>
+          <!-- India -->
+          <path d="M670,220 L700,215 L710,255 L690,280 L670,260 Z"/>
+          <!-- Australia -->
+          <path d="M800,330 L860,320 L890,345 L880,380 L830,385 L800,365 Z"/>
+          <!-- Japan -->
+          <path d="M860,180 L875,175 L880,195 L870,205 L860,195 Z"/>
+        </g>
+
+        <g id="arcs"></g>
+        <g id="points"></g>
+      </svg>
+    </div>
+
+    <div id="panel">
+      <h1>NEXUS</h1>
+      <div class="sub">8 nodes · 9 links</div>
+      <div id="list"></div>
+      <div id="info"><span class="muted">Click a node to see details</span></div>
+    </div>
+  </div>
+
+  <script>
+    var ROLE_COLOR = {
+      Designer:"#00f5d4", Engineer:"#38bdf8", Analyst:"#a78bfa",
+      Researcher:"#f472b6", Director:"#fb923c"
+    };
+
+    var nodes = [
+      { id:"1", name:"Roei Kattan",    lat:32.0853, lng:34.7818,  value:9, role:"Director" },
+      { id:"2", name:"Sarah Chen",     lat:40.7128, lng:-74.0060, value:7, role:"Engineer" },
+      { id:"3", name:"James Whitaker", lat:51.5074, lng:-0.1278,  value:5, role:"Designer" },
+      { id:"4", name:"Yuki Tanaka",    lat:35.6895, lng:139.6917, value:6, role:"Researcher" },
+      { id:"5", name:"Marie Dubois",   lat:48.8566, lng:2.3522,   value:4, role:"Analyst" },
+      { id:"6", name:"Ahmed Karimi",   lat:25.2048, lng:55.2708,  value:5, role:"Engineer" },
+      { id:"7", name:"Luca Rossi",     lat:41.9028, lng:12.4964,  value:3, role:"Designer" },
+      { id:"8", name:"Priya Sharma",   lat:19.0760, lng:72.8777,  value:6, role:"Analyst" }
+    ];
+    var links = [
+      { s:"1", t:"2" }, { s:"1", t:"3" }, { s:"1", t:"4" },
+      { s:"2", t:"5" }, { s:"2", t:"6" }, { s:"3", t:"7" },
+      { s:"4", t:"8" }, { s:"5", t:"6" }, { s:"6", t:"8" }
+    ];
+
+    // equirectangular projection: lng/lat -> svg x/y (viewBox 1000x500)
+    function proj(lng, lat) {
+      return {
+        x: (lng + 180) / 360 * 1000,
+        y: (90 - lat) / 180 * 500
+      };
+    }
+
+    var byId = {}; nodes.forEach(function(n){ byId[n.id] = n; });
+    var maxVal = Math.max.apply(null, nodes.map(function(n){ return n.value; }));
+    var selected = null;
+
+    function renderArcs() {
+      var g = document.getElementById('arcs');
+      g.innerHTML = '';
+      links.forEach(function(l) {
+        var a = proj(byId[l.s].lng, byId[l.s].lat);
+        var b = proj(byId[l.t].lng, byId[l.t].lat);
+        var mx = (a.x + b.x) / 2;
+        var my = (a.y + b.y) / 2 - 30; // curve upward
+        var color = ROLE_COLOR[byId[l.s].role];
+        var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M' + a.x + ',' + a.y + ' Q' + mx + ',' + my + ' ' + b.x + ',' + b.y);
+        path.setAttribute('class', 'arc');
+        path.setAttribute('stroke', color);
+        g.appendChild(path);
+      });
+    }
+
+    function renderPoints() {
+      var g = document.getElementById('points');
+      g.innerHTML = '';
+      nodes.forEach(function(n) {
+        var p = proj(n.lng, n.lat);
+        var grp = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        grp.setAttribute('class', 'gpoint' + (selected === n.id ? ' sel' : ''));
+        grp.setAttribute('transform', 'translate(' + p.x + ',' + p.y + ')');
+        grp.onclick = function(){ select(n.id); };
+
+        var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        c.setAttribute('r', 5 + (n.value / maxVal) * 5);
+        c.setAttribute('fill', ROLE_COLOR[n.role]);
+        c.setAttribute('stroke', '#fff');
+        c.setAttribute('stroke-width', '.5');
+        c.setAttribute('filter', 'drop-shadow(0 0 6px ' + ROLE_COLOR[n.role] + ')');
+        grp.appendChild(c);
+
+        var label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        label.setAttribute('class', 'glabel');
+        label.setAttribute('x', 12);
+        label.setAttribute('y', 4);
+        label.textContent = n.name.split(' ')[0];
+        grp.appendChild(label);
+
+        g.appendChild(grp);
+      });
+    }
+
+    function renderList() {
+      var list = document.getElementById('list');
+      list.innerHTML = '';
+      nodes.slice().sort(function(a,b){ return b.value - a.value; }).forEach(function(n){
+        var el = document.createElement('div');
+        el.className = 'node' + (selected === n.id ? ' sel' : '');
+        el.innerHTML =
+          '<div class="dot" style="background:' + ROLE_COLOR[n.role] +
+            ';color:' + ROLE_COLOR[n.role] + '"></div>' +
+          '<div class="name">' + n.name + '<div class="role">' + n.role + '</div></div>' +
+          '<div class="val">' + n.value + '</div>';
+        el.onclick = function(){ select(n.id); };
+        list.appendChild(el);
+      });
+    }
+
+    function select(id) {
+      selected = id;
+      var n = byId[id];
+      document.getElementById('info').innerHTML =
+        '<div style="font-size:14px;color:#e0f2fe;font-weight:700;margin-bottom:4px">' +
+          n.name + '</div>' +
+        '<div style="color:' + ROLE_COLOR[n.role] + ';font-size:11px;margin-bottom:10px">' +
+          n.role + '</div>' +
+        '<div style="display:flex;gap:14px">' +
+          '<div><div style="font-size:16px;color:#00f5d4;font-weight:700">' +
+            n.value + '</div><div class="muted">influence</div></div>' +
+          '<div><div style="font-size:16px;color:#38bdf8;font-weight:700">' +
+            Math.round((n.value/maxVal)*100) + '%</div><div class="muted">rank</div></div>' +
+        '</div>' +
+        '<div class="muted" style="margin-top:10px">' +
+          n.lat.toFixed(2) + '°, ' + n.lng.toFixed(2) + '°</div>';
+      renderPoints();
+      renderList();
+    }
+
+    renderArcs();
+    renderPoints();
+    renderList();
+  </script>
+</body>
+</html>
