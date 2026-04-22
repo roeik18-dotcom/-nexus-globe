@@ -24,6 +24,7 @@ import {
 } from "../lib/philos";
 import { loadProfile, dominantBaseForce, type UserProfile } from "../lib/profile";
 import { computeDailySummary, IMPACT_COLOR, IMPACT_LABEL, type DailySummary } from "../lib/daily";
+import { computeMatches, URGENCY_COLOR, URGENCY_LABEL, type Match } from "../lib/match";
 
 const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
 
@@ -133,6 +134,11 @@ export default function Page() {
   }, [visible]);
 
   const daily: DailySummary = useMemo(() => computeDailySummary(allNodes), [allNodes]);
+
+  const matches: Match[] = useMemo(
+    () => computeMatches(visible, profile).slice(0, 5),
+    [visible, profile],
+  );
 
   /* profile as anchor point (special node) */
   const profileAnchor = useMemo(() => {
@@ -439,6 +445,46 @@ export default function Page() {
             </div>
           </div>
         </div>
+
+        {/* MATCHES */}
+        {matches.length > 0 && (
+          <div style={{ padding: 12, border: "1px solid #ef444455", borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
+            <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
+              Match · מי צריך את מי
+            </div>
+            {matches.map((m, i) => (
+              <div
+                key={m.a.id + m.b.id}
+                onClick={() => { setSelected(m.a); setSelectedLink(m.link); }}
+                style={{
+                  padding: "8px 10px", marginBottom: 6,
+                  border: `1px solid ${URGENCY_COLOR[m.urgency]}55`,
+                  background: `${URGENCY_COLOR[m.urgency]}0e`,
+                  borderRadius: 6, cursor: "pointer",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <span style={{ fontSize: 11, color: "#e0f2fe", fontWeight: 700 }}>
+                    {m.a.name} {m.link.directional ? "→" : "↔"} {m.b.name}
+                  </span>
+                  <span style={{
+                    fontSize: 8, padding: "2px 6px", borderRadius: 8,
+                    background: `${URGENCY_COLOR[m.urgency]}22`,
+                    color: URGENCY_COLOR[m.urgency],
+                    border: `1px solid ${URGENCY_COLOR[m.urgency]}66`,
+                    letterSpacing: 1, textTransform: "uppercase",
+                  }}>
+                    {URGENCY_LABEL[m.urgency]} · {(m.score * 100).toFixed(0)}
+                  </span>
+                </div>
+                <div style={{ fontSize: 9, color: "#8bb8cc", marginBottom: 4 }}>{m.reason}</div>
+                <div style={{ fontSize: 10, color: "#00f5d4", fontStyle: "italic" }}>
+                  → {m.suggestion}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* SYSTEM SUMMARY */}
         {summary && (
