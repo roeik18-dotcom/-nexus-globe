@@ -3,7 +3,7 @@
 import GlobeView from "../globe/GlobeView";
 import { useGraphData } from "../graph/useGraphData";
 
-export default function NexusPage() {
+export default function Page() {
   const data = useGraphData();
 
   return (
