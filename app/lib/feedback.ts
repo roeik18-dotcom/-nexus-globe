@@ -24,7 +24,7 @@ export function loadFeedback(): Feedback[] {
 
 export function computeExecutionImpact() {
   const all = loadFeedback();
-  if (all.length === 0) return { rate: undefined, succeeded: 0, total: 0 };
+  if (all.length === 0) return { rate: undefined as number | undefined, succeeded: 0, total: 0 };
   const succeeded = all.filter(
     (f) => f.did && (f.helped === "yes" || f.helped === "partial")
   ).length;
