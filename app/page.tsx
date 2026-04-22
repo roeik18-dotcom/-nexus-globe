@@ -32,7 +32,16 @@ export default function Page() {
       <input placeholder="context" onChange={(e)=>setContext(e.target.value)} />
 
       
+
 <button onClick={analyze}>Analyze</button>
+<div style={{marginTop:10}}>
+  <button onClick={()=>saveFeedback({did:true, helped:"yes", ts:Date.now()})}>Yes</button>
+  <button onClick={()=>saveFeedback({did:true, helped:"no", ts:Date.now()})}>No</button>
+  <button onClick={()=>saveFeedback({did:true, helped:"partial", ts:Date.now()})}>Partial</button>
+</div>
+<div style={{marginTop:10}}>
+  {(()=>{ const m=computeExecutionImpact(); return m.rate===undefined?null:<b>Execution × Impact: {m.rate}% ({m.succeeded}/{m.total})</b>; })()}
+</div>
 <div style={{marginTop:10}}>
   <button onClick={()=>saveFeedback({did:true, helped:"yes", ts:Date.now()})}>Did it help? Yes</button>
   <button onClick={()=>saveFeedback({did:true, helped:"no", ts:Date.now()})}>Did it help? No</button>
