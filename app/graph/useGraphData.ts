@@ -1,9 +1,27 @@
+import { useState } from "react";
+
+export type Node = {
+  id: string;
+  lat: number;
+  lng: number;
+  impact: "high" | "medium" | "low";
+  text: string;
+};
+
 export function useGraphData() {
-  return {
-    nodes: [
-      { id: "1", lat: 32.0853, lng: 34.7818, impact: "yes", intensity: 8 },
-      { id: "2", lat: 40.7128, lng: -74.006, impact: "partial", intensity: 5 },
-      { id: "3", lat: 51.5074, lng: -0.1278, impact: "no", intensity: 3 }
-    ]
-  };
+  const [nodes, setNodes] = useState<Node[]>([]);
+
+  function addNode(text: string, impact: "high" | "medium" | "low") {
+    const newNode: Node = {
+      id: Date.now().toString(),
+      lat: 20 + Math.random() * 40,
+      lng: -80 + Math.random() * 160,
+      impact,
+      text,
+    };
+
+    setNodes((prev) => [...prev, newNode]);
+  }
+
+  return { nodes, addNode };
 }
