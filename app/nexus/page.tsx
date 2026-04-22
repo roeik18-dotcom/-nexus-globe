@@ -2,112 +2,49 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  FORCE_COLOR,
+  FORCE_LABEL,
+  CONTEXT_LABEL,
+  LINK_COLOR,
+  LINK_LABEL,
+  loadNodes,
+  clearNodes,
+  buildLinks,
+  applyFilter,
+  rankNodes,
+  type UserNode,
+  type DominantForce,
+  type NodeContext,
+  type Filter,
+  type RankQuery,
+  type Ranked,
+  type Link,
+  type LinkType,
+} from "../lib/philos";
+import { loadProfile, dominantBaseForce, type UserProfile } from "../lib/profile";
+import { computeDailySummary, IMPACT_COLOR, IMPACT_LABEL, type DailySummary } from "../lib/daily";
 
 const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
 
-/* ---------- PHILOS palette ---------- */
-
-const FORCE_COLOR: Record<string, string> = {
-  emotion: "#f472b6", // pink
-  logic:   "#38bdf8", // cyan
-  fear:    "#fb923c", // orange
-  desire:  "#a78bfa", // violet
-  duty:    "#00f5d4", // teal
-};
-
-const FORCE_HE: Record<string, string> = {
-  emotion: "רגש",
-  logic:   "היגיון",
-  fear:    "פחד",
-  desire:  "תשוקה",
-  duty:    "חובה",
-};
-
-const CATEGORY_ATMOSPHERE: Record<string, string> = {
-  anxiety:          "#fb923c",
-  frustration:      "#ef4444",
-  low_state:        "#64748b",
-  decision:         "#38bdf8",
-  career_friction:  "#a78bfa",
-  relational:       "#f472b6",
-  crisis:           "#dc2626",
-  uncertainty:      "#38bdf8",
-};
-
-/* ---------- canonical node set (the 5 forces + Self + Event + Action) ---------- */
-
-type PhilosNode = {
-  id: string;
-  kind: "self" | "force" | "event" | "action";
-  force?: keyof typeof FORCE_COLOR;
-  name: string;
-  sub: string;
-  lat: number;
-  lng: number;
-  base: number; // baseline weight
-};
-
-const BASE_NODES: PhilosNode[] = [
-  { id: "self",    kind: "self",   name: "את/ה",     sub: "SELF",       lat:  32.08, lng:  34.78, base: 8 },
-  { id: "emotion", kind: "force",  force: "emotion", name: "רגש",      sub: "EMOTION",   lat:   5,    lng:  20,   base: 5 },
-  { id: "logic",   kind: "force",  force: "logic",   name: "היגיון",   sub: "LOGIC",     lat:  55,    lng: 100,   base: 5 },
-  { id: "fear",    kind: "force",  force: "fear",    name: "פחד",      sub: "FEAR",      lat: -25,    lng: -65,   base: 5 },
-  { id: "desire",  kind: "force",  force: "desire",  name: "תשוקה",    sub: "DESIRE",    lat:  15,    lng: 130,   base: 5 },
-  { id: "duty",    kind: "force",  force: "duty",    name: "חובה",     sub: "DUTY",      lat:  60,    lng:  10,   base: 5 },
-  { id: "event",   kind: "event",  name: "אירוע",   sub: "EVENT",      lat: -10,    lng:  45,   base: 4 },
-  { id: "action",  kind: "action", name: "פעולה",   sub: "ACTION",     lat:  40,    lng: -30,   base: 6 },
-];
-
-/* ---------- types ---------- */
-
-type LastResult = {
-  category?: string;
-  dominantForce?: string;
-  conflict?: string;
-  action?: string;
-  echo?: { event?: string; intensity?: number; context?: string };
-};
-
-type RenderNode = PhilosNode & {
-  value: number;
-  color: string;
-  highlight: boolean;
-  altitude: number;
-  radius: number;
-};
-
-type RenderArc = {
-  startLat: number;
-  startLng: number;
-  endLat: number;
-  endLng: number;
-  color: string[];
-  stroke: number;
-  altitude: number;
-  dashTime: number;
-  kind: "force" | "event" | "action" | "conflict";
-};
-
-/* ---------- conflict → pair of forces to highlight ---------- */
-
-const CONFLICT_PAIR: Record<string, [string, string]> = {
-  avoidance:         ["self", "fear"],
-  blocked_expression:["self", "emotion"],
-  disengagement:     ["self", "desire"],
-  tradeoff:          ["logic", "desire"],
-  role_vs_self:      ["duty", "desire"],
-  expectation_gap:   ["duty", "emotion"],
-  overload:          ["self", "duty"],
-  hesitation:        ["logic", "fear"],
-};
-
-/* ---------- page ---------- */
+const TOP_N = 5;
+const ALL_LINK_TYPES: LinkType[] = ["alignment", "complementary", "influence", "opportunity"];
 
 export default function Page() {
   const wrap = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
-  const [selected, setSelected] = useState<RenderNode | null>(null);
-  const [last, setLast] = useState<LastResult | null>(null);
+  const [selected, setSelected]   = useState<UserNode | null>(null);
+  const [selectedLink, setSelectedLink] = useState<Link | null>(null);
+
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [allNodes, setAllNodes] = useState<UserNode[]>([]);
+  const [filter, setFilter] = useState<Filter>({});
+  const [target, setTarget] = useState<RankQuery>({});
+
+  const [linkTypeMask, setLinkTypeMask] = useState<Record<LinkType, boolean>>({
+    alignment: true, complementary: true, influence: true, opportunity: true,
+  });
+  const [minStrength, setMinStrength] = useState(0);
 
   useEffect(() => {
     if (!wrap.current) return;
@@ -120,198 +57,232 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("lastResult");
-      if (saved) setLast(JSON.parse(saved));
-    } catch {}
+    setAllNodes(loadNodes());
+    setProfile(loadProfile());
   }, []);
 
-  const intensity = last?.echo?.intensity ?? 5;
-  const dominant = (last?.dominantForce ?? "") as string;
-  const conflict = (last?.conflict ?? "") as string;
-  const category = (last?.category ?? "") as string;
+  const last = allNodes[allNodes.length - 1];
 
-  /* derive node values from PHILOS result */
-  const nodes: RenderNode[] = useMemo(() => {
-    return BASE_NODES.map(n => {
-      let value = n.base;
-      let highlight = false;
+  /* effective target: user override > profile coords > last node */
+  const effectiveTarget: RankQuery = useMemo(() => ({
+    context:       target.context       ?? last?.context,
+    dominantForce: target.dominantForce ?? last?.dominantForce,
+    center:        target.center
+                  ?? (profile ? { lat: profile.lat, lng: profile.lng } : undefined)
+                  ?? (last ? { lat: last.lat, lng: last.lng } : undefined),
+  }), [target, last, profile]);
 
-      if (n.kind === "force" && n.force === dominant) {
-        value = 10;
-        highlight = true;
-      }
-      if (n.kind === "self") {
-        value = Math.min(10, 5 + Math.round(intensity / 2));
-      }
-      if (n.kind === "event") {
-        value = Math.min(10, 3 + Math.round(intensity / 2));
-      }
-      if (n.kind === "action" && last?.action) {
-        value = 9;
-        highlight = true;
-      }
+  const visible = useMemo(() => applyFilter(allNodes, {
+    ...filter,
+    center: filter.maxDistanceKm
+      ? (profile ? { lat: profile.lat, lng: profile.lng }
+        : last    ? { lat: last.lat, lng: last.lng } : undefined)
+      : undefined,
+  }), [allNodes, filter, last, profile]);
 
-      const color =
-        n.kind === "self"   ? "#e0f2fe" :
-        n.kind === "event"  ? "#ef4444" :
-        n.kind === "action" ? "#00f5d4" :
-        FORCE_COLOR[n.force as string];
+  const ranked: Ranked[] = useMemo(
+    () => rankNodes(visible, effectiveTarget),
+    [visible, effectiveTarget],
+  );
 
-      return {
-        ...n,
-        value,
-        color,
-        highlight,
-        altitude: 0.02 + (value / 10) * 0.28,
-        radius:   0.4 + (value / 10) * 0.7 + (highlight ? 0.3 : 0),
-      };
+  const topIds = useMemo(() => new Set(ranked.slice(0, TOP_N).map(n => n.id)), [ranked]);
+
+  const links = useMemo(() => buildLinks(visible), [visible]);
+
+  const filteredLinks = useMemo(
+    () => links.filter(l => linkTypeMask[l.type] && l.strength >= minStrength),
+    [links, linkTypeMask, minStrength]
+  );
+
+  const arcs = useMemo(() => {
+    const byId: Record<string, UserNode> = {};
+    visible.forEach(n => (byId[n.id] = n));
+    return filteredLinks
+      .map(l => {
+        const s = byId[l.source], t = byId[l.target];
+        if (!s || !t) return null;
+        const col = LINK_COLOR[l.type];
+        const hot = topIds.has(s.id) || topIds.has(t.id);
+        return {
+          _link: l,
+          startLat: s.lat, startLng: s.lng,
+          endLat: t.lat,   endLng: t.lng,
+          color: [col, col],
+          stroke: 0.25 + l.strength * 0.9 + (hot ? 0.3 : 0),
+          altitude: 0.12 + l.strength * 0.15,
+          dash: l.directional ? 0.25 : 0.6,
+          gap:  l.directional ? 0.15 : 0.05,
+          speed: l.directional ? 900 : 2500,
+        };
+      })
+      .filter(Boolean) as any[];
+  }, [visible, filteredLinks, topIds]);
+
+  const summary = useMemo(() => {
+    if (!visible.length) return null;
+    const totalNodes = visible.length;
+    const avgIntensity = visible.reduce((s, n) => s + n.intensity, 0) / totalNodes;
+    const forceDist: Record<string, number> = {};
+    visible.forEach(n => {
+      forceDist[n.dominantForce] = (forceDist[n.dominantForce] || 0) + 1;
     });
-  }, [dominant, intensity, last?.action]);
+    const activeConflicts = visible.filter(n => n.conflict).length;
+    const forwardMovementRatio =
+      visible.filter(n => n.direction === "forward").length / totalNodes;
+    return { totalNodes, avgIntensity, forceDist, activeConflicts, forwardMovementRatio };
+  }, [visible]);
 
-  const byId: Record<string, RenderNode> = {};
-  nodes.forEach(n => (byId[n.id] = n));
+  const daily: DailySummary = useMemo(() => computeDailySummary(allNodes), [allNodes]);
 
-  /* arcs:
-     - every force ↔ self (always)
-     - event → self (if we have a result)
-     - self → action (if we have an action)
-     - conflict pair highlighted red
-  */
-  const arcs: RenderArc[] = useMemo(() => {
-    const out: RenderArc[] = [];
-    const self = byId.self;
-    if (!self) return out;
+  /* profile as anchor point (special node) */
+  const profileAnchor = useMemo(() => {
+    if (!profile) return null;
+    const force = dominantBaseForce(profile);
+    return {
+      _anchor: true,
+      id: "__profile__",
+      name: profile.name || "אני",
+      lat: profile.lat,
+      lng: profile.lng,
+      color: FORCE_COLOR[force],
+      force,
+      age: profile.age,
+      location: profile.location,
+    };
+  }, [profile]);
 
-    (["emotion","logic","fear","desire","duty"] as const).forEach(f => {
-      const n = byId[f];
-      if (!n) return;
-      const isDom = f === dominant;
-      out.push({
-        startLat: self.lat, startLng: self.lng,
-        endLat: n.lat,      endLng: n.lng,
-        color: [self.color, n.color],
-        stroke: isDom ? 0.9 : 0.25,
-        altitude: 0.22,
-        dashTime: isDom ? 1600 : 3200,
-        kind: "force",
-      });
-    });
+  /* combined points: anchor + ranked nodes */
+  const pointsData = useMemo(() => {
+    const arr: any[] = [];
+    if (profileAnchor) arr.push(profileAnchor);
+    arr.push(...ranked);
+    return arr;
+  }, [profileAnchor, ranked]);
 
-    if (last) {
-      const ev = byId.event;
-      if (ev) {
-        out.push({
-          startLat: ev.lat, startLng: ev.lng,
-          endLat: self.lat, endLng: self.lng,
-          color: ["#ef4444", self.color],
-          stroke: 0.6,
-          altitude: 0.3,
-          dashTime: 1400,
-          kind: "event",
-        });
-      }
-      if (last.action) {
-        const ac = byId.action;
-        if (ac) {
-          out.push({
-            startLat: self.lat, startLng: self.lng,
-            endLat: ac.lat,     endLng: ac.lng,
-            color: [self.color, "#00f5d4"],
-            stroke: 0.9,
-            altitude: 0.35,
-            dashTime: 1200,
-            kind: "action",
-          });
-        }
-      }
-    }
-
-    const pair = CONFLICT_PAIR[conflict];
-    if (pair) {
-      const a = byId[pair[0]], b = byId[pair[1]];
-      if (a && b) {
-        out.push({
-          startLat: a.lat, startLng: a.lng,
-          endLat: b.lat,   endLng: b.lng,
-          color: ["#ef4444", "#fb923c"],
-          stroke: 1.2,
-          altitude: 0.5,
-          dashTime: 900,
-          kind: "conflict",
-        });
-      }
-    }
-
-    return out;
-  }, [byId, dominant, conflict, last]);
-
-  const atmosphere = CATEGORY_ATMOSPHERE[category] || "#38bdf8";
+  /* connections for selected node (for Pentagon panel) */
+  const selectedConnections = useMemo(() => {
+    if (!selected) return [];
+    const byId: Record<string, UserNode> = {};
+    visible.forEach(n => (byId[n.id] = n));
+    return links
+      .filter(l => l.source === selected.id || l.target === selected.id)
+      .map(l => {
+        const otherId = l.source === selected.id ? l.target : l.source;
+        return { link: l, other: byId[otherId] };
+      })
+      .filter(c => !!c.other)
+      .sort((a, b) => b.link.strength - a.link.strength);
+  }, [selected, links, visible]);
 
   return (
     <div style={{ display: "flex", width: "100vw", height: "100vh", background: "#020d1a", color: "#e0f2fe", fontFamily: "system-ui, sans-serif" }}>
       <div ref={wrap} style={{ flex: 1, position: "relative" }}>
-        {/* Personal PHILOS overlay */}
+
+        {/* LAST ACTION OVERLAY */}
         {last && (
           <div
             style={{
-              position: "absolute",
-              top: 20,
-              left: 20,
-              right: 20,
-              zIndex: 5,
+              position: "absolute", top: 20, left: 20, right: 340, zIndex: 5,
               background: "rgba(3,15,30,0.85)",
-              border: `1px solid ${atmosphere}55`,
+              border: `1px solid ${FORCE_COLOR[last.dominantForce]}55`,
               backdropFilter: "blur(8px)",
-              borderRadius: 8,
-              padding: "14px 18px",
-              pointerEvents: "none",
-              maxWidth: 560,
+              borderRadius: 8, padding: "14px 18px",
+              pointerEvents: "none", maxWidth: 560,
             }}
           >
-            <div style={{ fontSize: 9, letterSpacing: 3, color: atmosphere, textTransform: "uppercase", marginBottom: 6 }}>
-              Your orientation · PHILOS
+            <div style={{ fontSize: 9, letterSpacing: 3, color: FORCE_COLOR[last.dominantForce], textTransform: "uppercase", marginBottom: 6 }}>
+              Last action · {last.name}
             </div>
-            {last.action && (
-              <div style={{ fontSize: 16, color: "#00f5d4", fontWeight: 700, marginBottom: 8 }}>
-                {last.action}
-              </div>
-            )}
+            <div style={{ fontSize: 16, color: "#00f5d4", fontWeight: 700, marginBottom: 8 }}>
+              {last.action}
+            </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: 10, color: "#8bb8cc" }}>
-              {last.category && <span>category: <b style={{ color: "#e0f2fe" }}>{last.category}</b></span>}
-              {last.conflict && <span>conflict: <b style={{ color: "#e0f2fe" }}>{last.conflict}</b></span>}
-              {last.dominantForce && (
-                <span>
-                  force:{" "}
-                  <b style={{ color: FORCE_COLOR[last.dominantForce] ?? "#e0f2fe" }}>
-                    {FORCE_HE[last.dominantForce] ?? last.dominantForce}
-                  </b>
-                </span>
-              )}
-              {typeof last.echo?.intensity === "number" && (
-                <span>intensity: <b style={{ color: "#e0f2fe" }}>{last.echo.intensity}/10</b></span>
-              )}
+              <span>force: <b style={{ color: FORCE_COLOR[last.dominantForce] }}>{FORCE_LABEL[last.dominantForce]}</b></span>
+              <span>context: <b style={{ color: "#e0f2fe" }}>{CONTEXT_LABEL[last.context]}</b></span>
+              <span>intensity: <b style={{ color: "#e0f2fe" }}>{last.intensity}/10</b></span>
+              <span>impact: <b style={{ color: "#e0f2fe" }}>{last.impact}</b></span>
+              <span>trust: <b style={{ color: "#e0f2fe" }}>{last.trustScore}</b></span>
+              {last.conflict && <span>conflict: <b style={{ color: "#ef4444" }}>{last.conflict}</b></span>}
             </div>
           </div>
         )}
 
-        {!last && (
+        {/* LINK TYPE LEGEND */}
+        <div style={{
+          position: "absolute", bottom: 20, left: 20, zIndex: 5,
+          background: "rgba(3,15,30,0.85)", border: "1px solid #0a2a4a",
+          backdropFilter: "blur(8px)", borderRadius: 8, padding: "10px 12px",
+        }}>
+          <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>
+            קווים
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {ALL_LINK_TYPES.map(t => (
+              <button
+                key={t}
+                onClick={() => setLinkTypeMask(m => ({ ...m, [t]: !m[t] }))}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "4px 8px", fontSize: 10,
+                  border: `1px solid ${linkTypeMask[t] ? LINK_COLOR[t] : "#0a2a4a"}`,
+                  background: linkTypeMask[t] ? `${LINK_COLOR[t]}22` : "transparent",
+                  color: linkTypeMask[t] ? LINK_COLOR[t] : "#8bb8cc",
+                  borderRadius: 4, cursor: "pointer",
+                  opacity: linkTypeMask[t] ? 1 : 0.5,
+                }}
+              >
+                <span style={{ width: 10, height: 3, background: LINK_COLOR[t], borderRadius: 2 }} />
+                {LINK_LABEL[t]}
+              </button>
+            ))}
+          </div>
+          <div style={{ marginTop: 8, fontSize: 9, color: "#8bb8cc" }}>
+            min strength: <b style={{ color: "#38bdf8" }}>{minStrength.toFixed(2)}</b>
+          </div>
+          <input
+            type="range" min={0} max={1} step={0.05}
+            value={minStrength}
+            onChange={e => setMinStrength(Number(e.target.value))}
+            style={{ width: 180, accentColor: "#38bdf8" }}
+          />
+        </div>
+
+        {/* LINK REASON CARD */}
+        {selectedLink && (
+          <div style={{
+            position: "absolute", bottom: 20, right: 340, zIndex: 5,
+            background: "rgba(3,15,30,0.92)",
+            border: `1px solid ${LINK_COLOR[selectedLink.type]}aa`,
+            borderRadius: 8, padding: "12px 14px", maxWidth: 340,
+            boxShadow: `0 0 18px ${LINK_COLOR[selectedLink.type]}44`,
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+              <span style={{ fontSize: 10, letterSpacing: 2, color: LINK_COLOR[selectedLink.type], textTransform: "uppercase" }}>
+                {LINK_LABEL[selectedLink.type]}
+              </span>
+              <button onClick={() => setSelectedLink(null)} style={{
+                background: "transparent", border: "none", color: "#8bb8cc", cursor: "pointer", fontSize: 14,
+              }}>×</button>
+            </div>
+            <div style={{ fontSize: 12, color: "#e0f2fe", marginBottom: 6 }}>{selectedLink.reason}</div>
+            <div style={{ fontSize: 10, color: "#8bb8cc" }}>
+              strength: <b style={{ color: LINK_COLOR[selectedLink.type] }}>{selectedLink.strength.toFixed(2)}</b>
+              {selectedLink.directional && <span> · directional →</span>}
+            </div>
+          </div>
+        )}
+
+        {!allNodes.length && (
           <div
             style={{
-              position: "absolute",
-              top: 20,
-              left: 20,
-              zIndex: 5,
+              position: "absolute", top: 20, left: 20, zIndex: 5,
               background: "rgba(3,15,30,0.75)",
-              border: "1px solid #0a2a4a",
-              backdropFilter: "blur(8px)",
-              borderRadius: 8,
-              padding: "12px 16px",
-              fontSize: 11,
-              color: "#8bb8cc",
+              border: "1px solid #0a2a4a", backdropFilter: "blur(8px)",
+              borderRadius: 8, padding: "12px 16px",
+              fontSize: 11, color: "#8bb8cc",
             }}
           >
-            מלא את הטופס ב־<a href="/" style={{ color: "#38bdf8" }}>דף הבית</a> כדי לטעון ניתוח PHILOS לגלובוס.
+            אין עדיין נודים. מלא את הטופס ב־<a href="/" style={{ color: "#38bdf8" }}>דף הבית</a>.
           </div>
         )}
 
@@ -321,16 +292,42 @@ export default function Page() {
             height={size.h}
             globeImageUrl="https://unpkg.com/three-globe/example/img/earth-dark.jpg"
             backgroundColor="#020d1a"
-            atmosphereColor={atmosphere}
-            atmosphereAltitude={0.14 + (intensity / 10) * 0.14}
-            pointsData={nodes}
+            atmosphereColor="#38bdf8"
+            atmosphereAltitude={0.18}
+            pointsData={pointsData}
             pointLat={(d: any) => d.lat}
             pointLng={(d: any) => d.lng}
-            pointColor={(d: any) => d.color}
-            pointAltitude={(d: any) => d.altitude}
-            pointRadius={(d: any) => d.radius}
-            pointLabel={(d: any) => `<b>${d.name}</b><br/>${d.sub} · ${d.value}`}
-            onPointClick={(p: any) => setSelected(p)}
+            pointColor={(d: any) => d._anchor ? d.color : FORCE_COLOR[d.dominantForce as DominantForce]}
+            pointAltitude={(d: any) => {
+              if (d._anchor) return 0.06;
+              const base = d.intensity / 10;
+              return topIds.has(d.id) ? base + 0.15 : base;
+            }}
+            pointRadius={(d: any) => {
+              if (d._anchor) return 1.4;
+              const base = 0.4 + d.intensity / 20;
+              return topIds.has(d.id) ? base * 1.9 : base * (topIds.size ? 0.7 : 1);
+            }}
+            pointLabel={(d: any) => {
+              if (d._anchor) {
+                return `<div style="font-family:system-ui;padding:4px 2px">
+                  <b style="color:${d.color}">⚓ ${escapeHtml(d.name)}</b> · ${d.age}<br/>
+                  <span style="color:#8bb8cc">${escapeHtml(d.location || "")}</span><br/>
+                  <span style="color:#fbbf24">base force: ${FORCE_LABEL[d.force as DominantForce]}</span>
+                </div>`;
+              }
+              return `<div style="font-family:system-ui;padding:4px 2px">
+                <b>${escapeHtml(d.name)}</b> <span style="color:#38bdf8">#${d.rank}</span><br/>
+                ${FORCE_LABEL[d.dominantForce as DominantForce]} · ${CONTEXT_LABEL[d.context as NodeContext]}<br/>
+                <span style="color:#fbbf24">score ${d.score.toFixed(2)}</span><br/>
+                <span style="color:#00f5d4">${escapeHtml(d.action)}</span>
+              </div>`;
+            }}
+            onPointClick={(p: any) => {
+              if (p._anchor) return; // anchor is non-selectable
+              setSelected(p);
+              setSelectedLink(null);
+            }}
             arcsData={arcs}
             arcStartLat={(d: any) => d.startLat}
             arcStartLng={(d: any) => d.startLng}
@@ -339,91 +336,347 @@ export default function Page() {
             arcColor={(d: any) => d.color}
             arcStroke={(d: any) => d.stroke}
             arcAltitude={(d: any) => d.altitude}
-            arcDashLength={0.4}
-            arcDashGap={0.2}
-            arcDashAnimateTime={(d: any) => d.dashTime}
+            arcDashLength={(d: any) => d.dash}
+            arcDashGap={(d: any) => d.gap}
+            arcDashAnimateTime={(d: any) => d.speed}
+            arcLabel={(d: any) => {
+              const l: Link = d._link;
+              return `<div style="font-family:system-ui;padding:4px 2px">
+                <b style="color:${LINK_COLOR[l.type]}">${LINK_LABEL[l.type]}</b><br/>
+                ${escapeHtml(l.reason)}<br/>
+                <span style="color:#8bb8cc">strength ${l.strength.toFixed(2)}</span>
+              </div>`;
+            }}
+            onArcClick={(d: any) => {
+              setSelectedLink(d._link);
+            }}
           />
         )}
       </div>
 
-      {/* side panel */}
-      <div style={{ width: 280, background: "#030f1e", borderLeft: "1px solid #0a2a4a", padding: 20, overflowY: "auto" }}>
-        <div style={{ fontSize: 13, letterSpacing: 4, color: atmosphere, fontWeight: 700, marginBottom: 4 }}>
+      {/* SIDE PANEL */}
+      <div style={{ width: 320, background: "#030f1e", borderLeft: "1px solid #0a2a4a", padding: 20, overflowY: "auto" }}>
+        <div style={{ fontSize: 13, letterSpacing: 4, color: "#38bdf8", fontWeight: 700, marginBottom: 4 }}>
           PHILOS · NEXUS
         </div>
         <div style={{ fontSize: 10, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 18 }}>
-          {nodes.length} forces · {arcs.length} links
+          {visible.length} / {allNodes.length} nodes · {filteredLinks.length} links · top {Math.min(TOP_N, ranked.length)}
         </div>
 
-        {selected ? (
-          <div style={{ padding: 14, border: `1px solid ${selected.color}55`, borderRadius: 6, background: "#040e1c" }}>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{selected.name}</div>
-            <div style={{ fontSize: 11, color: selected.color, marginBottom: 10 }}>{selected.sub}</div>
-            <div style={{ display: "flex", gap: 14 }}>
-              <div>
-                <div style={{ fontSize: 16, color: "#00f5d4", fontWeight: 700 }}>{selected.value}</div>
-                <div style={{ fontSize: 9, color: "#1e4060" }}>WEIGHT</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 16, color: atmosphere, fontWeight: 700 }}>
-                  {Math.round((selected.value / 10) * 100)}%
-                </div>
-                <div style={{ fontSize: 9, color: "#1e4060" }}>INTENSITY</div>
-              </div>
+        {/* PROFILE ANCHOR */}
+        {profile && (
+          <div style={{
+            padding: 12, borderRadius: 6, marginBottom: 16,
+            border: `1px solid ${FORCE_COLOR[dominantBaseForce(profile)]}55`,
+            background: "#040e1c",
+          }}>
+            <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>
+              Anchor · אתה
             </div>
-            {selected.highlight && (
-              <div style={{ marginTop: 10, fontSize: 10, color: "#00f5d4" }}>
-                ● כוח דומיננטי
-              </div>
-            )}
+            <div style={{ fontSize: 14, fontWeight: 700 }}>{profile.name}</div>
+            <div style={{ fontSize: 10, color: "#8bb8cc", marginBottom: 6 }}>
+              {profile.age} · {profile.location || "—"}
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <Pill color={FORCE_COLOR[dominantBaseForce(profile)]}>
+                base: {FORCE_LABEL[dominantBaseForce(profile)]}
+              </Pill>
+              <Pill color="#a78bfa">
+                אישי↔חברתי: {profile.personalVsSocial > 0 ? "+" : ""}{profile.personalVsSocial}
+              </Pill>
+              <Pill color="#00f5d4">
+                צמיחה: {profile.growthCoefficient > 0 ? "+" : ""}{profile.growthCoefficient.toFixed(2)}
+              </Pill>
+            </div>
+            <a href="/profile" style={{ display: "inline-block", marginTop: 8, fontSize: 10, color: "#38bdf8" }}>
+              → ערוך פרופיל
+            </a>
           </div>
-        ) : (
-          <div style={{ fontSize: 11, color: "#1e4060" }}>לחץ על נקודה בגלובוס</div>
         )}
 
-        <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", margin: "20px 0 8px" }}>
-          All forces
+        {!profile && (
+          <a href="/profile" style={{
+            display: "block", padding: 12, marginBottom: 16,
+            border: "1px solid #fbbf2466", borderRadius: 6,
+            background: "#fbbf2411", color: "#fbbf24",
+            fontSize: 11, textDecoration: "none", textAlign: "center",
+          }}>
+            → צור פרופיל להיות מסומן בגלובוס
+          </a>
+        )}
+
+        {/* DAILY SUMMARY */}
+        <div style={{ padding: 12, border: `1px solid ${IMPACT_COLOR[daily.impact]}55`, borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <span style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase" }}>
+              סיכום יום
+            </span>
+            <span style={{
+              fontSize: 9, padding: "2px 6px", borderRadius: 10,
+              background: `${IMPACT_COLOR[daily.impact]}22`,
+              color: IMPACT_COLOR[daily.impact],
+              border: `1px solid ${IMPACT_COLOR[daily.impact]}66`,
+            }}>
+              {IMPACT_LABEL[daily.impact]}
+            </span>
+          </div>
+
+          <ScoreBar label="personal" value={daily.personalScore} color="#38bdf8" />
+          <ScoreBar label="social"   value={daily.socialScore}   color="#fb923c" />
+          <ScoreBar label="value"    value={daily.valueScore}    color={IMPACT_COLOR[daily.impact]} />
+
+          <div style={{ marginTop: 10, fontSize: 10, color: "#8bb8cc", lineHeight: 1.5 }}>
+            <div>avg intensity: <b style={{ color: "#e0f2fe" }}>{daily.avgIntensity.toFixed(1)}</b> · forward: <b style={{ color: "#e0f2fe" }}>{Math.round(daily.forwardRatio * 100)}%</b></div>
+            <div>links: <b style={{ color: "#e0f2fe" }}>{daily.linksCreated}</b> · help: <b style={{ color: "#e0f2fe" }}>{daily.helpGiven}</b></div>
+          </div>
+
+          <div style={{ marginTop: 10, padding: "8px 10px", background: `${IMPACT_COLOR[daily.impact]}11`, borderRadius: 4 }}>
+            <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 4 }}>
+              המלצה
+            </div>
+            <div style={{ fontSize: 11, color: "#e0f2fe", lineHeight: 1.4 }}>
+              {daily.recommendation}
+            </div>
+          </div>
         </div>
-        {[...nodes].sort((a, b) => b.value - a.value).map(n => (
-          <div
-            key={n.id}
-            onClick={() => setSelected(n)}
+
+        {/* SYSTEM SUMMARY */}
+        {summary && (
+          <div style={{ padding: 12, border: "1px solid #0a2a4a", borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
+            <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
+              System
+            </div>
+            <Row k="total" v={String(summary.totalNodes)} />
+            <Row k="avg intensity" v={summary.avgIntensity.toFixed(1)} />
+            <Row k="conflicts" v={String(summary.activeConflicts)} />
+            <Row k="forward" v={`${Math.round(summary.forwardMovementRatio * 100)}%`} />
+            <div style={{ marginTop: 8, display: "flex", gap: 4, flexWrap: "wrap" }}>
+              {Object.entries(summary.forceDist).map(([f, c]) => (
+                <div key={f} style={{
+                  fontSize: 9, padding: "2px 6px", borderRadius: 10,
+                  background: `${FORCE_COLOR[f as DominantForce]}22`,
+                  color: FORCE_COLOR[f as DominantForce],
+                  border: `1px solid ${FORCE_COLOR[f as DominantForce]}55`,
+                }}>
+                  {FORCE_LABEL[f as DominantForce]} · {c as number}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TARGET */}
+        <div style={{ padding: 12, border: "1px solid #0a2a4a", borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
+          <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
+            Target · מול מי מדרגים
+          </div>
+
+          <Label>context</Label>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 4, marginBottom: 10 }}>
+            <MiniChip active={!target.context} onClick={() => setTarget(t => ({ ...t, context: undefined }))} color="#38bdf8">אוטו</MiniChip>
+            {(Object.keys(CONTEXT_LABEL) as NodeContext[]).map(c => (
+              <MiniChip key={c} active={target.context === c} onClick={() => setTarget(t => ({ ...t, context: c }))} color="#38bdf8">
+                {CONTEXT_LABEL[c]}
+              </MiniChip>
+            ))}
+          </div>
+
+          <Label>force</Label>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 4 }}>
+            <MiniChip active={!target.dominantForce} onClick={() => setTarget(t => ({ ...t, dominantForce: undefined }))} color="#38bdf8">אוטו</MiniChip>
+            {(Object.keys(FORCE_COLOR) as DominantForce[]).map(f => (
+              <MiniChip key={f} active={target.dominantForce === f} onClick={() => setTarget(t => ({ ...t, dominantForce: f }))} color={FORCE_COLOR[f]}>
+                {FORCE_LABEL[f]}
+              </MiniChip>
+            ))}
+          </div>
+        </div>
+
+        {/* FILTER */}
+        <div style={{ padding: 12, border: "1px solid #0a2a4a", borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
+          <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
+            Filter
+          </div>
+
+          <Label>context</Label>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 4, marginBottom: 10 }}>
+            <MiniChip active={!filter.context} onClick={() => setFilter(f => ({ ...f, context: undefined }))} color="#38bdf8">הכל</MiniChip>
+            {(Object.keys(CONTEXT_LABEL) as NodeContext[]).map(c => (
+              <MiniChip key={c} active={filter.context === c} onClick={() => setFilter(f => ({ ...f, context: c }))} color="#38bdf8">
+                {CONTEXT_LABEL[c]}
+              </MiniChip>
+            ))}
+          </div>
+
+          <Label>force</Label>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 4, marginBottom: 10 }}>
+            <MiniChip active={!filter.dominantForce} onClick={() => setFilter(f => ({ ...f, dominantForce: undefined }))} color="#38bdf8">הכל</MiniChip>
+            {(Object.keys(FORCE_COLOR) as DominantForce[]).map(f => (
+              <MiniChip key={f} active={filter.dominantForce === f} onClick={() => setFilter(x => ({ ...x, dominantForce: f }))} color={FORCE_COLOR[f]}>
+                {FORCE_LABEL[f]}
+              </MiniChip>
+            ))}
+          </div>
+
+          <Label>min intensity — {filter.minIntensity ?? 1}</Label>
+          <input
+            type="range" min={1} max={10}
+            value={filter.minIntensity ?? 1}
+            onChange={e => setFilter(f => ({ ...f, minIntensity: Number(e.target.value) || undefined }))}
+            style={{ width: "100%", accentColor: "#38bdf8", marginBottom: 10 }}
+          />
+
+          <Label>max distance (km) — {filter.maxDistanceKm ?? "∞"}</Label>
+          <input
+            type="range" min={0} max={20000} step={100}
+            value={filter.maxDistanceKm ?? 20000}
+            onChange={e => {
+              const v = Number(e.target.value);
+              setFilter(f => ({ ...f, maxDistanceKm: v >= 20000 ? undefined : v }));
+            }}
+            style={{ width: "100%", accentColor: "#38bdf8" }}
+          />
+
+          <button
+            onClick={() => { setFilter({}); setTarget({}); }}
             style={{
-              display: "flex", alignItems: "center", gap: 10,
-              padding: "8px 10px",
-              border: `1px solid ${n.highlight ? n.color + "88" : "#0a2a4a"}`,
-              borderRadius: 6, marginBottom: 5, cursor: "pointer",
-              background: selected?.id === n.id ? "#0a2a4a" : "#040e1c",
+              marginTop: 10, width: "100%",
+              padding: "6px 8px", fontSize: 10,
+              background: "transparent", color: "#8bb8cc",
+              border: "1px solid #0a2a4a", borderRadius: 4, cursor: "pointer",
             }}
           >
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: n.color, boxShadow: n.highlight ? `0 0 8px ${n.color}` : "none" }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, color: "#caf0f8" }}>{n.name}</div>
-              <div style={{ fontSize: 9, color: "#1e4060" }}>{n.sub}</div>
-            </div>
-            <div style={{ fontSize: 10, color: atmosphere, fontWeight: 700 }}>{n.value}</div>
-          </div>
-        ))}
+            איפוס
+          </button>
+        </div>
 
-        {last?.echo?.event && (
-          <div style={{ marginTop: 20, padding: 12, border: "1px solid #0a2a4a", borderRadius: 6, background: "#040e1c" }}>
+        {/* SELECTED — PENTAGON PANEL */}
+        {selected && (
+          <div style={{ padding: 12, border: `1px solid ${FORCE_COLOR[selected.dominantForce]}88`, borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
             <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>
-              Event
+              Pentagon
             </div>
-            <div style={{ fontSize: 12, color: "#e0f2fe", lineHeight: 1.4 }}>
-              {last.echo.event}
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{selected.name}</div>
+            <div style={{ fontSize: 10, color: "#8bb8cc", marginBottom: 8 }}>
+              {CONTEXT_LABEL[selected.context]} · intensity {selected.intensity}/10
             </div>
-            {last.echo.context && (
-              <div style={{ fontSize: 10, color: "#8bb8cc", marginTop: 6 }}>
-                context: {last.echo.context}
+
+            <div style={{
+              fontSize: 13, color: "#00f5d4", fontWeight: 600,
+              padding: "8px 10px", background: "#00f5d411",
+              border: "1px solid #00f5d433", borderRadius: 4,
+              marginBottom: 10,
+            }}>
+              {selected.action}
+            </div>
+
+            <div style={{ fontSize: 11, color: "#8bb8cc", marginBottom: 10, lineHeight: 1.4, fontStyle: "italic" }}>
+              "{selected.event}"
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 10 }}>
+              <MetaBox label="force" value={FORCE_LABEL[selected.dominantForce]} color={FORCE_COLOR[selected.dominantForce]} />
+              <MetaBox label="direction" value={selected.direction} color={selected.direction === "forward" ? "#00f5d4" : selected.direction === "stuck" ? "#fbbf24" : "#ef4444"} />
+              <MetaBox label="trust" value={String(selected.trustScore)} color="#38bdf8" />
+              <MetaBox label="impact" value={selected.impact} color="#e0f2fe" />
+            </div>
+
+            {selected.conflict && (
+              <div style={{
+                fontSize: 10, color: "#ef4444", padding: "6px 8px",
+                border: "1px solid #ef444455", background: "#ef444411",
+                borderRadius: 4, marginBottom: 10,
+              }}>
+                ⚠ conflict: {selected.conflict}
               </div>
+            )}
+
+            {/* CONNECTIONS */}
+            {selectedConnections.length > 0 && (
+              <>
+                <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6, marginTop: 4 }}>
+                  Connections · {selectedConnections.length}
+                </div>
+                {selectedConnections.map(({ link, other }) => (
+                  <div
+                    key={link.source + link.target}
+                    onClick={() => setSelectedLink(link)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      padding: "6px 8px", marginBottom: 4,
+                      border: `1px solid ${LINK_COLOR[link.type]}44`,
+                      background: `${LINK_COLOR[link.type]}0e`,
+                      borderRadius: 4, cursor: "pointer", fontSize: 10,
+                    }}
+                  >
+                    <span style={{ width: 8, height: 8, background: LINK_COLOR[link.type], borderRadius: 2 }} />
+                    <span style={{ flex: 1, color: "#e0f2fe" }}>
+                      {link.directional && link.source === selected.id && "→ "}
+                      {link.directional && link.target === selected.id && "← "}
+                      {other.name}
+                    </span>
+                    <span style={{ color: LINK_COLOR[link.type], fontSize: 9 }}>
+                      {LINK_LABEL[link.type]}
+                    </span>
+                    <b style={{ color: "#38bdf8", fontSize: 10 }}>{link.strength.toFixed(2)}</b>
+                  </div>
+                ))}
+              </>
             )}
           </div>
         )}
 
-        <div style={{ marginTop: 20 }}>
+        {/* RANKED LIST */}
+        <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", margin: "6px 0 8px" }}>
+          Ranked
+        </div>
+        {ranked.map(n => {
+          const isTop = topIds.has(n.id);
+          return (
+            <div
+              key={n.id}
+              onClick={() => { setSelected(n); setSelectedLink(null); }}
+              style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "8px 10px",
+                border: `1px solid ${isTop ? FORCE_COLOR[n.dominantForce] + "aa" : "#0a2a4a"}`,
+                borderRadius: 6, marginBottom: 5, cursor: "pointer",
+                background: selected?.id === n.id ? "#0a2a4a" : isTop ? "#061628" : "#040e1c",
+                boxShadow: isTop ? `0 0 10px ${FORCE_COLOR[n.dominantForce]}44` : "none",
+                opacity: isTop ? 1 : 0.75,
+              }}
+            >
+              <div style={{
+                width: 20, height: 20, borderRadius: 4,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 10, fontWeight: 700,
+                color: isTop ? "#020d1a" : "#8bb8cc",
+                background: isTop ? FORCE_COLOR[n.dominantForce] : "transparent",
+                border: isTop ? "none" : "1px solid #0a2a4a",
+              }}>
+                {n.rank}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11, color: "#caf0f8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {n.name}
+                </div>
+                <div style={{ fontSize: 9, color: "#1e4060" }}>
+                  {FORCE_LABEL[n.dominantForce]} · {CONTEXT_LABEL[n.context]} · int {n.intensity}
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 11, color: isTop ? "#fbbf24" : "#38bdf8", fontWeight: 700 }}>
+                  {n.score.toFixed(1)}
+                </div>
+                <div style={{ fontSize: 8, color: "#1e4060" }}>score</div>
+              </div>
+            </div>
+          );
+        })}
+
+        <div style={{ marginTop: 16, display: "flex", gap: 6 }}>
           <a href="/" style={{
-            display: "block", textAlign: "center",
+            flex: 1, textAlign: "center",
             padding: "10px 12px", fontSize: 11, letterSpacing: 2,
             color: "#020d1a", fontWeight: 700,
             background: "linear-gradient(135deg,#00f5d4,#38bdf8)",
@@ -431,8 +684,110 @@ export default function Page() {
           }}>
             ניתוח חדש
           </a>
+          <button
+            onClick={() => {
+              if (confirm("למחוק את כל הנודים?")) {
+                clearNodes();
+                setAllNodes([]);
+                setSelected(null);
+                setSelectedLink(null);
+              }
+            }}
+            style={{
+              padding: "10px 12px", fontSize: 10,
+              background: "transparent", color: "#8bb8cc",
+              border: "1px solid #0a2a4a", borderRadius: 6, cursor: "pointer",
+            }}
+          >
+            נקה
+          </button>
         </div>
       </div>
     </div>
+  );
+}
+
+/* ---------- small components ---------- */
+
+function Row({ k, v }: { k: string; v: string }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#8bb8cc", marginBottom: 3 }}>
+      <span>{k}</span>
+      <b style={{ color: "#e0f2fe" }}>{v}</b>
+    </div>
+  );
+}
+
+function Label({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ fontSize: 9, color: "#8bb8cc", letterSpacing: 1, marginBottom: 4 }}>
+      {children}
+    </div>
+  );
+}
+
+function MiniChip({
+  children, active, onClick, color,
+}: { children: React.ReactNode; active: boolean; onClick: () => void; color: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        padding: "6px 4px", fontSize: 10,
+        borderRadius: 4,
+        border: `1px solid ${active ? color : "#0a2a4a"}`,
+        background: active ? `${color}22` : "transparent",
+        color: active ? color : "#8bb8cc",
+        cursor: "pointer", fontWeight: active ? 700 : 400,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Pill({ children, color }: { children: React.ReactNode; color: string }) {
+  return (
+    <span style={{
+      fontSize: 9, padding: "2px 6px", borderRadius: 10,
+      background: `${color}22`, color,
+      border: `1px solid ${color}55`,
+    }}>
+      {children}
+    </span>
+  );
+}
+
+function MetaBox({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div style={{
+      padding: "6px 8px", borderRadius: 4,
+      border: `1px solid ${color}44`, background: `${color}0e`,
+    }}>
+      <div style={{ fontSize: 8, color: "#8bb8cc", letterSpacing: 1, textTransform: "uppercase" }}>{label}</div>
+      <div style={{ fontSize: 12, color, fontWeight: 700 }}>{value}</div>
+    </div>
+  );
+}
+
+function ScoreBar({ label, value, color }: { label: string; value: number; color: string }) {
+  const pct = Math.max(0, Math.min(100, (value / 10) * 100));
+  return (
+    <div style={{ marginBottom: 6 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#8bb8cc", marginBottom: 2 }}>
+        <span>{label}</span>
+        <b style={{ color }}>{value.toFixed(1)}</b>
+      </div>
+      <div style={{ height: 4, background: "#0a2a4a", borderRadius: 2, overflow: "hidden" }}>
+        <div style={{ width: `${pct}%`, height: "100%", background: color }} />
+      </div>
+    </div>
+  );
+}
+
+function escapeHtml(s: string) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string)
   );
 }
