@@ -374,7 +374,7 @@ const input: React.CSSProperties = {
   width: "100%", padding: "10px 12px", fontSize: 13,
   background: "#030f1e", color: "#e0f2fe",
   border: "1px solid #0a2a4a", borderRadius: 6, outline: "none",
-  direction: "auto",
+  direction: "rtl",
 };
 
 const ghostBtn: React.CSSProperties = {

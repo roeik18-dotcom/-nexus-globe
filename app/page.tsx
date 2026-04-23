@@ -284,5 +284,5 @@ const inputStyle: React.CSSProperties = {
   border: "1px solid #0a2a4a",
   borderRadius: 6,
   outline: "none",
-  direction: "auto",
+  direction: "rtl",
 };
