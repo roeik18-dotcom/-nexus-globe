@@ -10,7 +10,6 @@ import {
   LINK_LABEL,
   loadNodes,
   clearNodes,
-  saveNode,
   buildLinks,
   applyFilter,
   rankNodes,
@@ -26,31 +25,6 @@ import {
 import { loadProfile, dominantBaseForce, type UserProfile } from "../lib/profile";
 import { computeDailySummary, IMPACT_COLOR, IMPACT_LABEL, type DailySummary } from "../lib/daily";
 import { computeMatches, URGENCY_COLOR, URGENCY_LABEL, type Match } from "../lib/match";
-import {
-  computeNeedFits,
-  needSummary,
-  NEED_LABEL,
-  NEED_COLOR,
-  type NeedFit,
-  type NeedTag,
-} from "../lib/need";
-import {
-  SEED_TOPICS,
-  computeEdges,
-  clusters as topicClustersFn,
-  systemStress,
-  generateSyntheticStances,
-  saveStance,
-  saveStances,
-  loadStances,
-  clearStances,
-  RELATION_COLOR,
-  RELATION_LABEL,
-  type Topic,
-  type Stance,
-  type Edge as TopicEdge,
-} from "../lib/topics";
-import { generateSeedNodes } from "../lib/seed";
 
 const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
 
@@ -73,11 +47,6 @@ export default function Page() {
   });
   const [minStrength, setMinStrength] = useState(0);
 
-  /* Topic / Debate Layer */
-  const [activeTopicId, setActiveTopicId] = useState<string | null>(null);
-  const [stances, setStances] = useState<Stance[]>([]);
-  const [stressMode, setStressMode] = useState(false);
-
   useEffect(() => {
     if (!wrap.current) return;
     const el = wrap.current;
@@ -91,13 +60,7 @@ export default function Page() {
   useEffect(() => {
     setAllNodes(loadNodes());
     setProfile(loadProfile());
-    setStances(loadStances());
   }, []);
-
-  const activeTopic: Topic | null = useMemo(
-    () => SEED_TOPICS.find(t => t.id === activeTopicId) ?? null,
-    [activeTopicId],
-  );
 
   const last = allNodes[allNodes.length - 1];
 
@@ -176,63 +139,6 @@ export default function Page() {
     () => computeMatches(visible, profile).slice(0, 5),
     [visible, profile],
   );
-
-  const needFits: NeedFit[] = useMemo(
-    () => computeNeedFits(visible).slice(0, 5),
-    [visible],
-  );
-
-  const selectedNeeds = useMemo(
-    () => selected ? needSummary(selected) : null,
-    [selected],
-  );
-
-  /* topic layer */
-  const topicEdges: TopicEdge[] = useMemo(
-    () => activeTopic ? computeEdges(activeTopic, stances) : [],
-    [activeTopic, stances],
-  );
-
-  const topicClusters = useMemo(
-    () => activeTopic ? topicClustersFn(activeTopic, stances) : [],
-    [activeTopic, stances],
-  );
-
-  const stress = useMemo(() => systemStress(topicEdges), [topicEdges]);
-
-  const topTensions = useMemo(
-    () => [...topicEdges]
-      .filter(e => e.relation !== "agree")
-      .sort((a, b) => b.dist - a.dist)
-      .slice(0, 5),
-    [topicEdges],
-  );
-
-  /* topic arcs (render when a topic is active — replace normal arcs) */
-  const topicArcs = useMemo(() => {
-    if (!activeTopic) return [];
-    const byId: Record<string, UserNode> = {};
-    visible.forEach(n => (byId[n.id] = n));
-    return topicEdges
-      .map(e => {
-        const a = byId[e.a], b = byId[e.b];
-        if (!a || !b) return null;
-        const col = RELATION_COLOR[e.relation];
-        const dimmed = stressMode && e.relation !== "conflict";
-        return {
-          _topicEdge: e,
-          startLat: a.lat, startLng: a.lng,
-          endLat:   b.lat, endLng:   b.lng,
-          color: dimmed ? [col + "22", col + "22"] : [col, col],
-          stroke: 0.25 + e.closeness * 0.5 + (e.relation === "conflict" ? e.dist * 0.6 : 0),
-          altitude: 0.10 + e.dist * 0.25,
-          dash: e.relation === "conflict" ? 0.2 : 0.6,
-          gap:  e.relation === "conflict" ? 0.15 : 0.05,
-          speed: e.relation === "conflict" ? 700 : 2500,
-        };
-      })
-      .filter(Boolean) as any[];
-  }, [activeTopic, topicEdges, visible, stressMode]);
 
   /* profile as anchor point (special node) */
   const profileAnchor = useMemo(() => {
@@ -314,26 +220,8 @@ export default function Page() {
           backdropFilter: "blur(8px)", borderRadius: 8, padding: "10px 12px",
         }}>
           <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>
-            {activeTopic ? `קווים · ${activeTopic.title}` : "קווים"}
+            קווים
           </div>
-
-          {activeTopic ? (
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {(["agree", "tension", "conflict"] as const).map(r => (
-                <span key={r} style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  padding: "4px 8px", fontSize: 10,
-                  border: `1px solid ${RELATION_COLOR[r]}`,
-                  background: `${RELATION_COLOR[r]}22`,
-                  color: RELATION_COLOR[r],
-                  borderRadius: 4,
-                }}>
-                  <span style={{ width: 10, height: 3, background: RELATION_COLOR[r], borderRadius: 2 }} />
-                  {RELATION_LABEL[r]}
-                </span>
-              ))}
-            </div>
-          ) : (
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {ALL_LINK_TYPES.map(t => (
               <button
@@ -354,21 +242,15 @@ export default function Page() {
               </button>
             ))}
           </div>
-          )}
-
-          {!activeTopic && (
-            <>
-              <div style={{ marginTop: 8, fontSize: 9, color: "#8bb8cc" }}>
-                min strength: <b style={{ color: "#38bdf8" }}>{minStrength.toFixed(2)}</b>
-              </div>
-              <input
-                type="range" min={0} max={1} step={0.05}
-                value={minStrength}
-                onChange={e => setMinStrength(Number(e.target.value))}
-                style={{ width: 180, accentColor: "#38bdf8" }}
-              />
-            </>
-          )}
+          <div style={{ marginTop: 8, fontSize: 9, color: "#8bb8cc" }}>
+            min strength: <b style={{ color: "#38bdf8" }}>{minStrength.toFixed(2)}</b>
+          </div>
+          <input
+            type="range" min={0} max={1} step={0.05}
+            value={minStrength}
+            onChange={e => setMinStrength(Number(e.target.value))}
+            style={{ width: 180, accentColor: "#38bdf8" }}
+          />
         </div>
 
         {/* LINK REASON CARD */}
@@ -452,7 +334,7 @@ export default function Page() {
               setSelected(p);
               setSelectedLink(null);
             }}
-            arcsData={activeTopic ? topicArcs : arcs}
+            arcsData={arcs}
             arcStartLat={(d: any) => d.startLat}
             arcStartLng={(d: any) => d.startLng}
             arcEndLat={(d: any) => d.endLat}
@@ -464,15 +346,6 @@ export default function Page() {
             arcDashGap={(d: any) => d.gap}
             arcDashAnimateTime={(d: any) => d.speed}
             arcLabel={(d: any) => {
-              if (d._topicEdge) {
-                const e: TopicEdge = d._topicEdge;
-                const biggest = e.axisDiffs[0];
-                return `<div style="font-family:system-ui;padding:4px 2px">
-                  <b style="color:${RELATION_COLOR[e.relation]}">${RELATION_LABEL[e.relation]}</b><br/>
-                  dist ${e.dist.toFixed(2)} · closeness ${e.closeness.toFixed(2)}<br/>
-                  <span style="color:#8bb8cc">פער מוביל: ${escapeHtml(biggest.key)} (${biggest.diff.toFixed(2)})</span>
-                </div>`;
-              }
               const l: Link = d._link;
               return `<div style="font-family:system-ui;padding:4px 2px">
                 <b style="color:${LINK_COLOR[l.type]}">${LINK_LABEL[l.type]}</b><br/>
@@ -481,7 +354,7 @@ export default function Page() {
               </div>`;
             }}
             onArcClick={(d: any) => {
-              if (d._link) setSelectedLink(d._link);
+              setSelectedLink(d._link);
             }}
           />
         )}
@@ -607,229 +480,6 @@ export default function Page() {
                 <div style={{ fontSize: 9, color: "#8bb8cc", marginBottom: 4 }}>{m.reason}</div>
                 <div style={{ fontSize: 10, color: "#00f5d4", fontStyle: "italic" }}>
                   → {m.suggestion}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* DEBATE LAYER — Topic Stances */}
-        <div style={{
-          padding: 12, borderRadius: 6, marginBottom: 16,
-          border: `1px solid ${activeTopic ? activeTopic.color + "88" : "#0a2a4a"}`,
-          background: "#040e1c",
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <span style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase" }}>
-              Debate · דיון ציבורי
-            </span>
-            {activeTopic && (
-              <span style={{
-                fontSize: 9, padding: "2px 6px", borderRadius: 8,
-                background: `${activeTopic.color}22`, color: activeTopic.color,
-                border: `1px solid ${activeTopic.color}66`,
-              }}>
-                {topicEdges.length} edges
-              </span>
-            )}
-          </div>
-
-          <Label>נושא</Label>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, marginBottom: 10 }}>
-            <MiniChip active={!activeTopicId} onClick={() => setActiveTopicId(null)} color="#38bdf8">
-              כבוי
-            </MiniChip>
-            {SEED_TOPICS.map(t => (
-              <MiniChip
-                key={t.id}
-                active={activeTopicId === t.id}
-                onClick={() => setActiveTopicId(t.id)}
-                color={t.color}
-              >
-                {t.title}
-              </MiniChip>
-            ))}
-          </div>
-
-          {activeTopic && (
-            <>
-              {/* axes legend */}
-              <div style={{
-                padding: "6px 8px", borderRadius: 4,
-                background: `${activeTopic.color}0e`,
-                border: `1px solid ${activeTopic.color}33`,
-                marginBottom: 8,
-              }}>
-                {activeTopic.axes.map(ax => (
-                  <div key={ax.key} style={{
-                    display: "flex", justifyContent: "space-between",
-                    fontSize: 9, color: "#8bb8cc", marginBottom: 2,
-                  }}>
-                    <span>{ax.left}</span>
-                    <span style={{ color: "#1e4060" }}>↔</span>
-                    <span>{ax.right}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* system stress meter */}
-              <div style={{ marginBottom: 8 }}>
-                <div style={{
-                  display: "flex", justifyContent: "space-between",
-                  fontSize: 10, color: "#8bb8cc", marginBottom: 3,
-                }}>
-                  <span>system stress</span>
-                  <b style={{ color: stress > 0.5 ? "#ef4444" : stress > 0.25 ? "#fb923c" : "#22c55e" }}>
-                    {(stress * 100).toFixed(0)}%
-                  </b>
-                </div>
-                <div style={{ height: 4, background: "#0a2a4a", borderRadius: 2, overflow: "hidden" }}>
-                  <div style={{
-                    width: `${Math.max(0, Math.min(100, stress * 100))}%`,
-                    height: "100%",
-                    background: stress > 0.5 ? "#ef4444" : stress > 0.25 ? "#fb923c" : "#22c55e",
-                  }} />
-                </div>
-              </div>
-
-              <button
-                onClick={() => setStressMode(m => !m)}
-                style={{
-                  width: "100%", marginBottom: 8,
-                  padding: "6px 8px", fontSize: 10, letterSpacing: 1,
-                  color: stressMode ? "#ef4444" : "#8bb8cc",
-                  background: stressMode ? "#ef444411" : "transparent",
-                  border: `1px solid ${stressMode ? "#ef444488" : "#0a2a4a"}`,
-                  borderRadius: 4, cursor: "pointer",
-                }}
-              >
-                {stressMode ? "✓ Show system stress" : "Show system stress"}
-              </button>
-
-              {/* clusters */}
-              {topicClusters.length > 0 && (
-                <div style={{ fontSize: 10, color: "#8bb8cc", marginBottom: 8 }}>
-                  קלאסטרים: {topicClusters.map(c => c.userIds.length).join(" · ")}
-                  <span style={{ color: "#1e4060" }}> ({topicClusters.length} קבוצות)</span>
-                </div>
-              )}
-
-              {/* top tensions */}
-              {topTensions.length > 0 && (
-                <div style={{ marginBottom: 8 }}>
-                  <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 4 }}>
-                    מתחים מובילים
-                  </div>
-                  {topTensions.map(e => {
-                    const byId: Record<string, UserNode> = {};
-                    visible.forEach(n => (byId[n.id] = n));
-                    const a = byId[e.a], b = byId[e.b];
-                    if (!a || !b) return null;
-                    return (
-                      <div
-                        key={e.a + e.b}
-                        onClick={() => setSelected(a)}
-                        style={{
-                          display: "flex", alignItems: "center", gap: 6,
-                          padding: "4px 6px", marginBottom: 3,
-                          border: `1px solid ${RELATION_COLOR[e.relation]}44`,
-                          background: `${RELATION_COLOR[e.relation]}0e`,
-                          borderRadius: 4, fontSize: 10, cursor: "pointer",
-                        }}
-                      >
-                        <span style={{ color: "#e0f2fe", flex: 1 }}>
-                          {a.name} ↔ {b.name}
-                        </span>
-                        <span style={{ color: RELATION_COLOR[e.relation], fontSize: 9 }}>
-                          {RELATION_LABEL[e.relation]}
-                        </span>
-                        <b style={{ color: "#38bdf8", fontSize: 10 }}>{e.dist.toFixed(2)}</b>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </>
-          )}
-
-          <div style={{ display: "flex", gap: 6 }}>
-            <button
-              onClick={() => {
-                const fresh = generateSyntheticStances(allNodes);
-                const merged = saveStances(fresh);
-                setStances(merged);
-                if (!activeTopicId) setActiveTopicId(SEED_TOPICS[0].id);
-              }}
-              style={{
-                flex: 1,
-                padding: "6px 8px", fontSize: 9, letterSpacing: 1,
-                color: "#a78bfa", background: "transparent",
-                border: "1px dashed #a78bfa66", borderRadius: 4, cursor: "pointer",
-              }}
-            >
-              סנכרן עמדות (synthetic)
-            </button>
-            <button
-              onClick={() => { clearStances(); setStances([]); }}
-              style={{
-                padding: "6px 8px", fontSize: 9,
-                color: "#8bb8cc", background: "transparent",
-                border: "1px solid #0a2a4a", borderRadius: 4, cursor: "pointer",
-              }}
-            >
-              נקה
-            </button>
-          </div>
-        </div>
-
-        {/* NEED FITS — חוסר ↔ השלמה */}
-        {needFits.length > 0 && (
-          <div style={{ padding: 12, border: "1px solid #a78bfa55", borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase" }}>
-                Need · חוסר ↔ השלמה
-              </span>
-              <span style={{ fontSize: 9, color: "#a78bfa" }}>
-                {needFits.filter(f => f.bidirectional).length} הדדיים
-              </span>
-            </div>
-            {needFits.map(f => (
-              <div
-                key={f.a.id + "_" + f.b.id}
-                onClick={() => setSelected(f.a)}
-                style={{
-                  padding: "8px 10px", marginBottom: 6,
-                  border: `1px solid ${f.bidirectional ? "#a78bfa88" : "#a78bfa33"}`,
-                  background: f.bidirectional ? "#a78bfa14" : "#a78bfa07",
-                  borderRadius: 6, cursor: "pointer",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, color: "#e0f2fe", fontWeight: 700 }}>
-                    {f.a.name} {f.bidirectional ? "⇌" : f.matched.aGetsFromB.length ? "←" : "→"} {f.b.name}
-                  </span>
-                  <span style={{
-                    fontSize: 8, padding: "2px 6px", borderRadius: 8,
-                    background: "#a78bfa22", color: "#a78bfa",
-                    border: "1px solid #a78bfa66",
-                    letterSpacing: 1, textTransform: "uppercase",
-                  }}>
-                    {f.bidirectional ? "הדדי" : "חד-צדדי"} · {(f.score * 100).toFixed(0)}
-                  </span>
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 4 }}>
-                  {f.matched.aGetsFromB.map(t => (
-                    <NeedPill key={"a" + t} tag={t} dir="in" />
-                  ))}
-                  {f.matched.bGetsFromA.map(t => (
-                    <NeedPill key={"b" + t} tag={t} dir="out" />
-                  ))}
-                </div>
-                <div style={{ fontSize: 9, color: "#8bb8cc", marginBottom: 2 }}>
-                  {f.reason}
-                </div>
-                <div style={{ fontSize: 10, color: "#00f5d4", fontStyle: "italic" }}>
-                  → {f.suggestion}
                 </div>
               </div>
             ))}
@@ -987,82 +637,6 @@ export default function Page() {
               </div>
             )}
 
-            {/* NEEDS / OFFERS */}
-            {selectedNeeds && (selectedNeeds.needs.length > 0 || selectedNeeds.offers.length > 0) && (
-              <div style={{
-                display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 10,
-              }}>
-                <div style={{
-                  padding: "6px 8px", borderRadius: 4,
-                  border: "1px solid #ef444444", background: "#ef44440e",
-                }}>
-                  <div style={{ fontSize: 8, color: "#ef4444", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>
-                    צריך
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                    {selectedNeeds.needs.length
-                      ? selectedNeeds.needs.map(t => <NeedPill key={"n" + t} tag={t} dir="in" />)
-                      : <span style={{ fontSize: 10, color: "#1e4060" }}>—</span>}
-                  </div>
-                </div>
-                <div style={{
-                  padding: "6px 8px", borderRadius: 4,
-                  border: "1px solid #22c55e44", background: "#22c55e0e",
-                }}>
-                  <div style={{ fontSize: 8, color: "#22c55e", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>
-                    מציע
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                    {selectedNeeds.offers.length
-                      ? selectedNeeds.offers.map(t => <NeedPill key={"o" + t} tag={t} dir="out" />)
-                      : <span style={{ fontSize: 10, color: "#1e4060" }}>—</span>}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* STANCE EDITOR (active topic) */}
-            {activeTopic && (() => {
-              const current = stances.find(s => s.topicId === activeTopic.id && s.userId === selected.id);
-              const values = current?.values ?? activeTopic.axes.map(() => 0);
-              const setVal = (idx: number, v: number) => {
-                const next: Stance = {
-                  topicId: activeTopic.id,
-                  userId:  selected.id,
-                  values:  values.map((x, i) => i === idx ? v : x),
-                  intensity: current?.intensity ?? selected.intensity / 10,
-                };
-                const merged = saveStance(next);
-                setStances(merged);
-              };
-              return (
-                <div style={{
-                  padding: "8px 10px", borderRadius: 4, marginBottom: 10,
-                  border: `1px solid ${activeTopic.color}44`,
-                  background: `${activeTopic.color}0e`,
-                }}>
-                  <div style={{ fontSize: 9, color: activeTopic.color, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>
-                    עמדה · {activeTopic.title}
-                  </div>
-                  {activeTopic.axes.map((ax, i) => (
-                    <div key={ax.key} style={{ marginBottom: 6 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#8bb8cc", marginBottom: 2 }}>
-                        <span>{ax.left}</span>
-                        <b style={{ color: "#e0f2fe" }}>{(values[i] ?? 0).toFixed(2)}</b>
-                        <span>{ax.right}</span>
-                      </div>
-                      <input
-                        type="range" min={-1} max={1} step={0.05}
-                        value={values[i] ?? 0}
-                        onChange={e => setVal(i, Number(e.target.value))}
-                        style={{ width: "100%", accentColor: activeTopic.color }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
-
             {/* CONNECTIONS */}
             {selectedConnections.length > 0 && (
               <>
@@ -1174,23 +748,6 @@ export default function Page() {
             נקה
           </button>
         </div>
-
-        <button
-          onClick={() => {
-            const seeds = generateSeedNodes();
-            seeds.forEach(n => saveNode(n));
-            setAllNodes(loadNodes());
-          }}
-          style={{
-            width: "100%", marginTop: 8,
-            padding: "8px 10px", fontSize: 10, letterSpacing: 2,
-            color: "#a78bfa", background: "transparent",
-            border: "1px dashed #a78bfa66", borderRadius: 6,
-            cursor: "pointer",
-          }}
-        >
-          + זרע דמו (10 משתמשים, 4 סוגי קווים)
-        </button>
       </div>
     </div>
   );
@@ -1272,21 +829,6 @@ function ScoreBar({ label, value, color }: { label: string; value: number; color
         <div style={{ width: `${pct}%`, height: "100%", background: color }} />
       </div>
     </div>
-  );
-}
-
-function NeedPill({ tag, dir }: { tag: NeedTag; dir: "in" | "out" }) {
-  const col = NEED_COLOR[tag];
-  const arrow = dir === "in" ? "←" : "→";
-  return (
-    <span style={{
-      fontSize: 9, padding: "2px 6px", borderRadius: 8,
-      background: `${col}1a`, color: col,
-      border: `1px solid ${col}55`,
-      letterSpacing: 0.3, whiteSpace: "nowrap",
-    }}>
-      {arrow} {NEED_LABEL[tag]}
-    </span>
   );
 }
 
