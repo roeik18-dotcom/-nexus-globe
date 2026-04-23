@@ -72,7 +72,6 @@ export default function Page() {
     alignment: true, complementary: true, influence: true, opportunity: true,
   });
   const [minStrength, setMinStrength] = useState(0);
-  const [minProfit, setMinProfit] = useState(0);
 
   /* Topic / Debate Layer */
   const [activeTopicId, setActiveTopicId] = useState<string | null>(null);
@@ -128,17 +127,10 @@ export default function Page() {
 
   const links = useMemo(() => buildLinks(visible), [visible]);
 
-  const filteredLinks = useMemo(() => {
-    const byId: Record<string, UserNode> = {};
-    visible.forEach(n => (byId[n.id] = n));
-    return links.filter(l => {
-      if (!linkTypeMask[l.type]) return false;
-      if (l.strength < minStrength) return false;
-      const a = byId[l.source], b = byId[l.target];
-      const profit = a && b ? (a.value + b.value) / 20 : 0;
-      return profit >= minProfit;
-    });
-  }, [links, linkTypeMask, minStrength, minProfit, visible]);
+  const filteredLinks = useMemo(
+    () => links.filter(l => linkTypeMask[l.type] && l.strength >= minStrength),
+    [links, linkTypeMask, minStrength]
+  );
 
   const arcs = useMemo(() => {
     const byId: Record<string, UserNode> = {};
@@ -374,15 +366,6 @@ export default function Page() {
                 value={minStrength}
                 onChange={e => setMinStrength(Number(e.target.value))}
                 style={{ width: 180, accentColor: "#38bdf8" }}
-              />
-              <div style={{ marginTop: 8, fontSize: 9, color: "#8bb8cc" }}>
-                min profit: <b style={{ color: "#22c55e" }}>{minProfit.toFixed(2)}</b>
-              </div>
-              <input
-                type="range" min={0} max={1} step={0.05}
-                value={minProfit}
-                onChange={e => setMinProfit(Number(e.target.value))}
-                style={{ width: 180, accentColor: "#22c55e" }}
               />
             </>
           )}
