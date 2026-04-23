@@ -14,6 +14,8 @@ import {
   buildLinks,
   haversineKm,
   LINK_LABEL,
+  FORCE_LABEL,
+  CONTEXT_LABEL,
   type UserNode,
   type Link,
   type LinkType,
@@ -40,6 +42,39 @@ const TYPE_WEIGHT: Record<LinkType, number> = {
 };
 
 function suggestFor(link: Link, a: UserNode, b: UserNode): string {
+  const reasons: string[] = [];
+
+  // 1. same context
+  if (a.context === b.context) {
+    reasons.push(`אותו תחום (${CONTEXT_LABEL[a.context]}) — שיתוף פעולה טבעי`);
+  }
+
+  // 2. same force
+  if (a.dominantForce === b.dominantForce) {
+    reasons.push(`אותו כוח (${FORCE_LABEL[a.dominantForce]}) — תקשורת ישירה`);
+  }
+
+  // 3. intensity similarity (diff ≤ 2)
+  const diff = Math.abs(a.intensity - b.intensity);
+  if (diff <= 2) {
+    reasons.push(`עוצמה דומה (${a.intensity} vs ${b.intensity}) — קצב תואם`);
+  }
+
+  // 4. forward + stuck dynamic
+  const forwardStuck =
+    (a.direction === "forward" && b.direction === "stuck") ||
+    (a.direction === "stuck"   && b.direction === "forward");
+  if (forwardStuck) {
+    const forwardName = a.direction === "forward" ? a.name : b.name;
+    const stuckName   = a.direction === "stuck"   ? a.name : b.name;
+    reasons.push(`${forwardName} בתנועה, ${stuckName} תקוע — משיכה טבעית`);
+  }
+
+  if (reasons.length > 0) {
+    return reasons.slice(0, 3).join(" + ");
+  }
+
+  // fallback — no signals matched, keep original type-specific text
   switch (link.type) {
     case "opportunity":
       return `פעל יחד על ${a.context === b.context ? "אותו משתנה" : "חיבור הקונטקסטים"} — שניהם בתנועה, זמן קצר להזדמנות.`;
