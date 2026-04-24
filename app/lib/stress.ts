@@ -17,6 +17,39 @@
 
 import type { UserNode, DominantForce } from "./philos";
 
+// Topic stance boost — reads from localStorage, never modifies other signals
+type TopicStance = { userId: string; topicId: string; value: number }; // -1..+1
+
+function applyTopicStressBoost(
+  base: StressSignals,
+  stances: TopicStance[],
+): StressSignals {
+  let { conflict, escalation, harmRisk, instability, prosocialValue } = base;
+  for (const s of stances) {
+    const v = s.value;
+    switch (s.topicId) {
+      case "safety_orientation":   if (v < -0.3) harmRisk    = clamp(harmRisk    + 15); break;
+      case "boundary_respect":     if (v < -0.3) harmRisk    = clamp(harmRisk    + 15); break;
+      case "impulse_control":      if (v < -0.3) instability = clamp(instability + 15); break;
+      case "emotional_regulation": if (v < -0.3) instability = clamp(instability + 15); break;
+      case "order_chaos":          if (v < -0.4) conflict    = clamp(conflict    + 12); break;
+      case "enforcement_leniency": if (abs(v) > 0.7) escalation = clamp(escalation + 10); break;
+    }
+  }
+  const base: StressSignals = { conflict, escalation, harmRisk, instability, prosocialValue };
+  let userStances: TopicStance[] = [];
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem("philos.stances");
+      if (raw) {
+        const all: TopicStance[] = JSON.parse(raw);
+        userStances = all.filter(s => s.userId === n.id);
+      }
+    } catch { /* silent */ }
+  }
+  return applyTopicStressBoost(base, userStances);
+}
+
 export type StressSignals = {
   conflict:       number;
   escalation:     number;
