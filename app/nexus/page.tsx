@@ -54,6 +54,34 @@ import { generateSeedNodes } from "../lib/seed";
 
 const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
 
+// ─── Semantic color system (shared by nodes and links) ────────────────
+const SEMANTIC_C = {
+  green:  "#34d399",
+  yellow: "#fbbf24",
+  orange: "#fb923c",
+  red:    "#ef4444",
+  blue:   "#38bdf8",
+  purple: "#a78bfa",
+} as const;
+
+function getNodeSemanticColor(n: UserNode): string {
+  // Red: high-intensity regression or active conflict while going backward
+  if (n.direction === "backward" && n.intensity >= 7)  return SEMANTIC_C.red;
+  if (n.conflict   && n.direction === "backward")       return SEMANTIC_C.red;
+  // Orange: any conflict or backward movement
+  if (n.conflict   || n.direction === "backward")       return SEMANTIC_C.orange;
+  // Green: forward + prosocial / high trust / strong intensity
+  if (n.direction === "forward" &&
+      (n.dominantForce === "social" || n.trustScore > 50 || n.intensity >= 7)) return SEMANTIC_C.green;
+  if (n.direction === "forward" && n.dominantForce === "physical")              return SEMANTIC_C.green;
+  // Blue: rational clarity
+  if (n.dominantForce === "rational")                   return SEMANTIC_C.blue;
+  // Purple: ego / superego depth
+  if (n.dominantForce === "ego" || n.dominantForce === "superego") return SEMANTIC_C.purple;
+  // Yellow: stuck or unknown
+  return SEMANTIC_C.yellow;
+}
+
 const TOP_N = 5;
 const ALL_LINK_TYPES: LinkType[] = ["alignment", "complementary", "influence", "opportunity"];
 
@@ -433,7 +461,7 @@ export default function Page() {
             pointsData={pointsData}
             pointLat={(d: any) => d.lat}
             pointLng={(d: any) => d.lng}
-            pointColor={(d: any) => d._anchor ? d.color : FORCE_COLOR[d.dominantForce as DominantForce]}
+            pointColor={(d: any) => d._anchor ? d.color : getNodeSemanticColor(d as UserNode)}
             pointAltitude={(d: any) => {
               if (d._anchor) return 0.06;
               const base = d.intensity / 10;
@@ -1210,53 +1238,39 @@ export default function Page() {
 
 /* ---------- semantic link color ------------------------------------ */
 
-const SEMANTIC = {
-  green:  "#34d399",
-  yellow: "#fbbf24",
-  orange: "#fb923c",
-  red:    "#ef4444",
-  blue:   "#38bdf8",
-  purple: "#a78bfa",
-} as const;
-
 export const SEMANTIC_LEGEND: Array<{ color: string; label: string }> = [
-  { color: SEMANTIC.green,  label: "ערך"     },
-  { color: SEMANTIC.yellow, label: "ניטרלי"  },
-  { color: SEMANTIC.orange, label: "מתח"     },
-  { color: SEMANTIC.red,    label: "סיכון"   },
-  { color: SEMANTIC.blue,   label: "בהירות"  },
-  { color: SEMANTIC.purple, label: "יצירה"   },
+  { color: SEMANTIC_C.green,  label: "ערך"     },
+  { color: SEMANTIC_C.yellow, label: "ניטרלי"  },
+  { color: SEMANTIC_C.orange, label: "מתח"     },
+  { color: SEMANTIC_C.red,    label: "סיכון"   },
+  { color: SEMANTIC_C.blue,   label: "בהירות"  },
+  { color: SEMANTIC_C.purple, label: "יצירה"   },
 ];
 
 function getLinkSemanticColor(link: Link, s: UserNode, t: UserNode): string {
-  // 1. Risk / conflict / harm → red or orange
-  const hasConflict    = !!(s.conflict || t.conflict);
-  const isBackward     = s.direction === "backward" || t.direction === "backward";
-  const highRisk       =
+  const hasConflict = !!(s.conflict || t.conflict);
+  const isBackward  = s.direction === "backward" || t.direction === "backward";
+  const highRisk    =
     (s.direction === "backward" && s.intensity >= 7) ||
     (t.direction === "backward" && t.intensity >= 7);
 
-  if (highRisk)                    return SEMANTIC.red;
-  if (hasConflict && isBackward)   return SEMANTIC.red;
-  if (hasConflict || isBackward)   return SEMANTIC.orange;
+  if (highRisk)                    return SEMANTIC_C.red;
+  if (hasConflict && isBackward)   return SEMANTIC_C.red;
+  if (hasConflict || isBackward)   return SEMANTIC_C.orange;
 
-  // 2. Prosocial / high trust / forward value → green
   const bothForward = s.direction === "forward" && t.direction === "forward";
   const isSocial    = s.dominantForce === "social" || t.dominantForce === "social";
   const avgTrust    = (s.trustScore + t.trustScore) / 2;
 
-  if (bothForward && (isSocial || link.strength > 0.6 || avgTrust > 40)) return SEMANTIC.green;
-  if (bothForward && link.type === "alignment")                            return SEMANTIC.green;
+  if (bothForward && (isSocial || link.strength > 0.6 || avgTrust > 40)) return SEMANTIC_C.green;
+  if (bothForward && link.type === "alignment")                            return SEMANTIC_C.green;
 
-  // 3. Rational / learning / clarity → blue
-  if (s.dominantForce === "rational" || t.dominantForce === "rational")    return SEMANTIC.blue;
+  if (s.dominantForce === "rational" || t.dominantForce === "rational")    return SEMANTIC_C.blue;
 
-  // 4. Depth / creation / intuition → purple
   const deepForces = ["ego", "superego"] as DominantForce[];
-  if (deepForces.includes(s.dominantForce) || deepForces.includes(t.dominantForce)) return SEMANTIC.purple;
+  if (deepForces.includes(s.dominantForce) || deepForces.includes(t.dominantForce)) return SEMANTIC_C.purple;
 
-  // 5. Default → yellow (uncertain / needs review)
-  return SEMANTIC.yellow;
+  return SEMANTIC_C.yellow;
 }
 
 /* ---------- small components ---------- */

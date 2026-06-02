@@ -101,7 +101,6 @@ export default function Page() {
   const [intensity, setIntensity] = useState(5);
   const [context,   setContext]   = useState<NodeContext>("work");
   const [direction, setDirection] = useState<Direction>("forward");
-  const [note,      setNote]      = useState("");
   const [loading,   setLoading]   = useState(false);
   const [profile,   setProfile]   = useState<UserProfile | null>(null);
 
@@ -165,11 +164,11 @@ export default function Page() {
     setLoading(true);
     const { lat, lng } = await getCoords();
     const prior = loadNodes();
-    const trustScore = computeTrust(intensity, direction, force, note || stateMeta.label, prior);
+    const trustScore = computeTrust(intensity, direction, force, stateMeta.label, prior);
     const node: UserNode = {
       id: (globalThis.crypto?.randomUUID?.() ?? String(Date.now() + Math.random())),
       name: name.trim(), lat, lng,
-      event:         note.trim() || `${FORCE_LABEL[force]} — ${stateMeta.label}`,
+      event:         `${FORCE_LABEL[force]} — ${stateMeta.label}`,
       intensity, context,
       dominantForce: force,
       conflict:      stateMeta.conflict ?? null,
@@ -442,17 +441,6 @@ export default function Page() {
                 <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 1, marginBottom: 4 }}>פעולה מוצעת</div>
                 <div style={{ fontSize: 12, color: "#00f5d4" }}>{ACTION_SUGGEST[force][direction]}</div>
               </div>
-            </div>
-
-            {/* Optional note */}
-            <div style={{ marginBottom: 14 }}>
-              <Label>הערה (אופציונלי)</Label>
-              <textarea
-                value={note} onChange={e => setNote(e.target.value)}
-                placeholder="פרט אם רצונך…"
-                rows={2}
-                style={{ ...inputStyle, resize: "none", marginTop: 6 } as React.CSSProperties}
-              />
             </div>
 
             <button
