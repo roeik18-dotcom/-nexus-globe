@@ -140,17 +140,12 @@ export default function Page() {
         const s = byId[l.source], t = byId[l.target];
         if (!s || !t) return null;
         const hot = topIds.has(s.id) || topIds.has(t.id);
-        // Value → Color: force color × direction opacity
-        // forward=full · stuck=bb · backward=66
-        const dirAlpha = (n: UserNode) =>
-          n.direction === "forward" ? "" : n.direction === "stuck" ? "bb" : "66";
-        const sc = (FORCE_COLOR[s.dominantForce] ?? "#38bdf8") + dirAlpha(s);
-        const tc = (FORCE_COLOR[t.dominantForce] ?? "#38bdf8") + dirAlpha(t);
+        const col = getLinkSemanticColor(l, s, t);
         return {
           _link: l,
           startLat: s.lat, startLng: s.lng,
           endLat: t.lat,   endLng: t.lng,
-          color: [sc, tc],
+          color: [col, col],
           stroke: 0.25 + l.strength * 0.9 + (hot ? 0.3 : 0),
           altitude: 0.12 + l.strength * 0.15,
           dash: l.directional ? 0.25 : 0.6,
@@ -321,6 +316,18 @@ export default function Page() {
           <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>
             {activeTopic ? `קווים · ${activeTopic.title}` : "קווים"}
           </div>
+
+          {/* Semantic color legend */}
+          {!activeTopic && (
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid #0a2a4a" }}>
+              {SEMANTIC_LEGEND.map(({ color, label }) => (
+                <div key={label} style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                  <span style={{ width: 12, height: 3, borderRadius: 2, background: color, display: "inline-block" }} />
+                  <span style={{ fontSize: 9, color }}>{label}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {activeTopic ? (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -1199,6 +1206,57 @@ export default function Page() {
       </div>
     </div>
   );
+}
+
+/* ---------- semantic link color ------------------------------------ */
+
+const SEMANTIC = {
+  green:  "#34d399",
+  yellow: "#fbbf24",
+  orange: "#fb923c",
+  red:    "#ef4444",
+  blue:   "#38bdf8",
+  purple: "#a78bfa",
+} as const;
+
+export const SEMANTIC_LEGEND: Array<{ color: string; label: string }> = [
+  { color: SEMANTIC.green,  label: "ערך"     },
+  { color: SEMANTIC.yellow, label: "ניטרלי"  },
+  { color: SEMANTIC.orange, label: "מתח"     },
+  { color: SEMANTIC.red,    label: "סיכון"   },
+  { color: SEMANTIC.blue,   label: "בהירות"  },
+  { color: SEMANTIC.purple, label: "יצירה"   },
+];
+
+function getLinkSemanticColor(link: Link, s: UserNode, t: UserNode): string {
+  // 1. Risk / conflict / harm → red or orange
+  const hasConflict    = !!(s.conflict || t.conflict);
+  const isBackward     = s.direction === "backward" || t.direction === "backward";
+  const highRisk       =
+    (s.direction === "backward" && s.intensity >= 7) ||
+    (t.direction === "backward" && t.intensity >= 7);
+
+  if (highRisk)                    return SEMANTIC.red;
+  if (hasConflict && isBackward)   return SEMANTIC.red;
+  if (hasConflict || isBackward)   return SEMANTIC.orange;
+
+  // 2. Prosocial / high trust / forward value → green
+  const bothForward = s.direction === "forward" && t.direction === "forward";
+  const isSocial    = s.dominantForce === "social" || t.dominantForce === "social";
+  const avgTrust    = (s.trustScore + t.trustScore) / 2;
+
+  if (bothForward && (isSocial || link.strength > 0.6 || avgTrust > 40)) return SEMANTIC.green;
+  if (bothForward && link.type === "alignment")                            return SEMANTIC.green;
+
+  // 3. Rational / learning / clarity → blue
+  if (s.dominantForce === "rational" || t.dominantForce === "rational")    return SEMANTIC.blue;
+
+  // 4. Depth / creation / intuition → purple
+  const deepForces = ["ego", "superego"] as DominantForce[];
+  if (deepForces.includes(s.dominantForce) || deepForces.includes(t.dominantForce)) return SEMANTIC.purple;
+
+  // 5. Default → yellow (uncertain / needs review)
+  return SEMANTIC.yellow;
 }
 
 /* ---------- small components ---------- */
