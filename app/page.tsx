@@ -92,6 +92,11 @@ const DIR_COLOR: Record<Direction, string> = {
 export default function Page() {
   const router = useRouter();
 
+  // mounted guard: skip SSR entirely — prevents hydration mismatch
+  // that causes React to skip attaching event handlers
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
   const [step,      setStep]      = useState<1|2|3|4>(1);
   const [name,      setName]      = useState("");
   const [force,     setForce]     = useState<DominantForce | null>(null);
@@ -161,6 +166,13 @@ export default function Page() {
   }
 
   const fc = force ? FORCE_COLOR[force] : "#38bdf8";
+
+  // Block SSR render — client only
+  if (!mounted) return (
+    <main style={{ minHeight: "100vh", background: "#020d1a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ color: "#1e4060", fontSize: 11, letterSpacing: 3 }}>PHILOS · NEXUS</div>
+    </main>
+  );
 
   return (
     <main style={{
