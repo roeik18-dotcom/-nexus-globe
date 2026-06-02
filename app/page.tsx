@@ -9,6 +9,10 @@ import {
   type DominantForce, type NodeContext, type Direction, type UserNode,
 } from "./lib/philos";
 import { loadProfile, type UserProfile } from "./lib/profile";
+import {
+  DEVELOPMENT_PATHS, ENERGY_HIERARCHY, ROOT_EXPRESSIONS, ROOT_DESCRIPTION,
+  ROOT_CHARACTERISTICS, HIERARCHY_LABEL, type EnergyPath,
+} from "./lib/orientation";
 
 // ─── Static wizard data ───────────────────────────────────────────────
 
@@ -106,6 +110,8 @@ export default function Page() {
   const [direction, setDirection] = useState<Direction>("forward");
   const [loading,   setLoading]   = useState(false);
   const [profile,   setProfile]   = useState<UserProfile | null>(null);
+  // Step 4 navigation: when root(id) is selected, user picks a dev path
+  const [devPath,   setDevPath]   = useState<DominantForce | null>(null);
 
   useEffect(() => {
     const p = loadProfile();
@@ -357,59 +363,170 @@ export default function Page() {
           </div>
         )}
 
-        {/* ── Step 4: Preview + Submit ── */}
-        {step === 4 && force && stateMeta && (
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-              <button onClick={() => setStep(3)} style={backBtn}>← חזרה</button>
-              <span style={{ fontSize: 12, color: FORCE_COLOR[force], fontWeight: 500 }}>
-                {FORCE_ICONS[force]} {FORCE_LABEL[force]} — {stateMeta.label} · {DIR_LABEL[direction]}
-              </span>
-            </div>
+        {/* ── Step 4: Diagnosis · Navigation · Projection ── */}
+        {step === 4 && force && stateMeta && (() => {
+          const path     = DEVELOPMENT_PATHS[force];
+          const isRoot   = force === "id";
+          const fc2      = FORCE_COLOR[force];
+          const activeDev = devPath ? DEVELOPMENT_PATHS[devPath] : null;
 
-            {/* Path */}
-            <div style={{ padding: "14px 16px", borderRadius: 8, border: `1px solid ${FORCE_COLOR[force]}44`, background: FORCE_COLOR[force] + "0a", marginBottom: 14 }}>
-              <div style={{ fontSize: 9, color: FORCE_COLOR[force], letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 10 }}>נתיב</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
-                <PathNode label={`${FORCE_ICONS[force]} ${FORCE_LABEL[force]}`} color={FORCE_COLOR[force]} />
-                <Arr />
-                <PathNode label={stateMeta.label}                               color={FORCE_COLOR[force]} />
-                <Arr />
-                <PathNode label={DIR_LABEL[direction]}                          color={DIR_COLOR[direction]} />
-                <Arr />
-                <PathNode label="הוכחה"                                         color="#38bdf8" />
-                <Arr />
-                <PathNode label="אמון"                                          color="#34d399" />
-                <Arr />
-                <PathNode label="הזדמנות"                                       color="#a78bfa" />
+          return (
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                <button onClick={() => { setStep(3); setDevPath(null); }} style={backBtn}>← חזרה</button>
+                <span style={{ fontSize: 12, color: fc2, fontWeight: 500 }}>
+                  {FORCE_ICONS[force]} {FORCE_LABEL[force]} — {stateMeta.label}
+                </span>
               </div>
 
-              {/* Action */}
-              <div style={{ padding: "10px 12px", background: "#020d1a", borderRadius: 6, border: "1px solid #0a2a4a" }}>
-                <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 1, marginBottom: 4 }}>פעולה מוצעת</div>
-                <div style={{ fontSize: 12, color: "#00f5d4" }}>{ACTION_SUGGEST[force][direction]}</div>
+              {/* ─── DIAGNOSIS ─── */}
+              <div style={{ padding: "12px 14px", borderRadius: 8, border: `1px solid ${fc2}44`, background: fc2 + "0a", marginBottom: 10 }}>
+                <div style={{ fontSize: 9, color: fc2, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 8 }}>
+                  {isRoot ? "מצב שורש · איד" : `שכבה ${HIERARCHY_LABEL[force]}`}
+                </div>
+                <div style={{ fontSize: 12, color: "#8bb8cc", marginBottom: 8, lineHeight: 1.5 }}>
+                  {isRoot ? ROOT_DESCRIPTION : path.layerDescription}
+                </div>
+                <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                  {(isRoot ? ROOT_CHARACTERISTICS : path.expressions.slice(0, 4)).map(e => (
+                    <span key={e} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, border: `1px solid ${fc2}44`, color: fc2, background: fc2 + "11" }}>
+                      {e}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* ─── NAVIGATION ─── */}
+              {isRoot ? (
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
+                    נתיבי פיתוח אפשריים
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {ENERGY_HIERARCHY.map(f => {
+                      const p = DEVELOPMENT_PATHS[f];
+                      const active = devPath === f;
+                      return (
+                        <button
+                          key={f}
+                          onClick={() => setDevPath(active ? null : f)}
+                          style={{
+                            padding: "9px 12px", borderRadius: 6, cursor: "pointer", textAlign: "right",
+                            border: `1px solid ${active ? FORCE_COLOR[f] : "#0a2a4a"}`,
+                            background: active ? FORCE_COLOR[f] + "15" : "#030f1e",
+                            display: "flex", alignItems: "center", justifyContent: "space-between",
+                            transition: "all .15s",
+                          }}
+                        >
+                          <div>
+                            <span style={{ fontSize: 12, color: active ? FORCE_COLOR[f] : "#caf0f8", fontWeight: active ? 700 : 400 }}>
+                              {FORCE_ICONS[f]} {FORCE_LABEL[f]}
+                            </span>
+                            {!active && (
+                              <div style={{ fontSize: 9, color: "#1e4060", marginTop: 2 }}>
+                                {p.expressions.slice(0, 3).join(" · ")}
+                              </div>
+                            )}
+                          </div>
+                          <span style={{ fontSize: 10, color: active ? FORCE_COLOR[f] : "#1e4060" }}>
+                            {active ? "▲" : "▼"}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ marginBottom: 10 }}>
+                  {/* Hierarchy position */}
+                  <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>מיקום בהיררכיה</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap", marginBottom: 10, fontSize: 10 }}>
+                    <PathNode label="שורש (איד)" color="#ef4444" />
+                    {ENERGY_HIERARCHY.slice(0, ENERGY_HIERARCHY.indexOf(force) + 1).map((f, i) => (
+                      <span key={f} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <Arr />
+                        <PathNode label={`${FORCE_ICONS[f]} ${FORCE_LABEL[f]}`} color={f === force ? FORCE_COLOR[f] : "#1e4060"} />
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Risk + Opportunity */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
+                    <div style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #ef444433", background: "#ef44440a" }}>
+                      <div style={{ fontSize: 8, color: "#ef4444", letterSpacing: 1, marginBottom: 4 }}>⚠ סיכון</div>
+                      <div style={{ fontSize: 10, color: "#8bb8cc" }}>{path.risk}</div>
+                    </div>
+                    <div style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #34d39933", background: "#34d3990a" }}>
+                      <div style={{ fontSize: 8, color: "#34d399", letterSpacing: 1, marginBottom: 4 }}>✦ הזדמנות</div>
+                      <div style={{ fontSize: 10, color: "#8bb8cc" }}>{path.opportunity}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ─── PROJECTION (expanded dev path or current force) ─── */}
+              {(activeDev || (!isRoot)) && (() => {
+                const p = activeDev ?? path;
+                const pColor = activeDev ? FORCE_COLOR[p.force] : fc2;
+                return (
+                  <div style={{ padding: "10px 12px", borderRadius: 6, border: `1px solid ${pColor}44`, background: pColor + "08", marginBottom: 10 }}>
+                    {activeDev && (
+                      <div style={{ fontSize: 11, color: pColor, fontWeight: 700, marginBottom: 6 }}>
+                        {FORCE_ICONS[p.force]} {FORCE_LABEL[p.force]}
+                        <span style={{ fontSize: 9, color: "#1e4060", fontWeight: 400, marginRight: 8 }}> — {p.layerDescription}</span>
+                      </div>
+                    )}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
+                      <div style={{ padding: "6px 8px", borderRadius: 4, border: "1px solid #ef444433", background: "#ef44440a" }}>
+                        <div style={{ fontSize: 8, color: "#ef4444", letterSpacing: 1, marginBottom: 3 }}>⚠ סיכון</div>
+                        <div style={{ fontSize: 10, color: "#8bb8cc" }}>{p.risk}</div>
+                      </div>
+                      <div style={{ padding: "6px 8px", borderRadius: 4, border: "1px solid #34d39933", background: "#34d3990a" }}>
+                        <div style={{ fontSize: 8, color: "#34d399", letterSpacing: 1, marginBottom: 3 }}>✦ הזדמנות</div>
+                        <div style={{ fontSize: 10, color: "#8bb8cc" }}>{p.opportunity}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8, fontSize: 10, color: "#8bb8cc" }}>
+                      {p.nextForce && (
+                        <span>
+                          הבא: <PathNode label={`${FORCE_ICONS[p.nextForce]} ${FORCE_LABEL[p.nextForce]}`} color={FORCE_COLOR[p.nextForce]} />
+                        </span>
+                      )}
+                      <span>
+                        מאזן: <PathNode label={`${p.balancingForce === "id" ? "⚡" : FORCE_ICONS[p.balancingForce as DominantForce]} ${p.balancingForce === "id" ? "איד" : FORCE_LABEL[p.balancingForce as DominantForce]}`} color={p.balancingForce === "id" ? "#ef4444" : FORCE_COLOR[p.balancingForce as DominantForce]} />
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 9, color: "#1e4060", marginBottom: 6 }}>{p.balanceReason}</div>
+                    <div style={{ padding: "8px 10px", background: "#020d1a", borderRadius: 4, border: "1px solid #0a2a4a" }}>
+                      <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 1, marginBottom: 3 }}>פעולה מוצעת</div>
+                      <div style={{ fontSize: 11, color: "#00f5d4" }}>{p.growthAction}</div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Submit */}
+              <button
+                onClick={submit}
+                disabled={loading}
+                style={{
+                  width: "100%", padding: "13px", fontSize: 13, fontWeight: 700, letterSpacing: 2,
+                  color: "#020d1a",
+                  background: loading ? "#1e4060" : "linear-gradient(135deg,#00f5d4,#38bdf8)",
+                  border: "none", borderRadius: 8, cursor: loading ? "default" : "pointer",
+                  boxShadow: "0 0 30px rgba(56,189,248,0.2)",
+                  marginTop: 4,
+                }}
+              >
+                {loading ? "שומר…" : "שמור ועבור לנקסוס"}
+              </button>
+
+              <div style={{ textAlign: "center", marginTop: 8 }}>
+                <a href="/nexus" style={{ fontSize: 11, color: "#1e4060", textDecoration: "none" }}>→ לגלובוס בלי ניתוח חדש</a>
               </div>
             </div>
-
-            <button
-              onClick={submit}
-              disabled={loading}
-              style={{
-                width: "100%", padding: "14px", fontSize: 14, fontWeight: 700, letterSpacing: 2,
-                color: "#020d1a",
-                background: loading ? "#1e4060" : `linear-gradient(135deg,#00f5d4,#38bdf8)`,
-                border: "none", borderRadius: 8, cursor: loading ? "default" : "pointer",
-                boxShadow: "0 0 40px rgba(56,189,248,0.25)",
-              }}
-            >
-              {loading ? "שומר…" : "שמור ועבור לנקסוס"}
-            </button>
-
-            <div style={{ textAlign: "center", marginTop: 10 }}>
-              <a href="/nexus" style={{ fontSize: 11, color: "#1e4060", textDecoration: "none" }}>→ לגלובוס בלי ניתוח חדש</a>
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Profile link */}
         <div style={{ marginTop: 24, textAlign: "center", fontSize: 10, color: "#1e4060" }}>
