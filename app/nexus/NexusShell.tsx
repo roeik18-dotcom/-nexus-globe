@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import useGraphData from "../graph/useGraphData";
 import type { GraphNode, GraphLink } from "../graph/types";
+import ProofLabPanel from "./ProofLabPanel";
 
 const GlobeView = dynamic(() => import("../globe/GlobeView"), { ssr:false });
 
@@ -19,6 +20,7 @@ export default function NexusShell() {
   const data       = useGraphData();
   const [selected, setSelected] = useState<string|null>(null);
   const [tipIdx,   setTipIdx]   = useState(0);
+  const [showLab,  setShowLab]  = useState(false);
 
   const nodeById: Record<string,GraphNode> = {};
   data.nodes.forEach(n => { nodeById[n.id]=n; });
@@ -77,12 +79,18 @@ export default function NexusShell() {
         <span style={{ fontSize:10, color:"#1e4060", marginLeft:12 }}>
           {data.nodes.length} nodes · {totalLinks} links
         </span>
-        {selected && (
-          <button onClick={()=>setSelected(null)}
-            style={{ marginLeft:"auto", background:"none", border:"1px solid #1e4060", color:"#38bdf8", padding:"2px 10px", borderRadius:3, cursor:"pointer", fontSize:10 }}>
-            ✕ clear
+        <div style={{ marginLeft:"auto", display:"flex", gap:6, alignItems:"center" }}>
+          {selected && (
+            <button onClick={()=>setSelected(null)}
+              style={{ background:"none", border:"1px solid #1e4060", color:"#38bdf8", padding:"2px 10px", borderRadius:3, cursor:"pointer", fontSize:10 }}>
+              ✕ clear
+            </button>
+          )}
+          <button onClick={()=>setShowLab(v=>!v)}
+            style={{ background: showLab ? "#0ea5e9" : "none", border:"1px solid #1e4060", color: showLab ? "#fff" : "#38bdf8", padding:"2px 10px", borderRadius:3, cursor:"pointer", fontSize:10 }}>
+            ◈ Lab
           </button>
-        )}
+        </div>
       </div>
 
       <div style={S.main}>
@@ -141,8 +149,10 @@ export default function NexusShell() {
           )}
         </div>
 
-        {/* ── Right panel: node detail + guide ── */}
+        {/* ── Right panel: node detail / Proof Lab ── */}
         <div style={S.rightPanel}>
+          {showLab ? <ProofLabPanel userName="משתמש" /> : null}
+          {showLab ? null : <>
           {/* Guide block */}
           <div style={{ padding:"12px 12px 8px", borderBottom:"1px solid #0a2a4a" }}>
             <div style={{ display:"flex", gap:8, alignItems:"flex-start" }}>
@@ -236,6 +246,7 @@ export default function NexusShell() {
               );
             })}
           </div>
+        </>}
         </div>
       </div>
     </div>

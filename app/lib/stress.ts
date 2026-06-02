@@ -33,21 +33,10 @@ function applyTopicStressBoost(
       case "impulse_control":      if (v < -0.3) instability = clamp(instability + 15); break;
       case "emotional_regulation": if (v < -0.3) instability = clamp(instability + 15); break;
       case "order_chaos":          if (v < -0.4) conflict    = clamp(conflict    + 12); break;
-      case "enforcement_leniency": if (abs(v) > 0.7) escalation = clamp(escalation + 10); break;
+      case "enforcement_leniency": if (Math.abs(v) > 0.7) escalation = clamp(escalation + 10); break;
     }
   }
-  const base: StressSignals = { conflict, escalation, harmRisk, instability, prosocialValue };
-  let userStances: TopicStance[] = [];
-  if (typeof window !== "undefined") {
-    try {
-      const raw = localStorage.getItem("philos.stances");
-      if (raw) {
-        const all: TopicStance[] = JSON.parse(raw);
-        userStances = all.filter(s => s.userId === n.id);
-      }
-    } catch { /* silent */ }
-  }
-  return applyTopicStressBoost(base, userStances);
+  return { conflict, escalation, harmRisk, instability, prosocialValue };
 }
 
 export type StressSignals = {
@@ -137,7 +126,19 @@ export function deriveStress(n: UserNode): StressSignals {
   if (n.direction === "forward" && I >= 7 && prosocialText)            prosocialValue += 10;
   prosocialValue = clamp(prosocialValue);
 
-  return { conflict, escalation, harmRisk, instability, prosocialValue };
+  const signals: StressSignals = { conflict, escalation, harmRisk, instability, prosocialValue };
+
+  let userStances: TopicStance[] = [];
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem("philos.stances");
+      if (raw) {
+        const all: TopicStance[] = JSON.parse(raw);
+        userStances = all.filter(s => s.userId === n.id);
+      }
+    } catch { /* silent */ }
+  }
+  return applyTopicStressBoost(signals, userStances);
 }
 
 /* ---------- per-node dominant signal / color ---------- */
@@ -149,12 +150,13 @@ export function dominantStress(s: StressSignals): DominantStress {
   const distress = s.conflict + s.escalation + s.harmRisk + s.instability;
   if (s.prosocialValue * 2.5 >= distress) return "prosocialValue";
 
-  const entries = ([
+  const entries: [keyof StressSignals, number][] = [
     ["harmRisk",    s.harmRisk],
     ["escalation",  s.escalation],
     ["instability", s.instability],
     ["conflict",    s.conflict],
-  ] as const).sort((a, b) => b[1] - a[1]);
+  ];
+  entries.sort((a, b) => b[1] - a[1]);
 
   const [key, val] = entries[0];
   if (val < 30) return "stable";
