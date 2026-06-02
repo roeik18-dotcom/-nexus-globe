@@ -3,9 +3,11 @@ import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import useGraphData from "../graph/useGraphData";
 import type { GraphNode, GraphLink } from "../graph/types";
-import ProofLabPanel from "./ProofLabPanel";
+// ProofLabPanel disabled for crash investigation
+// import ProofLabPanel from "./ProofLabPanel";
 
-const GlobeView = dynamic(() => import("../globe/GlobeView"), { ssr:false });
+// diagnostic: GlobeView disabled to isolate WebGL crash
+// const GlobeView = dynamic(() => import("../globe/GlobeView"), { ssr:false });
 
 const ROLE_COLOR: Record<string,string> = {
   Designer:"#00f5d4", Engineer:"#38bdf8", Analyst:"#a78bfa",
@@ -140,7 +142,7 @@ export default function NexusShell() {
 
         {/* ── Globe ── */}
         <div style={S.globe}>
-          <GlobeView data={data} />
+          <div style={{height:"100%",display:"grid",placeItems:"center",color:"#1e4060",fontSize:12}}>Globe disabled test</div>
           {/* Hover hint */}
           {!selected && (
             <div style={{ position:"absolute", bottom:20, left:"50%", transform:"translateX(-50%)", fontSize:10, color:"#1e4060", pointerEvents:"none" }}>
@@ -151,7 +153,7 @@ export default function NexusShell() {
 
         {/* ── Right panel: node detail / Proof Lab ── */}
         <div style={S.rightPanel}>
-          {showLab ? <ProofLabPanel userName="משתמש" /> : null}
+          {/* ProofLabPanel disabled for crash investigation */}
           {showLab ? null : <>
           {/* Guide block */}
           <div style={{ padding:"12px 12px 8px", borderBottom:"1px solid #0a2a4a" }}>
