@@ -282,3 +282,126 @@ export function saveProofUser(user: ProofUser): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
   } catch { /* ignore */ }
 }
+
+// ─── Reputation Engine ────────────────────────────────────────────────
+// Per-user score (MVP = Option A).
+// Structured for contextual reputation (Option C) via byContext.
+//
+// Four factors, each 0–25 → total 0–100:
+//   frequency   — how many verified proofs
+//   consistency — spread over time (not one burst)
+//   recency     — how recently active
+//   impact      — proof weight + evidence diversity
+
+export type ReputationLevel =
+  | "none"
+  | "emerging"
+  | "established"
+  | "trusted"
+  | "authority";
+
+export interface ReputationScore {
+  overall:     number;                  // 0–100
+  frequency:   number;                  // 0–25
+  consistency: number;                  // 0–25
+  recency:     number;                  // 0–25
+  impact:      number;                  // 0–25
+  level:       ReputationLevel;
+  byContext:   Record<string, number>;  // prepared for Option C (contextual)
+}
+
+export const REPUTATION_LEVEL_LABEL: Record<ReputationLevel, string> = {
+  none:        "אין עדיין",
+  emerging:    "מתפתח",
+  established: "מוכר",
+  trusted:     "מהימן",
+  authority:   "סמכות",
+};
+
+export const REPUTATION_LEVEL_COLOR: Record<ReputationLevel, string> = {
+  none:        "#475569",
+  emerging:    "#fbbf24",
+  established: "#38bdf8",
+  trusted:     "#34d399",
+  authority:   "#a78bfa",
+};
+
+const DAY_MS = 86_400_000;
+
+// ── Factor calculators (pure — take verified proofs as input) ─────────
+
+function _frequency(verified: ProofItem[]): number {
+  // Each verified proof = 3.5 pts, capped at 25
+  return Math.min(Math.round(verified.length * 3.5), 25);
+}
+
+function _consistency(verified: ProofItem[]): number {
+  if (verified.length < 2) return 0;
+  const now = Date.now();
+  // Bucket each proof into a 7-day week
+  const weekBuckets = new Set(
+    verified.map(p => Math.floor((now - p.createdAt) / (7 * DAY_MS)))
+  );
+  const activeWeeks = weekBuckets.size;
+  // Span in weeks from oldest proof to now
+  const oldest = Math.min(...verified.map(p => p.createdAt));
+  const spanWeeks = Math.max((now - oldest) / (7 * DAY_MS), 1);
+  // Ratio of active weeks to total span, scaled to 25
+  return Math.min(Math.round((activeWeeks / spanWeeks) * 25), 25);
+}
+
+function _recency(verified: ProofItem[]): number {
+  if (verified.length === 0) return 0;
+  const now = Date.now();
+  const mostRecent = Math.max(...verified.map(p => p.createdAt));
+  const days = (now - mostRecent) / DAY_MS;
+  if (days <=  7) return 25;
+  if (days <= 30) return 18;
+  if (days <= 90) return 10;
+  return 3;
+}
+
+function _impact(verified: ProofItem[]): number {
+  if (verified.length === 0) return 0;
+  const avgWeight  = verified.reduce((s, p) => s + p.weight, 0) / verified.length;
+  // Diversity bonus: unique evidence types used
+  const diversity  = new Set(verified.map(p => p.evidenceType)).size;
+  return Math.min(Math.round((avgWeight / 5) * 20 + diversity * 1.5), 25);
+}
+
+// ── Main export ───────────────────────────────────────────────────────
+
+/**
+ * Compute reputation for a user from their verified proof history.
+ *
+ * @param verified  ProofItem[] already filtered to status === "verified"
+ * @param actions   ProofAction[] — kept for future impact weighting by type
+ */
+export function computeReputation(
+  verified: ProofItem[],
+  _actions: ProofAction[],   // reserved for Option C contextual weighting
+): ReputationScore {
+  const frequency   = _frequency(verified);
+  const consistency = _consistency(verified);
+  const recency     = _recency(verified);
+  const impact      = _impact(verified);
+  const overall     = Math.min(frequency + consistency + recency + impact, 100);
+
+  const level: ReputationLevel =
+    overall >= 80 ? "authority"    :
+    overall >= 55 ? "trusted"      :
+    overall >= 30 ? "established"  :
+    overall >= 10 ? "emerging"     : "none";
+
+  // byContext: Option C structure — all contexts inherit overall for now.
+  // When ProofItem gains a .context field, re-weight per domain.
+  const byContext: Record<string, number> = {
+    work:     overall,
+    social:   overall,
+    health:   overall,
+    money:    overall,
+    learning: overall,
+  };
+
+  return { overall, frequency, consistency, recency, impact, level, byContext };
+}

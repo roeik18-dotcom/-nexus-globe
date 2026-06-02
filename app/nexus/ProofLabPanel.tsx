@@ -5,7 +5,9 @@ import {
   calcTrustFromProofs, getOpportunities,
   loadProofUser, saveProofUser,
   addProof, verifyProof, rejectProof, loadProofs,
+  computeReputation,
   ACTION_LABELS, PROOF_STATUS_LABEL, PROOF_STATUS_COLOR,
+  REPUTATION_LEVEL_LABEL, REPUTATION_LEVEL_COLOR,
   type ProofUser, type ProofAction, type ProofItem, type EvidenceType,
 } from "../lib/proof";
 
@@ -68,9 +70,13 @@ export default function ProofLabPanel({ userName }: { userName: string }) {
 
   useEffect(() => { reload(); }, [reload]);
 
-  const trust = calcTrustFromProofs(userName, user.actions);
-  const value = calcValueContribution(user.actions);
-  const opps  = getOpportunities(trust);
+  const trust      = calcTrustFromProofs(userName, user.actions);
+  const value      = calcValueContribution(user.actions);
+  const opps       = getOpportunities(trust);
+  const reputation = computeReputation(
+    myProofs.filter(p => p.status === "verified"),
+    user.actions
+  );
 
   // ── Action submit ─────────────────────────────────────────────────
   const handleTextChange = useCallback((v: string) => {
@@ -145,6 +151,27 @@ export default function ProofLabPanel({ userName }: { userName: string }) {
           <span style={{ color: "#fbbf24" }}>בניה (20)</span>
           <span style={{ color: "#34d399" }}>מהימן (60)</span>
           <span style={{ color: "#34d399" }}>ליבה (100)</span>
+        </div>
+      </div>
+
+      {/* ── Reputation card ── */}
+      <div style={{ margin: "4px 8px 0", padding: "8px 10px", borderRadius: 6, border: `1px solid ${REPUTATION_LEVEL_COLOR[reputation.level]}33`, background: "#040e1c" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase" }}>מוניטין</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 10, background: REPUTATION_LEVEL_COLOR[reputation.level] + "22", color: REPUTATION_LEVEL_COLOR[reputation.level], border: `1px solid ${REPUTATION_LEVEL_COLOR[reputation.level]}55`, fontWeight: 600 }}>
+              {REPUTATION_LEVEL_LABEL[reputation.level]}
+            </span>
+            <span style={{ fontSize: 13, color: REPUTATION_LEVEL_COLOR[reputation.level], fontWeight: 700 }}>
+              {reputation.overall}
+            </span>
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <RepFactor label="תדירות"  val={reputation.frequency}   max={25} color="#38bdf8" />
+          <RepFactor label="עקביות"  val={reputation.consistency} max={25} color="#a78bfa" />
+          <RepFactor label="עדכניות" val={reputation.recency}     max={25} color="#fbbf24" />
+          <RepFactor label="השפעה"   val={reputation.impact}      max={25} color="#34d399" />
         </div>
       </div>
 
@@ -321,6 +348,19 @@ function Metric({ label, val, color, max }: { label: string; val: number; color:
     <div style={{ textAlign: "center" }}>
       <div style={{ fontSize: 15, color, fontWeight: 700 }}>{val}{max ? `/${max}` : ""}</div>
       <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 1 }}>{label.toUpperCase()}</div>
+    </div>
+  );
+}
+
+function RepFactor({ label, val, max, color }: { label: string; val: number; max: number; color: string }) {
+  const pct = Math.round((val / max) * 100);
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <div style={{ fontSize: 9, color: "#8bb8cc", width: 44, textAlign: "right", flexShrink: 0 }}>{label}</div>
+      <div style={{ flex: 1, height: 4, borderRadius: 2, background: "#0a2a4a", overflow: "hidden" }}>
+        <div style={{ width: `${pct}%`, height: "100%", borderRadius: 2, background: color, transition: "width .3s" }} />
+      </div>
+      <div style={{ fontSize: 9, color, fontWeight: 600, width: 28, flexShrink: 0 }}>{val}/{max}</div>
     </div>
   );
 }
