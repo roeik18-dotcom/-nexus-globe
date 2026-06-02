@@ -132,6 +132,132 @@ export function makeAction(
   };
 }
 
+// ─── Proof Layer ─────────────────────────────────────────────────────
+// A + B model: self-reported claims + peer verification.
+// System-detected (C) is a future layer.
+
+export type EvidenceType = "text" | "link" | "peer";
+export type ProofStatus  = "claimed" | "verified" | "rejected";
+
+export interface ProofItem {
+  id:            string;
+  userId:        string;
+  actionId:      string;        // links to ProofAction.id
+  claim:         string;        // "what did you do?"
+  evidenceType:  EvidenceType;
+  evidence:      string;        // free text, URL, or peer name
+  verifiedBy?:   string;        // userId of peer verifier
+  status:        ProofStatus;
+  weight:        number;        // claimed=1 · verified=3 · repeated verified=5
+  createdAt:     number;
+}
+
+// Weight table — source of trust
+const PROOF_WEIGHT: Record<ProofStatus, number> = {
+  claimed:  1,
+  verified: 3,
+  rejected: 0,
+};
+
+const PROOFS_KEY = "nexus:proofs";
+
+// ── CRUD ──────────────────────────────────────────────────────────────
+
+export function loadProofs(userId?: string): ProofItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(PROOFS_KEY);
+    const all: ProofItem[] = raw ? JSON.parse(raw) : [];
+    return userId ? all.filter(p => p.userId === userId) : all;
+  } catch { return []; }
+}
+
+function _saveProof(proof: ProofItem): void {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = localStorage.getItem(PROOFS_KEY);
+    const all: ProofItem[] = raw ? JSON.parse(raw) : [];
+    const idx = all.findIndex(p => p.id === proof.id);
+    if (idx >= 0) all[idx] = proof; else all.push(proof);
+    localStorage.setItem(PROOFS_KEY, JSON.stringify(all));
+  } catch { /* ignore */ }
+}
+
+export function addProof(
+  userId:       string,
+  actionId:     string,
+  claim:        string,
+  evidenceType: EvidenceType,
+  evidence:     string,
+): ProofItem {
+  const proof: ProofItem = {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    userId, actionId, claim, evidenceType, evidence,
+    status: "claimed",
+    weight: PROOF_WEIGHT.claimed,
+    createdAt: Date.now(),
+  };
+  _saveProof(proof);
+  return proof;
+}
+
+export function verifyProof(proofId: string, verifierUserId: string): ProofItem | null {
+  const all = loadProofs();
+  const proof = all.find(p => p.id === proofId);
+  if (!proof) return null;
+  if (proof.userId === verifierUserId) return null; // no self-verification
+
+  // Consistency: count how many proofs this user already has verified
+  const alreadyVerified = all.filter(
+    p => p.userId === proof.userId && p.status === "verified"
+  ).length;
+
+  proof.verifiedBy = verifierUserId;
+  proof.status     = "verified";
+  proof.weight     = alreadyVerified >= 2 ? 5 : PROOF_WEIGHT.verified; // 3rd+ = 5
+  _saveProof(proof);
+  return proof;
+}
+
+export function rejectProof(proofId: string, verifierUserId: string): ProofItem | null {
+  const all = loadProofs();
+  const proof = all.find(p => p.id === proofId);
+  if (!proof || proof.userId === verifierUserId) return null;
+  proof.status = "rejected";
+  proof.weight = 0;
+  _saveProof(proof);
+  return proof;
+}
+
+// ── Trust from Proof ──────────────────────────────────────────────────
+// Replaces simple action-point counting.
+// Falls back to action-based score if no proofs submitted yet.
+
+export function calcTrustFromProofs(userId: string, actions: ProofAction[]): number {
+  const proofs = loadProofs(userId);
+  if (proofs.length === 0) {
+    // no proofs yet — use action-based score as baseline
+    return calcTrustScore(actions);
+  }
+  return Math.min(
+    proofs.reduce((sum, p) => sum + p.weight, 0),
+    100
+  );
+}
+
+// Proof status label (Hebrew)
+export const PROOF_STATUS_LABEL: Record<ProofStatus, string> = {
+  claimed:  "טענה",
+  verified: "מאומת",
+  rejected: "נדחה",
+};
+
+export const PROOF_STATUS_COLOR: Record<ProofStatus, string> = {
+  claimed:  "#fbbf24",
+  verified: "#34d399",
+  rejected: "#f87171",
+};
+
 // ─── localStorage persistence ─────────────────────────────────────────
 
 const STORAGE_KEY = "nexus:proof";
