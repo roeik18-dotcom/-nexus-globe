@@ -56,6 +56,7 @@ import {
   REPUTATION_LEVEL_LABEL, REPUTATION_LEVEL_COLOR,
   type ProofItem,
 } from "../lib/proof";
+import LiveFeed from "./LiveFeed";
 
 const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
 
@@ -123,6 +124,7 @@ export default function Page() {
   }, []);
 
   const [allProofs, setAllProofs] = useState<ProofItem[]>([]);
+  const [showFeed,  setShowFeed]  = useState(false);
 
   useEffect(() => {
     setAllNodes(loadNodes());
@@ -554,13 +556,40 @@ export default function Page() {
       </div>
 
       {/* SIDE PANEL */}
-      <div style={{ width: 320, background: "#030f1e", borderLeft: "1px solid #0a2a4a", padding: 20, overflowY: "auto" }}>
-        <div style={{ fontSize: 13, letterSpacing: 4, color: "#38bdf8", fontWeight: 700, marginBottom: 4 }}>
-          PHILOS · NEXUS
+      <div style={{ width: 320, background: "#030f1e", borderLeft: "1px solid #0a2a4a", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+        {/* Panel header + Feed toggle */}
+        <div style={{ padding: "14px 20px 10px", borderBottom: "1px solid #0a2a4a", flexShrink: 0, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontSize: 13, letterSpacing: 4, color: "#38bdf8", fontWeight: 700, marginBottom: 2 }}>
+              PHILOS · NEXUS
+            </div>
+            <div style={{ fontSize: 10, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase" }}>
+              {visible.length}/{allNodes.length} nodes · {filteredLinks.length} links
+            </div>
+          </div>
+          <button
+            onClick={() => setShowFeed(f => !f)}
+            style={{
+              padding: "5px 10px", borderRadius: 5, fontSize: 10, cursor: "pointer", fontWeight: 600,
+              border: `1px solid ${showFeed ? "#38bdf8" : "#1e4060"}`,
+              background: showFeed ? "#38bdf822" : "transparent",
+              color: showFeed ? "#38bdf8" : "#1e4060",
+              transition: "all .15s",
+            }}
+          >
+            ⚡ Feed
+          </button>
         </div>
-        <div style={{ fontSize: 10, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 18 }}>
-          {visible.length} / {allNodes.length} nodes · {filteredLinks.length} links · top {Math.min(TOP_N, ranked.length)}
-        </div>
+
+        {/* Feed panel OR regular panels */}
+        {showFeed ? (
+          <div style={{ flex: 1, overflow: "hidden" }}>
+            <LiveFeed />
+          </div>
+        ) : (
+        <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
+        <div style={{ marginBottom: 18 }} />
 
         {/* PROFILE ANCHOR */}
         {profile && (
@@ -1294,6 +1323,8 @@ export default function Page() {
         >
           + זרע דמו (10 משתמשים, 4 סוגי קווים)
         </button>
+        </div>
+        )}
       </div>
     </div>
   );
