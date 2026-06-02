@@ -19,6 +19,23 @@ const TYPE_COLOR: Record<string, string> = {
   report: "#a78bfa", unknown: "#475569",
 };
 
+// Value → Color: color comes from meaning, not category
+function trustColor(score: number): string {
+  if (score >= 60) return "#34d399"; // trusted  — green
+  if (score >= 20) return "#fbbf24"; // building — yellow
+  return "#ef4444";                   // new      — red
+}
+function valueColor(v: number): string {
+  if (v >= 15) return "#34d399";
+  if (v >= 5)  return "#fbbf24";
+  return "#8bb8cc";
+}
+function trustBarGradient(score: number): string {
+  if (score >= 60) return "linear-gradient(90deg,#22c55e,#34d399)";
+  if (score >= 20) return "linear-gradient(90deg,#f59e0b,#fbbf24)";
+  return "linear-gradient(90deg,#dc2626,#ef4444)";
+}
+
 type Tab = "actions" | "proof" | "verify";
 
 export default function ProofLabPanel({ userName }: { userName: string }) {
@@ -112,19 +129,22 @@ export default function ProofLabPanel({ userName }: { userName: string }) {
       {/* ── Metrics ── */}
       <div style={S.section}>Proof Lab</div>
       <div style={{ ...S.card, display: "flex", justifyContent: "space-between" }}>
-        <Metric label="Trust"  val={trust}  color="#38bdf8" max={100} />
-        <Metric label="Value"  val={value}  color="#34d399" />
+        <Metric label="Trust"  val={trust}  color={trustColor(trust)} max={100} />
+        <Metric label="Value"  val={value}  color={valueColor(value)} />
         <Metric label="Proofs" val={myProofs.filter(p => p.status === "verified").length} color="#fbbf24" />
         <Metric label="Opps"   val={opps.filter(o => o.unlocked).length} color="#a78bfa" />
       </div>
 
-      {/* Trust bar */}
-      <div style={{ margin: "2px 8px 0", padding: "5px 10px", borderRadius: 6, border: "1px solid #0a2a4a", background: "#040e1c" }}>
+      {/* Trust bar — color reflects level */}
+      <div style={{ margin: "2px 8px 0", padding: "5px 10px", borderRadius: 6, border: `1px solid ${trustColor(trust)}33`, background: "#040e1c" }}>
         <div style={{ height: 4, borderRadius: 2, background: "#0a2a4a", overflow: "hidden" }}>
-          <div style={{ height: "100%", borderRadius: 2, background: "linear-gradient(90deg,#0ea5e9,#00f5d4)", width: `${trust}%`, transition: "width .4s ease" }} />
+          <div style={{ height: "100%", borderRadius: 2, background: trustBarGradient(trust), width: `${trust}%`, transition: "width .4s ease" }} />
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3, fontSize: 8, color: "#1e4060" }}>
-          <span>0</span><span>claimed=1</span><span>verified=3</span><span>repeat=5</span>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3, fontSize: 8 }}>
+          <span style={{ color: "#ef4444" }}>חדש</span>
+          <span style={{ color: "#fbbf24" }}>בניה (20)</span>
+          <span style={{ color: "#34d399" }}>מהימן (60)</span>
+          <span style={{ color: "#34d399" }}>ליבה (100)</span>
         </div>
       </div>
 

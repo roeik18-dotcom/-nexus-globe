@@ -27,12 +27,18 @@ export default function Page() {
   const [direction, setDirection] = useState<Direction>("forward");
   const [loading, setLoading]     = useState(false);
   const [err, setErr]             = useState<string | null>(null);
+  const [live, setLive]           = useState<LiveAnalysis | null>(null);
 
   useEffect(() => {
     const p = loadProfile();
     setProfile(p);
     if (p?.name && !name) setName(p.name);
   }, []);
+
+  function onEventChange(text: string) {
+    setEvent(text);
+    setLive(detectLive(text, context, direction));
+  }
 
   async function getCoords(): Promise<{ lat: number; lng: number }> {
     // prefer profile location when set
@@ -172,8 +178,46 @@ export default function Page() {
           </Field>
 
           <Field label="מה קורה עכשיו?">
-            <input value={event} onChange={e => setEvent(e.target.value)} placeholder="תאר במשפט אחד…" style={inputStyle} />
+            <input
+              value={event}
+              onChange={e => onEventChange(e.target.value)}
+              placeholder="תאר במשפט אחד…"
+              style={inputStyle}
+            />
           </Field>
+
+          {/* ── Live detection panel ── */}
+          {live && (
+            <div style={{
+              padding: "12px 14px",
+              border: `1px solid ${live.forceColor}55`,
+              borderRadius: 8,
+              background: `${live.forceColor}0d`,
+              transition: "all .2s",
+            }}>
+              <div style={{ fontSize: 9, color: live.forceColor, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 10 }}>
+                זיהוי חי
+              </div>
+              <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginBottom: 10 }}>
+                <LiveTag icon="⚡" label="כוח"  value={live.force}   color={live.forceColor} />
+                <LiveTag icon="💬" label="רגש"  value={live.emotion} color={live.forceColor} />
+                <LiveTag icon="📌" label="נושא" value={live.topic}   color={live.forceColor} />
+                <LiveTag icon="🏷" label="סוג"  value={live.actionType} color={live.forceColor} />
+              </div>
+              {/* Path */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 11 }}>
+                <PathNode label="פעולה"   color={live.forceColor} />
+                <Arrow />
+                <PathNode label={live.actionType} color="#fbbf24" />
+                <Arrow />
+                <PathNode label="הוכחה"   color="#38bdf8" />
+                <Arrow />
+                <PathNode label={`אמון +${live.trustBoost}`} color="#34d399" />
+                <Arrow />
+                <PathNode label="הזדמנות" color="#a78bfa" />
+              </div>
+            </div>
+          )}
 
           <Field label={`Intensity — ${intensity}/10`}>
             <input
@@ -240,6 +284,72 @@ export default function Page() {
     </main>
   );
 }
+
+// ─── Live detection ────────────────────────────────────────────────────
+
+type LiveAnalysis = {
+  force: string; forceColor: string;
+  emotion: string; topic: string;
+  actionType: string; trustBoost: number;
+};
+
+const FORCE_RULES: Array<{
+  pattern: RegExp;
+  force: string; forceColor: string;
+  emotion: string; topic: string;
+  actionType: string; trustBoost: number;
+}> = [
+  { pattern: /עזר|תרמ|שיתפ|חיבר|צוות|קהיל|יחד/,
+    force: "חברתי",   forceColor: "#fb923c", emotion: "חיבור",          topic: "קשרים",  actionType: "עזרה",  trustBoost: 3 },
+  { pattern: /פתר|תיקנ|טיפל|מצאת/,
+    force: "רציונלי", forceColor: "#38bdf8", emotion: "ביטחון",          topic: "בעיות",  actionType: "פתרון", trustBoost: 4 },
+  { pattern: /תיאמ|ארגנ|פגישה|קישור|התקשר/,
+    force: "חברתי",   forceColor: "#fb923c", emotion: "שיתוף פעולה",    topic: "תיאום",  actionType: "תיאום", trustBoost: 2 },
+  { pattern: /הרגשתי|רגש|שמחה|עצב|פחד|אהבה|כעס|חרדה/,
+    force: "רגשי",    forceColor: "#f472b6", emotion: "עיבוד רגשי",     topic: "רגש",    actionType: "ביטוי", trustBoost: 2 },
+  { pattern: /החלטתי|תכננתי|ניתחתי|חשבתי|הבנתי|למדתי/,
+    force: "רציונלי", forceColor: "#38bdf8", emotion: "ניתוח",           topic: "תכנון",  actionType: "דיווח", trustBoost: 2 },
+  { pattern: /הצגתי|הצלחתי|ניצחתי|הוכחתי|קיבלתי/,
+    force: "אגו",     forceColor: "#a78bfa", emotion: "הכרה",            topic: "הישגים", actionType: "ביטוי", trustBoost: 2 },
+  { pattern: /ספורט|הלכתי|ריצה|גוף|כאב|פצוע|שינה/,
+    force: "פיזי",    forceColor: "#22c55e", emotion: "אנרגיה",          topic: "גוף",    actionType: "דיווח", trustBoost: 1 },
+  { pattern: /רציתי|פתאום|ספונטני|דחף|התפרץ/,
+    force: "דחף",     forceColor: "#ef4444", emotion: "דחף מיידי",       topic: "שליטה", actionType: "דיווח", trustBoost: 1 },
+];
+
+function detectLive(text: string, _ctx: string, _dir: string): LiveAnalysis | null {
+  if (!text.trim()) return null;
+  for (const r of FORCE_RULES) {
+    if (r.pattern.test(text)) {
+      return { force: r.force, forceColor: r.forceColor, emotion: r.emotion,
+               topic: r.topic, actionType: r.actionType, trustBoost: r.trustBoost };
+    }
+  }
+  return { force: "לא ידוע", forceColor: "#475569", emotion: "—", topic: "—", actionType: "כללי", trustBoost: 1 };
+}
+
+function LiveTag({ icon, label, value, color }: { icon: string; label: string; value: string; color: string }) {
+  return (
+    <div>
+      <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 13, color, fontWeight: 700 }}>{icon} {value}</div>
+    </div>
+  );
+}
+
+function PathNode({ label, color }: { label: string; color: string }) {
+  return (
+    <span style={{ padding: "3px 8px", borderRadius: 4, border: `1px solid ${color}55`, background: `${color}11`, color, fontSize: 10, fontWeight: 600 }}>
+      {label}
+    </span>
+  );
+}
+
+function Arrow() {
+  return <span style={{ color: "#1e4060", fontSize: 12 }}>→</span>;
+}
+
+// ─── Field / Chip ───────────────────────────────────────────────────────
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
