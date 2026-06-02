@@ -51,6 +51,11 @@ import {
   type Edge as TopicEdge,
 } from "../lib/topics";
 import { generateSeedNodes } from "../lib/seed";
+import {
+  loadProofs, computeReputation,
+  REPUTATION_LEVEL_LABEL, REPUTATION_LEVEL_COLOR,
+  type ProofItem,
+} from "../lib/proof";
 
 const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
 
@@ -64,7 +69,8 @@ const SEMANTIC_C = {
   purple: "#a78bfa",
 } as const;
 
-function getNodeSemanticColor(n: UserNode): string {
+function getNodeSemanticColor(n: UserNode, effectiveTrust?: number): string {
+  const trust = effectiveTrust ?? n.trustScore;
   // Red: high-intensity regression or active conflict while going backward
   if (n.direction === "backward" && n.intensity >= 7)  return SEMANTIC_C.red;
   if (n.conflict   && n.direction === "backward")       return SEMANTIC_C.red;
@@ -72,8 +78,8 @@ function getNodeSemanticColor(n: UserNode): string {
   if (n.conflict   || n.direction === "backward")       return SEMANTIC_C.orange;
   // Green: forward + prosocial / high trust / strong intensity
   if (n.direction === "forward" &&
-      (n.dominantForce === "social" || n.trustScore > 50 || n.intensity >= 7)) return SEMANTIC_C.green;
-  if (n.direction === "forward" && n.dominantForce === "physical")              return SEMANTIC_C.green;
+      (n.dominantForce === "social" || trust > 50 || n.intensity >= 7)) return SEMANTIC_C.green;
+  if (n.direction === "forward" && n.dominantForce === "physical")       return SEMANTIC_C.green;
   // Blue: rational clarity
   if (n.dominantForce === "rational")                   return SEMANTIC_C.blue;
   // Purple: ego / superego depth
@@ -116,11 +122,26 @@ export default function Page() {
     return () => ro.disconnect();
   }, []);
 
+  const [allProofs, setAllProofs] = useState<ProofItem[]>([]);
+
   useEffect(() => {
     setAllNodes(loadNodes());
     setProfile(loadProfile());
     setStances(loadStances());
+    setAllProofs(loadProofs());
   }, []);
+
+  // Per-node proof-based trust: node.name matches ProofItem.userId
+  const proofTrustMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const n of allNodes) {
+      const nodeProofs = allProofs.filter(p => p.userId === n.name);
+      if (nodeProofs.length > 0) {
+        map[n.id] = Math.min(nodeProofs.reduce((s, p) => s + p.weight, 0), 100);
+      }
+    }
+    return map;
+  }, [allNodes, allProofs]);
 
   const activeTopic: Topic | null = useMemo(
     () => SEED_TOPICS.find(t => t.id === activeTopicId) ?? null,
@@ -168,7 +189,12 @@ export default function Page() {
         const s = byId[l.source], t = byId[l.target];
         if (!s || !t) return null;
         const hot = topIds.has(s.id) || topIds.has(t.id);
-        const col = getLinkSemanticColor(l, s, t);
+        // pass proof-enhanced trust so high-proof nodes get green links
+        const sWithTrust = proofTrustMap[s.id] !== undefined
+          ? { ...s, trustScore: proofTrustMap[s.id] } : s;
+        const tWithTrust = proofTrustMap[t.id] !== undefined
+          ? { ...t, trustScore: proofTrustMap[t.id] } : t;
+        const col = getLinkSemanticColor(l, sWithTrust, tWithTrust);
         return {
           _link: l,
           startLat: s.lat, startLng: s.lng,
@@ -461,7 +487,7 @@ export default function Page() {
             pointsData={pointsData}
             pointLat={(d: any) => d.lat}
             pointLng={(d: any) => d.lng}
-            pointColor={(d: any) => d._anchor ? d.color : getNodeSemanticColor(d as UserNode)}
+            pointColor={(d: any) => d._anchor ? d.color : getNodeSemanticColor(d as UserNode, proofTrustMap[(d as UserNode).id])}
             pointAltitude={(d: any) => {
               if (d._anchor) return 0.06;
               const base = d.intensity / 10;
@@ -1013,9 +1039,46 @@ export default function Page() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 10 }}>
               <MetaBox label="force" value={FORCE_LABEL[selected.dominantForce]} color={FORCE_COLOR[selected.dominantForce]} />
               <MetaBox label="direction" value={selected.direction} color={selected.direction === "forward" ? "#00f5d4" : selected.direction === "stuck" ? "#fbbf24" : "#ef4444"} />
-              <MetaBox label="trust" value={String(selected.trustScore)} color="#38bdf8" />
+              <MetaBox label="trust" value={String(proofTrustMap[selected.id] ?? selected.trustScore)} color={proofTrustMap[selected.id] !== undefined ? "#34d399" : "#38bdf8"} />
               <MetaBox label="impact" value={selected.impact} color="#e0f2fe" />
             </div>
+
+            {/* ── Proof layer ── */}
+            {(() => {
+              const nodeProofs = allProofs.filter(p => p.userId === selected.name);
+              if (nodeProofs.length === 0) return null;
+              const verified = nodeProofs.filter(p => p.status === "verified");
+              const claimed  = nodeProofs.filter(p => p.status === "claimed");
+              const rep      = computeReputation(verified, []);
+              return (
+                <div style={{
+                  padding: "8px 10px", borderRadius: 4, marginBottom: 10,
+                  border: `1px solid ${REPUTATION_LEVEL_COLOR[rep.level]}44`,
+                  background: `${REPUTATION_LEVEL_COLOR[rep.level]}08`,
+                }}>
+                  <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>Proof Layer</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                    <span style={{
+                      fontSize: 10, padding: "2px 8px", borderRadius: 8,
+                      background: REPUTATION_LEVEL_COLOR[rep.level] + "22",
+                      color: REPUTATION_LEVEL_COLOR[rep.level],
+                      border: `1px solid ${REPUTATION_LEVEL_COLOR[rep.level]}55`,
+                      fontWeight: 600,
+                    }}>
+                      {REPUTATION_LEVEL_LABEL[rep.level]}
+                    </span>
+                    <span style={{ fontSize: 11, color: REPUTATION_LEVEL_COLOR[rep.level], fontWeight: 700 }}>
+                      {rep.overall}/100
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, fontSize: 9, color: "#8bb8cc" }}>
+                    <span>✓ מאומת: <b style={{ color: "#34d399" }}>{verified.length}</b></span>
+                    <span>⏳ ממתין: <b style={{ color: "#fbbf24" }}>{claimed.length}</b></span>
+                    <span>proof trust: <b style={{ color: REPUTATION_LEVEL_COLOR[rep.level] }}>{proofTrustMap[selected.id] ?? 0}</b></span>
+                  </div>
+                </div>
+              );
+            })()}
 
             {selected.conflict && (
               <div style={{
