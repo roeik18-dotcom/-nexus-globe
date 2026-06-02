@@ -9,8 +9,6 @@ import {
   type DominantForce, type NodeContext, type Direction, type UserNode,
 } from "./lib/philos";
 import { loadProfile, type UserProfile } from "./lib/profile";
-import { deriveNeeds, NEED_LABEL } from "./lib/need";
-import { deriveStress, STRESS_COLOR, dominantStress } from "./lib/stress";
 
 // ─── Static wizard data ───────────────────────────────────────────────
 
@@ -115,29 +113,6 @@ export default function Page() {
     [force, stateId]
   );
 
-  // Build a mock node for preview computation
-  const previewNode = useMemo((): UserNode | null => {
-    if (!force || !stateMeta) return null;
-    return {
-      id: "preview", name: name || "אני",
-      lat: 32, lng: 35,
-      event:         `${FORCE_LABEL[force]} — ${stateMeta.label}`,
-      intensity,     context,
-      dominantForce: force,
-      conflict:      stateMeta.conflict ?? null,
-      action:        ACTION_SUGGEST[force][direction],
-      direction,
-      value:         intensity,
-      impact:        directionToImpact(direction),
-      trustScore:    0,
-      createdAt:     Date.now(),
-    };
-  }, [force, stateMeta, intensity, context, direction, name]);
-
-  const previewNeeds  = useMemo(() => previewNode ? deriveNeeds(previewNode) : null,  [previewNode]);
-  const previewStress = useMemo(() => previewNode ? deriveStress(previewNode) : null, [previewNode]);
-  const stressKey     = useMemo(() => previewStress ? dominantStress(previewStress) : "stable", [previewStress]);
-
   function selectForce(f: DominantForce) {
     setForce(f);
     setStateId(null);
@@ -164,10 +139,11 @@ export default function Page() {
     setLoading(true);
     const { lat, lng } = await getCoords();
     const prior = loadNodes();
+    const resolvedName = name.trim() || "אנונימי";
     const trustScore = computeTrust(intensity, direction, force, stateMeta.label, prior);
     const node: UserNode = {
       id: (globalThis.crypto?.randomUUID?.() ?? String(Date.now() + Math.random())),
-      name: name.trim(), lat, lng,
+      name: resolvedName, lat, lng,
       event:         `${FORCE_LABEL[force]} — ${stateMeta.label}`,
       intensity, context,
       dominantForce: force,
@@ -396,46 +372,6 @@ export default function Page() {
                 <PathNode label="הזדמנות"                                       color="#a78bfa" />
               </div>
 
-              {/* Needs */}
-              {previewNeeds && (previewNeeds.needs.length > 0 || previewNeeds.offers.length > 0) && (
-                <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
-                  {previewNeeds.needs.length > 0 && (
-                    <div>
-                      <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 1, marginBottom: 4 }}>צורך</div>
-                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                        {previewNeeds.needs.map(n => (
-                          <span key={n} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "#ef444422", color: "#f87171", border: "1px solid #ef444433" }}>
-                            {NEED_LABEL[n]}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {previewNeeds.offers.length > 0 && (
-                    <div>
-                      <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 1, marginBottom: 4 }}>מציע</div>
-                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                        {previewNeeds.offers.map(n => (
-                          <span key={n} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "#22c55e22", color: "#34d399", border: "1px solid #22c55e33" }}>
-                            {NEED_LABEL[n]}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Stress */}
-              {previewStress && stressKey !== "stable" && (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 1, marginBottom: 4 }}>מתח דומיננטי</div>
-                  <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, color: STRESS_COLOR[stressKey as keyof typeof STRESS_COLOR] ?? "#8bb8cc", background: (STRESS_COLOR[stressKey as keyof typeof STRESS_COLOR] ?? "#8bb8cc") + "22", border: `1px solid ${(STRESS_COLOR[stressKey as keyof typeof STRESS_COLOR] ?? "#8bb8cc")}44` }}>
-                    {stressKey}
-                  </span>
-                </div>
-              )}
-
               {/* Action */}
               <div style={{ padding: "10px 12px", background: "#020d1a", borderRadius: 6, border: "1px solid #0a2a4a" }}>
                 <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 1, marginBottom: 4 }}>פעולה מוצעת</div>
@@ -445,7 +381,7 @@ export default function Page() {
 
             <button
               onClick={submit}
-              disabled={loading || !name.trim()}
+              disabled={loading}
               style={{
                 width: "100%", padding: "14px", fontSize: 14, fontWeight: 700, letterSpacing: 2,
                 color: "#020d1a",
