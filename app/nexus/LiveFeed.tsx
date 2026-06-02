@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { loadNodes, FORCE_COLOR, FORCE_LABEL, CONTEXT_LABEL, type UserNode, type NodeContext } from "../lib/philos";
+import { loadNodes, saveNode, FORCE_COLOR, FORCE_LABEL, CONTEXT_LABEL, type UserNode, type NodeContext } from "../lib/philos";
 import { loadProfile } from "../lib/profile";
 import {
-  loadProofs, calcTrustFromProofs, computeReputation, OPPORTUNITY_DEFS,
-  REPUTATION_LEVEL_LABEL, REPUTATION_LEVEL_COLOR,
+  loadProofs, OPPORTUNITY_DEFS,
   type ProofItem,
 } from "../lib/proof";
 import { deriveNeeds, NEED_LABEL } from "../lib/need";
+import { generateSeedNodes } from "../lib/seed";
 
 const DAY_MS = 86_400_000;
 
@@ -31,14 +31,28 @@ function proofTrust(userId: string, allProofs: ProofItem[]): number {
 // ─── Component ───────────────────────────────────────────────────────
 
 export default function LiveFeed() {
-  const [nodes,   setNodes]   = useState<UserNode[]>([]);
-  const [proofs,  setProofs]  = useState<ProofItem[]>([]);
-  const [profile, setProfile] = useState<ReturnType<typeof loadProfile>>(null);
+  const [nodes,    setNodes]    = useState<UserNode[]>([]);
+  const [proofs,   setProofs]   = useState<ProofItem[]>([]);
+  const [profile,  setProfile]  = useState<ReturnType<typeof loadProfile>>(null);
+  const [isDemo,   setIsDemo]   = useState(false);
 
   const load = () => {
-    setNodes(loadNodes());
+    const real = loadNodes();
+    if (real.length > 0) {
+      setNodes(real);
+      setIsDemo(false);
+    } else {
+      setNodes(generateSeedNodes());
+      setIsDemo(true);
+    }
     setProofs(loadProofs());
     setProfile(loadProfile());
+  };
+
+  const seedAndLoad = () => {
+    const seeds = generateSeedNodes();
+    seeds.forEach(n => saveNode(n));
+    load();
   };
 
   useEffect(() => {
@@ -77,16 +91,22 @@ export default function LiveFeed() {
     [nodes, proofs]
   );
 
-  // 4. New Opportunities — unlocked thresholds per user
+  // 4. New Opportunities — nodes closest to next threshold
   const opportunities = useMemo(() => {
-    const out: Array<{ name: string; opp: string; trust: number }> = [];
+    // Show: unlocked opps AND nodes nearest to next threshold
+    const out: Array<{ name: string; opp: string; trust: number; unlocked: boolean }> = [];
     nodes.forEach(n => {
       const trust = proofTrust(n.name, proofs) || n.trustScore;
       OPPORTUNITY_DEFS.forEach(o => {
-        if (trust >= o.threshold) out.push({ name: n.name, opp: o.name, trust });
+        if (trust >= o.threshold) {
+          out.push({ name: n.name, opp: o.name, trust, unlocked: true });
+        } else if (o.threshold - trust <= 15) {
+          // within 15 points of unlocking
+          out.push({ name: n.name, opp: o.name, trust, unlocked: false });
+        }
       });
     });
-    return out.sort((a, b) => b.trust - a.trust).slice(0, 5);
+    return out.sort((a, b) => Number(b.unlocked) - Number(a.unlocked) || b.trust - a.trust).slice(0, 6);
   }, [nodes, proofs]);
 
   // 5. Value by Domain
@@ -138,10 +158,25 @@ export default function LiveFeed() {
     <div style={{ overflowY: "auto", height: "100%", padding: "12px 14px" }}>
 
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isDemo ? 6 : 14 }}>
         <div style={{ fontSize: 10, letterSpacing: 3, color: "#38bdf8", fontWeight: 700 }}>LIVE FEED</div>
         <div style={{ fontSize: 9, color: "#1e4060" }}>מתעדכן כל 30ש'</div>
       </div>
+
+      {/* Demo banner */}
+      {isDemo && (
+        <div style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #fbbf2444", background: "#fbbf2408", marginBottom: 12 }}>
+          <div style={{ fontSize: 9, color: "#fbbf24", marginBottom: 5 }}>
+            ⚠ מצב הדגמה — אין נתונים אמיתיים עדיין
+          </div>
+          <button
+            onClick={seedAndLoad}
+            style={{ fontSize: 9, padding: "3px 10px", borderRadius: 4, border: "1px solid #fbbf2466", background: "transparent", color: "#fbbf24", cursor: "pointer" }}
+          >
+            ← טען 10 משתמשי demo לגלובוס
+          </button>
+        </div>
+      )}
 
       {/* 1. Leaders Today */}
       <div style={S.section}>
@@ -218,12 +253,14 @@ export default function LiveFeed() {
           ? <div style={{ fontSize: 10, color: "#1e4060" }}>—</div>
           : opportunities.map((o, i) => (
             <div key={i} style={S.item}>
-              <span style={{ ...S.tag, background: "#064e3b", color: "#34d399" }}>פתוח</span>
+              <span style={{ ...S.tag, background: o.unlocked ? "#064e3b" : "#1a2a1a", color: o.unlocked ? "#34d399" : "#fbbf24" }}>
+                {o.unlocked ? "פתוח" : "קרוב"}
+              </span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 10, color: "#caf0f8" }}>{o.opp}</div>
                 <div style={{ fontSize: 9, color: "#1e4060" }}>{o.name}</div>
               </div>
-              <div style={{ fontSize: 10, color: "#34d399", fontWeight: 600 }}>{o.trust}</div>
+              <div style={{ fontSize: 10, color: o.unlocked ? "#34d399" : "#fbbf24", fontWeight: 600 }}>{o.trust}</div>
             </div>
           ))
         }
