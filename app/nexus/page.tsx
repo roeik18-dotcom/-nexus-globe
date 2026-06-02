@@ -139,13 +139,18 @@ export default function Page() {
       .map(l => {
         const s = byId[l.source], t = byId[l.target];
         if (!s || !t) return null;
-        const col = LINK_COLOR[l.type];
         const hot = topIds.has(s.id) || topIds.has(t.id);
+        // Value → Color: force color × direction opacity
+        // forward=full · stuck=bb · backward=66
+        const dirAlpha = (n: UserNode) =>
+          n.direction === "forward" ? "" : n.direction === "stuck" ? "bb" : "66";
+        const sc = (FORCE_COLOR[s.dominantForce] ?? "#38bdf8") + dirAlpha(s);
+        const tc = (FORCE_COLOR[t.dominantForce] ?? "#38bdf8") + dirAlpha(t);
         return {
           _link: l,
           startLat: s.lat, startLng: s.lng,
           endLat: t.lat,   endLng: t.lng,
-          color: [col, col],
+          color: [sc, tc],
           stroke: 0.25 + l.strength * 0.9 + (hot ? 0.3 : 0),
           altitude: 0.12 + l.strength * 0.15,
           dash: l.directional ? 0.25 : 0.6,
