@@ -1,161 +1,258 @@
-// PHILOS ORIENTATION — Root Architecture
+// PHILOS ORIENTATION — 6 × 3 Matrix Architecture
 //
-// ID is not a force. ID is the root state.
-// All forces are expressions of ID energy at different levels of development.
+// 6 Classes × 3 Levels = 18 base cells
 //
-// Hierarchy:
-//   ROOT (ID)
-//     ↓ Physical   — energy in the body
-//     ↓ Emotional  — body becomes feeling
-//     ↓ Rational   — feeling becomes thought
-//     ↓ Social     — thought expressed in connection
-//     ↓ Ego        — connection focused into self
-//     ↓ Superego   — self transcended into values
+// Classes:  ID | EGO | SUPEREGO | EMOTIONAL | RATIONAL | PHYSICAL
+// Levels:   Physical | Emotional | Rational
+//
+// Every cell = one specific expression of energy in the world.
 
 import type { DominantForce } from "./philos";
 
 // ─── Types ────────────────────────────────────────────────────────────
 
-export interface EnergyPath {
-  force:            DominantForce;
-  layerDescription: string;          // what this layer IS
-  expressions:      string[];        // how ID manifests here
-  risk:             string;          // shadow / danger at this level
-  opportunity:      string;          // gift / potential at this level
-  balancingForce:   DominantForce | "id";
-  balanceReason:    string;          // why this pairing balances
-  nextForce:        DominantForce | null;  // next evolution up the hierarchy
-  growthAction:     string;          // one concrete move toward growth
+export type ClassKey = "id" | "ego" | "superego" | "emotional" | "rational" | "physical";
+export type LevelKey = "physical" | "emotional" | "rational";
+
+export interface MatrixCell {
+  expressions:     string[];
+  description:     string;
+  risk:            string;
+  opportunity:     string;
+  balancingClass:  ClassKey;
+  suggestedAction: string;
 }
 
-// ─── Root State (ID) ─────────────────────────────────────────────────
+export type OrientationMatrix = Record<ClassKey, Record<LevelKey, MatrixCell>>;
 
-export const ROOT_EXPRESSIONS: string[] = [
-  "חוסר", "פוטנציאל", "מתח", "משיכה", "צורך", "תנועה לפני צורה",
+// ─── Display maps ─────────────────────────────────────────────────────
+
+export const CLASS_ORDER: ClassKey[] = [
+  "id", "ego", "superego", "emotional", "rational", "physical",
 ];
 
-export const ROOT_DESCRIPTION =
-  "אנרגיה גולמית — לפני שיש לה צורה. כל הכוחות מגיעים מכאן.";
+export const LEVEL_ORDER: LevelKey[] = ["physical", "emotional", "rational"];
 
-export const ROOT_CHARACTERISTICS: string[] = [
-  "אי-ודאות",
-  "חוסר שליטה",
-  "משיכה",
-  "צורך",
-  "אנרגיה שמחפשת צורה",
-];
-
-// ─── Development Paths (ID → each force) ─────────────────────────────
-
-export const ENERGY_HIERARCHY: DominantForce[] = [
-  "physical",
-  "emotional",
-  "rational",
-  "social",
-  "ego",
-  "superego",
-];
-
-export const DEVELOPMENT_PATHS: Record<DominantForce, EnergyPath> = {
-  id: {
-    force: "id",
-    layerDescription: "מצב השורש. האנרגיה מחפשת צורה.",
-    expressions: ["חוסר", "פוטנציאל", "מתח", "משיכה", "צורך"],
-    risk: "כאוס, ריק — אנרגיה ללא כיוון",
-    opportunity: "כוח גולמי — יכול להפוך לכל דבר",
-    balancingForce: "superego",
-    balanceReason: "האיד צריך את הסופר-אגו כדי שהאנרגיה לא תישרף לשווא",
-    nextForce: "physical",
-    growthAction: "הגדר צורך אחד קונקרטי לפני שאתה פועל",
-  },
-  physical: {
-    force: "physical",
-    layerDescription: "האיד קיבל צורה גופנית. אנרגיה שמתבטאת בגוף.",
-    expressions: ["רעב", "כאב", "תנועה", "מיניות", "הישרדות", "אנרגיה גופנית"],
-    risk: "תלות גופנית — שכחה שיש ממד פנימי",
-    opportunity: "עיגון, נוכחות ממשית, כוח",
-    balancingForce: "emotional",
-    balanceReason: "הגוף צריך את הרגש כדי לדעת מה הוא באמת חש",
-    nextForce: "emotional",
-    growthAction: "הקשב לגוף — הוא אומר משהו שהמחשבה לא יכולה לומר",
-  },
-  emotional: {
-    force: "emotional",
-    layerDescription: "האנרגיה הגופנית הפכה לרגש. הגוף חש, הנפש מפרשת.",
-    expressions: ["געגוע", "קשר", "פחד", "אהבה", "בדידות", "שייכות"],
-    risk: "הצפה רגשית — ניתוב שגוי של אנרגיה",
-    opportunity: "עומק, חיבור אמיתי, אמפתיה",
-    balancingForce: "rational",
-    balanceReason: "הרגש צריך את השכל כדי לא להיסחף",
-    nextForce: "rational",
-    growthAction: "שתף אדם אחד את הרגש — הצאה מהכלוב הפנימי",
-  },
-  rational: {
-    force: "rational",
-    layerDescription: "הרגש הפך למחשבה. האנרגיה מחפשת הסבר.",
-    expressions: ["סקרנות", "ניתוח", "הסבר", "למידה", "הבנה", "תכנון"],
-    risk: "ניתוח ללא פעולה — ניתוק מהרגש",
-    opportunity: "בהירות, סדר, ידע שמוביל לפעולה",
-    balancingForce: "emotional",
-    balanceReason: "השכל צריך את הרגש כדי לדעת מה חשוב",
-    nextForce: "social",
-    growthAction: "תרגם תובנה אחת לצעד קטן מחר",
-  },
-  social: {
-    force: "social",
-    layerDescription: "המחשבה מתבטאת בקשרים. האנרגיה זורמת בין אנשים.",
-    expressions: ["שייכות", "מעמד", "שבט", "שיתוף פעולה", "קהילה", "תרומה"],
-    risk: "ביטול עצמי — ציות עיוור לקבוצה",
-    opportunity: "חיבור, השפעה, ערך קולקטיבי",
-    balancingForce: "ego",
-    balanceReason: "הקבוצה צריכה את הפרט הייחודי שלא יתמסמס",
-    nextForce: "ego",
-    growthAction: "תרום משהו ספציפי לאחד מהקבוצה — לא סתם נוכחות",
-  },
-  ego: {
-    force: "ego",
-    layerDescription: "הקשר החברתי מתמקד בזהות. האנרגיה בונה עצמי.",
-    expressions: ["הישג", "הכרה", "תחרות", "שליטה", "ייחודיות", "מנהיגות"],
-    risk: "אינפלציה — ניתוק מהאחר, גאוותנות",
-    opportunity: "כוח עצמי, זהות ברורה, מנהיגות",
-    balancingForce: "social",
-    balanceReason: "האגו צריך את הקהילה כדי לא להתנפח",
-    nextForce: "superego",
-    growthAction: "השתמש בכוח שלך לטובת מישהו אחר — לא רק לטובת עצמך",
-  },
-  superego: {
-    force: "superego",
-    layerDescription: "האגו הפך לערכים. האנרגיה מכוונת לתכלית.",
-    expressions: ["מוסר", "אחריות", "משמעות", "משמעת", "ערכים", "חזון"],
-    risk: "ביקורת עצמית — שיתוק מוסרי, פרפקציוניזם",
-    opportunity: "משמעות, אינטגרציה, תכלית עמוקה",
-    balancingForce: "id",
-    balanceReason: "הסופר-אגו צריך את האיד כדי לא להתאבן",
-    nextForce: null,
-    growthAction: "בחר ערך אחד ותפעל לפיו היום — בלי להמתין לתנאים מושלמים",
-  },
+export const CLASS_LABEL: Record<ClassKey, string> = {
+  id:        "איד",
+  ego:       "אגו",
+  superego:  "סופר-אגו",
+  emotional: "רגשי",
+  rational:  "רציונלי",
+  physical:  "גופני",
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────
+export const CLASS_ICON: Record<ClassKey, string> = {
+  id:        "🌊",
+  ego:       "🏆",
+  superego:  "⚖️",
+  emotional: "❤️",
+  rational:  "🧠",
+  physical:  "⚡",
+};
 
-/** For a given force+state, return the path and where it sits in the hierarchy */
-export function getEnergyPath(force: DominantForce): EnergyPath {
-  return DEVELOPMENT_PATHS[force];
+export const CLASS_COLOR: Record<ClassKey, string> = {
+  id:        "#fbbf24",
+  ego:       "#a78bfa",
+  superego:  "#818cf8",
+  emotional: "#38bdf8",
+  rational:  "#22c55e",
+  physical:  "#ef4444",
+};
+
+export const LEVEL_LABEL: Record<LevelKey, string> = {
+  physical:  "גופני",
+  emotional: "רגשי",
+  rational:  "רציונלי",
+};
+
+export const LEVEL_ICON: Record<LevelKey, string> = {
+  physical:  "⚡",
+  emotional: "❤️",
+  rational:  "🧠",
+};
+
+export const LEVEL_COLOR: Record<LevelKey, string> = {
+  physical:  "#ef4444",
+  emotional: "#38bdf8",
+  rational:  "#22c55e",
+};
+
+// ─── ClassKey → DominantForce (for UserNode storage) ─────────────────
+
+export function classToDominantForce(c: ClassKey): DominantForce {
+  return c as DominantForce; // all 6 classes exist in DominantForce
 }
 
-/** Hierarchy index — ID is -1 (root), forces are 0..5 */
-export function hierarchyLevel(force: DominantForce): number {
-  if (force === "id") return -1;
-  return ENERGY_HIERARCHY.indexOf(force);
-}
+// ─── The 6 × 3 Matrix ─────────────────────────────────────────────────
 
-/** Human-readable hierarchy label */
-export const HIERARCHY_LABEL: Partial<Record<DominantForce | "id", string>> = {
-  id:        "שורש",
-  physical:  "גופני (1)",
-  emotional: "רגשי (2)",
-  rational:  "רציונלי (3)",
-  social:    "חברתי (4)",
-  ego:       "אגו (5)",
-  superego:  "סופר-אגו (6)",
+export const MATRIX: OrientationMatrix = {
+
+  // ── ID (root) ────────────────────────────────────────────────────────
+  id: {
+    physical: {
+      expressions:     ["רעב", "כאב", "מיניות", "הישרדות", "דחף גופני"],
+      description:     "האיד מתבטא בגוף — צורך גולמי לפני שיש לו שם",
+      risk:            "פעולה ללא מחשבה, תגובה רפלקסיבית",
+      opportunity:     "אנרגיה עצומה, נוכחות מלאה",
+      balancingClass:  "superego",
+      suggestedAction: "הגדר גבול אחד לפני שאתה פועל על הדחף",
+    },
+    emotional: {
+      expressions:     ["תשוקה", "כמיהה", "פחד", "קנאה", "דחף לחיבור"],
+      description:     "האיד מתבטא ברגש — רצון שמחפש צורה",
+      risk:            "הצפה, תלות, ניתוב שגוי של אנרגיה",
+      opportunity:     "עומק, ספונטניות, חיבור אמיתי",
+      balancingClass:  "rational",
+      suggestedAction: "תן שם לרגש לפני שאתה פועל לפיו",
+    },
+    rational: {
+      expressions:     ["סקרנות", "חיפוש", "אובססיה", "אי-ודאות", "שאלות"],
+      description:     "האיד מתבטא בחשיבה — שאלות שמחפשות תשובות",
+      risk:            "חשיבה כפייתית, מעגלים ללא פתרון",
+      opportunity:     "חיפוש עמוק, תובנות גולמיות",
+      balancingClass:  "physical",
+      suggestedAction: "בחר שאלה אחת ומצא תשובה אחת — עכשיו",
+    },
+  },
+
+  // ── EGO ──────────────────────────────────────────────────────────────
+  ego: {
+    physical: {
+      expressions:     ["מראה", "כוח", "ביצועים", "תחרות", "שליטה גופנית"],
+      description:     "האגו מתבטא בגוף — זהות דרך כוח ומראה",
+      risk:            "תחרותיות קיצונית, קריסה כשהגוף נחלש",
+      opportunity:     "הישגים ממשיים, אנרגיה ממוקדת",
+      balancingClass:  "superego",
+      suggestedAction: "השתמש בכוח הגופני לשירות מישהו אחר",
+    },
+    emotional: {
+      expressions:     ["גאווה", "בושה", "הכרה", "השפלה", "פחד מכישלון"],
+      description:     "האגו מתבטא ברגש — כבוד עצמי וצורך בהכרה",
+      risk:            "אינפלציה, ניפוץ קשה כשאין הכרה",
+      opportunity:     "זהות רגשית, מנהיגות, ביטחון עצמי",
+      balancingClass:  "id",
+      suggestedAction: "הגדר הישג שמשמח אותך — גם אם אף אחד לא יראה",
+    },
+    rational: {
+      expressions:     ["אסטרטגיה", "תכנון עצמי", "הצדקה עצמית", "מיתוג"],
+      description:     "האגו מתבטא בחשיבה — בניית זהות ותדמית",
+      risk:            "רציונליזציה, הגנה על האגו בכל מחיר",
+      opportunity:     "תכנון אסטרטגי, בניית שם",
+      balancingClass:  "superego",
+      suggestedAction: "שאל: האם ההחלטה הזו מקדמת מטרה או מגנה על האגו?",
+    },
+  },
+
+  // ── SUPEREGO ──────────────────────────────────────────────────────────
+  superego: {
+    physical: {
+      expressions:     ["משמעת", "סגפנות", "ריסון", "שגרה", "פרישה"],
+      description:     "הסופר-אגו מתבטא בגוף — שליטה גופנית מתוך ערכים",
+      risk:            "דיכוי, פרפקציוניזם גופני, עונש עצמי",
+      opportunity:     "משמעת עמוקה, כיבוד הגוף",
+      balancingClass:  "id",
+      suggestedAction: "בדוק: המשמעת הזו — מאהבה עצמית או מעונש עצמי?",
+    },
+    emotional: {
+      expressions:     ["אשמה", "חובה", "חמלה", "מוסר רגשי", "אחריות"],
+      description:     "הסופר-אגו מתבטא ברגש — מצפון ורגש מוסרי",
+      risk:            "אשמה כרונית, שיתוק מוסרי",
+      opportunity:     "אמפתיה עמוקה, חמלה אמיתית",
+      balancingClass:  "ego",
+      suggestedAction: "הפרד: אחריות אמיתית שלי לעומת אשמה שאינה שלי",
+    },
+    rational: {
+      expressions:     ["משמעות", "מוסר", "אחריות", "חזון", "אתיקה"],
+      description:     "הסופר-אגו מתבטא בחשיבה — ערכים ותכלית",
+      risk:            "שיתוק מוסרי, פרפקציוניזם מחשבתי",
+      opportunity:     "חזון עמוק, מנהיגות ערכית",
+      balancingClass:  "id",
+      suggestedAction: "בחר ערך אחד ופעל לפיו — ללא תנאים מושלמים",
+    },
+  },
+
+  // ── EMOTIONAL ────────────────────────────────────────────────────────
+  emotional: {
+    physical: {
+      expressions:     ["בכי", "כאב מרגש", "תחושה סומטית", "פרפרים", "חנק"],
+      description:     "הרגש מתבטא בגוף — רגשות עם כתובת גופנית",
+      risk:            "פסיכוסומטיקה, רגשות שנספגים לגוף",
+      opportunity:     "אינטגרציה גוף-נפש, תחושה מלאה",
+      balancingClass:  "rational",
+      suggestedAction: "גלה היכן בגוף אתה מרגיש את זה — שם יש מידע",
+    },
+    emotional: {
+      expressions:     ["אהבה", "עצב", "שמחה", "כאב רגשי", "בדידות", "כעס"],
+      description:     "הרגש בכוחו המלא — חוויה רגשית ישירה",
+      risk:            "הצפה, תגובתיות, מניפולציה",
+      opportunity:     "חיבור עמוק, אמפתיה, חיים מלאים",
+      balancingClass:  "rational",
+      suggestedAction: "שב עם הרגש 10 דקות — לפני שאתה מחליט מה לעשות",
+    },
+    rational: {
+      expressions:     ["אמפתיה", "הבנה רגשית", "פירוש תחושות", "אינטואיציה"],
+      description:     "הרגש מנותח — הבנה אינטלקטואלית של חוויה פנימית",
+      risk:            "ניתוח כבריחה מחוויה ישירה",
+      opportunity:     "אינטליגנציה רגשית, הבנה עמוקה",
+      balancingClass:  "physical",
+      suggestedAction: "חזור מהניתוח לחוויה — תרגיש לפני שתסביר",
+    },
+  },
+
+  // ── RATIONAL ──────────────────────────────────────────────────────────
+  rational: {
+    physical: {
+      expressions:     ["תכנון פעולה", "כישורים", "ביצוע מעשי", "טכניקה"],
+      description:     "ההיגיון מתבטא בגוף — מחשבה שהופכת לפעולה",
+      risk:            "אוטומציה, ביצוע ללא יצירתיות",
+      opportunity:     "יעילות, מיומנות, הגשמה",
+      balancingClass:  "emotional",
+      suggestedAction: "בצע את הצעד הקטן ביותר — ללא שלמות",
+    },
+    emotional: {
+      expressions:     ["הגיון רגשי", "אינטואיציה", "הבנה מרגישה", "חכמת לב"],
+      description:     "ההיגיון מוביל ע\"י רגש — חשיבה שמכוונת ע\"י חוויה",
+      risk:            "עירוב שגוי בין עובדות לרצונות",
+      opportunity:     "חוכמה שלמה, החלטות עמוקות",
+      balancingClass:  "superego",
+      suggestedAction: "הפרד: מה אני חושב לעומת מה אני רוצה — שניהם חשובים",
+    },
+    rational: {
+      expressions:     ["ניתוח", "לוגיקה", "אסטרטגיה", "פתרון בעיות", "למידה"],
+      description:     "ההיגיון בכוחו המלא — חשיבה טהורה",
+      risk:            "ניתוח עודף, ניתוק מהרגש",
+      opportunity:     "בהירות, סדר, ידע שמוביל לפעולה",
+      balancingClass:  "emotional",
+      suggestedAction: "אחרי הניתוח — פעל על המסקנה",
+    },
+  },
+
+  // ── PHYSICAL ──────────────────────────────────────────────────────────
+  physical: {
+    physical: {
+      expressions:     ["תנועה", "אנרגיה", "כאב", "כוח", "חיוניות", "מחלה"],
+      description:     "הגוף בכוחו המלא — אנרגיה פיזית ישירה",
+      risk:            "שחיקה, התעלמות מגבולות",
+      opportunity:     "כוח, נוכחות, עיגון",
+      balancingClass:  "rational",
+      suggestedAction: "הקשב לאות הראשון שהגוף שלח — לפני שהמחשבה הגיעה",
+    },
+    emotional: {
+      expressions:     ["כמיהה גופנית", "בדידות פיזית", "צורך במגע", "קשר", "חיבוק"],
+      description:     "הגוף מחפש חיבור — צורך גופני-רגשי",
+      risk:            "תלות גופנית, ריקנות ללא קשר",
+      opportunity:     "חמימות, שייכות, ביטחון",
+      balancingClass:  "rational",
+      suggestedAction: "בקש קשר אנושי אחד היום — ישיר וממשי",
+    },
+    rational: {
+      expressions:     ["מודעות גופנית", "תכנון בריאות", "הבנת הגוף", "ביופידבק"],
+      description:     "הגוף מנותח — הבנה קוגניטיבית של הצרכים הפיזיים",
+      risk:            "לחשוב על הגוף ולא לחיות בו",
+      opportunity:     "בריאות מושכלת, שימוש אופטימלי",
+      balancingClass:  "emotional",
+      suggestedAction: "תכנן פעולה גופנית אחת קטנה להיום",
+    },
+  },
 };
