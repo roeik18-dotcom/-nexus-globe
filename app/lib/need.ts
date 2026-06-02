@@ -93,9 +93,9 @@ export function deriveNeeds(n: UserNode): NodeNeeds {
   const needs  = new Set<NeedTag>();
 
   if (n.direction === "forward") {
-    FORCE_OFFERS[n.dominantForce].forEach(t => offers.add(t));
+    FORCE_OFFERS[n.dominantForce]?.forEach(t => offers.add(t));
   } else {
-    FORCE_NEEDS_STUCK[n.dominantForce].forEach(t => needs.add(t));
+    FORCE_NEEDS_STUCK[n.dominantForce]?.forEach(t => needs.add(t));
   }
 
   if (n.conflict && CONFLICT_NEEDS[n.conflict]) {
