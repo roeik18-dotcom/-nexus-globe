@@ -6,7 +6,8 @@ export type DominantForce =
   | "physical"
   | "ego"
   | "social"
-  | "id";
+  | "id"
+  | "superego";
 
 export type NodeContext =
   | "work"
@@ -48,6 +49,7 @@ export const FORCE_COLOR: Record<DominantForce, string> = {
   ego:       "#a78bfa", // purple
   social:    "#fb923c", // orange
   id:        "#fbbf24", // yellow
+  superego:  "#818cf8", // indigo
 };
 
 export const FORCE_LABEL: Record<DominantForce, string> = {
@@ -57,6 +59,7 @@ export const FORCE_LABEL: Record<DominantForce, string> = {
   ego:       "אגו",
   social:    "חברתי",
   id:        "דחף",
+  superego:  "סופר-אגו",
 };
 
 export const CONTEXT_LABEL: Record<NodeContext, string> = {
@@ -186,8 +189,9 @@ const COMPLEMENT: Record<DominantForce, DominantForce> = {
   rational:  "emotional",
   ego:       "social",
   social:    "ego",
-  id:        "rational",
+  id:        "superego",
   physical:  "emotional",
+  superego:  "id",
 };
 
 function classifyLink(a: UserNode, b: UserNode): Link | null {

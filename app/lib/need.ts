@@ -62,6 +62,7 @@ const FORCE_OFFERS: Record<DominantForce, NeedTag[]> = {
   ego:       ["vision", "validation"],
   social:    ["connection", "validation"],
   id:        ["momentum", "vision"],
+  superego:  ["structure", "validation"],
 };
 
 /** What each force lacks (= needs) when stuck or regressing. */
@@ -72,6 +73,7 @@ const FORCE_NEEDS_STUCK: Record<DominantForce, NeedTag[]> = {
   ego:       ["grounding", "connection"], // inflation → needs humility + others
   social:    ["structure", "validation"], // people-pleasing → needs self-boundary
   id:        ["structure", "patience"],   // impulsive → needs form + waiting
+  superego:  ["grounding", "connection"], // rigid moralism → needs reality + warmth
 };
 
 /** Conflict tag → extra need. */

@@ -1,398 +1,522 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  CONTEXT_LABEL,
-  DIRECTION_LABEL,
-  computeTrust,
-  directionToImpact,
-  loadNodes,
-  saveNode,
-  type DominantForce,
-  type NodeContext,
-  type Direction,
-  type UserNode,
+  FORCE_COLOR, FORCE_LABEL, CONTEXT_LABEL,
+  computeTrust, directionToImpact,
+  loadNodes, saveNode,
+  type DominantForce, type NodeContext, type Direction, type UserNode,
 } from "./lib/philos";
 import { loadProfile, type UserProfile } from "./lib/profile";
+import { deriveNeeds, NEED_LABEL } from "./lib/need";
+import { deriveStress, STRESS_COLOR, dominantStress } from "./lib/stress";
+
+// ─── Static wizard data ───────────────────────────────────────────────
+
+type ForceState = { id: string; label: string; desc: string; dir: Direction; conflict?: string };
+
+const FORCE_STATES: Record<DominantForce, ForceState[]> = {
+  physical: [
+    { id: "energy",    label: "אנרגיה",          desc: "חיוניות, כוח, מוכנות",          dir: "forward"  },
+    { id: "recovery",  label: "התאוששות",         desc: "חוזר לאיתני",                   dir: "forward"  },
+    { id: "fatigue",   label: "עייפות",           desc: "צריך מנוחה, ריקנות גופנית",     dir: "stuck"    },
+    { id: "pain",      label: "כאב",              desc: "כאב פיזי, פציעה",               dir: "backward" },
+    { id: "illness",   label: "מחלה",             desc: "גוף מדוכא, חולי",               dir: "backward" },
+  ],
+  emotional: [
+    { id: "joy",       label: "שמחה",             desc: "תחושה חיובית, זרימה",            dir: "forward"  },
+    { id: "love",      label: "אהבה / חיבור",     desc: "קשר עמוק, השתייכות",            dir: "forward"  },
+    { id: "anger",     label: "כעס",              desc: "תסכול, עלבון, מחאה פנימית",     dir: "stuck"    },
+    { id: "sadness",   label: "עצב",              desc: "כאב רגשי, אובדן",               dir: "backward" },
+    { id: "fear",      label: "פחד / חרדה",       desc: "אי-ביטחון, חשש",                dir: "backward" },
+    { id: "empty",     label: "ריקנות",           desc: "ניתוק, אדישות, חוסר הרגשה",    dir: "stuck",   conflict: "blocked_feeling" },
+  ],
+  rational: [
+    { id: "clarity",   label: "בהירות",           desc: "תובנה, מחשבה ברורה",            dir: "forward"  },
+    { id: "planning",  label: "תכנון",            desc: "בונה מסלול, מסדר",              dir: "forward"  },
+    { id: "decision",  label: "החלטה",            desc: "נקודת בחירה",                   dir: "forward"  },
+    { id: "analysis",  label: "ניתוח",            desc: "שוקל, בוחן, משווה",             dir: "stuck"    },
+    { id: "paralysis", label: "שיתוק",            desc: "יותר מדי אפשרויות, קיפאון",     dir: "stuck",   conflict: "analysis_paralysis" },
+  ],
+  social: [
+    { id: "connect",   label: "חיבור",            desc: "קשר, שייכות, יחד",              dir: "forward"  },
+    { id: "support",   label: "תמיכה",            desc: "נותן או מקבל עזרה",             dir: "forward"  },
+    { id: "collab",    label: "שיתוף פעולה",      desc: "עבודה משותפת, יצירה יחד",       dir: "forward"  },
+    { id: "conflict",  label: "קונפליקט",         desc: "מתח עם אחרים, חיכוך",           dir: "stuck"    },
+    { id: "lonely",    label: "בדידות",           desc: "מנותק, לבד, לא נראה",           dir: "backward" },
+  ],
+  id: [
+    { id: "impulse",   label: "דחף",              desc: "רוצה לפעול עכשיו, לא מחכה",     dir: "forward"  },
+    { id: "desire",    label: "תשוקה",            desc: "רצון עז, משיכה חזקה",           dir: "forward"  },
+    { id: "resist",    label: "מרד",              desc: "מתנגד לגבולות, רוצה לשבור",     dir: "stuck"    },
+    { id: "chaos",     label: "כאוס פנימי",       desc: "חוסר שליטה, זרם פרוע",          dir: "backward" },
+  ],
+  ego: [
+    { id: "ambition",  label: "שאיפה",            desc: "רוצה לגדול, לבנות, להצליח",     dir: "forward"  },
+    { id: "pride",     label: "גאווה",            desc: "תחושת ניצחון, הצלחה",           dir: "forward"  },
+    { id: "defend",    label: "הגנה",             desc: "מגן על עמדתי, על זהותי",        dir: "stuck"    },
+    { id: "shame",     label: "בושה",             desc: "כישלון נתפס, ביקורת חיצונית",   dir: "backward", conflict: "image_gap" },
+  ],
+  superego: [
+    { id: "duty",      label: "חובה",             desc: "פועל לפי מה שצריך לעשות",       dir: "forward"  },
+    { id: "values",    label: "ערכים",            desc: "פועל לפי מה שאני מאמין בו",     dir: "forward"  },
+    { id: "critic",    label: "ביקורת עצמית",     desc: "שופט את עצמי, לא מספיק טוב",   dir: "stuck"    },
+    { id: "guilt",     label: "אשמה",             desc: "עברתי על ערכיי, חרטה",          dir: "backward", conflict: "regression" },
+    { id: "dilemma",   label: "דילמה מוסרית",     desc: "שאלת צדק, אחריות, מה נכון",    dir: "stuck",   conflict: "desire_vs_fear" },
+  ],
+};
+
+const ACTION_SUGGEST: Record<DominantForce, Record<Direction, string>> = {
+  physical:  { forward: "תנצל את האנרגיה — צא לפעולה ממשית עכשיו", stuck: "תן לגוף מנוחה מודעת — קבע זמן הפסקה", backward: "פנה לטיפול ותמיכה — הגוף צריך עזרה" },
+  emotional: { forward: "שתף את הרגש עם מישהו שחשוב לך", stuck: "שב עם הרגש 10 דקות — כתוב מה מעכב", backward: "בקש תמיכה — אל תהיה לבד עם זה" },
+  rational:  { forward: "תרגם את הבהירות לצעד ראשון קטן", stuck: "בחר אחת ותתחיל — ניתוח ללא פעולה הוא שיתוק", backward: "פשט — מה הצעד הקטן ביותר שאפשר?" },
+  social:    { forward: "תעמיק את הקשר — שתף, תן, תשאל", stuck: "פנה לשיחה ישירה — אמור מה מרגיש לא בסדר", backward: "צור קשר יזום — שלח הודעה לאחד שחשוב לך" },
+  id:        { forward: "פעל — אבל הגדר גבול אחד לפני הפעולה", stuck: "שים את הדחף בצד לשעה — ראה אם הוא עדיין שם", backward: "בקש עזרה לפני שהדחף גובר ומכתיב" },
+  ego:       { forward: "תתחיל — ביצועים נבנים בפעולה, לא בתכנון", stuck: "הגן פחות, הקשב יותר — מה תוכל ללמוד כאן?", backward: "הפרד בין הכישלון לזהות — הכישלון אינו אתה" },
+  superego:  { forward: "פעל לפי ערכיך — תעד את הפעולה כהוכחה", stuck: "שאל: האם הביקורת משרתת אותי? בחר ערך אחד לפעול לפיו", backward: "אשמה היא מידע — מה ניתן לתקן? עשה צעד תיקון אחד" },
+};
+
+const FORCE_ICONS: Record<DominantForce, string> = {
+  physical:  "⚡", emotional: "❤️", rational: "🧠",
+  social:    "🤝", id: "🌊",        ego: "🏆", superego: "⚖️",
+};
+
+const DIR_LABEL: Record<Direction, string> = {
+  forward: "קדימה ↑", stuck: "תקוע →", backward: "אחורה ↓",
+};
+const DIR_COLOR: Record<Direction, string> = {
+  forward: "#34d399", stuck: "#fbbf24", backward: "#f87171",
+};
+
+// ─── Component ────────────────────────────────────────────────────────
 
 export default function Page() {
   const router = useRouter();
 
-  const [profile, setProfile]     = useState<UserProfile | null>(null);
-  const [name, setName]           = useState("");
-  const [event, setEvent]         = useState("");
+  const [step,      setStep]      = useState<1|2|3|4>(1);
+  const [name,      setName]      = useState("");
+  const [force,     setForce]     = useState<DominantForce | null>(null);
+  const [stateId,   setStateId]   = useState<string | null>(null);
   const [intensity, setIntensity] = useState(5);
-  const [context, setContext]     = useState<NodeContext>("work");
+  const [context,   setContext]   = useState<NodeContext>("work");
   const [direction, setDirection] = useState<Direction>("forward");
-  const [loading, setLoading]     = useState(false);
-  const [err, setErr]             = useState<string | null>(null);
-  const [live, setLive]           = useState<LiveAnalysis | null>(null);
+  const [note,      setNote]      = useState("");
+  const [loading,   setLoading]   = useState(false);
+  const [profile,   setProfile]   = useState<UserProfile | null>(null);
 
   useEffect(() => {
     const p = loadProfile();
     setProfile(p);
-    if (p?.name && !name) setName(p.name);
+    if (p?.name) setName(p.name);
   }, []);
 
-  function onEventChange(text: string) {
-    setEvent(text);
-    setLive(detectLive(text, context, direction));
+  const stateMeta = useMemo(() =>
+    force ? FORCE_STATES[force].find(s => s.id === stateId) ?? null : null,
+    [force, stateId]
+  );
+
+  // Build a mock node for preview computation
+  const previewNode = useMemo((): UserNode | null => {
+    if (!force || !stateMeta) return null;
+    return {
+      id: "preview", name: name || "אני",
+      lat: 32, lng: 35,
+      event:         `${FORCE_LABEL[force]} — ${stateMeta.label}`,
+      intensity,     context,
+      dominantForce: force,
+      conflict:      stateMeta.conflict ?? null,
+      action:        ACTION_SUGGEST[force][direction],
+      direction,
+      value:         intensity,
+      impact:        directionToImpact(direction),
+      trustScore:    0,
+      createdAt:     Date.now(),
+    };
+  }, [force, stateMeta, intensity, context, direction, name]);
+
+  const previewNeeds  = useMemo(() => previewNode ? deriveNeeds(previewNode) : null,  [previewNode]);
+  const previewStress = useMemo(() => previewNode ? deriveStress(previewNode) : null, [previewNode]);
+  const stressKey     = useMemo(() => previewStress ? dominantStress(previewStress) : "stable", [previewStress]);
+
+  function selectForce(f: DominantForce) {
+    setForce(f);
+    setStateId(null);
+    setStep(2);
   }
 
-  async function getCoords(): Promise<{ lat: number; lng: number }> {
-    // prefer profile location when set
-    if (profile && typeof profile.lat === "number" && typeof profile.lng === "number") {
-      return { lat: profile.lat, lng: profile.lng };
-    }
+  function selectState(s: ForceState) {
+    setStateId(s.id);
+    setDirection(s.dir);
+    setStep(3);
+  }
+
+  async function getCoords(): Promise<{lat: number; lng: number}> {
+    if (profile && typeof profile.lat === "number") return { lat: profile.lat, lng: profile.lng };
     return new Promise(resolve => {
-      const fallback = () => {
-        resolve({
-          lat: 32.08 + (Math.random() - 0.5) * 2,
-          lng: 34.78 + (Math.random() - 0.5) * 2,
-        });
-      };
-      if (typeof navigator === "undefined" || !navigator.geolocation) {
-        fallback();
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(
-        pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        fallback,
-        { timeout: 3000 },
-      );
+      const fallback = () => resolve({ lat: 32.08 + (Math.random() - .5) * 2, lng: 34.78 + (Math.random() - .5) * 2 });
+      if (!navigator?.geolocation) { fallback(); return; }
+      navigator.geolocation.getCurrentPosition(p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }), fallback, { timeout: 3000 });
     });
   }
 
-  async function analyze() {
-    if (!name.trim())  { setErr("תן שם (שלך או של מי שהצומת מייצג)"); return; }
-    if (!event.trim()) { setErr("תאר במשפט אחד מה קורה עכשיו");       return; }
-
+  async function submit() {
+    if (!force || !stateMeta || !name.trim()) return;
     setLoading(true);
-    setErr(null);
-
-    try {
-      const res = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event, intensity, context, direction }),
-      });
-      if (!res.ok) throw new Error(`API ${res.status}`);
-      const json = await res.json();
-      const dominantForce = json.dominantForce as DominantForce;
-      const conflict      = (json.conflict ?? null) as string | null;
-      const action        = String(json.action ?? "");
-
-      const { lat, lng } = await getCoords();
-      const prior = loadNodes();
-      const trustScore = computeTrust(intensity, direction, dominantForce, event, prior);
-
-      const node: UserNode = {
-        id: (globalThis.crypto?.randomUUID?.() ?? String(Date.now() + Math.random())),
-        name: name.trim(),
-        lat, lng,
-        event: event.trim(),
-        intensity,
-        context,
-        dominantForce,
-        conflict,
-        action,
-        direction,
-        value: intensity,
-        impact: directionToImpact(direction),
-        trustScore,
-        createdAt: Date.now(),
-      };
-
-      saveNode(node);
-      localStorage.setItem("lastResult", JSON.stringify({
-        dominantForce, conflict, action,
-        echo: { event, intensity, context, direction, name },
-      }));
-
-      router.push("/nexus");
-    } catch (e: any) {
-      setErr(e?.message ?? "Something went wrong");
-      setLoading(false);
-    }
+    const { lat, lng } = await getCoords();
+    const prior = loadNodes();
+    const trustScore = computeTrust(intensity, direction, force, note || stateMeta.label, prior);
+    const node: UserNode = {
+      id: (globalThis.crypto?.randomUUID?.() ?? String(Date.now() + Math.random())),
+      name: name.trim(), lat, lng,
+      event:         note.trim() || `${FORCE_LABEL[force]} — ${stateMeta.label}`,
+      intensity, context,
+      dominantForce: force,
+      conflict:      stateMeta.conflict ?? null,
+      action:        ACTION_SUGGEST[force][direction],
+      direction,
+      value:         intensity,
+      impact:        directionToImpact(direction),
+      trustScore,
+      createdAt:     Date.now(),
+    };
+    saveNode(node);
+    localStorage.setItem("lastResult", JSON.stringify({ dominantForce: force, conflict: stateMeta.conflict ?? null, action: ACTION_SUGGEST[force][direction] }));
+    router.push("/nexus");
   }
 
+  const fc = force ? FORCE_COLOR[force] : "#38bdf8";
+
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "radial-gradient(ellipse at 50% 30%, #0a2a4a 0%, #020d1a 60%, #000 100%)",
-        color: "#e0f2fe",
-        fontFamily: "'Inter', system-ui, sans-serif",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 40,
-      }}
-    >
-      <div style={{ width: "100%", maxWidth: 540 }}>
-        {/* profile banner */}
-        <div style={{
-          padding: "8px 12px", marginBottom: 16,
-          border: `1px solid ${profile ? "#00f5d444" : "#fbbf2466"}`,
-          background: profile ? "#00f5d411" : "#fbbf2411",
-          borderRadius: 6, fontSize: 11,
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-          color: profile ? "#00f5d4" : "#fbbf24",
-        }}>
-          <span>
-            {profile
-              ? `מחובר: ${profile.name} · ${profile.age}${profile.location ? ` · ${profile.location}` : ""}`
-              : "אין פרופיל — צור פרופיל כדי להיות מסומן בגלובוס"}
-          </span>
-          <a href="/profile" style={{ color: "inherit", textDecoration: "underline", fontSize: 10 }}>
-            {profile ? "ערוך" : "צור עכשיו"}
-          </a>
+    <main style={{
+      minHeight: "100vh",
+      background: "radial-gradient(ellipse at 50% 30%,#0a2a4a 0%,#020d1a 60%,#000 100%)",
+      color: "#e0f2fe",
+      fontFamily: "'Inter',system-ui,sans-serif",
+      display: "flex", flexDirection: "column", alignItems: "center",
+      padding: "32px 20px",
+    }}>
+      <div style={{ width: "100%", maxWidth: 560 }}>
+
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div style={{ fontSize: 10, letterSpacing: 6, color: "#38bdf8", marginBottom: 6 }}>PHILOS · NEXUS</div>
+          <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0, background: "linear-gradient(135deg,#00f5d4,#38bdf8,#a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            Event Zero
+          </h1>
+          <p style={{ color: "#8bb8cc", fontSize: 12, marginTop: 6 }}>הנקודה שבין אוטומט למודעות</p>
         </div>
 
-        <div style={{ fontSize: 11, letterSpacing: 6, color: "#38bdf8", marginBottom: 10, textAlign: "center" }}>
-          PHILOS · NEXUS
+        {/* Step bar */}
+        <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 28 }}>
+          {([1,2,3,4] as const).map((s, i) => (
+            <div key={s} style={{ display: "flex", alignItems: "center", flex: s < 4 ? "1" : "0" }}>
+              <div
+                onClick={() => step > s && setStep(s)}
+                style={{
+                  width: 28, height: 28, borderRadius: "50%",
+                  border: `2px solid ${step >= s ? fc : "#0a2a4a"}`,
+                  background: step > s ? fc : step === s ? fc + "33" : "transparent",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 11, fontWeight: 700,
+                  color: step >= s ? (step > s ? "#020d1a" : fc) : "#1e4060",
+                  cursor: step > s ? "pointer" : "default",
+                  transition: "all .2s",
+                }}>
+                {step > s ? "✓" : s}
+              </div>
+              {s < 4 && <div style={{ flex: 1, height: 2, background: step > s ? fc : "#0a2a4a", transition: "background .2s" }} />}
+            </div>
+          ))}
         </div>
-        <h1
-          style={{
-            fontSize: 40,
-            fontWeight: 700,
-            letterSpacing: -1,
-            margin: 0,
-            textAlign: "center",
-            background: "linear-gradient(135deg,#00f5d4,#38bdf8,#a78bfa)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-          }}
-        >
-          מצב אחד. פעולה אחת.
-        </h1>
-        <p style={{ color: "#8bb8cc", marginTop: 8, marginBottom: 28, fontSize: 13, textAlign: "center" }}>
-          ממפים את הכוח השולט, הקונפליקט, והצעד הבא.
-        </p>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <Field label="שם">
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="למשל: רועי" style={inputStyle} />
-          </Field>
-
-          <Field label="מה קורה עכשיו?">
-            <input
-              value={event}
-              onChange={e => onEventChange(e.target.value)}
-              placeholder="תאר במשפט אחד…"
-              style={inputStyle}
-            />
-          </Field>
-
-          {/* ── Live detection panel ── */}
-          {live && (
-            <div style={{
-              padding: "12px 14px",
-              border: `1px solid ${live.forceColor}55`,
-              borderRadius: 8,
-              background: `${live.forceColor}0d`,
-              transition: "all .2s",
-            }}>
-              <div style={{ fontSize: 9, color: live.forceColor, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 10 }}>
-                זיהוי חי
-              </div>
-              <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginBottom: 10 }}>
-                <LiveTag icon="⚡" label="כוח"  value={live.force}   color={live.forceColor} />
-                <LiveTag icon="💬" label="רגש"  value={live.emotion} color={live.forceColor} />
-                <LiveTag icon="📌" label="נושא" value={live.topic}   color={live.forceColor} />
-                <LiveTag icon="🏷" label="סוג"  value={live.actionType} color={live.forceColor} />
-              </div>
-              {/* Path */}
-              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 11 }}>
-                <PathNode label="פעולה"   color={live.forceColor} />
-                <Arrow />
-                <PathNode label={live.actionType} color="#fbbf24" />
-                <Arrow />
-                <PathNode label="הוכחה"   color="#38bdf8" />
-                <Arrow />
-                <PathNode label={`אמון +${live.trustBoost}`} color="#34d399" />
-                <Arrow />
-                <PathNode label="הזדמנות" color="#a78bfa" />
-              </div>
+        {/* ── Step 1: Name + Force ── */}
+        {step === 1 && (
+          <div>
+            <div style={{ marginBottom: 20 }}>
+              <Label>שם</Label>
+              <input
+                value={name} onChange={e => setName(e.target.value)}
+                placeholder={profile?.name || "מה שמך?"}
+                style={inputStyle}
+                autoFocus
+              />
             </div>
-          )}
-
-          <Field label={`Intensity — ${intensity}/10`}>
-            <input
-              type="range" min={1} max={10} value={intensity}
-              onChange={e => setIntensity(Number(e.target.value))}
-              style={{ width: "100%", accentColor: "#38bdf8" }}
-            />
-          </Field>
-
-          <Field label="Context">
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 6 }}>
-              {(Object.keys(CONTEXT_LABEL) as NodeContext[]).map(c => (
-                <Chip key={c} active={context === c} onClick={() => setContext(c)} color="#38bdf8">
-                  {CONTEXT_LABEL[c]}
-                </Chip>
-              ))}
-            </div>
-          </Field>
-
-          <Field label="Direction">
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
-              {(Object.keys(DIRECTION_LABEL) as Direction[]).map(d => (
-                <Chip
-                  key={d}
-                  active={direction === d}
-                  onClick={() => setDirection(d)}
-                  color={d === "forward" ? "#00f5d4" : d === "stuck" ? "#fbbf24" : "#ef4444"}
+            <Label>מה הכוח הדומיננטי כרגע?</Label>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, marginTop: 8 }}>
+              {(Object.keys(FORCE_STATES) as DominantForce[]).map(f => (
+                <button
+                  key={f}
+                  onClick={() => selectForce(f)}
+                  style={{
+                    padding: "14px 8px", borderRadius: 8, cursor: "pointer",
+                    border: `2px solid ${force === f ? FORCE_COLOR[f] : "#0a2a4a"}`,
+                    background: force === f ? FORCE_COLOR[f] + "22" : "#030f1e",
+                    color: force === f ? FORCE_COLOR[f] : "#8bb8cc",
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                    transition: "all .15s",
+                  }}
                 >
-                  {DIRECTION_LABEL[d]}
-                </Chip>
+                  <span style={{ fontSize: 22 }}>{FORCE_ICONS[f]}</span>
+                  <span style={{ fontSize: 10, fontWeight: 600 }}>{FORCE_LABEL[f]}</span>
+                </button>
               ))}
             </div>
-          </Field>
-
-          <button
-            onClick={analyze}
-            disabled={loading}
-            style={{
-              marginTop: 10,
-              padding: "14px 36px",
-              fontSize: 14,
-              letterSpacing: 3,
-              fontWeight: 600,
-              color: "#020d1a",
-              background: loading ? "#1e4060" : "linear-gradient(135deg,#00f5d4,#38bdf8)",
-              border: "none",
-              borderRadius: 6,
-              cursor: loading ? "default" : "pointer",
-              boxShadow: "0 0 40px rgba(56,189,248,0.35)",
-            }}
-          >
-            {loading ? "ANALYZING…" : "ANALYZE"}
-          </button>
-
-          {err && <div style={{ color: "#ff6b6b", fontSize: 12, textAlign: "center" }}>{err}</div>}
-
-          <div style={{ textAlign: "center", marginTop: 4 }}>
-            <a href="/nexus" style={{ fontSize: 11, color: "#38bdf8", textDecoration: "none" }}>
-              → לגלובוס בלי ניתוח חדש
-            </a>
           </div>
+        )}
+
+        {/* ── Step 2: State ── */}
+        {step === 2 && force && (
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+              <button onClick={() => setStep(1)} style={backBtn}>← חזרה</button>
+              <span style={{ fontSize: 13, color: FORCE_COLOR[force], fontWeight: 600 }}>
+                {FORCE_ICONS[force]} {FORCE_LABEL[force]}
+              </span>
+            </div>
+            <Label>מה המצב בתוך הכוח הזה?</Label>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+              {FORCE_STATES[force].map(s => (
+                <button
+                  key={s.id}
+                  onClick={() => selectState(s)}
+                  style={{
+                    padding: "12px 16px", borderRadius: 8, cursor: "pointer", textAlign: "right",
+                    border: `1px solid ${stateId === s.id ? FORCE_COLOR[force] : "#0a2a4a"}`,
+                    background: stateId === s.id ? FORCE_COLOR[force] + "15" : "#030f1e",
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    transition: "all .15s",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 13, color: stateId === s.id ? FORCE_COLOR[force] : "#caf0f8", fontWeight: 600 }}>{s.label}</div>
+                    <div style={{ fontSize: 10, color: "#1e4060", marginTop: 2 }}>{s.desc}</div>
+                  </div>
+                  <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 10, border: `1px solid ${DIR_COLOR[s.dir]}44`, color: DIR_COLOR[s.dir], background: DIR_COLOR[s.dir] + "11", flexShrink: 0 }}>
+                    {DIR_LABEL[s.dir]}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div style={{ marginTop: 16 }}>
+              <Label>הקשר</Label>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                {(Object.keys(CONTEXT_LABEL) as NodeContext[]).map(c => (
+                  <button
+                    key={c}
+                    onClick={() => setContext(c)}
+                    style={{
+                      padding: "6px 14px", borderRadius: 20, fontSize: 11, cursor: "pointer",
+                      border: `1px solid ${context === c ? FORCE_COLOR[force] : "#0a2a4a"}`,
+                      background: context === c ? FORCE_COLOR[force] + "22" : "transparent",
+                      color: context === c ? FORCE_COLOR[force] : "#8bb8cc",
+                      transition: "all .1s",
+                    }}
+                  >
+                    {CONTEXT_LABEL[c]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 3: Intensity + Direction ── */}
+        {step === 3 && force && stateMeta && (
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+              <button onClick={() => setStep(2)} style={backBtn}>← חזרה</button>
+              <span style={{ fontSize: 12, color: FORCE_COLOR[force], fontWeight: 500 }}>
+                {FORCE_ICONS[force]} {FORCE_LABEL[force]} — {stateMeta.label}
+              </span>
+            </div>
+
+            <Label>עוצמה — {intensity}/10</Label>
+            <div style={{ position: "relative", marginTop: 8, marginBottom: 20 }}>
+              <input type="range" min={1} max={10} value={intensity}
+                onChange={e => setIntensity(Number(e.target.value))}
+                style={{ width: "100%", accentColor: FORCE_COLOR[force] }}
+              />
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#1e4060", marginTop: 4 }}>
+                <span>נמוך</span><span>בינוני</span><span>גבוה</span><span>קיצוני</span>
+              </div>
+            </div>
+
+            <Label>כיוון</Label>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginTop: 8, marginBottom: 24 }}>
+              {(["forward","stuck","backward"] as Direction[]).map(d => (
+                <button
+                  key={d}
+                  onClick={() => setDirection(d)}
+                  style={{
+                    padding: "10px 8px", borderRadius: 8, cursor: "pointer",
+                    border: `2px solid ${direction === d ? DIR_COLOR[d] : "#0a2a4a"}`,
+                    background: direction === d ? DIR_COLOR[d] + "22" : "#030f1e",
+                    color: direction === d ? DIR_COLOR[d] : "#8bb8cc",
+                    fontSize: 12, fontWeight: direction === d ? 700 : 400,
+                    transition: "all .15s",
+                  }}
+                >
+                  {DIR_LABEL[d]}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setStep(4)}
+              style={{ width: "100%", padding: "13px", fontSize: 13, fontWeight: 600, letterSpacing: 2, color: "#020d1a", background: `linear-gradient(135deg,${FORCE_COLOR[force]},${FORCE_COLOR[force]}cc)`, border: "none", borderRadius: 8, cursor: "pointer" }}
+            >
+              ראה את המפה →
+            </button>
+          </div>
+        )}
+
+        {/* ── Step 4: Preview + Submit ── */}
+        {step === 4 && force && stateMeta && (
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+              <button onClick={() => setStep(3)} style={backBtn}>← חזרה</button>
+              <span style={{ fontSize: 12, color: FORCE_COLOR[force], fontWeight: 500 }}>
+                {FORCE_ICONS[force]} {FORCE_LABEL[force]} — {stateMeta.label} · {DIR_LABEL[direction]}
+              </span>
+            </div>
+
+            {/* Path */}
+            <div style={{ padding: "14px 16px", borderRadius: 8, border: `1px solid ${FORCE_COLOR[force]}44`, background: FORCE_COLOR[force] + "0a", marginBottom: 14 }}>
+              <div style={{ fontSize: 9, color: FORCE_COLOR[force], letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 10 }}>נתיב</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+                <PathNode label={`${FORCE_ICONS[force]} ${FORCE_LABEL[force]}`} color={FORCE_COLOR[force]} />
+                <Arr />
+                <PathNode label={stateMeta.label}                               color={FORCE_COLOR[force]} />
+                <Arr />
+                <PathNode label={DIR_LABEL[direction]}                          color={DIR_COLOR[direction]} />
+                <Arr />
+                <PathNode label="הוכחה"                                         color="#38bdf8" />
+                <Arr />
+                <PathNode label="אמון"                                          color="#34d399" />
+                <Arr />
+                <PathNode label="הזדמנות"                                       color="#a78bfa" />
+              </div>
+
+              {/* Needs */}
+              {previewNeeds && (previewNeeds.needs.length > 0 || previewNeeds.offers.length > 0) && (
+                <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
+                  {previewNeeds.needs.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 1, marginBottom: 4 }}>צורך</div>
+                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                        {previewNeeds.needs.map(n => (
+                          <span key={n} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "#ef444422", color: "#f87171", border: "1px solid #ef444433" }}>
+                            {NEED_LABEL[n]}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {previewNeeds.offers.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 1, marginBottom: 4 }}>מציע</div>
+                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                        {previewNeeds.offers.map(n => (
+                          <span key={n} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "#22c55e22", color: "#34d399", border: "1px solid #22c55e33" }}>
+                            {NEED_LABEL[n]}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Stress */}
+              {previewStress && stressKey !== "stable" && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 1, marginBottom: 4 }}>מתח דומיננטי</div>
+                  <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, color: STRESS_COLOR[stressKey as keyof typeof STRESS_COLOR] ?? "#8bb8cc", background: (STRESS_COLOR[stressKey as keyof typeof STRESS_COLOR] ?? "#8bb8cc") + "22", border: `1px solid ${(STRESS_COLOR[stressKey as keyof typeof STRESS_COLOR] ?? "#8bb8cc")}44` }}>
+                    {stressKey}
+                  </span>
+                </div>
+              )}
+
+              {/* Action */}
+              <div style={{ padding: "10px 12px", background: "#020d1a", borderRadius: 6, border: "1px solid #0a2a4a" }}>
+                <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 1, marginBottom: 4 }}>פעולה מוצעת</div>
+                <div style={{ fontSize: 12, color: "#00f5d4" }}>{ACTION_SUGGEST[force][direction]}</div>
+              </div>
+            </div>
+
+            {/* Optional note */}
+            <div style={{ marginBottom: 14 }}>
+              <Label>הערה (אופציונלי)</Label>
+              <textarea
+                value={note} onChange={e => setNote(e.target.value)}
+                placeholder="פרט אם רצונך…"
+                rows={2}
+                style={{ ...inputStyle, resize: "none", marginTop: 6 } as React.CSSProperties}
+              />
+            </div>
+
+            <button
+              onClick={submit}
+              disabled={loading || !name.trim()}
+              style={{
+                width: "100%", padding: "14px", fontSize: 14, fontWeight: 700, letterSpacing: 2,
+                color: "#020d1a",
+                background: loading ? "#1e4060" : `linear-gradient(135deg,#00f5d4,#38bdf8)`,
+                border: "none", borderRadius: 8, cursor: loading ? "default" : "pointer",
+                boxShadow: "0 0 40px rgba(56,189,248,0.25)",
+              }}
+            >
+              {loading ? "שומר…" : "שמור ועבור לנקסוס"}
+            </button>
+
+            <div style={{ textAlign: "center", marginTop: 10 }}>
+              <a href="/nexus" style={{ fontSize: 11, color: "#1e4060", textDecoration: "none" }}>→ לגלובוס בלי ניתוח חדש</a>
+            </div>
+          </div>
+        )}
+
+        {/* Profile link */}
+        <div style={{ marginTop: 24, textAlign: "center", fontSize: 10, color: "#1e4060" }}>
+          {profile
+            ? <span>מחובר: {profile.name} · <a href="/profile" style={{ color: "#38bdf8" }}>ערוך</a></span>
+            : <a href="/profile" style={{ color: "#fbbf24" }}>→ צור פרופיל</a>
+          }
         </div>
       </div>
     </main>
   );
 }
 
-// ─── Live detection ────────────────────────────────────────────────────
+// ─── Small components ─────────────────────────────────────────────────
 
-type LiveAnalysis = {
-  force: string; forceColor: string;
-  emotion: string; topic: string;
-  actionType: string; trustBoost: number;
-};
-
-const FORCE_RULES: Array<{
-  pattern: RegExp;
-  force: string; forceColor: string;
-  emotion: string; topic: string;
-  actionType: string; trustBoost: number;
-}> = [
-  { pattern: /עזר|תרמ|שיתפ|חיבר|צוות|קהיל|יחד/,
-    force: "חברתי",   forceColor: "#fb923c", emotion: "חיבור",          topic: "קשרים",  actionType: "עזרה",  trustBoost: 3 },
-  { pattern: /פתר|תיקנ|טיפל|מצאת/,
-    force: "רציונלי", forceColor: "#38bdf8", emotion: "ביטחון",          topic: "בעיות",  actionType: "פתרון", trustBoost: 4 },
-  { pattern: /תיאמ|ארגנ|פגישה|קישור|התקשר/,
-    force: "חברתי",   forceColor: "#fb923c", emotion: "שיתוף פעולה",    topic: "תיאום",  actionType: "תיאום", trustBoost: 2 },
-  { pattern: /הרגשתי|רגש|שמחה|עצב|פחד|אהבה|כעס|חרדה/,
-    force: "רגשי",    forceColor: "#f472b6", emotion: "עיבוד רגשי",     topic: "רגש",    actionType: "ביטוי", trustBoost: 2 },
-  { pattern: /החלטתי|תכננתי|ניתחתי|חשבתי|הבנתי|למדתי/,
-    force: "רציונלי", forceColor: "#38bdf8", emotion: "ניתוח",           topic: "תכנון",  actionType: "דיווח", trustBoost: 2 },
-  { pattern: /הצגתי|הצלחתי|ניצחתי|הוכחתי|קיבלתי/,
-    force: "אגו",     forceColor: "#a78bfa", emotion: "הכרה",            topic: "הישגים", actionType: "ביטוי", trustBoost: 2 },
-  { pattern: /ספורט|הלכתי|ריצה|גוף|כאב|פצוע|שינה/,
-    force: "פיזי",    forceColor: "#22c55e", emotion: "אנרגיה",          topic: "גוף",    actionType: "דיווח", trustBoost: 1 },
-  { pattern: /רציתי|פתאום|ספונטני|דחף|התפרץ/,
-    force: "דחף",     forceColor: "#ef4444", emotion: "דחף מיידי",       topic: "שליטה", actionType: "דיווח", trustBoost: 1 },
-];
-
-function detectLive(text: string, _ctx: string, _dir: string): LiveAnalysis | null {
-  if (!text.trim()) return null;
-  for (const r of FORCE_RULES) {
-    if (r.pattern.test(text)) {
-      return { force: r.force, forceColor: r.forceColor, emotion: r.emotion,
-               topic: r.topic, actionType: r.actionType, trustBoost: r.trustBoost };
-    }
-  }
-  return { force: "לא ידוע", forceColor: "#475569", emotion: "—", topic: "—", actionType: "כללי", trustBoost: 1 };
-}
-
-function LiveTag({ icon, label, value, color }: { icon: string; label: string; value: string; color: string }) {
+function Label({ children }: { children: React.ReactNode }) {
   return (
-    <div>
-      <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: 13, color, fontWeight: 700 }}>{icon} {value}</div>
+    <div style={{ fontSize: 10, letterSpacing: 2, color: "#38bdf8", textTransform: "uppercase", marginBottom: 4 }}>
+      {children}
     </div>
   );
 }
 
 function PathNode({ label, color }: { label: string; color: string }) {
   return (
-    <span style={{ padding: "3px 8px", borderRadius: 4, border: `1px solid ${color}55`, background: `${color}11`, color, fontSize: 10, fontWeight: 600 }}>
+    <span style={{ padding: "3px 8px", borderRadius: 4, border: `1px solid ${color}55`, background: color + "11", color, fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>
       {label}
     </span>
   );
 }
 
-function Arrow() {
-  return <span style={{ color: "#1e4060", fontSize: 12 }}>→</span>;
+function Arr() {
+  return <span style={{ color: "#1e4060", fontSize: 11 }}>→</span>;
 }
 
-// ─── Field / Chip ───────────────────────────────────────────────────────
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label style={{ display: "block" }}>
-      <div style={{ fontSize: 10, letterSpacing: 2, color: "#38bdf8", textTransform: "uppercase", marginBottom: 6 }}>
-        {label}
-      </div>
-      {children}
-    </label>
-  );
-}
-
-function Chip({
-  children, active, onClick, color,
-}: { children: React.ReactNode; active: boolean; onClick: () => void; color: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        padding: "8px 10px",
-        fontSize: 11,
-        borderRadius: 6,
-        border: `1px solid ${active ? color : "#0a2a4a"}`,
-        background: active ? `${color}22` : "#030f1e",
-        color: active ? color : "#8bb8cc",
-        cursor: "pointer",
-        fontWeight: active ? 700 : 400,
-      }}
-    >
-      {children}
-    </button>
-  );
-}
+const backBtn: React.CSSProperties = {
+  padding: "4px 10px", fontSize: 11, background: "transparent",
+  border: "1px solid #0a2a4a", borderRadius: 4, color: "#8bb8cc", cursor: "pointer",
+};
 
 const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "12px 14px",
-  fontSize: 14,
-  background: "#030f1e",
-  color: "#e0f2fe",
-  border: "1px solid #0a2a4a",
-  borderRadius: 6,
-  outline: "none",
-  direction: "rtl",
+  width: "100%", padding: "11px 14px", fontSize: 14,
+  background: "#030f1e", color: "#e0f2fe",
+  border: "1px solid #0a2a4a", borderRadius: 6,
+  outline: "none", direction: "rtl",
 };
