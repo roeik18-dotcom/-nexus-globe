@@ -228,6 +228,35 @@ export default function Page() {
 
   const daily: DailySummary = useMemo(() => computeDailySummary(allNodes), [allNodes]);
 
+  // ── Pulse: 4 system-wide vitals ──────────────────────────────────
+  const pulse = useMemo(() => {
+    const n = visible.length;
+    if (!n) return null;
+    const energy   = Math.round(visible.reduce((s, x) => s + x.intensity, 0) / n * 10);
+    const trust    = Math.round(visible.reduce((s, x) => s + (proofTrustMap[x.id] ?? x.trustScore), 0) / n);
+    const stressN  = visible.filter(x => x.conflict || x.direction === "backward").length;
+    const stress   = Math.round((stressN / n) * 100);
+    const todayN   = visible.filter(x => Date.now() - x.createdAt < 86_400_000).length;
+    const activity = Math.round((Math.max(todayN, 1) / n) * 100);
+    const fd: Record<string, number> = {};
+    visible.forEach(x => { fd[x.dominantForce] = (fd[x.dominantForce] || 0) + 1; });
+    const dominant = Object.entries(fd).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "emotional";
+    return { energy, trust, stress, activity, dominant, fd, total: n };
+  }, [visible, proofTrustMap]);
+
+  // ── What Changed Today (last 24h) ────────────────────────────────
+  const todayStats = useMemo(() => {
+    const cut = Date.now() - 86_400_000;
+    const newNodes = visible.filter(x => x.createdAt > cut).length;
+    const newProofsCount = allProofs.filter(p => p.createdAt > cut).length;
+    const newVerified = allProofs.filter(p => p.status === "verified" && p.createdAt > cut).length;
+    const newOpps = visible.filter(x => {
+      const t = proofTrustMap[x.id] ?? x.trustScore;
+      return t >= 20;
+    }).length;
+    return { newNodes, newProofsCount, newVerified, newOpps };
+  }, [visible, allProofs, proofTrustMap]);
+
   const matches: Match[] = useMemo(
     () => computeMatches(visible, profile).slice(0, 5),
     [visible, profile],
@@ -334,11 +363,39 @@ export default function Page() {
     <div style={{ display: "flex", width: "100vw", height: "100vh", background: "#020d1a", color: "#e0f2fe", fontFamily: "system-ui, sans-serif" }}>
       <div ref={wrap} style={{ flex: 1, position: "relative" }}>
 
+        {/* ── PULSE BAR ── */}
+        {pulse && (
+          <div style={{
+            position: "absolute", top: 0, left: 0, right: 0, zIndex: 8,
+            background: "rgba(2,13,26,0.88)",
+            backdropFilter: "blur(10px)",
+            borderBottom: "1px solid #0a2a4a",
+            display: "flex", alignItems: "center",
+            height: 42, padding: "0 14px",
+          }}>
+            {[
+              { label: "אנרגיה", val: pulse.energy,   color: "#fbbf24" },
+              { label: "אמון",   val: pulse.trust,    color: "#34d399" },
+              { label: "מתח",    val: pulse.stress,   color: "#f87171" },
+              { label: "פעילות", val: pulse.activity, color: "#38bdf8" },
+            ].map(m => (
+              <div key={m.label} style={{ flex: 1, textAlign: "center" }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: m.color, lineHeight: 1 }}>{m.val}</div>
+                <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 1 }}>{m.label}</div>
+              </div>
+            ))}
+            <div style={{ width: 1, height: 24, background: "#0a2a4a", margin: "0 8px" }} />
+            <div style={{ fontSize: 9, color: FORCE_COLOR[pulse.dominant as DominantForce] ?? "#38bdf8", letterSpacing: 1 }}>
+              {FORCE_LABEL[pulse.dominant as DominantForce] ?? pulse.dominant}
+            </div>
+          </div>
+        )}
+
         {/* LAST ACTION OVERLAY */}
         {last && (
           <div
             style={{
-              position: "absolute", top: 20, left: 20, right: 340, zIndex: 5,
+              position: "absolute", top: pulse ? 50 : 20, left: 20, right: 340, zIndex: 5,
               background: "rgba(3,15,30,0.85)",
               border: `1px solid ${FORCE_COLOR[last.dominantForce]}55`,
               backdropFilter: "blur(8px)",
@@ -931,30 +988,57 @@ export default function Page() {
           </div>
         )}
 
-        {/* SYSTEM SUMMARY */}
-        {summary && (
+        {/* FORCE MAP */}
+        {pulse && (
           <div style={{ padding: 12, border: "1px solid #0a2a4a", borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
             <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
-              System
+              Map of Forces
             </div>
-            <Row k="total" v={String(summary.totalNodes)} />
-            <Row k="avg intensity" v={summary.avgIntensity.toFixed(1)} />
-            <Row k="conflicts" v={String(summary.activeConflicts)} />
-            <Row k="forward" v={`${Math.round(summary.forwardMovementRatio * 100)}%`} />
-            <div style={{ marginTop: 8, display: "flex", gap: 4, flexWrap: "wrap" }}>
-              {Object.entries(summary.forceDist).map(([f, c]) => (
-                <div key={f} style={{
-                  fontSize: 9, padding: "2px 6px", borderRadius: 10,
-                  background: `${FORCE_COLOR[f as DominantForce]}22`,
-                  color: FORCE_COLOR[f as DominantForce],
-                  border: `1px solid ${FORCE_COLOR[f as DominantForce]}55`,
-                }}>
-                  {FORCE_LABEL[f as DominantForce]} · {c as number}
-                </div>
-              ))}
+            {Object.entries(pulse.fd)
+              .sort((a, b) => b[1] - a[1])
+              .map(([f, c]) => {
+                const pct = Math.round((c / pulse.total) * 100);
+                const col = FORCE_COLOR[f as DominantForce] ?? "#38bdf8";
+                return (
+                  <div key={f} style={{ marginBottom: 5 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: col, marginBottom: 2 }}>
+                      <span>{FORCE_LABEL[f as DominantForce] ?? f}</span>
+                      <span>{pct}%</span>
+                    </div>
+                    <div style={{ height: 4, borderRadius: 2, background: "#0a2a4a", overflow: "hidden" }}>
+                      <div style={{ width: `${pct}%`, height: "100%", background: col, borderRadius: 2 }} />
+                    </div>
+                  </div>
+                );
+              })
+            }
+            <div style={{ marginTop: 8, display: "flex", gap: 8, fontSize: 9, color: "#8bb8cc" }}>
+              <span>total: {pulse.total}</span>
+              <span>energy: {pulse.energy}</span>
+              <span>stress: {pulse.stress}%</span>
             </div>
           </div>
         )}
+
+        {/* WHAT CHANGED TODAY */}
+        <div style={{ padding: 12, border: "1px solid #0a2a4a", borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
+          <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
+            שינויים היום
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            {[
+              { label: "נקודות חדשות",   val: todayStats.newNodes,       color: "#38bdf8" },
+              { label: "הוכחות חדשות",   val: todayStats.newProofsCount, color: "#fbbf24" },
+              { label: "אימותים",         val: todayStats.newVerified,    color: "#34d399" },
+              { label: "הזדמנויות פתוחות",val: todayStats.newOpps,        color: "#a78bfa" },
+            ].map(s => (
+              <div key={s.label} style={{ padding: "6px 8px", borderRadius: 4, border: `1px solid ${s.color}22`, background: s.color + "08" }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: s.color }}>{s.val}</div>
+                <div style={{ fontSize: 8, color: "#1e4060" }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* TARGET */}
         <div style={{ padding: 12, border: "1px solid #0a2a4a", borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
@@ -1153,6 +1237,50 @@ export default function Page() {
               </div>
             )}
 
+            {/* ── EVOLUTION PATH ── */}
+            {(() => {
+              const evo = EVOLUTION_MAP[selected.dominantForce];
+              if (!evo) return null;
+              const balColor = FORCE_COLOR[evo.balance as DominantForce] ?? "#38bdf8";
+              const nextColor = evo.next ? (FORCE_COLOR[evo.next as DominantForce] ?? "#a78bfa") : "#a78bfa";
+              return (
+                <div style={{ padding: "8px 10px", borderRadius: 4, marginBottom: 10, border: "1px solid #0a2a4a", background: "#040e1c" }}>
+                  <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 1, textTransform: "uppercase", marginBottom: 7 }}>נתיב אבולוציה</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8, flexWrap: "wrap", fontSize: 9 }}>
+                    <span style={{ padding: "2px 7px", borderRadius: 10, border: `1px solid ${FORCE_COLOR[selected.dominantForce]}55`, color: FORCE_COLOR[selected.dominantForce], background: FORCE_COLOR[selected.dominantForce] + "22", fontWeight: 600 }}>
+                      {FORCE_LABEL[selected.dominantForce]}
+                    </span>
+                    <span style={{ color: "#1e4060" }}>→ מאזן:</span>
+                    <span style={{ padding: "2px 7px", borderRadius: 10, border: `1px solid ${balColor}55`, color: balColor }}>{FORCE_LABEL[evo.balance as DominantForce] ?? evo.balance}</span>
+                    {evo.next && <>
+                      <span style={{ color: "#1e4060" }}>→ הבא:</span>
+                      <span style={{ padding: "2px 7px", borderRadius: 10, border: `1px solid ${nextColor}55`, color: nextColor }}>{FORCE_LABEL[evo.next as DominantForce] ?? evo.next}</span>
+                    </>}
+                  </div>
+                  <div style={{ fontSize: 10, color: "#00f5d4", padding: "6px 8px", background: "#020d1a", borderRadius: 4 }}>{evo.action}</div>
+                </div>
+              );
+            })()}
+
+            {/* ── WHY IT MATTERS ── */}
+            {(() => {
+              const evo = EVOLUTION_MAP[selected.dominantForce];
+              if (!evo) return null;
+              const trust = proofTrustMap[selected.id] ?? selected.trustScore;
+              const conns = links.filter(l => l.source === selected.id || l.target === selected.id).length;
+              return (
+                <div style={{ padding: "8px 10px", borderRadius: 4, marginBottom: 10, border: "1px solid #0a2a4a", background: "#040e1c" }}>
+                  <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 1, textTransform: "uppercase", marginBottom: 7 }}>למה זה משנה</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>
+                    <SmallCard label="⚠ סיכון"       text={evo.risk}         color="#f87171" />
+                    <SmallCard label="✦ הזדמנות"     text={evo.opportunity}  color="#34d399" />
+                    <SmallCard label="🤝 השפעה חברתית" text={`${conns} קשרים פעילים ברשת`} color="#fb923c" />
+                    <SmallCard label="⬡ אמון"          text={`${trust}/100 — ${trust > 60 ? "מהימן" : trust > 20 ? "בבנייה" : "חדש"}`} color="#38bdf8" />
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* STANCE EDITOR (active topic) */}
             {activeTopic && (() => {
               const current = stances.find(s => s.topicId === activeTopic.id && s.userId === selected.id);
@@ -1329,6 +1457,30 @@ export default function Page() {
     </div>
   );
 }
+
+function SmallCard({ label, text, color }: { label: string; text: string; color: string }) {
+  return (
+    <div style={{ padding: "5px 7px", borderRadius: 4, border: `1px solid ${color}22`, background: color + "08" }}>
+      <div style={{ fontSize: 8, color, letterSpacing: 0.5, marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 9, color: "#8bb8cc" }}>{text}</div>
+    </div>
+  );
+}
+
+/* ---------- evolution map ------------------------------------------ */
+
+const EVOLUTION_MAP: Record<string, {
+  balance: string; next: string | null;
+  action: string; risk: string; opportunity: string;
+}> = {
+  id:        { balance: "superego",  next: "physical",  action: "הגדר צורך אחד קונקרטי לפני שאתה פועל",      risk: "כאוס ללא כיוון",      opportunity: "כוח גולמי לכל כיוון"     },
+  physical:  { balance: "emotional", next: "emotional", action: "הקשב לגוף — הוא אומר משהו שהמחשבה לא יכולה", risk: "תלות גופנית",          opportunity: "עיגון ונוכחות ממשית"      },
+  emotional: { balance: "rational",  next: "rational",  action: "שתף אדם אחד — תצא מהכלוב הפנימי",           risk: "הצפה רגשית",           opportunity: "חיבור עמוק ואמפתיה"      },
+  rational:  { balance: "emotional", next: "social",    action: "תרגם תובנה אחת לצעד קטן מחר",               risk: "ניתוח ללא פעולה",      opportunity: "בהירות וסדר"             },
+  social:    { balance: "ego",       next: "ego",       action: "תרום משהו ספציפי — לא רק נוכחות",            risk: "ביטול עצמי",           opportunity: "ערך קולקטיבי וחיבור"     },
+  ego:       { balance: "social",    next: "superego",  action: "השתמש בכוח שלך לטובת מישהו אחר",             risk: "אינפלציה",             opportunity: "מנהיגות וזהות"           },
+  superego:  { balance: "id",        next: null,        action: "בחר ערך אחד ופעל לפיו — בלי תנאים מושלמים", risk: "שיתוק מוסרי",          opportunity: "משמעות ותכלית עמוקה"     },
+};
 
 /* ---------- semantic link color ------------------------------------ */
 
