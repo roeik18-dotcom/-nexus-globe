@@ -310,7 +310,7 @@ export default function LiveFeed() {
               </div>
               <div style={{ display: "flex", gap: 10, fontSize: 9, color: "#8bb8cc", paddingRight: 4 }}>
                 <span>Trust: <b style={{ color: o.trust > 60 ? "#34d399" : "#fbbf24" }}>{o.trust}</b></span>
-                <span>Rep: <b style={{ color: REPUTATION_LEVEL_COLOR[o.rep.level] }}>{REPUTATION_LEVEL_LABEL[o.rep.level]}</b></span>
+                <span>Rep: <b style={{ color: REPUTATION_LEVEL_COLOR[o.rep.level as keyof typeof REPUTATION_LEVEL_COLOR] }}>{REPUTATION_LEVEL_LABEL[o.rep.level as keyof typeof REPUTATION_LEVEL_LABEL]}</b></span>
                 <span style={{ color: FORCE_COLOR[o.n.dominantForce] }}>{FORCE_LABEL[o.n.dominantForce]}</span>
                 {!o.unlocked && <span style={{ color: "#1e4060" }}>עוד {o.threshold - o.trust}</span>}
               </div>

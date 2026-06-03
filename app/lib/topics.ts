@@ -266,6 +266,11 @@ const FORCE_STANCE: Record<DominantForce, Record<string, number[]>> = {
     ai_regulation: [-0.5, -0.4,  0.6],
     work_meaning:  [ 0.5, -0.6,  0.4],
   },
+  superego:  {
+    climate:       [-0.6, -0.4, -0.7],
+    ai_regulation: [ 0.4,  0.5,  0.2],
+    work_meaning:  [-0.5, -0.3,  0.1],
+  },
 };
 
 function hashStr(s: string): number {

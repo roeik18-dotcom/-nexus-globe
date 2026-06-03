@@ -52,6 +52,11 @@ import {
 } from "../lib/topics";
 import { generateSeedNodes } from "../lib/seed";
 import {
+  generateOpportunities, generateAllOpportunities,
+  OPPORTUNITY_TYPE_LABEL, OPPORTUNITY_TYPE_COLOR,
+  type RealOpportunity,
+} from "../lib/opportunity";
+import {
   loadProofs, computeReputation,
   REPUTATION_LEVEL_LABEL, REPUTATION_LEVEL_COLOR,
   type ProofItem,
@@ -256,6 +261,17 @@ export default function Page() {
     }).length;
     return { newNodes, newProofsCount, newVerified, newOpps };
   }, [visible, allProofs, proofTrustMap]);
+
+  // ── Real Opportunities ───────────────────────────────────────────
+  const systemOpportunities = useMemo(() =>
+    generateAllOpportunities(visible, proofTrustMap, 8),
+    [visible, proofTrustMap]
+  );
+
+  const selectedOpportunities = useMemo(() =>
+    selected ? generateOpportunities(selected, visible, proofTrustMap).slice(0, 4) : [],
+    [selected, visible, proofTrustMap]
+  );
 
   const matches: Match[] = useMemo(
     () => computeMatches(visible, profile).slice(0, 5),
@@ -1040,6 +1056,18 @@ export default function Page() {
           </div>
         </div>
 
+        {/* REAL OPPORTUNITIES */}
+        {systemOpportunities.length > 0 && (
+          <div style={{ padding: 12, border: "1px solid #0a2a4a", borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
+            <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 10 }}>
+              הזדמנויות אמיתיות
+            </div>
+            {systemOpportunities.map(opp => (
+              <OppCard key={opp.id} opp={opp} />
+            ))}
+          </div>
+        )}
+
         {/* TARGET */}
         <div style={{ padding: 12, border: "1px solid #0a2a4a", borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
           <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
@@ -1281,6 +1309,16 @@ export default function Page() {
               );
             })()}
 
+            {/* ── SELECTED NODE OPPORTUNITIES ── */}
+            {selectedOpportunities.length > 0 && (
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>הזדמנויות עבור {selected.name}</div>
+                {selectedOpportunities.map(opp => (
+                  <OppCard key={opp.id} opp={opp} compact />
+                ))}
+              </div>
+            )}
+
             {/* STANCE EDITOR (active topic) */}
             {activeTopic && (() => {
               const current = stances.find(s => s.topicId === activeTopic.id && s.userId === selected.id);
@@ -1454,6 +1492,52 @@ export default function Page() {
         </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function OppCard({ opp, compact = false }: { opp: RealOpportunity; compact?: boolean }) {
+  const col = OPPORTUNITY_TYPE_COLOR[opp.type];
+  return (
+    <div style={{
+      padding: compact ? "7px 9px" : "10px 12px",
+      marginBottom: 6, borderRadius: 6,
+      border: `1px solid ${col}44`,
+      background: col + "08",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+        <span style={{
+          fontSize: 9, padding: "1px 7px", borderRadius: 3, fontWeight: 700,
+          background: col + "22", color: col,
+        }}>
+          {OPPORTUNITY_TYPE_LABEL[opp.type]}
+        </span>
+        <span style={{ flex: 1, fontSize: compact ? 10 : 11, color: "#caf0f8", fontWeight: 600 }}>
+          {opp.provider.name}
+        </span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: opp.score >= 70 ? "#34d399" : opp.score >= 40 ? "#fbbf24" : "#8bb8cc" }}>
+          {opp.score}%
+        </span>
+      </div>
+      {!compact && (
+        <div style={{ fontSize: 10, color: "#8bb8cc", marginBottom: 5 }}>{opp.reason}</div>
+      )}
+      <div style={{ display: "flex", gap: 10, fontSize: 9, color: "#8bb8cc", marginBottom: compact ? 0 : 5 }}>
+        <span>צריך: <b style={{ color: "#f87171" }}>{opp.matchedNeeds.map(n => NEED_LABEL[n]).join(", ")}</b></span>
+        <span>מציע: <b style={{ color: "#34d399" }}>{opp.matchedOffers.map(n => NEED_LABEL[n]).join(", ")}</b></span>
+      </div>
+      {!compact && (
+        <div style={{ display: "flex", gap: 8, fontSize: 9, color: "#1e4060", marginBottom: 5 }}>
+          <span>אמון: <b style={{ color: "#38bdf8" }}>{opp.avgTrust}</b></span>
+          {opp.bidirectional && <span style={{ color: "#fbbf24" }}>⇌ הדדי</span>}
+          {opp.contextMatch  && <span style={{ color: "#34d399" }}>◉ אותו הקשר</span>}
+        </div>
+      )}
+      {!compact && (
+        <div style={{ fontSize: 9, padding: "4px 7px", background: "#020d1a", borderRadius: 4, color: "#00f5d4" }}>
+          → {opp.suggestedAction}
+        </div>
+      )}
     </div>
   );
 }
