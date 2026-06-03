@@ -51,13 +51,15 @@ export const CLASS_ICON: Record<ClassKey, string> = {
   physical:  "⚡",
 };
 
+// Color follows energy progression — id(root/red) → physical(orange) → ego(yellow)
+// → emotional(cyan) → rational(blue) → superego(purple)
 export const CLASS_COLOR: Record<ClassKey, string> = {
-  id:        "#fbbf24",
-  ego:       "#a78bfa",
-  superego:  "#818cf8",
-  emotional: "#38bdf8",
-  rational:  "#22c55e",
-  physical:  "#ef4444",
+  id:        "#ef4444", // red    — שורש
+  physical:  "#fb923c", // orange — גוף
+  ego:       "#fbbf24", // yellow — עצמי
+  emotional: "#22d3ee", // cyan   — לב
+  rational:  "#38bdf8", // blue   — שכל
+  superego:  "#a78bfa", // purple — ערכים
 };
 
 export const LEVEL_LABEL: Record<LevelKey, string> = {

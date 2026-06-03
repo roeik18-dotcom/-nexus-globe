@@ -340,7 +340,7 @@ export default function Page() {
                     {LEVEL_ICON[l]} {LEVEL_LABEL[l]}
                   </div>
                 ))}
-                {/* Data rows */}
+                {/* Data rows — every cell is clickable, shows first expression */}
                 {CLASS_ORDER.map(c => (
                   <>
                     <div key={c + "_label"} style={{
@@ -353,25 +353,41 @@ export default function Page() {
                       const isActive  = c === selClass && l === selLevel;
                       const sameClass = c === selClass;
                       const sameLevel = l === selLevel;
+                      const cellData  = MATRIX[c][l];
+                      const hint      = cellData.expressions[0];
                       return (
-                        <div key={c + l} style={{
-                          height: 28, borderRadius: 4,
-                          border: isActive
-                            ? `2px solid ${CLASS_COLOR[c]}`
-                            : (sameClass || sameLevel)
-                              ? `1px solid ${CLASS_COLOR[c]}44`
-                              : "1px solid #0a2a4a",
-                          background: isActive
-                            ? CLASS_COLOR[c] + "33"
-                            : (sameClass || sameLevel)
-                              ? CLASS_COLOR[c] + "0d"
-                              : "#030f1e",
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          fontSize: 8, color: isActive ? CLASS_COLOR[c] : "#1e4060",
-                          fontWeight: isActive ? 700 : 400,
-                          transition: "all .15s",
-                        }}>
-                          {isActive ? "●" : ""}
+                        <div
+                          key={c + l}
+                          onClick={() => {
+                            setSelClass(c);
+                            setSelLevel(l);
+                            // pick first expression of new cell
+                            setSelExpr(MATRIX[c][l].expressions[0]);
+                          }}
+                          title={hint}
+                          style={{
+                            height: 34, borderRadius: 4, cursor: "pointer",
+                            border: isActive
+                              ? `2px solid ${CLASS_COLOR[c]}`
+                              : (sameClass || sameLevel)
+                                ? `1px solid ${CLASS_COLOR[c]}44`
+                                : "1px solid #0a2a4a",
+                            background: isActive
+                              ? CLASS_COLOR[c] + "33"
+                              : (sameClass || sameLevel)
+                                ? CLASS_COLOR[c] + "0d"
+                                : "#030f1e",
+                            display: "flex", flexDirection: "column",
+                            alignItems: "center", justifyContent: "center",
+                            transition: "all .15s",
+                            overflow: "hidden", padding: "1px 3px",
+                          }}>
+                          {isActive
+                            ? <span style={{ fontSize: 9, color: CLASS_COLOR[c], fontWeight: 700 }}>●</span>
+                            : <span style={{ fontSize: 7, color: sameClass || sameLevel ? CLASS_COLOR[c] + "aa" : "#1e4060", textAlign: "center", lineHeight: 1.2 }}>
+                                {hint}
+                              </span>
+                          }
                         </div>
                       );
                     })}

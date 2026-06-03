@@ -42,14 +42,16 @@ export type UserNode = {
   createdAt: number;
 };
 
+// Color = Energy level (chakra progression, secular reading)
+// 🔴 id/root → 🟠 physical → 🟡 ego/self → 🟢 emotional/social → 🔵 rational → 🟣 superego
 export const FORCE_COLOR: Record<DominantForce, string> = {
-  emotional: "#38bdf8", // blue
-  rational:  "#22c55e", // green
-  physical:  "#ef4444", // red
-  ego:       "#a78bfa", // purple
-  social:    "#fb923c", // orange
-  id:        "#fbbf24", // yellow
-  superego:  "#818cf8", // indigo
+  id:        "#ef4444", // red    — שורש · הישרדות · דחף
+  physical:  "#fb923c", // orange — גוף · אנרגיה · תנועה
+  ego:       "#fbbf24", // yellow — בחירה · עצמי · כוח
+  social:    "#34d399", // green  — קהילה · חיבור · שיתוף
+  emotional: "#22d3ee", // cyan   — רגש · לב · אמפתיה
+  rational:  "#38bdf8", // blue   — שכל · בהירות · למידה
+  superego:  "#a78bfa", // purple — ערכים · חזון · משמעות
 };
 
 export const FORCE_LABEL: Record<DominantForce, string> = {
