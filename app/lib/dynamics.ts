@@ -266,6 +266,105 @@ export function getSystemFlows(nodes: UserNode[]): SystemFlow[] {
   }).filter(f => f.userCount > 0).sort((a, b) => b.magnitude - a.magnitude);
 }
 
+// ─── Layer: Executable Transition ────────────────────────────────────
+
+export interface DynamicsEvent {
+  id:         string;
+  type:       "DYNAMICS_TRANSITION";
+  nodeId:     string;
+  nodeName:   string;
+  message:    string;
+  ts:         number;
+  trustDelta: number;
+  fromForce:  DominantForce;
+  toForce:    DominantForce | null;
+}
+
+export interface DynamicsTransition {
+  updatedNode:      UserNode;
+  trustDelta:       number;
+  reputationDelta:  number;
+  opportunityDelta: number;
+  stressDelta:      number;
+  forceShift:       { from: DominantForce; to: DominantForce } | null;
+  event:            DynamicsEvent;
+}
+
+const EVENTS_KEY = "nexus:events";
+
+export function loadDynamicsEvents(): DynamicsEvent[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(EVENTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function _saveEvent(ev: DynamicsEvent): void {
+  if (typeof window === "undefined") return;
+  try {
+    const all = loadDynamicsEvents();
+    all.unshift(ev);
+    if (all.length > 50) all.splice(50);
+    localStorage.setItem(EVENTS_KEY, JSON.stringify(all));
+  } catch {}
+}
+
+/**
+ * Apply a parallel-timeline choice to a node.
+ * Deterministic rules — no AI, no backend.
+ *
+ * Flow: STATE → PATH → ACTION → TRANSITION → NEW STATE → LIVE EVENT
+ */
+export function applyDynamicsAction(
+  node:     UserNode,
+  timeline: ParallelTimeline,
+): DynamicsTransition {
+  // Force shift if timeline uses a different force
+  const forceShift = timeline.force !== node.dominantForce
+    ? { from: node.dominantForce, to: timeline.force }
+    : null;
+
+  // Deltas
+  const trustDelta  = timeline.trustDelta;
+  const repDelta    = Math.round(timeline.trustDelta * 0.6);
+  const oppDelta    = timeline.connections > 2 ? 1 : 0;
+  const stressDelta = ["social","emotional"].includes(timeline.force) ? -5 : 3;
+
+  // Updated node
+  const updatedNode: UserNode = {
+    ...node,
+    trustScore:    Math.min(node.trustScore + trustDelta, 100),
+    dominantForce: forceShift ? forceShift.to : node.dominantForce,
+    direction:     trustDelta >= 4 ? "forward" : node.direction,
+    event:         `[Dynamics] ${FORCE_LABEL[timeline.force]} — ${timeline.action}`,
+    action:        timeline.action,
+    createdAt:     Date.now(),
+  };
+
+  // Event message
+  const shiftMsg = forceShift
+    ? `${FORCE_LABEL[forceShift.from]} → ${FORCE_LABEL[forceShift.to]}`
+    : FORCE_LABEL[timeline.force];
+  const message = `${node.name}: ${shiftMsg} יצר +${trustDelta} אמון${timeline.connections > 0 ? ` ו-${timeline.connections} קשרים` : ""}`;
+
+  const event: DynamicsEvent = {
+    id:         `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    type:       "DYNAMICS_TRANSITION",
+    nodeId:     node.id,
+    nodeName:   node.name,
+    message,
+    ts:         Date.now(),
+    trustDelta,
+    fromForce:  node.dominantForce,
+    toForce:    forceShift?.to ?? null,
+  };
+
+  _saveEvent(event);
+
+  return { updatedNode, trustDelta, reputationDelta: repDelta, opportunityDelta: oppDelta, stressDelta, forceShift, event };
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────
 
 export const TENSION_COLOR: Record<TensionZone["level"], string> = {

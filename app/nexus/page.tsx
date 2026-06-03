@@ -667,7 +667,17 @@ export default function Page() {
           </div>
         ) : showDynamics ? (
           <div style={{ flex: 1, overflow: "hidden" }}>
-            <DynamicsPanel selected={selected} allNodes={visible} proofTrustMap={proofTrustMap} />
+            <DynamicsPanel
+            selected={selected}
+            allNodes={visible}
+            proofTrustMap={proofTrustMap}
+            onTransition={transition => {
+              // Reload nodes so globe + panels refresh
+              setAllNodes(loadNodes());
+              // Update selected to the new node state so panel stays live
+              setSelected(transition.updatedNode);
+            }}
+          />
           </div>
         ) : (
         <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>

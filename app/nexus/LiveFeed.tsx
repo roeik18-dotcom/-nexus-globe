@@ -14,6 +14,7 @@ import {
 } from "../lib/proof";
 import { deriveNeeds, NEED_LABEL } from "../lib/need";
 import { generateSeedNodes } from "../lib/seed";
+import { loadDynamicsEvents, type DynamicsEvent } from "../lib/dynamics";
 
 const DAY_MS = 86_400_000;
 
@@ -39,10 +40,11 @@ const DIR_COL:   Record<string, string> = { forward: "#34d399", stuck: "#fbbf24"
 // ─── Component ───────────────────────────────────────────────────────
 
 export default function LiveFeed() {
-  const [nodes,   setNodes]   = useState<UserNode[]>([]);
-  const [proofs,  setProofs]  = useState<ProofItem[]>([]);
-  const [profile, setProfile] = useState<ReturnType<typeof loadProfile>>(null);
-  const [isDemo,  setIsDemo]  = useState(false);
+  const [nodes,    setNodes]    = useState<UserNode[]>([]);
+  const [proofs,   setProofs]   = useState<ProofItem[]>([]);
+  const [profile,  setProfile]  = useState<ReturnType<typeof loadProfile>>(null);
+  const [isDemo,   setIsDemo]   = useState(false);
+  const [dynEvents,setDynEvents]= useState<DynamicsEvent[]>([]);
 
   const load = () => {
     const real = loadNodes();
@@ -50,6 +52,7 @@ export default function LiveFeed() {
     else                  { setNodes(generateSeedNodes()); setIsDemo(true); }
     setProofs(loadProofs());
     setProfile(loadProfile());
+    setDynEvents(loadDynamicsEvents().slice(0, 5));
   };
   const seedAndLoad = () => { generateSeedNodes().forEach(n => saveNode(n)); load(); };
 
@@ -188,6 +191,28 @@ export default function LiveFeed() {
           <button onClick={seedAndLoad} style={{ fontSize: 9, padding: "3px 10px", borderRadius: 4, border: "1px solid #fbbf2466", background: "transparent", color: "#fbbf24", cursor: "pointer" }}>
             ← טען 10 משתמשי demo לגלובוס
           </button>
+        </div>
+      )}
+
+      {/* ── SYSTEM EVENTS (Dynamics transitions) ── */}
+      {dynEvents.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <div style={sHead}>⚡ אירועי מערכת</div>
+          {dynEvents.map(e => {
+            const col = e.toForce ? (FORCE_COLOR[e.toForce] ?? "#38bdf8") : "#38bdf8";
+            return (
+              <div key={e.id} style={{ ...sItem, display: "flex", gap: 6, alignItems: "flex-start" }}>
+                <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: col + "22", color: col, flexShrink: 0, fontWeight: 700 }}>
+                  ↳
+                </span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 10, color: "#caf0f8" }}>{e.message}</div>
+                  <div style={{ fontSize: 8, color: "#1e4060" }}>{timeAgo(e.ts)} · DYNAMICS_TRANSITION</div>
+                </div>
+                <span style={{ fontSize: 10, color: "#34d399", fontWeight: 700, flexShrink: 0 }}>+{e.trustDelta}</span>
+              </div>
+            );
+          })}
         </div>
       )}
 

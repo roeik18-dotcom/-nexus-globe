@@ -1,12 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FORCE_COLOR, FORCE_LABEL, type UserNode, type DominantForce } from "../lib/philos";
+import { FORCE_COLOR, FORCE_LABEL, saveNode, type UserNode, type DominantForce } from "../lib/philos";
 import {
   getEvolutionPath, getParallelTimelines, getFutureComparison, getLongTermImpact,
-  detectTensionZones, getSystemFlows,
+  detectTensionZones, getSystemFlows, applyDynamicsAction,
   TENSION_COLOR, TENSION_LABEL, FLOW_TREND_ICON, FLOW_TREND_COLOR,
-  type TimeProjection,
+  type TimeProjection, type DynamicsTransition,
 } from "../lib/dynamics";
 
 // ─── Tab types ────────────────────────────────────────────────────────
@@ -25,15 +25,28 @@ const TABS: Array<{ id: Tab; label: string }> = [
 // ─── Props ────────────────────────────────────────────────────────────
 
 interface Props {
-  selected: UserNode | null;
-  allNodes: UserNode[];
+  selected:      UserNode | null;
+  allNodes:      UserNode[];
   proofTrustMap: Record<string, number>;
+  onTransition?: (transition: DynamicsTransition) => void;
 }
 
 // ─── Component ───────────────────────────────────────────────────────
 
-export default function DynamicsPanel({ selected, allNodes, proofTrustMap }: Props) {
-  const [tab, setTab] = useState<Tab>("evolution");
+export default function DynamicsPanel({ selected, allNodes, proofTrustMap, onTransition }: Props) {
+  const [tab,       setTab]       = useState<Tab>("evolution");
+  const [lastEvent, setLastEvent] = useState<DynamicsTransition | null>(null);
+  const [applying,  setApplying]  = useState<string | null>(null); // timeline label
+
+  function handleApply(timeline: ReturnType<typeof getParallelTimelines>[number]) {
+    if (!selected) return;
+    setApplying(timeline.label);
+    const result = applyDynamicsAction(selected, timeline);
+    saveNode(result.updatedNode); // persist to localStorage
+    setLastEvent(result);
+    onTransition?.(result);
+    setTimeout(() => setApplying(null), 1200);
+  }
 
   const trust       = selected ? (proofTrustMap[selected.id] ?? selected.trustScore) : 0;
   const evo         = selected ? getEvolutionPath(selected.dominantForce) : null;
@@ -140,21 +153,53 @@ export default function DynamicsPanel({ selected, allNodes, proofTrustMap }: Pro
             {!selected && <div style={{ fontSize: 10, color: "#1e4060", textAlign: "center", padding: 16 }}>בחר node לראות נתיבים מקבילים</div>}
             {selected && (
               <>
-                <div style={{ fontSize: 10, color: "#8bb8cc", marginBottom: 10 }}>
-                  אם היית בוחר היום:
+                <div style={{ fontSize: 10, color: "#8bb8cc", marginBottom: 8 }}>
+                  אם היית בוחר היום — {selected.name}:
                 </div>
+
+                {/* Last transition event */}
+                {lastEvent && (
+                  <div style={{ padding: "7px 10px", borderRadius: 6, border: "1px solid #34d39944", background: "#34d39908", marginBottom: 10 }}>
+                    <div style={{ fontSize: 9, color: "#34d399", letterSpacing: 1, marginBottom: 3 }}>✓ DYNAMICS_TRANSITION</div>
+                    <div style={{ fontSize: 10, color: "#caf0f8" }}>{lastEvent.event.message}</div>
+                    <div style={{ display: "flex", gap: 8, marginTop: 4, fontSize: 9, color: "#8bb8cc" }}>
+                      <span>+{lastEvent.trustDelta} trust</span>
+                      {lastEvent.forceShift && (
+                        <span style={{ color: FORCE_COLOR[lastEvent.forceShift.to] }}>
+                          {FORCE_LABEL[lastEvent.forceShift.from]} → {FORCE_LABEL[lastEvent.forceShift.to]}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {timelines.map((t, i) => {
-                  const col = FORCE_COLOR[t.force];
+                  const col       = FORCE_COLOR[t.force];
+                  const isApplying = applying === t.label;
                   return (
                     <div key={i} style={S.card(col)}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                         <span style={{ fontSize: 10, color: col, fontWeight: 700 }}>{t.label}</span>
-                        <span style={{ fontSize: 9, color: "#1e4060" }}>+{t.trustDelta} trust · {t.connections} קשרים</span>
+                        <span style={{ fontSize: 9, color: "#1e4060" }}>+{t.trustDelta} · {t.connections} קשרים</span>
                       </div>
                       <div style={{ fontSize: 10, color: "#caf0f8", marginBottom: 4 }}>{t.action}</div>
-                      <div style={{ display: "flex", gap: 8, fontSize: 9 }}>
-                        <span style={{ color: "#f87171" }}>⚠ {t.risk}</span>
-                        <span style={{ color: "#34d399" }}>✦ {t.opportunity}</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ display: "flex", gap: 8, fontSize: 9 }}>
+                          <span style={{ color: "#f87171" }}>⚠ {t.risk}</span>
+                          <span style={{ color: "#34d399" }}>✦ {t.opportunity}</span>
+                        </div>
+                        <button
+                          onClick={() => handleApply(t)}
+                          style={{
+                            padding: "4px 10px", borderRadius: 4, fontSize: 9, fontWeight: 700,
+                            border: `1px solid ${col}88`,
+                            background: isApplying ? col + "44" : col + "22",
+                            color: col, cursor: "pointer",
+                            transition: "all .15s",
+                          }}
+                        >
+                          {isApplying ? "✓ הוחל" : "↳ הפעל"}
+                        </button>
                       </div>
                     </div>
                   );
