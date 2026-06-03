@@ -63,6 +63,7 @@ import {
 } from "../lib/proof";
 import LiveFeed from "./LiveFeed";
 import GlobeLiveLayer from "./GlobeLiveLayer";
+import DynamicsPanel from "./DynamicsPanel";
 
 const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
 
@@ -130,7 +131,8 @@ export default function Page() {
   }, []);
 
   const [allProofs, setAllProofs] = useState<ProofItem[]>([]);
-  const [showFeed,  setShowFeed]  = useState(false);
+  const [showFeed,     setShowFeed]     = useState(false);
+  const [showDynamics, setShowDynamics] = useState(false);
 
   useEffect(() => {
     setAllNodes(loadNodes());
@@ -646,24 +648,26 @@ export default function Page() {
               {visible.length}/{allNodes.length} nodes · {filteredLinks.length} links
             </div>
           </div>
-          <button
-            onClick={() => setShowFeed(f => !f)}
-            style={{
-              padding: "5px 10px", borderRadius: 5, fontSize: 10, cursor: "pointer", fontWeight: 600,
-              border: `1px solid ${showFeed ? "#38bdf8" : "#1e4060"}`,
-              background: showFeed ? "#38bdf822" : "transparent",
-              color: showFeed ? "#38bdf8" : "#1e4060",
-              transition: "all .15s",
-            }}
-          >
-            ⚡ Feed
-          </button>
+          <div style={{ display: "flex", gap: 4 }}>
+            <button onClick={() => { setShowFeed(f => !f); setShowDynamics(false); }}
+              style={{ padding: "4px 8px", borderRadius: 4, fontSize: 9, cursor: "pointer", fontWeight: 600, border: `1px solid ${showFeed ? "#38bdf8" : "#1e4060"}`, background: showFeed ? "#38bdf822" : "transparent", color: showFeed ? "#38bdf8" : "#1e4060" }}>
+              ⚡ Feed
+            </button>
+            <button onClick={() => { setShowDynamics(d => !d); setShowFeed(false); }}
+              style={{ padding: "4px 8px", borderRadius: 4, fontSize: 9, cursor: "pointer", fontWeight: 600, border: `1px solid ${showDynamics ? "#a78bfa" : "#1e4060"}`, background: showDynamics ? "#a78bfa22" : "transparent", color: showDynamics ? "#a78bfa" : "#1e4060" }}>
+              ◈ Dynamics
+            </button>
+          </div>
         </div>
 
-        {/* Feed panel OR regular panels */}
+        {/* Feed / Dynamics / regular panels */}
         {showFeed ? (
           <div style={{ flex: 1, overflow: "hidden" }}>
             <LiveFeed />
+          </div>
+        ) : showDynamics ? (
+          <div style={{ flex: 1, overflow: "hidden" }}>
+            <DynamicsPanel selected={selected} allNodes={visible} proofTrustMap={proofTrustMap} />
           </div>
         ) : (
         <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
