@@ -62,6 +62,7 @@ import {
   type ProofItem,
 } from "../lib/proof";
 import LiveFeed from "./LiveFeed";
+import GlobeLiveLayer from "./GlobeLiveLayer";
 
 const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
 
@@ -626,6 +627,10 @@ export default function Page() {
             }}
           />
         )}
+
+        {/* ── GLOBE LIVE LAYER ── */}
+        <GlobeLiveLayer proofTrustMap={proofTrustMap} />
+
       </div>
 
       {/* SIDE PANEL */}
