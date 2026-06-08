@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createSolarSystem } from "../globe/solarSystem";
 import {
   FORCE_COLOR,
   FORCE_LABEL,
@@ -102,6 +103,7 @@ const ALL_LINK_TYPES: LinkType[] = ["alignment", "complementary", "influence", "
 
 export default function Page() {
   const wrap = useRef<HTMLDivElement>(null);
+  const globeRef = useRef<any>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [selected, setSelected]   = useState<UserNode | null>(null);
   const [selectedLink, setSelectedLink] = useState<Link | null>(null);
@@ -130,6 +132,29 @@ export default function Page() {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  // Ambient solar-system atmosphere around the globe (visual only). Waits for the
+  // react-globe.gl THREE scene to be ready, then mounts decorative objects into
+  // it. Polls a few seconds for readiness; cleans up on unmount.
+  useEffect(() => {
+    if (size.w === 0) return;
+    let cleanup: (() => void) | undefined;
+    let raf = 0;
+    let tries = 0;
+    const tryMount = () => {
+      const g = globeRef.current;
+      if (g && typeof g.scene === "function") {
+        const scene = g.scene();
+        if (scene) { cleanup = createSolarSystem(scene); return; }
+      }
+      if (tries++ < 180) raf = requestAnimationFrame(tryMount);
+    };
+    raf = requestAnimationFrame(tryMount);
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      if (cleanup) cleanup();
+    };
+  }, [size.w]);
 
   const [allProofs, setAllProofs] = useState<ProofItem[]>([]);
   const [showFeed,     setShowFeed]     = useState(false);
@@ -558,6 +583,7 @@ export default function Page() {
 
         {size.w > 0 && (
           <Globe
+            ref={globeRef}
             width={size.w}
             height={size.h}
             globeImageUrl="https://unpkg.com/three-globe/example/img/earth-dark.jpg"
