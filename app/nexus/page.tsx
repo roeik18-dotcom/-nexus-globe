@@ -64,6 +64,7 @@ import {
 import LiveFeed from "./LiveFeed";
 import GlobeLiveLayer from "./GlobeLiveLayer";
 import DynamicsPanel from "./DynamicsPanel";
+import NoaPanel from "./NoaPanel";
 
 const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
 
@@ -133,6 +134,7 @@ export default function Page() {
   const [allProofs, setAllProofs] = useState<ProofItem[]>([]);
   const [showFeed,     setShowFeed]     = useState(false);
   const [showDynamics, setShowDynamics] = useState(false);
+  const [showNoa,      setShowNoa]      = useState(false);
 
   useEffect(() => {
     setAllNodes(loadNodes());
@@ -649,19 +651,25 @@ export default function Page() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 4 }}>
-            <button onClick={() => { setShowFeed(f => !f); setShowDynamics(false); }}
+            <button onClick={() => { setShowFeed(f => !f); setShowDynamics(false); setShowNoa(false); }}
               style={{ padding: "4px 8px", borderRadius: 4, fontSize: 9, cursor: "pointer", fontWeight: 600, border: `1px solid ${showFeed ? "#38bdf8" : "#1e4060"}`, background: showFeed ? "#38bdf822" : "transparent", color: showFeed ? "#38bdf8" : "#1e4060" }}>
               ⚡ Feed
             </button>
-            <button onClick={() => { setShowDynamics(d => !d); setShowFeed(false); }}
+            <button onClick={() => { setShowDynamics(d => !d); setShowFeed(false); setShowNoa(false); }}
               style={{ padding: "4px 8px", borderRadius: 4, fontSize: 9, cursor: "pointer", fontWeight: 600, border: `1px solid ${showDynamics ? "#a78bfa" : "#1e4060"}`, background: showDynamics ? "#a78bfa22" : "transparent", color: showDynamics ? "#a78bfa" : "#1e4060" }}>
               ◈ Dynamics
+            </button>
+            <button onClick={() => { setShowNoa(n => !n); setShowFeed(false); setShowDynamics(false); }}
+              style={{ padding: "4px 8px", borderRadius: 4, fontSize: 9, cursor: "pointer", fontWeight: 600, border: `1px solid ${showNoa ? "#34d399" : "#1e4060"}`, background: showNoa ? "#34d39922" : "transparent", color: showNoa ? "#34d399" : "#1e4060" }}>
+              ◉ נועה
             </button>
           </div>
         </div>
 
-        {/* Feed / Dynamics / regular panels */}
-        {showFeed ? (
+        {/* Feed / Dynamics / Noa / regular panels */}
+        {showNoa ? (
+          <NoaPanel />
+        ) : showFeed ? (
           <div style={{ flex: 1, overflow: "hidden" }}>
             <LiveFeed />
           </div>
@@ -1292,15 +1300,15 @@ export default function Page() {
               const nextColor = evo.next ? (FORCE_COLOR[evo.next as DominantForce] ?? "#a78bfa") : "#a78bfa";
               return (
                 <div style={{ padding: "8px 10px", borderRadius: 4, marginBottom: 10, border: "1px solid #0a2a4a", background: "#040e1c" }}>
-                  <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 1, textTransform: "uppercase", marginBottom: 7 }}>נתיב אבולוציה</div>
+                  <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 1, textTransform: "uppercase", marginBottom: 7 }}>זרימת מתח · Tension Flow</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8, flexWrap: "wrap", fontSize: 9 }}>
                     <span style={{ padding: "2px 7px", borderRadius: 10, border: `1px solid ${FORCE_COLOR[selected.dominantForce]}55`, color: FORCE_COLOR[selected.dominantForce], background: FORCE_COLOR[selected.dominantForce] + "22", fontWeight: 600 }}>
                       {FORCE_LABEL[selected.dominantForce]}
                     </span>
-                    <span style={{ color: "#1e4060" }}>→ מאזן:</span>
+                    <span style={{ color: "#1e4060" }}>→ כוח מאזן:</span>
                     <span style={{ padding: "2px 7px", borderRadius: 10, border: `1px solid ${balColor}55`, color: balColor }}>{FORCE_LABEL[evo.balance as DominantForce] ?? evo.balance}</span>
                     {evo.next && <>
-                      <span style={{ color: "#1e4060" }}>→ הבא:</span>
+                      <span style={{ color: "#1e4060" }}>→ נקודת מתח:</span>
                       <span style={{ padding: "2px 7px", borderRadius: 10, border: `1px solid ${nextColor}55`, color: nextColor }}>{FORCE_LABEL[evo.next as DominantForce] ?? evo.next}</span>
                     </>}
                   </div>
