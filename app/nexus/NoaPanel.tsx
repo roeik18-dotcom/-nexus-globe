@@ -7,6 +7,7 @@ import {
   riskHe,
   type CollapseRisk,
 } from "../lib/noa";
+import NoaTransformation from "./NoaTransformation";
 
 // Palette aligned with page.tsx
 const C = {
@@ -135,7 +136,7 @@ const VALUE_NODES = [
 ];
 
 // Profile tabs.
-const TABS = ["overview", "community", "requests", "chain", "posts"] as const;
+const TABS = ["journey", "overview", "community", "requests", "chain", "posts"] as const;
 type ProfileTab = (typeof TABS)[number];
 
 // Score interpretation bands (UI reading of the existing score — no calc change).
@@ -156,7 +157,7 @@ export default function NoaPanel() {
   const [fulfilled, setFulfilled] = useState<Set<string>>(() => new Set());
   const [following, setFollowing] = useState(false);
   const [joined, setJoined] = useState(false);
-  const [tab, setTab] = useState<ProfileTab>("overview");
+  const [tab, setTab] = useState<ProfileTab>("journey");
   const score = c.orientation?.score ?? 0;
   const band = SCORE_BANDS[bandIndex(score)];
   const requestSupport = (role: string) =>
@@ -279,6 +280,13 @@ export default function NoaPanel() {
           <button key={t} onClick={() => setTab(t)} style={{ flex: 1, padding: "6px 4px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontWeight: 600, textTransform: "capitalize", border: `1px solid ${tab === t ? C.cyan : C.border}`, background: tab === t ? "#38bdf822" : "transparent", color: tab === t ? C.cyan : C.borderSoft }}>{t}</button>
         ))}
       </div>
+
+      {/* Journey — the transformation moment (visual, animated) */}
+      {tab === "journey" && (
+        <div style={{ height: 620 }}>
+          <NoaTransformation />
+        </div>
+      )}
 
       {/* Profile Timeline — story as human-readable events with live status */}
       {tab === "overview" && (
