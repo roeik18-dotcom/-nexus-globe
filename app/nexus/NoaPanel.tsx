@@ -8,6 +8,8 @@ import {
   type CollapseRisk,
 } from "../lib/noa";
 import NoaTransformation from "./NoaTransformation";
+import PersonalMap from "./PersonalMap";
+import UserIntake, { type IntakeProfile } from "./UserIntake";
 
 // Palette aligned with page.tsx
 const C = {
@@ -136,7 +138,7 @@ const VALUE_NODES = [
 ];
 
 // Profile tabs.
-const TABS = ["journey", "overview", "community", "requests", "chain", "posts"] as const;
+const TABS = ["journey", "map", "me", "overview", "community", "requests", "chain", "posts"] as const;
 type ProfileTab = (typeof TABS)[number];
 
 // Score interpretation bands (UI reading of the existing score — no calc change).
@@ -158,6 +160,7 @@ export default function NoaPanel() {
   const [following, setFollowing] = useState(false);
   const [joined, setJoined] = useState(false);
   const [tab, setTab] = useState<ProfileTab>("journey");
+  const [myProfile, setMyProfile] = useState<IntakeProfile | null>(null);
   const score = c.orientation?.score ?? 0;
   const band = SCORE_BANDS[bandIndex(score)];
   const requestSupport = (role: string) =>
@@ -281,11 +284,28 @@ export default function NoaPanel() {
         ))}
       </div>
 
-      {/* Journey — the transformation moment (visual, animated) */}
+      {/* Journey — the First 30 Seconds; Continue settles into the Personal Map */}
       {tab === "journey" && (
         <div style={{ height: 620 }}>
-          <NoaTransformation />
+          <NoaTransformation onContinue={() => setTab("map")} />
         </div>
+      )}
+
+      {/* Personal Map — the permanent "You Are Here" navigation screen (Noa) */}
+      {tab === "map" && <PersonalMap />}
+
+      {/* Me — User Intake (3 questions) → the user's own Personal Map */}
+      {tab === "me" && (
+        myProfile ? (
+          <>
+            <PersonalMap profile={myProfile} />
+            <button onClick={() => setMyProfile(null)} style={{ marginTop: 8, padding: "7px 14px", borderRadius: 6, fontSize: 11, cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.borderSoft }}>↻ התחל מחדש</button>
+          </>
+        ) : (
+          <div style={{ minHeight: 420 }}>
+            <UserIntake onDone={setMyProfile} />
+          </div>
+        )
       )}
 
       {/* Profile Timeline — story as human-readable events with live status */}

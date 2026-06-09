@@ -31,7 +31,7 @@ const QUESTION = [
 ];
 const DURATIONS = [6000, 6000, 8000, 7000, 3000];
 
-export default function NoaTransformation() {
+export default function NoaTransformation({ onContinue }: { onContinue?: () => void }) {
   const chain = useMemo(() => computeNoaChain(0), []);
   const [beat, setBeat] = useState(0);     // 0..4
   const [done, setDone] = useState(false); // closing screen
@@ -116,7 +116,7 @@ export default function NoaTransformation() {
           <div style={{ fontSize: 10, color: C.borderSoft, letterSpacing: 1 }}>
             Resistance → Leakage → Support → Action → Orientation
           </div>
-          <button style={{ alignSelf: "center", marginTop: 6, padding: "10px 28px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1px solid ${C.green}`, background: "#0c3a2c", color: C.green }}>
+          <button onClick={() => onContinue?.()} style={{ alignSelf: "center", marginTop: 6, padding: "10px 28px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1px solid ${C.green}`, background: "#0c3a2c", color: C.green }}>
             Continue
           </button>
           <div style={{ fontSize: 10, color: C.borderSoft }}>This was Noa. Next, Nexus will map you.</div>
