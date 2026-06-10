@@ -365,6 +365,132 @@ export function applyDynamicsAction(
   return { updatedNode, trustDelta, reputationDelta: repDelta, opportunityDelta: oppDelta, stressDelta, forceShift, event };
 }
 
+// ─── Layer: Systemic Propagation ─────────────────────────────────────
+//
+// NODE TRANSITION → LOCAL NETWORK EFFECT → PULSE → FLOW → SYSTEM EVENT
+
+export type PropagationStrength = "direct" | "force" | "context";
+
+export interface PropagationEffect {
+  node:       UserNode;
+  trustDelta: number;
+  reason:     string;
+  strength:   PropagationStrength;
+}
+
+export interface PropagationResult {
+  affected:   PropagationEffect[];
+  pulseDelta: { energy: number; trust: number; stress: number; activity: number };
+  flowDeltas: Record<string, number>;  // flow label → delta percentage points
+  events:     DynamicsEvent[];
+}
+
+const STRENGTH_DELTA: Record<PropagationStrength, number> = {
+  direct: 3, force: 1, context: 1,
+};
+
+export function propagateTransition(
+  source:     UserNode,
+  transition: DynamicsTransition,
+  allNodes:   UserNode[],
+  links:      Array<{ source: string; target: string }>,
+): PropagationResult {
+  const others = allNodes.filter(n => n.id !== source.id);
+  const td     = transition.trustDelta;
+  const fs     = transition.forceShift;
+
+  // 1. Classify each node by relationship to source
+  const directIds = new Set(
+    links
+      .filter(l => l.source === source.id || l.target === source.id)
+      .map(l => l.source === source.id ? l.target : l.source)
+  );
+
+  const affected: PropagationEffect[] = [];
+  const seen = new Set<string>();
+
+  for (const n of others) {
+    if (seen.has(n.id)) continue;
+
+    let strength: PropagationStrength | null = null;
+    let reason = "";
+
+    if (directIds.has(n.id)) {
+      strength = "direct";
+      reason   = `קשר ישיר עם ${source.name}`;
+    } else if (n.dominantForce === source.dominantForce) {
+      strength = "force";
+      reason   = `אותו כוח — ${FORCE_LABEL[source.dominantForce]}`;
+    } else if (fs && n.dominantForce === fs.to) {
+      strength = "force";
+      reason   = `כוח חדש של ${source.name} — ${FORCE_LABEL[fs.to]}`;
+    } else if (n.context === source.context) {
+      strength = "context";
+      reason   = `אותו הקשר — ${n.context}`;
+    }
+
+    if (!strength) continue;
+
+    const delta = Math.round(STRENGTH_DELTA[strength] * (td / 4));
+    if (delta === 0) continue;
+
+    affected.push({ node: n, trustDelta: delta, reason, strength });
+    seen.add(n.id);
+  }
+
+  // Sort: direct first, then force, then context — take top 4
+  const sorted = affected.sort((a, b) => {
+    const order = { direct: 0, force: 1, context: 2 };
+    return order[a.strength] - order[b.strength];
+  }).slice(0, 4);
+
+  // 2. Pulse delta
+  const isPositiveMove = td > 0;
+  const isSocialMove   = fs?.to === "social" || source.dominantForce === "social";
+  const isRiskMove     = fs?.to === "id" || transition.stressDelta > 0;
+
+  const pulseDelta = {
+    energy:   isPositiveMove ? Math.round(td * 1.5) : -2,
+    trust:    Math.round(td * 0.8 + sorted.length * 0.5),
+    stress:   isSocialMove ? -3 : isRiskMove ? +4 : 0,
+    activity: 1 + sorted.length,
+  };
+
+  // 3. Flow deltas (% points)
+  const flowDeltas: Record<string, number> = {};
+  const newForce = fs?.to ?? source.dominantForce;
+
+  if (["emotional","social"].includes(newForce))  flowDeltas["Trust Flow"]       = +Math.round(td * 0.6);
+  if (["rational","superego"].includes(newForce)) flowDeltas["Value Flow"]       = +Math.round(td * 0.5);
+  if (["ego","social"].includes(newForce))        flowDeltas["Opportunity Flow"] = +Math.round(td * 0.4);
+  if (["emotional","physical"].includes(newForce))flowDeltas["Support Flow"]     = +Math.round(td * 0.5);
+  if (["rational"].includes(newForce))            flowDeltas["Knowledge Flow"]   = +Math.round(td * 0.7);
+
+  // 4. SYSTEM_PROPAGATION event
+  const flowMsg = Object.entries(flowDeltas)
+    .filter(([,v]) => v > 0)
+    .map(([k, v]) => `${k} +${v}%`)
+    .join(", ");
+  const affectedMsg = sorted.length > 0
+    ? `השפיע על ${sorted.length} nodes (${sorted.map(e => e.node.name.split(" ")[0]).join(", ")})`
+    : "ללא השפעה ישירה";
+
+  const propEvent: DynamicsEvent = {
+    id:         `${Date.now()}-prop`,
+    type:       "DYNAMICS_TRANSITION",
+    nodeId:     source.id,
+    nodeName:   source.name,
+    message:    `[SYSTEM_PROPAGATION] ${FORCE_LABEL[newForce]} ב-${source.name} — ${affectedMsg}${flowMsg ? ` · ${flowMsg}` : ""}`,
+    ts:         Date.now(),
+    trustDelta: sorted.reduce((s, e) => s + e.trustDelta, 0),
+    fromForce:  source.dominantForce,
+    toForce:    fs?.to ?? null,
+  };
+  _saveEvent(propEvent);
+
+  return { affected: sorted, pulseDelta, flowDeltas, events: [propEvent] };
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────
 
 export const TENSION_COLOR: Record<TensionZone["level"], string> = {

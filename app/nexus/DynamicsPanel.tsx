@@ -1,12 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FORCE_COLOR, FORCE_LABEL, saveNode, type UserNode, type DominantForce } from "../lib/philos";
+import { FORCE_COLOR, FORCE_LABEL, saveNode, buildLinks, type UserNode, type DominantForce } from "../lib/philos";
 import {
   getEvolutionPath, getParallelTimelines, getFutureComparison, getLongTermImpact,
-  detectTensionZones, getSystemFlows, applyDynamicsAction,
+  detectTensionZones, getSystemFlows, applyDynamicsAction, propagateTransition,
   TENSION_COLOR, TENSION_LABEL, FLOW_TREND_ICON, FLOW_TREND_COLOR,
-  type TimeProjection, type DynamicsTransition,
+  type TimeProjection, type DynamicsTransition, type PropagationResult,
 } from "../lib/dynamics";
 
 // ─── Tab types ────────────────────────────────────────────────────────
@@ -34,17 +34,26 @@ interface Props {
 // ─── Component ───────────────────────────────────────────────────────
 
 export default function DynamicsPanel({ selected, allNodes, proofTrustMap, onTransition }: Props) {
-  const [tab,       setTab]       = useState<Tab>("evolution");
-  const [lastEvent, setLastEvent] = useState<DynamicsTransition | null>(null);
-  const [applying,  setApplying]  = useState<string | null>(null); // timeline label
+  const [tab,         setTab]         = useState<Tab>("evolution");
+  const [lastEvent,   setLastEvent]   = useState<DynamicsTransition | null>(null);
+  const [propagation, setPropagation] = useState<PropagationResult | null>(null);
+  const [applying,    setApplying]    = useState<string | null>(null);
+
+  // Precompute graph links for propagation
+  const links = useMemo(() => buildLinks(allNodes), [allNodes]);
 
   function handleApply(timeline: ReturnType<typeof getParallelTimelines>[number]) {
     if (!selected) return;
     setApplying(timeline.label);
-    const result = applyDynamicsAction(selected, timeline);
-    saveNode(result.updatedNode); // persist to localStorage
-    setLastEvent(result);
-    onTransition?.(result);
+
+    const transition = applyDynamicsAction(selected, timeline);
+    saveNode(transition.updatedNode);
+
+    // Propagate effects to surrounding system
+    const prop = propagateTransition(selected, transition, allNodes, links);
+    setPropagation(prop);
+    setLastEvent(transition);
+    onTransition?.(transition);
     setTimeout(() => setApplying(null), 1200);
   }
 
@@ -170,6 +179,55 @@ export default function DynamicsPanel({ selected, allNodes, proofTrustMap, onTra
                         </span>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* Propagation preview */}
+                {propagation && (
+                  <div style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #38bdf844", background: "#38bdf808", marginBottom: 10 }}>
+                    <div style={{ fontSize: 9, color: "#38bdf8", letterSpacing: 1, marginBottom: 6 }}>
+                      ◎ SYSTEM_PROPAGATION
+                    </div>
+
+                    {/* Affected nodes */}
+                    {propagation.affected.length > 0 && (
+                      <div style={{ marginBottom: 6 }}>
+                        <div style={{ fontSize: 8, color: "#1e4060", marginBottom: 4 }}>nodes מושפעים:</div>
+                        {propagation.affected.map((e, i) => (
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                            <div style={{ width: 5, height: 5, borderRadius: "50%", background: FORCE_COLOR[e.node.dominantForce], flexShrink: 0 }} />
+                            <span style={{ fontSize: 9, color: "#caf0f8", flex: 1 }}>{e.node.name}</span>
+                            <span style={{ fontSize: 9, color: "#34d399" }}>+{e.trustDelta}</span>
+                            <span style={{ fontSize: 8, color: "#1e4060" }}>{e.strength}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Pulse delta */}
+                    <div style={{ display: "flex", gap: 8, fontSize: 9, color: "#8bb8cc", marginBottom: 6, flexWrap: "wrap" }}>
+                      {[
+                        { label: "⚡", val: propagation.pulseDelta.energy,   color: "#fbbf24" },
+                        { label: "⬡",  val: propagation.pulseDelta.trust,    color: "#34d399" },
+                        { label: "⊗",  val: propagation.pulseDelta.stress,   color: "#f87171" },
+                        { label: "◉",  val: propagation.pulseDelta.activity, color: "#38bdf8" },
+                      ].map(m => (
+                        <span key={m.label} style={{ color: m.color }}>
+                          {m.label} {m.val > 0 ? "+" : ""}{m.val}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Flow deltas */}
+                    {Object.keys(propagation.flowDeltas).length > 0 && (
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {Object.entries(propagation.flowDeltas).map(([k, v]) => (
+                          <span key={k} style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: "#34d39922", color: "#34d399" }}>
+                            {k} +{v}%
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 

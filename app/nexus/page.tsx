@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createSolarSystem } from "../globe/solarSystem";
 import {
   FORCE_COLOR,
   FORCE_LABEL,
@@ -64,6 +65,7 @@ import {
 import LiveFeed from "./LiveFeed";
 import GlobeLiveLayer from "./GlobeLiveLayer";
 import DynamicsPanel from "./DynamicsPanel";
+import NoaPanel from "./NoaPanel";
 
 const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
 
@@ -96,11 +98,29 @@ function getNodeSemanticColor(n: UserNode, effectiveTrust?: number): string {
   return SEMANTIC_C.yellow;
 }
 
+// ── Living-globe visualization (visual-only): map the 5 forces → 5 core values ──
+const FORCE_VALUE: Record<string, string> = {
+  rational: "Truth", superego: "Justice", ego: "Dignity",
+  physical: "Responsibility", id: "Responsibility",
+  emotional: "Protection", social: "Protection",
+};
+const VALUE_COLOR: Record<string, string> = {
+  Truth: "#38bdf8", Justice: "#a78bfa", Protection: "#34d399",
+  Responsibility: "#fb923c", Dignity: "#fbbf24", // Truth=Blue Justice=Purple Protection=Green Responsibility=Orange Dignity=Gold
+};
+function nodeValue(n: any): string { return FORCE_VALUE[n?.dominantForce] ?? "Truth"; }
+function hexToRgba(hex: string, a: number): string {
+  const h = hex.replace("#", "");
+  const n = parseInt(h.length === 3 ? h.split("").map(c => c + c).join("") : h, 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${Math.max(0, Math.min(1, a)).toFixed(2)})`;
+}
+
 const TOP_N = 5;
 const ALL_LINK_TYPES: LinkType[] = ["alignment", "complementary", "influence", "opportunity"];
 
 export default function Page() {
   const wrap = useRef<HTMLDivElement>(null);
+  const globeRef = useRef<any>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [selected, setSelected]   = useState<UserNode | null>(null);
   const [selectedLink, setSelectedLink] = useState<Link | null>(null);
@@ -130,9 +150,38 @@ export default function Page() {
     return () => ro.disconnect();
   }, []);
 
+  // Ambient solar-system atmosphere around the globe (visual only). Waits for the
+  // react-globe.gl THREE scene to be ready, then mounts decorative objects into
+  // it. Polls a few seconds for readiness; cleans up on unmount.
+  useEffect(() => {
+    if (size.w === 0) return;
+    let cleanup: (() => void) | undefined;
+    let raf = 0;
+    let tries = 0;
+    const tryMount = () => {
+      const g = globeRef.current;
+      if (g && typeof g.scene === "function") {
+        const scene = g.scene();
+        if (scene) {
+          // MOTION — slow ambient auto-rotation (never static)
+          try { const ctrls = g.controls?.(); if (ctrls) { ctrls.autoRotate = true; ctrls.autoRotateSpeed = 0.35; } } catch { /* ignore */ }
+          cleanup = createSolarSystem(scene);
+          return;
+        }
+      }
+      if (tries++ < 180) raf = requestAnimationFrame(tryMount);
+    };
+    raf = requestAnimationFrame(tryMount);
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      if (cleanup) cleanup();
+    };
+  }, [size.w]);
+
   const [allProofs, setAllProofs] = useState<ProofItem[]>([]);
   const [showFeed,     setShowFeed]     = useState(false);
   const [showDynamics, setShowDynamics] = useState(false);
+  const [showNoa,      setShowNoa]      = useState(false);
 
   useEffect(() => {
     setAllNodes(loadNodes());
@@ -199,22 +248,23 @@ export default function Page() {
         const s = byId[l.source], t = byId[l.target];
         if (!s || !t) return null;
         const hot = topIds.has(s.id) || topIds.has(t.id);
-        // pass proof-enhanced trust so high-proof nodes get green links
-        const sWithTrust = proofTrustMap[s.id] !== undefined
-          ? { ...s, trustScore: proofTrustMap[s.id] } : s;
-        const tWithTrust = proofTrustMap[t.id] !== undefined
-          ? { ...t, trustScore: proofTrustMap[t.id] } : t;
-        const col = getLinkSemanticColor(l, sWithTrust, tWithTrust);
+        // LINE OPACITY = TRUST. Lines are NEUTRAL white/cyan — never value colors.
+        const trustS = proofTrustMap[s.id] ?? s.trustScore;
+        const trustT = proofTrustMap[t.id] ?? t.trustScore;
+        const trust = (trustS + trustT) / 2;
+        const alpha = 0.08 + Math.min(0.42, (trust / 100) * 0.42); // capped — lines stay secondary
+        const col = `rgba(176,212,245,${alpha.toFixed(2)})`;        // neutral white/cyan
         return {
           _link: l,
           startLat: s.lat, startLng: s.lng,
           endLat: t.lat,   endLng: t.lng,
           color: [col, col],
-          stroke: 0.25 + l.strength * 0.9 + (hot ? 0.3 : 0),
+          stroke: 0.2 + l.strength * 0.85 + (hot ? 0.2 : 0), // LINE THICKNESS = STRENGTH
           altitude: 0.12 + l.strength * 0.15,
-          dash: l.directional ? 0.25 : 0.6,
+          dash: l.directional ? 0.25 : 0.6,                  // LINE MOTION = ACTIVITY FLOW
           gap:  l.directional ? 0.15 : 0.05,
           speed: l.directional ? 900 : 2500,
+          trust: Math.round(trust),
         };
       })
       .filter(Boolean) as any[];
@@ -362,6 +412,45 @@ export default function Page() {
     arr.push(...ranked);
     return arr;
   }, [profileAnchor, ranked]);
+
+  /* GLOBE PULSE — active nodes (anchor + top) emit expanding rings */
+  const pulseRings = useMemo(
+    () => pointsData.filter((d: any) => d._anchor || topIds.has(d.id)),
+    [pointsData, topIds],
+  );
+
+  /* COMMUNITY STARS — one star per community (context), at its centroid.
+     Members + Values are derived from the cluster's existing nodes (no new data). */
+  const communityStars = useMemo(() => {
+    const g = new Map<string, { lat: number; lng: number; n: number; context: string; values: Set<string>; trust: number }>();
+    for (const d of pointsData as any[]) {
+      if (d._anchor || !d.context) continue;
+      const e = g.get(d.context) ?? { lat: 0, lng: 0, n: 0, context: d.context, values: new Set<string>(), trust: 0 };
+      e.lat += d.lat; e.lng += d.lng; e.n += 1; e.values.add(nodeValue(d));
+      e.trust += (proofTrustMap[d.id] ?? d.trustScore ?? 0); g.set(d.context, e);
+    }
+    return [...g.values()].filter(e => e.n > 0).map(e => ({
+      lat: e.lat / e.n, lng: e.lng / e.n, context: e.context, count: e.n,
+      values: [...e.values], cohesion: Math.round(e.trust / e.n), // cohesion ≈ avg member trust
+    }));
+  }, [pointsData, proofTrustMap]);
+
+  /* Strongest connection per node — for the node hover "why" line */
+  const strongestByNode = useMemo(() => {
+    const byId: Record<string, UserNode> = {};
+    visible.forEach(n => (byId[n.id] = n));
+    const m = new Map<string, { other: string; reason: string; strength: number }>();
+    for (const l of filteredLinks) {
+      for (const [a, b] of [[l.source, l.target], [l.target, l.source]] as const) {
+        const other = byId[b];
+        const cur = m.get(a);
+        if (other && (!cur || l.strength > cur.strength)) {
+          m.set(a, { other: other.name, reason: l.reason, strength: l.strength });
+        }
+      }
+    }
+    return m;
+  }, [visible, filteredLinks]);
 
   /* connections for selected node (for Pentagon panel) */
   const selectedConnections = useMemo(() => {
@@ -550,12 +639,13 @@ export default function Page() {
               fontSize: 11, color: "#8bb8cc",
             }}
           >
-            אין עדיין נודים. מלא את הטופס ב־<a href="/" style={{ color: "#38bdf8" }}>דף הבית</a>.
+            Create the first connection. <a href="/" style={{ color: "#38bdf8" }}>דף הבית →</a>
           </div>
         )}
 
         {size.w > 0 && (
           <Globe
+            ref={globeRef}
             width={size.w}
             height={size.h}
             globeImageUrl="https://unpkg.com/three-globe/example/img/earth-dark.jpg"
@@ -565,7 +655,8 @@ export default function Page() {
             pointsData={pointsData}
             pointLat={(d: any) => d.lat}
             pointLng={(d: any) => d.lng}
-            pointColor={(d: any) => d._anchor ? d.color : getNodeSemanticColor(d as UserNode, proofTrustMap[(d as UserNode).id])}
+            /* NODE COLOR = PRIMARY VALUE (palette). State → pulse, trust → line opacity. */
+            pointColor={(d: any) => d._anchor ? d.color : (VALUE_COLOR[nodeValue(d)] ?? "#38bdf8")}
             pointAltitude={(d: any) => {
               if (d._anchor) return 0.06;
               const base = d.intensity / 10;
@@ -584,11 +675,15 @@ export default function Page() {
                   <span style="color:#fbbf24">base force: ${FORCE_LABEL[d.force as DominantForce]}</span>
                 </div>`;
               }
-              return `<div style="font-family:system-ui;padding:4px 2px">
-                <b>${escapeHtml(d.name)}</b> <span style="color:#38bdf8">#${d.rank}</span><br/>
-                ${FORCE_LABEL[d.dominantForce as DominantForce]} · ${CONTEXT_LABEL[d.context as NodeContext]}<br/>
-                <span style="color:#fbbf24">score ${d.score.toFixed(2)}</span><br/>
-                <span style="color:#00f5d4">${escapeHtml(d.action)}</span>
+              const val = nodeValue(d); const vc = VALUE_COLOR[val];
+              const active = topIds.has(d.id);
+              const sc = strongestByNode.get(d.id);
+              return `<div style="font-family:system-ui;padding:7px 9px;min-width:160px;background:rgba(2,13,26,.92);border:1px solid ${vc}55;border-radius:8px">
+                <div style="font-size:13px;font-weight:700;color:#e0f2fe">${escapeHtml(d.name)} <span style="color:#8bb8cc;font-weight:400">#${d.rank}</span></div>
+                <div style="font-size:11px;color:${vc};margin:3px 0">● ${val}</div>
+                <div style="font-size:10px;color:#8bb8cc">community: ${CONTEXT_LABEL[d.context as NodeContext]} · activity: ${active ? "active" : "calm"}</div>
+                <div style="font-size:10px;color:#fbbf24">impact ${d.intensity}/10 · trust ${Math.round(proofTrustMap[d.id] ?? d.trustScore)}</div>
+                ${sc ? `<div style="font-size:10px;color:#00f5d4">↔ ${escapeHtml(sc.other)}: ${escapeHtml(sc.reason)}</div>` : ""}
               </div>`;
             }}
             onPointClick={(p: any) => {
@@ -596,6 +691,34 @@ export default function Page() {
               setSelected(p);
               setSelectedLink(null);
             }}
+            /* GLOBE PULSE — expanding rings on active nodes */
+            ringsData={pulseRings}
+            ringLat={(d: any) => d.lat}
+            ringLng={(d: any) => d.lng}
+            ringMaxRadius={(d: any) => (d._anchor ? 5 : 3.4)}
+            ringPropagationSpeed={1.5}
+            ringRepeatPeriod={(d: any) => (d._anchor ? 850 : 1500)}
+            ringColor={(d: any) => {
+              // NODE PULSE = CURRENT STATE (resistance heat) — a separate channel from node color (= value)
+              const c = d._anchor ? (d.color as string) : getNodeSemanticColor(d as UserNode, proofTrustMap[(d as UserNode).id]);
+              return (t: number) => hexToRgba(c, 1 - t);
+            }}
+            /* COMMUNITY STARS — one glowing labelled star per community cluster */
+            labelsData={communityStars}
+            labelLat={(d: any) => d.lat}
+            labelLng={(d: any) => d.lng}
+            labelText={(d: any) => `✦ ${CONTEXT_LABEL[d.context as NodeContext]}`}
+            labelColor={() => "rgba(207,230,245,0.9)"}
+            labelSize={(d: any) => 0.9 + Math.min(1.2, d.count * 0.12)}
+            labelDotRadius={(d: any) => 0.4 + Math.min(0.8, d.count * 0.08)}
+            labelAltitude={0.02}
+            labelResolution={2}
+            labelLabel={(d: any) => `<div style="font-family:system-ui;padding:7px 9px;min-width:160px;background:rgba(2,13,26,.92);border:1px solid #38bdf855;border-radius:8px">
+              <div style="font-size:13px;font-weight:700;color:#cfe6f5">✦ ${CONTEXT_LABEL[d.context as NodeContext]}</div>
+              <div style="font-size:10px;color:#8bb8cc;margin-top:2px">${d.count} ${d.count === 1 ? "member" : "members"} · activity: ${d.count >= 3 ? "high" : "low"}</div>
+              <div style="font-size:10px;color:#38bdf8">values: ${(d.values as string[]).join(" · ")}</div>
+              <div style="font-size:10px;color:#34d399">cohesion: ${d.cohesion}/100</div>
+            </div>`}
             arcsData={activeTopic ? topicArcs : arcs}
             arcStartLat={(d: any) => d.startLat}
             arcStartLng={(d: any) => d.startLng}
@@ -618,10 +741,11 @@ export default function Page() {
                 </div>`;
               }
               const l: Link = d._link;
-              return `<div style="font-family:system-ui;padding:4px 2px">
-                <b style="color:${LINK_COLOR[l.type]}">${LINK_LABEL[l.type]}</b><br/>
-                ${escapeHtml(l.reason)}<br/>
-                <span style="color:#8bb8cc">strength ${l.strength.toFixed(2)}</span>
+              return `<div style="font-family:system-ui;padding:7px 9px;min-width:170px;background:rgba(2,13,26,.92);border:1px solid #1e4060;border-radius:8px">
+                <div style="font-size:11px;font-weight:700;color:#cfe6f5">${escapeHtml(l.source)} ↔ ${escapeHtml(l.target)}</div>
+                <div style="font-size:10px;color:${LINK_COLOR[l.type]};margin:2px 0">${LINK_LABEL[l.type]}</div>
+                <div style="font-size:10px;color:#8bb8cc">${escapeHtml(l.reason)}</div>
+                <div style="font-size:10px;color:#fbbf24">strength ${(l.strength * 100).toFixed(0)}% · trust ${d.trust ?? "—"} · ${l.directional ? "flowing" : "stable"}</div>
               </div>`;
             }}
             onArcClick={(d: any) => {
@@ -649,19 +773,25 @@ export default function Page() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 4 }}>
-            <button onClick={() => { setShowFeed(f => !f); setShowDynamics(false); }}
+            <button onClick={() => { setShowFeed(f => !f); setShowDynamics(false); setShowNoa(false); }}
               style={{ padding: "4px 8px", borderRadius: 4, fontSize: 9, cursor: "pointer", fontWeight: 600, border: `1px solid ${showFeed ? "#38bdf8" : "#1e4060"}`, background: showFeed ? "#38bdf822" : "transparent", color: showFeed ? "#38bdf8" : "#1e4060" }}>
               ⚡ Feed
             </button>
-            <button onClick={() => { setShowDynamics(d => !d); setShowFeed(false); }}
+            <button onClick={() => { setShowDynamics(d => !d); setShowFeed(false); setShowNoa(false); }}
               style={{ padding: "4px 8px", borderRadius: 4, fontSize: 9, cursor: "pointer", fontWeight: 600, border: `1px solid ${showDynamics ? "#a78bfa" : "#1e4060"}`, background: showDynamics ? "#a78bfa22" : "transparent", color: showDynamics ? "#a78bfa" : "#1e4060" }}>
               ◈ Dynamics
+            </button>
+            <button onClick={() => { setShowNoa(n => !n); setShowFeed(false); setShowDynamics(false); }}
+              style={{ padding: "4px 8px", borderRadius: 4, fontSize: 9, cursor: "pointer", fontWeight: 600, border: `1px solid ${showNoa ? "#34d399" : "#1e4060"}`, background: showNoa ? "#34d39922" : "transparent", color: showNoa ? "#34d399" : "#1e4060" }}>
+              ◉ נועה
             </button>
           </div>
         </div>
 
-        {/* Feed / Dynamics / regular panels */}
-        {showFeed ? (
+        {/* Feed / Dynamics / Noa / regular panels */}
+        {showNoa ? (
+          <NoaPanel />
+        ) : showFeed ? (
           <div style={{ flex: 1, overflow: "hidden" }}>
             <LiveFeed />
           </div>
@@ -1292,15 +1422,15 @@ export default function Page() {
               const nextColor = evo.next ? (FORCE_COLOR[evo.next as DominantForce] ?? "#a78bfa") : "#a78bfa";
               return (
                 <div style={{ padding: "8px 10px", borderRadius: 4, marginBottom: 10, border: "1px solid #0a2a4a", background: "#040e1c" }}>
-                  <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 1, textTransform: "uppercase", marginBottom: 7 }}>נתיב אבולוציה</div>
+                  <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 1, textTransform: "uppercase", marginBottom: 7 }}>זרימת מתח · Tension Flow</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8, flexWrap: "wrap", fontSize: 9 }}>
                     <span style={{ padding: "2px 7px", borderRadius: 10, border: `1px solid ${FORCE_COLOR[selected.dominantForce]}55`, color: FORCE_COLOR[selected.dominantForce], background: FORCE_COLOR[selected.dominantForce] + "22", fontWeight: 600 }}>
                       {FORCE_LABEL[selected.dominantForce]}
                     </span>
-                    <span style={{ color: "#1e4060" }}>→ מאזן:</span>
+                    <span style={{ color: "#1e4060" }}>→ כוח מאזן:</span>
                     <span style={{ padding: "2px 7px", borderRadius: 10, border: `1px solid ${balColor}55`, color: balColor }}>{FORCE_LABEL[evo.balance as DominantForce] ?? evo.balance}</span>
                     {evo.next && <>
-                      <span style={{ color: "#1e4060" }}>→ הבא:</span>
+                      <span style={{ color: "#1e4060" }}>→ נקודת מתח:</span>
                       <span style={{ padding: "2px 7px", borderRadius: 10, border: `1px solid ${nextColor}55`, color: nextColor }}>{FORCE_LABEL[evo.next as DominantForce] ?? evo.next}</span>
                     </>}
                   </div>
