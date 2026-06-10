@@ -36,6 +36,7 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
   const [beat, setBeat] = useState(0);     // 0..4
   const [done, setDone] = useState(false); // closing screen
   const [playing, setPlaying] = useState(true);
+  const [analysis, setAnalysis] = useState(false); // false = human story (default), true = numbers/diagnostic
 
   // Data (all from the validated chain).
   const strongest = chain.tension?.strongest;
@@ -65,17 +66,18 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
 
   // Auto-play: advance through the beats on their durations.
   useEffect(() => {
-    if (done || !playing) return;
+    if (done || !playing || !analysis) return; // beats only auto-play inside Analysis
     const t = setTimeout(() => {
       if (beat < TRACK.length - 1) setBeat(b => b + 1);
       else setDone(true);
     }, DURATIONS[beat]);
     return () => clearTimeout(t);
-  }, [beat, playing, done]);
+  }, [beat, playing, done, analysis]);
 
   const accent = done ? C.green : ACCENT[beat];
 
   const replay = () => { setBeat(0); setDone(false); setPlaying(true); };
+  const openAnalysis = () => { setAnalysis(true); setBeat(0); setDone(false); setPlaying(true); };
 
   // Helper bubbles around Noa (fixed angles, no randomness).
   const positioned = helpers.slice(0, 5).map((h, i) => {
@@ -85,6 +87,54 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
 
   return (
     <div dir="ltr" style={{ padding: 14, color: C.text, display: "flex", flexDirection: "column", height: "100%", fontSize: 12 }}>
+      {!analysis ? (
+        /* ── STORY (Event Zero V2) — a human poster, understood in ~3s with ZERO
+           numbers. Ask "what is she experiencing?" before "what are the metrics?".
+           Everything quantitative (orientation, energy, community, helpers, matrix,
+           diagnostics) lives behind "See Analysis". Reads like Netflix, not Excel. ── */
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 18 }}>
+          {/* Person — human first */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 46, height: 46, borderRadius: "50%", background: `linear-gradient(135deg, ${C.purple}, ${C.red} 55%, ${C.green})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "#fff", boxShadow: "0 0 0 2px rgba(255,255,255,0.22)" }}>N</div>
+            <div>
+              <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: 0.5, lineHeight: 1 }}>Noa</div>
+              <div style={{ fontSize: 9, letterSpacing: 2, color: C.purple, textTransform: "uppercase", marginTop: 4 }}>Case Zero</div>
+            </div>
+          </div>
+
+          {/* Burden — first person, the emotional center; the strongest element */}
+          <div style={{ fontSize: 23, fontWeight: 800, lineHeight: 1.4, color: C.text }}>
+            <span style={{ color: C.borderSoft, fontWeight: 400 }}>“</span>I am carrying alone what should have been carried by a community.<span style={{ color: C.borderSoft, fontWeight: 400 }}>”</span>
+          </div>
+
+          {/* Need — obvious */}
+          <div style={{ border: `1px solid ${C.cyan}`, borderInlineStart: `4px solid ${C.cyan}`, background: "#06223a", borderRadius: 8, padding: "11px 13px" }}>
+            <div style={{ fontSize: 9, letterSpacing: 1.5, color: C.borderSoft, textTransform: "uppercase", marginBottom: 3 }}>Need</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: C.cyan }}>Shared support before collapse.</div>
+          </div>
+
+          {/* Thesis */}
+          <div style={{ fontSize: 16, fontWeight: 800 }}>
+            Private Burden <span style={{ color: C.borderSoft }}>→</span> <span style={{ color: C.green }}>Shared Responsibility</span>
+          </div>
+
+          {/* Reveal — the only path to the numbers */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 9, marginTop: 2 }}>
+            <button onClick={openAnalysis} style={{ alignSelf: "flex-start", padding: "9px 18px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.text }}>
+              See Analysis →
+            </button>
+            {onContinue && (
+              <button onClick={() => onContinue()} style={{ alignSelf: "flex-start", padding: "2px 2px", fontSize: 11, cursor: "pointer", border: "none", background: "transparent", color: C.borderSoft, textDecoration: "underline" }}>
+                Continue to your map →
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* ── ANALYSIS — the diagnostic evidence (numbers), revealed on demand ── */
+        <>
+          <button onClick={() => setAnalysis(false)} style={{ alignSelf: "flex-start", marginBottom: 12, padding: "5px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.borderSoft }}>← Noa&apos;s story</button>
+
       {/* Tracker */}
       <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
         {TRACK.map((label, i) => {
@@ -108,10 +158,10 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
         // ── Closing screen ──
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "center", gap: 14 }}>
           <div style={{ fontSize: 18, fontWeight: 800, color: C.green }}>
-            Private Burden <span style={{ color: C.borderSoft }}>→</span> Shared Responsibility
+            That was one orientation, located.
           </div>
           <div style={{ fontSize: 12, color: "#9fc7df", lineHeight: 1.6 }}>
-            Nexus does not begin by measuring people.<br />Nexus begins by locating resistance.
+            Nexus began with the resistance — not a score.
           </div>
           <div style={{ fontSize: 10, color: C.borderSoft, letterSpacing: 1 }}>
             Resistance → Leakage → Support → Action → Orientation
@@ -197,6 +247,8 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
             <button onClick={() => { if (beat < TRACK.length - 1) setBeat(b => b + 1); else setDone(true); }} style={ctrlBtn()}>Next ▶</button>
             <button onClick={() => setDone(true)} style={{ ...ctrlBtn(), flex: 0, padding: "8px 12px", color: C.borderSoft }}>Skip</button>
           </div>
+        </>
+      )}
         </>
       )}
 
