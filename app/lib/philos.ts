@@ -64,10 +64,10 @@ export const FORCE_LABEL: Record<DominantForce, string> = {
   emotional: "רגשי",
   rational:  "רציונלי",
   physical:  "גופני",
-  ego:       "אישי",    // Personal (was אגו)
+  ego:       "אישי",    // Personal
   social:    "קהילתי",  // Communal — disambiguated from the Social vector
   id:        "דחף",     // Drive
-  superego:  "חברתי",   // Social (was סופר-אגו)
+  superego:  "חברתי",   // Social
 };
 
 export const CONTEXT_LABEL: Record<NodeContext, string> = {

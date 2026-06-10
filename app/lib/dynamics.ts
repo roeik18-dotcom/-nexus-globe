@@ -97,7 +97,7 @@ const EVO: Record<string, {
   rational:  { balance: "emotional", next: "social",    longTerm: "חוקר-בונה",        currentDesc: "חשיבה ברורה, ניתוח עמוק",              balanceDesc: "רגש ממלא את הניתוח בחיים",     nextDesc: "ידע זורם לקהילה" },
   social:    { balance: "ego",       next: "ego",       longTerm: "בונה קהילות",      currentDesc: "אנרגיה חברתית, חיבורים נוצרים",        balanceDesc: "פרטיות בריאה שומרת על העצמי",  nextDesc: "כוח עצמי מתחזק" },
   ego:       { balance: "social",    next: "superego",  longTerm: "מנהיג ערכי",       currentDesc: "זהות חזקה, שאיפות גבוהות",              balanceDesc: "קהילה מגרדת את האינפלציה",     nextDesc: "ערכים לוקחים את ההובלה" },
-  superego:  { balance: "id",        next: null,        longTerm: "חזון עולמי",       currentDesc: "ערכים עמוקים, אחריות גבוהה",            balanceDesc: "איד מחזיר ספונטניות ורענון",   nextDesc: "אינטגרציה מלאה" },
+  superego:  { balance: "id",        next: null,        longTerm: "חזון עולמי",       currentDesc: "ערכים עמוקים, אחריות גבוהה",            balanceDesc: "הדחף מחזיר ספונטניות ורענון", nextDesc: "אינטגרציה מלאה" },
 };
 
 // ─── Layer 2: Evolution Path ──────────────────────────────────────────
@@ -207,7 +207,7 @@ const TENSION_PAIRS: Array<{
   a: DominantForce; b: DominantForce; risk: string; growth: string;
 }> = [
   { a: "id",       b: "superego", risk: "דחף עיוור נגד ביקורת כרונית",   growth: "ספונטניות עם כיוון" },
-  { a: "ego",      b: "social",   risk: "אינפלציה אגואיסטית",            growth: "מנהיגות שירותית" },
+  { a: "ego",      b: "social",   risk: "התנפחות עצמית",                 growth: "מנהיגות שירותית" },
   { a: "emotional",b: "rational", risk: "הצפה רגשית מול ניתוק מחשבתי",  growth: "חכמת לב+שכל" },
   { a: "physical", b: "superego", risk: "גוף מול מצפון",                  growth: "מוסר מגולם בפעולה" },
 ];

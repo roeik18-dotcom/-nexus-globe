@@ -33,10 +33,12 @@ export const CLASS_ORDER: ClassKey[] = [
 
 export const LEVEL_ORDER: LevelKey[] = ["physical", "emotional", "rational"];
 
+// Visible labels are Philos canon (Freud terms removed). Object keys stay internal.
+//   id → דחף (Drive) · ego → אישי (Personal) · superego → חברתי (Social)
 export const CLASS_LABEL: Record<ClassKey, string> = {
-  id:        "איד",
-  ego:       "אגו",
-  superego:  "סופר-אגו",
+  id:        "דחף",
+  ego:       "אישי",
+  superego:  "חברתי",
   emotional: "רגשי",
   rational:  "רציונלי",
   physical:  "גופני",
@@ -94,7 +96,7 @@ export const MATRIX: OrientationMatrix = {
   id: {
     physical: {
       expressions:     ["רעב", "כאב", "מיניות", "הישרדות", "דחף גופני"],
-      description:     "האיד מתבטא בגוף — צורך גולמי לפני שיש לו שם",
+      description:     "הדחף מתבטא בגוף — צורך גולמי לפני שיש לו שם",
       risk:            "פעולה ללא מחשבה, תגובה רפלקסיבית",
       opportunity:     "אנרגיה עצומה, נוכחות מלאה",
       balancingClass:  "superego",
@@ -102,7 +104,7 @@ export const MATRIX: OrientationMatrix = {
     },
     emotional: {
       expressions:     ["תשוקה", "כמיהה", "פחד", "קנאה", "דחף לחיבור"],
-      description:     "האיד מתבטא ברגש — רצון שמחפש צורה",
+      description:     "הדחף מתבטא ברגש — רצון שמחפש צורה",
       risk:            "הצפה, תלות, ניתוב שגוי של אנרגיה",
       opportunity:     "עומק, ספונטניות, חיבור אמיתי",
       balancingClass:  "rational",
@@ -110,7 +112,7 @@ export const MATRIX: OrientationMatrix = {
     },
     rational: {
       expressions:     ["סקרנות", "חיפוש", "אובססיה", "אי-ודאות", "שאלות"],
-      description:     "האיד מתבטא בחשיבה — שאלות שמחפשות תשובות",
+      description:     "הדחף מתבטא בחשיבה — שאלות שמחפשות תשובות",
       risk:            "חשיבה כפייתית, מעגלים ללא פתרון",
       opportunity:     "חיפוש עמוק, תובנות גולמיות",
       balancingClass:  "physical",
@@ -122,7 +124,7 @@ export const MATRIX: OrientationMatrix = {
   ego: {
     physical: {
       expressions:     ["מראה", "כוח", "ביצועים", "תחרות", "שליטה גופנית"],
-      description:     "האגו מתבטא בגוף — זהות דרך כוח ומראה",
+      description:     "האישי מתבטא בגוף — זהות דרך כוח ומראה",
       risk:            "תחרותיות קיצונית, קריסה כשהגוף נחלש",
       opportunity:     "הישגים ממשיים, אנרגיה ממוקדת",
       balancingClass:  "superego",
@@ -130,7 +132,7 @@ export const MATRIX: OrientationMatrix = {
     },
     emotional: {
       expressions:     ["גאווה", "בושה", "הכרה", "השפלה", "פחד מכישלון"],
-      description:     "האגו מתבטא ברגש — כבוד עצמי וצורך בהכרה",
+      description:     "האישי מתבטא ברגש — כבוד עצמי וצורך בהכרה",
       risk:            "אינפלציה, ניפוץ קשה כשאין הכרה",
       opportunity:     "זהות רגשית, מנהיגות, ביטחון עצמי",
       balancingClass:  "id",
@@ -138,11 +140,11 @@ export const MATRIX: OrientationMatrix = {
     },
     rational: {
       expressions:     ["אסטרטגיה", "תכנון עצמי", "הצדקה עצמית", "מיתוג"],
-      description:     "האגו מתבטא בחשיבה — בניית זהות ותדמית",
-      risk:            "רציונליזציה, הגנה על האגו בכל מחיר",
+      description:     "האישי מתבטא בחשיבה — בניית זהות ותדמית",
+      risk:            "רציונליזציה, הגנה על האני בכל מחיר",
       opportunity:     "תכנון אסטרטגי, בניית שם",
       balancingClass:  "superego",
-      suggestedAction: "שאל: האם ההחלטה הזו מקדמת מטרה או מגנה על האגו?",
+      suggestedAction: "שאל: האם ההחלטה הזו מקדמת מטרה או מגנה על האני?",
     },
   },
 
@@ -150,7 +152,7 @@ export const MATRIX: OrientationMatrix = {
   superego: {
     physical: {
       expressions:     ["משמעת", "סגפנות", "ריסון", "שגרה", "פרישה"],
-      description:     "הסופר-אגו מתבטא בגוף — שליטה גופנית מתוך ערכים",
+      description:     "החברתי מתבטא בגוף — שליטה גופנית מתוך ערכים",
       risk:            "דיכוי, פרפקציוניזם גופני, עונש עצמי",
       opportunity:     "משמעת עמוקה, כיבוד הגוף",
       balancingClass:  "id",
@@ -158,7 +160,7 @@ export const MATRIX: OrientationMatrix = {
     },
     emotional: {
       expressions:     ["אשמה", "חובה", "חמלה", "מוסר רגשי", "אחריות"],
-      description:     "הסופר-אגו מתבטא ברגש — מצפון ורגש מוסרי",
+      description:     "החברתי מתבטא ברגש — מצפון ורגש מוסרי",
       risk:            "אשמה כרונית, שיתוק מוסרי",
       opportunity:     "אמפתיה עמוקה, חמלה אמיתית",
       balancingClass:  "ego",
@@ -166,7 +168,7 @@ export const MATRIX: OrientationMatrix = {
     },
     rational: {
       expressions:     ["משמעות", "מוסר", "אחריות", "חזון", "אתיקה"],
-      description:     "הסופר-אגו מתבטא בחשיבה — ערכים ותכלית",
+      description:     "החברתי מתבטא בחשיבה — ערכים ותכלית",
       risk:            "שיתוק מוסרי, פרפקציוניזם מחשבתי",
       opportunity:     "חזון עמוק, מנהיגות ערכית",
       balancingClass:  "id",
