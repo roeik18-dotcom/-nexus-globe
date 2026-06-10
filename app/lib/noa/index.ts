@@ -8,6 +8,7 @@
 // Pure, deterministic. No DOM, no storage, no AI, no backend. The model is
 // identical to the local chain — only the node-identity source is local.
 
+export * from './deptLabel';
 export * from './nodes';
 export * from './baseTensionField';
 export * from './cellMatrix';
@@ -19,6 +20,7 @@ export * from './loadModel';
 export * from './orientationScore';
 export * from './actionImpact';
 
+import { deptLabel } from './deptLabel';
 import { NOA_NODES } from './nodes';
 import { summarizeBaseTensionField, type BaseTensionSummary } from './baseTensionField';
 import { getCellMatrix, computeAttention, type CellAttention } from './cellMatrix';
@@ -77,8 +79,8 @@ export function buildNoaSnapshot(nodeId = 0): string {
   if (c.tension) {
     L.push('[1] BASE TENSION FIELD');
     L.push(`origin: ${c.tension.origin} → base oppositions → 6 departments`);
-    for (const f of c.tension.fields) L.push(`- ${f.name} → ${f.department}: ${f.intensity}`);
-    L.push(`strongest tension: ${c.tension.strongest.name} → ${c.tension.strongest.department} (${c.tension.strongest.intensity})`);
+    for (const f of c.tension.fields) L.push(`- ${f.name} → ${deptLabel(f.department)}: ${f.intensity}`);
+    L.push(`strongest tension: ${c.tension.strongest.name} → ${deptLabel(c.tension.strongest.department)} (${c.tension.strongest.intensity})`);
     L.push(`average tension: ${c.tension.averageTension}`);
     L.push('');
   }
@@ -86,13 +88,13 @@ export function buildNoaSnapshot(nodeId = 0): string {
     L.push('[2] EXPRESSION MATRIX (18 cells)');
     for (const dept of [...new Set(c.attention.cells.map(x => x.department))]) {
       const row = c.attention.cells.filter(x => x.department === dept).map(x => `${x.channel} ${x.dominance}`).join(' · ');
-      L.push(`- ${dept}: ${row}`);
+      L.push(`- ${deptLabel(dept)}: ${row}`);
     }
-    L.push(`strongest attention cell: ${c.attention.strongest.department} · ${c.attention.strongest.channel} (${c.attention.strongest.dominance}%)`);
+    L.push(`strongest attention cell: ${deptLabel(c.attention.strongest.department)} · ${c.attention.strongest.channel} (${c.attention.strongest.dominance}%)`);
     L.push('');
     L.push('[3] COLLAPSE MAP');
     L.push(`total negative dominance: ${c.collapse.totalNegativeDominance}%`);
-    for (const d of c.collapse.departments) L.push(`- ${d.name}: ${d.negativeDominance}%`);
+    for (const d of c.collapse.departments) L.push(`- ${deptLabel(d.name)}: ${d.negativeDominance}%`);
     L.push('');
   }
   if (c.resource) {
@@ -104,7 +106,7 @@ export function buildNoaSnapshot(nodeId = 0): string {
   if (c.leakage) {
     L.push('[5] ENERGY LEAKAGE');
     L.push(`total leakage: ${c.leakage.totalLeakage}/100 (${c.leakage.leakageLevel})`);
-    L.push(`strongest leaking: ${c.leakage.strongestLeakingDepartment} · cell ${c.leakage.strongestLeakingCell.department}·${c.leakage.strongestLeakingCell.channel}`);
+    L.push(`strongest leaking: ${deptLabel(c.leakage.strongestLeakingDepartment)} · cell ${deptLabel(c.leakage.strongestLeakingCell.department)}·${c.leakage.strongestLeakingCell.channel}`);
     L.push('');
   }
   if (c.load) {
@@ -121,7 +123,7 @@ export function buildNoaSnapshot(nodeId = 0): string {
   if (c.flow) {
     L.push('[6] HARMONIC FLOW');
     for (const d of c.flow.dimensions) L.push(`- ${d.dimension}: deficit ${d.deficitBefore} -> ${d.deficitAfter} (inflow +${d.inflow})`);
-    L.push(`strongest inflow: ${c.flow.strongestInflowDimension} · most rebalanced: ${c.flow.mostRebalancedDepartment}`);
+    L.push(`strongest inflow: ${c.flow.strongestInflowDimension} · most rebalanced: ${deptLabel(c.flow.mostRebalancedDepartment)}`);
     L.push('');
   }
   if (c.load) {
@@ -145,7 +147,7 @@ export function buildNoaSnapshot(nodeId = 0): string {
   }
   if (c.action) {
     L.push('[9] ACTION → IMPACT');
-    L.push(`recommended action: ${c.action.recommendedAction} → ${c.action.targetDimension} / ${c.action.targetDepartment}`);
+    L.push(`recommended action: ${c.action.recommendedAction} → ${c.action.targetDimension} / ${deptLabel(c.action.targetDepartment)}`);
     L.push(`energy +${c.action.expectedEnergyGain} · load -${c.action.expectedLoadReduction} · orientation +${c.action.expectedOrientationGain} · collective ${c.action.collectiveImpact}`);
   }
 

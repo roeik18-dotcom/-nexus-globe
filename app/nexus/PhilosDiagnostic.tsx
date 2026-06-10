@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from "react";
-import { computeNoaChain, type NoaChain } from "../lib/noa";
+import { computeNoaChain, deptLabel, type NoaChain } from "../lib/noa";
 
 const C = {
   bg: "#030f1e", card: "#040e1c", border: "#0a2a4a", borderSoft: "#1e4060",
@@ -108,7 +108,7 @@ export default function PhilosDiagnostic({ chain }: { chain?: NoaChain }) {
           );
         })}
         <div style={{ fontSize: 10, color: "#9fc7df", marginTop: 4 }}>
-          Strongest: <b style={{ color: C.red }}>{strongest?.name}</b> ({strongest?.department}, {strongest?.intensity}) — where most of the tension accumulates.
+          Strongest: <b style={{ color: C.red }}>{strongest?.name}</b> ({deptLabel(strongest?.department)}, {strongest?.intensity}) — where most of the tension accumulates.
         </div>
       </div>
 

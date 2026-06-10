@@ -5,6 +5,7 @@ import { getCurrentPerson, createPerson, type Person } from "../lib/personStore"
 import { computePersonChain } from "../lib/personChain";
 import {
   computeNoaChain,
+  deptLabel,
   buildNoaSnapshot,
   riskHe,
   type CollapseRisk,
@@ -242,8 +243,8 @@ export default function NoaPanel() {
   const tensionFlow = [
     { label: "Origin", value: c.tension?.origin ?? "Space" },
     { label: "Base opposition", value: c.tension?.strongest.name ?? "—" },
-    { label: "Department", value: c.tension?.strongest.department ?? "—" },
-    { label: "Expression cell", value: `${c.attention.strongest.department} · ${c.attention.strongest.channel}` },
+    { label: "Vector", value: deptLabel(c.tension?.strongest.department) },
+    { label: "Expression cell", value: `${deptLabel(c.attention.strongest.department)} · ${c.attention.strongest.channel}` },
     { label: "Attention", value: `highest pull (${c.attention.strongest.attentionPct}%)` },
     { label: "Leakage", value: c.leakage ? `${c.leakage.totalLeakage} / ${cap(c.leakage.leakageLevel)}` : "—" },
     { label: "Value response", value: "Truth · Justice · Protection · Responsibility · Dignity" },
@@ -474,10 +475,10 @@ export default function NoaPanel() {
                 <span>{f.name}</span><span>{f.intensity}</span>
               </div>
               <Bar pct={f.intensity} color={`linear-gradient(90deg,${C.purple},${C.red})` as unknown as string} />
-              <div style={metaTxt}>→ {f.department}</div>
+              <div style={metaTxt}>→ {deptLabel(f.department)}</div>
             </div>
           ))}
-          <div style={{ ...line, marginTop: 4 }}>Strongest tension: <b style={{ color: C.cyan }}>{c.tension.strongest.name}</b> → {c.tension.strongest.department} ({c.tension.strongest.intensity}) · avg {c.tension.averageTension}</div>
+          <div style={{ ...line, marginTop: 4 }}>Strongest tension: <b style={{ color: C.cyan }}>{c.tension.strongest.name}</b> → {deptLabel(c.tension.strongest.department)} ({c.tension.strongest.intensity}) · avg {c.tension.averageTension}</div>
         </>
       )}
 
@@ -494,7 +495,7 @@ export default function NoaPanel() {
           <Cells key={dept} dept={dept} cells={c.attention.cells} strong={c.attention.strongest} />
         ))}
       </div>
-      <div style={{ ...line, marginTop: 6 }}>Strongest attention: <b style={{ color: C.red }}>{c.attention.strongest.department} · {c.attention.strongest.channel}</b> ({c.attention.strongest.dominance}% · {c.attention.strongest.attentionPct}%)</div>
+      <div style={{ ...line, marginTop: 6 }}>Strongest attention: <b style={{ color: C.red }}>{deptLabel(c.attention.strongest.department)} · {c.attention.strongest.channel}</b> ({c.attention.strongest.dominance}% · {c.attention.strongest.attentionPct}%)</div>
       </>
       )}
 
@@ -506,7 +507,7 @@ export default function NoaPanel() {
           {c.collapse.departments.map(d => (
             <div key={d.name} style={{ ...card, marginBottom: 6 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                <span style={{ fontSize: 13, fontWeight: 700 }}>{d.name}</span>
+                <span style={{ fontSize: 13, fontWeight: 700 }}>{deptLabel(d.name)}</span>
                 <span style={{ fontSize: 13, fontWeight: 700, color: C.red }}>{d.negativeDominance}%</span>
               </div>
               <Bar pct={d.negativeDominance} color={C.red} />
@@ -524,7 +525,7 @@ export default function NoaPanel() {
               <Stat key={dim} label={`${dim} deficit`} value={`${c.resource!.dimensionDeficits[dim]}`} color={levelColor[c.resource!.dimensionLevels[dim]] ?? C.text} />
             ))}
           </div>
-          <div style={{ ...line, marginTop: 8 }}>Strongest depleted root: <b style={{ color: C.cyan }}>{c.resource.strongestRoot}</b> · most affected: {c.resource.mostAffectedDepartments.join(", ")}</div>
+          <div style={{ ...line, marginTop: 8 }}>Strongest depleted root: <b style={{ color: C.cyan }}>{c.resource.strongestRoot}</b> · most affected: {c.resource.mostAffectedDepartments.map(deptLabel).join(", ")}</div>
         </>
       )}
 
@@ -538,7 +539,7 @@ export default function NoaPanel() {
               <span style={{ color: riskColor[c.leakage.leakageLevel === "high" ? "high" : c.leakage.leakageLevel === "critical" ? "critical" : "medium"] }}>{c.leakage.totalLeakage} / 100 · {c.leakage.leakageLevel}</span>
             </div>
             <Bar pct={c.leakage.totalLeakage} color={c.leakage.leakageLevel === "critical" ? C.red : C.orange} />
-            <div style={metaTxt}>strongest: <b style={{ color: C.text }}>{c.leakage.strongestLeakingDepartment}</b> · cell <b style={{ color: C.text }}>{c.leakage.strongestLeakingCell.department}·{c.leakage.strongestLeakingCell.channel}</b></div>
+            <div style={metaTxt}>strongest: <b style={{ color: C.text }}>{deptLabel(c.leakage.strongestLeakingDepartment)}</b> · cell <b style={{ color: C.text }}>{deptLabel(c.leakage.strongestLeakingCell.department)}·{c.leakage.strongestLeakingCell.channel}</b></div>
             <div style={metaTxt}>attention drain {c.leakage.attentionDrain} · mission pressure {Math.round(c.leakage.missionPressure * 100)}% · load ×{c.leakage.personalLoadFactor.toFixed(2)}</div>
           </div>
         </>
@@ -715,7 +716,7 @@ export default function NoaPanel() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
             {c.flow.departments.map(d => (
               <div key={d.department} style={{ ...card, display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-                <span>{d.department}</span>
+                <span>{deptLabel(d.department)}</span>
                 <span>{d.dominanceBefore} → <b style={{ color: C.green }}>{d.dominanceAfter}</b></span>
               </div>
             ))}
@@ -859,7 +860,7 @@ function Cells({ dept, cells, strong }: { dept: string; cells: ReturnType<typeof
   const byCh = (ch: string) => cells.find(x => x.department === dept && x.channel === ch)!;
   return (
     <>
-      <div style={{ fontSize: 11, color: C.text, display: "flex", alignItems: "center" }}>{dept}</div>
+      <div style={{ fontSize: 11, color: C.text, display: "flex", alignItems: "center" }}>{deptLabel(dept)}</div>
       {["Body", "Emotion", "Mind"].map(ch => {
         const cell = byCh(ch);
         const isStrong = cell.department === strong.department && cell.channel === strong.channel;

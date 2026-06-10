@@ -9,6 +9,8 @@
  * no graphic detail — pure, deterministic data + functions only.
  */
 
+import { deptLabel } from './deptLabel';
+
 export interface CollapseDepartment {
   name: string;
   positive: string[];
@@ -94,7 +96,7 @@ export function getCollapseMap(nodeId: number): CollapseMap | null {
   const byDominance = [...deps].sort((a, b) => b.negativeDominance - a.negativeDominance);
   const strongestCollapseDepartment = byDominance[0].name;
   const weakestPositiveDepartment = byDominance[0].name;
-  const top2 = byDominance.slice(0, 2).map(d => d.name).join(' and ');
+  const top2 = byDominance.slice(0, 2).map(d => deptLabel(d.name)).join(' and ');
 
   const summary =
     `Across the ${deps.length} departments, ${profile.caseName}'s negative forces dominate at ` +

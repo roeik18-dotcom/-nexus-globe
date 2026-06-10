@@ -54,14 +54,20 @@ export const FORCE_COLOR: Record<DominantForce, string> = {
   superego:  "#a78bfa", // purple — ערכים · חזון · משמעות
 };
 
+// Philos canon labels. Person (אדם) is the orientation reference point; these are
+// influence vectors relative to the Person. Freud terms (id/ego/superego) remain
+// only as internal keys below — never as visible labels.
+//   id → Drive (דחף) · ego → Personal (אישי) · superego → Social (חברתי)
+// The pre-existing community force keeps a distinct label (קהילתי) to avoid
+// colliding with the Social vector.
 export const FORCE_LABEL: Record<DominantForce, string> = {
   emotional: "רגשי",
   rational:  "רציונלי",
   physical:  "גופני",
-  ego:       "אגו",
-  social:    "חברתי",
-  id:        "דחף",
-  superego:  "סופר-אגו",
+  ego:       "אישי",    // Personal (was אגו)
+  social:    "קהילתי",  // Communal — disambiguated from the Social vector
+  id:        "דחף",     // Drive
+  superego:  "חברתי",   // Social (was סופר-אגו)
 };
 
 export const CONTEXT_LABEL: Record<NodeContext, string> = {
