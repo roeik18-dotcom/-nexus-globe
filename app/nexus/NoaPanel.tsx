@@ -10,6 +10,7 @@ import {
 import NoaTransformation from "./NoaTransformation";
 import PersonalMap from "./PersonalMap";
 import UserIntake, { type IntakeProfile } from "./UserIntake";
+import PhilosDiagnostic from "./PhilosDiagnostic";
 
 // Palette aligned with page.tsx
 const C = {
@@ -410,6 +411,9 @@ export default function NoaPanel() {
           ))}
         </>
       )}
+
+      {/* Philos Diagnostic Engine — the FLOW (story first). Matrix below = evidence. */}
+      {tab === "chain" && <PhilosDiagnostic />}
 
       {/* 1 — Base Tension Field */}
       {tab === "chain" && c.tension && (
