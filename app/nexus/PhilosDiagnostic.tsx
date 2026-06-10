@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from "react";
-import { computeNoaChain } from "../lib/noa";
+import { computeNoaChain, type NoaChain } from "../lib/noa";
 
 const C = {
   bg: "#030f1e", card: "#040e1c", border: "#0a2a4a", borderSoft: "#1e4060",
@@ -38,8 +38,10 @@ function Bar({ pct, color }: { pct: number; color: string }) {
 const sec: React.CSSProperties = { fontSize: 9, color: C.borderSoft, letterSpacing: 2, textTransform: "uppercase", margin: "16px 0 7px" };
 const cell: React.CSSProperties = { background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: "9px 11px" };
 
-export default function PhilosDiagnostic() {
-  const c = useMemo(() => computeNoaChain(0), []);
+/** `chain` defaults to the locked Noa chain; pass a person chain to diagnose a real user. */
+export default function PhilosDiagnostic({ chain }: { chain?: NoaChain }) {
+  const fallback = useMemo(() => computeNoaChain(0), []);
+  const c = chain ?? fallback;
 
   const tension = c.tension;
   const fields = tension?.fields ?? [];

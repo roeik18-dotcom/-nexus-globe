@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { getCurrentPerson, createPerson, type Person } from "../lib/personStore";
+import { computePersonChain } from "../lib/personChain";
 import {
   computeNoaChain,
   buildNoaSnapshot,
@@ -162,6 +164,38 @@ export default function NoaPanel() {
   const [joined, setJoined] = useState(false);
   const [tab, setTab] = useState<ProfileTab>("journey");
   const [myProfile, setMyProfile] = useState<IntakeProfile | null>(null);
+  const [currentPerson, setCurrentPerson] = useState<Person | null>(null);
+
+  // Load the locally-persisted current person (L1), if one exists. Client-only.
+  useEffect(() => { setCurrentPerson(getCurrentPerson()); }, []);
+
+  // On intake completion, persist a real Person entity (L1) from the answers.
+  // Dimension scores are approximate (V1): the dimension the person says they
+  // most need is treated as their most depleted (low); the others sit mid.
+  const onIntakeDone = (p: IntakeProfile) => {
+    setMyProfile(p);
+    const scoreFor = (dim: string) => (p.needDim === dim ? 30 : 60);
+    try {
+      createPerson({
+        name: "You",
+        values: p.values,
+        primaryValue: p.values[0],
+        needs: [p.needDim],
+        physical: scoreFor("Physical"),
+        emotional: scoreFor("Emotional"),
+        rational: scoreFor("Rational"),
+        intake: { tensionDept: p.tensionDept, needDim: p.needDim, values: p.values },
+      });
+    } catch { /* storage unavailable */ }
+    setCurrentPerson(getCurrentPerson());
+  };
+
+  // The current person projected into a chain (V1/approximate). Null → surfaces
+  // fall back to the locked Noa chain (honest default).
+  const personChain = useMemo(
+    () => (currentPerson ? computePersonChain(currentPerson) : null),
+    [currentPerson]
+  );
   const score = c.orientation?.score ?? 0;
   const band = SCORE_BANDS[bandIndex(score)];
   const requestSupport = (role: string) =>
@@ -292,21 +326,35 @@ export default function NoaPanel() {
         </div>
       )}
 
-      {/* Personal Map — the permanent "You Are Here" navigation screen (Noa) */}
-      {tab === "map" && <PersonalMap />}
+      {/* Personal Map — the permanent "You Are Here" screen (current person if any, else Noa) */}
+      {tab === "map" && <PersonalMap chain={personChain ?? undefined} />}
 
       {/* Me — User Intake (3 questions) → the user's own Personal Map */}
       {tab === "me" && (
-        myProfile ? (
-          <>
-            <PersonalMap profile={myProfile} />
-            <button onClick={() => setMyProfile(null)} style={{ marginTop: 8, padding: "7px 14px", borderRadius: 6, fontSize: 11, cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.borderSoft }}>↻ התחל מחדש</button>
-          </>
-        ) : (
-          <div style={{ minHeight: 420 }}>
-            <UserIntake onDone={setMyProfile} />
-          </div>
-        )
+        <>
+          {/* L1 · read-only current-person summary (shown only if one exists) */}
+          {currentPerson && (
+            <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderInlineStart: `3px solid ${C.green}`, borderRadius: 6, padding: "8px 11px", marginBottom: 10 }}>
+              <div style={{ fontSize: 9, color: C.borderSoft, letterSpacing: 1, textTransform: "uppercase", marginBottom: 3 }}>Current Person · stored locally</div>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>{currentPerson.name} <span style={{ fontSize: 10, color: C.green }}>· {currentPerson.primaryValue}</span></div>
+              <div style={{ fontSize: 10, color: "#9fc7df", marginTop: 2 }}>
+                values: {currentPerson.values.join(", ") || "—"}{currentPerson.needs.length ? ` · needs: ${currentPerson.needs.join(", ")}` : ""}
+              </div>
+              <div style={{ fontSize: 8.5, color: C.borderSoft, marginTop: 2 }}>id {currentPerson.id} · created {new Date(currentPerson.createdAt).toLocaleString()}</div>
+            </div>
+          )}
+
+          {myProfile ? (
+            <>
+              <PersonalMap profile={myProfile} chain={personChain ?? undefined} />
+              <button onClick={() => setMyProfile(null)} style={{ marginTop: 8, padding: "7px 14px", borderRadius: 6, fontSize: 11, cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.borderSoft }}>↻ התחל מחדש</button>
+            </>
+          ) : (
+            <div style={{ minHeight: 420 }}>
+              <UserIntake onDone={onIntakeDone} />
+            </div>
+          )}
+        </>
       )}
 
       {/* Profile Timeline — story as human-readable events with live status */}
@@ -413,7 +461,7 @@ export default function NoaPanel() {
       )}
 
       {/* Philos Diagnostic Engine — the FLOW (story first). Matrix below = evidence. */}
-      {tab === "chain" && <PhilosDiagnostic />}
+      {tab === "chain" && <PhilosDiagnostic chain={personChain ?? undefined} />}
 
       {/* 1 — Base Tension Field */}
       {tab === "chain" && c.tension && (

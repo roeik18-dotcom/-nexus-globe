@@ -14,7 +14,7 @@
  */
 
 import { useMemo } from "react";
-import { computeNoaChain } from "../lib/noa";
+import { computeNoaChain, type NoaChain } from "../lib/noa";
 import type { IntakeProfile } from "./UserIntake";
 
 const C = {
@@ -55,8 +55,10 @@ function Card(props: { n: number; q: string; accent: string; children: React.Rea
   );
 }
 
-export default function PersonalMap({ profile }: { profile?: IntakeProfile }) {
-  const c = useMemo(() => computeNoaChain(0), []);
+/** `chain` defaults to the locked Noa chain; pass a person chain to map a real user. */
+export default function PersonalMap({ profile, chain }: { profile?: IntakeProfile; chain?: NoaChain }) {
+  const fallback = useMemo(() => computeNoaChain(0), []);
+  const c = chain ?? fallback;
 
   const fields = c.tension?.fields ?? [];
   const leak = c.leakage;
@@ -91,7 +93,7 @@ export default function PersonalMap({ profile }: { profile?: IntakeProfile }) {
     <div dir="ltr" style={{ color: C.text, fontSize: 12 }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
         <div style={{ fontSize: 15, fontWeight: 800, color: C.cyan }}>You Are Here</div>
-        <div style={{ fontSize: 9, color: C.borderSoft, letterSpacing: 1 }}>{profile ? "PERSONAL MAP · YOU" : "PERSONAL MAP · NOA"}</div>
+        <div style={{ fontSize: 9, color: C.borderSoft, letterSpacing: 1 }}>{(chain || profile) ? "PERSONAL MAP · YOU" : "PERSONAL MAP · NOA"}</div>
       </div>
 
       {/* 1 · Strongest resistance */}
