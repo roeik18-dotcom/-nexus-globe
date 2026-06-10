@@ -268,7 +268,11 @@ export default function NoaPanel() {
   return (
     <div dir="rtl" style={{ flex: 1, overflowY: "auto", padding: 18, color: C.text, fontSize: 13 }}>
 
-      {/* Profile Card — person-first: who is this, what they stand for, who supports them */}
+      {/* Profile Card — person-first: who is this, what they stand for, who supports them.
+          Hidden on Event Zero (journey): that tab owns a pain-first hierarchy
+          (Person → Burden → Need → Meaning → evidence) in NoaTransformation, so the
+          identity/values/actions/numbers never precede the burden. Shown on all other tabs. */}
+      {tab !== "journey" && (
       <div style={{ ...card, padding: 14, marginBottom: 14 }}>
         <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 10 }}>
           {/* Deterministic Philos avatar: purple(truth/justice) → red(collapse) → green(recovery), white glow = orientation */}
@@ -301,24 +305,18 @@ export default function NoaPanel() {
           <button onClick={copy} style={actionBtn(copied, C.purple)}>{copied ? "Snapshot copied" : "Share Snapshot"}</button>
         </div>
 
-        {/* Measurement block = "the matrix": shown on every tab EXCEPT Event Zero
-            (journey). On first view, meaning leads (identity + statement + values);
-            the numbers appear once the user moves past the opening. */}
-        {tab !== "journey" && (
-          <>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              <Stat label="Orientation" value={c.orientation ? `${score} · ${c.orientation.level}` : "—"} color={c.orientation ? (levelColor[c.orientation.level] ?? C.text) : C.text} />
-              <Stat label="Energy" value={c.load ? `${c.load.afterEnergy} (+${c.load.energyRecovered})` : "—"} color={C.green} />
-              <Stat label="Community support" value={c.load ? `${c.load.communityPct}%` : "—"} color={C.cyan} />
-              <Stat label="Active network" value={`${c.load?.helpers.length ?? 0} helpers`} />
-              <Stat label="Requests" value={`${queueItems.length}`} />
-              <Stat label="Fulfilled support" value={`${fulfilledCount}`} color={C.green} />
-            </div>
-            <div style={{ fontSize: 11, marginTop: 9 }}>Operational status: <b style={{ color: fulfilledCount === 0 ? C.borderSoft : C.green }}>{operationalStatus}</b></div>
-            <div style={{ fontSize: 9, color: C.borderSoft, marginTop: 9, letterSpacing: 0.3 }}>Noa Chain MVP 0.5 · value-based profile · demo</div>
-          </>
-        )}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <Stat label="Orientation" value={c.orientation ? `${score} · ${c.orientation.level}` : "—"} color={c.orientation ? (levelColor[c.orientation.level] ?? C.text) : C.text} />
+          <Stat label="Energy" value={c.load ? `${c.load.afterEnergy} (+${c.load.energyRecovered})` : "—"} color={C.green} />
+          <Stat label="Community support" value={c.load ? `${c.load.communityPct}%` : "—"} color={C.cyan} />
+          <Stat label="Active network" value={`${c.load?.helpers.length ?? 0} helpers`} />
+          <Stat label="Requests" value={`${queueItems.length}`} />
+          <Stat label="Fulfilled support" value={`${fulfilledCount}`} color={C.green} />
+        </div>
+        <div style={{ fontSize: 11, marginTop: 9 }}>Operational status: <b style={{ color: fulfilledCount === 0 ? C.borderSoft : C.green }}>{operationalStatus}</b></div>
+        <div style={{ fontSize: 9, color: C.borderSoft, marginTop: 9, letterSpacing: 0.3 }}>Noa Chain MVP 0.5 · value-based profile · demo</div>
       </div>
+      )}
 
       {/* Profile tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>

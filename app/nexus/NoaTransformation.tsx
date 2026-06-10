@@ -85,19 +85,44 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
 
   return (
     <div dir="ltr" style={{ padding: 14, color: C.text, display: "flex", flexDirection: "column", height: "100%", fontSize: 12 }}>
-      {/* MEANING FIRST — what Nexus is, graspable in under 10 seconds. Persistent
-          across every beat so the purpose never depends on waiting for the story. */}
+      {/* PAIN FIRST — a new user must grasp who · burden · need · why within ~5s.
+          Hierarchy: Person → Burden → Need → Meaning → (evidence beats below).
+          Calm, static; the burden sentence is the strongest element on screen. */}
+
+      {/* A · Person / Case Zero */}
+      <div style={{ fontSize: 9, letterSpacing: 2, color: C.borderSoft, textTransform: "uppercase", marginBottom: 7 }}>
+        Noa <span style={{ color: C.purple }}>· Case Zero</span>
+      </div>
+
+      {/* B · Burden — the largest, strongest statement on the page */}
+      <div style={{ fontSize: 21, fontWeight: 800, lineHeight: 1.3, color: C.text, marginBottom: 13 }}>
+        She is carrying alone what should have been carried by a community.
+      </div>
+
+      {/* C · Need — a visually obvious card */}
+      <div style={{ border: `1px solid ${C.cyan}`, borderInlineStart: `4px solid ${C.cyan}`, background: "#06223a", borderRadius: 8, padding: "10px 12px", marginBottom: 13 }}>
+        <div style={{ fontSize: 9, letterSpacing: 1.5, color: C.borderSoft, textTransform: "uppercase", marginBottom: 3 }}>Need</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: C.cyan }}>Shared support before collapse.</div>
+        <div style={{ fontSize: 10.5, color: "#9fc7df", marginTop: 3 }}>Support · Protection · Shared Responsibility</div>
+      </div>
+
+      {/* D · Meaning thesis + explanation (values kept secondary) */}
       <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 8.5, letterSpacing: 2, color: C.borderSoft, textTransform: "uppercase" }}>Nexus · Human Orientation</div>
-        <div style={{ fontSize: 19, fontWeight: 800, lineHeight: 1.15, marginTop: 3 }}>
+        <div style={{ fontSize: 17, fontWeight: 800, lineHeight: 1.2 }}>
           Private Burden <span style={{ color: C.borderSoft }}>→</span> <span style={{ color: C.green }}>Shared Responsibility</span>
         </div>
         <div style={{ fontSize: 11.5, color: "#9fc7df", lineHeight: 1.5, marginTop: 5 }}>
-          Nexus doesn’t measure you. It locates where resistance concentrates — then shares the load.
+          Nexus does not start by measuring her. It starts by locating where the burden
+          concentrates, then shows how support can be shared.
         </div>
-        <div style={{ fontSize: 9.5, color: C.borderSoft, letterSpacing: 0.3, marginTop: 7 }}>
-          ↓ Below: one real orientation forming in five moves. The numbers are the evidence, not the point.
+        <div style={{ fontSize: 9, color: C.borderSoft, letterSpacing: 0.3, marginTop: 7 }}>
+          Values involved: Truth · Justice · Protection · Responsibility · Dignity
         </div>
+      </div>
+
+      {/* E · Evidence intro — beats are evidence, not the opening */}
+      <div style={{ fontSize: 9.5, color: C.borderSoft, letterSpacing: 0.3, marginBottom: 12 }}>
+        ↓ The numbers below are evidence — not the point.
       </div>
 
       {/* Tracker */}
