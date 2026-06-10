@@ -301,16 +301,23 @@ export default function NoaPanel() {
           <button onClick={copy} style={actionBtn(copied, C.purple)}>{copied ? "Snapshot copied" : "Share Snapshot"}</button>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          <Stat label="Orientation" value={c.orientation ? `${score} · ${c.orientation.level}` : "—"} color={c.orientation ? (levelColor[c.orientation.level] ?? C.text) : C.text} />
-          <Stat label="Energy" value={c.load ? `${c.load.afterEnergy} (+${c.load.energyRecovered})` : "—"} color={C.green} />
-          <Stat label="Community support" value={c.load ? `${c.load.communityPct}%` : "—"} color={C.cyan} />
-          <Stat label="Active network" value={`${c.load?.helpers.length ?? 0} helpers`} />
-          <Stat label="Requests" value={`${queueItems.length}`} />
-          <Stat label="Fulfilled support" value={`${fulfilledCount}`} color={C.green} />
-        </div>
-        <div style={{ fontSize: 11, marginTop: 9 }}>Operational status: <b style={{ color: fulfilledCount === 0 ? C.borderSoft : C.green }}>{operationalStatus}</b></div>
-        <div style={{ fontSize: 9, color: C.borderSoft, marginTop: 9, letterSpacing: 0.3 }}>Noa Chain MVP 0.5 · value-based profile · demo</div>
+        {/* Measurement block = "the matrix": shown on every tab EXCEPT Event Zero
+            (journey). On first view, meaning leads (identity + statement + values);
+            the numbers appear once the user moves past the opening. */}
+        {tab !== "journey" && (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <Stat label="Orientation" value={c.orientation ? `${score} · ${c.orientation.level}` : "—"} color={c.orientation ? (levelColor[c.orientation.level] ?? C.text) : C.text} />
+              <Stat label="Energy" value={c.load ? `${c.load.afterEnergy} (+${c.load.energyRecovered})` : "—"} color={C.green} />
+              <Stat label="Community support" value={c.load ? `${c.load.communityPct}%` : "—"} color={C.cyan} />
+              <Stat label="Active network" value={`${c.load?.helpers.length ?? 0} helpers`} />
+              <Stat label="Requests" value={`${queueItems.length}`} />
+              <Stat label="Fulfilled support" value={`${fulfilledCount}`} color={C.green} />
+            </div>
+            <div style={{ fontSize: 11, marginTop: 9 }}>Operational status: <b style={{ color: fulfilledCount === 0 ? C.borderSoft : C.green }}>{operationalStatus}</b></div>
+            <div style={{ fontSize: 9, color: C.borderSoft, marginTop: 9, letterSpacing: 0.3 }}>Noa Chain MVP 0.5 · value-based profile · demo</div>
+          </>
+        )}
       </div>
 
       {/* Profile tabs */}

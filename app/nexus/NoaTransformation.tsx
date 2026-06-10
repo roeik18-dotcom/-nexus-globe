@@ -85,6 +85,21 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
 
   return (
     <div dir="ltr" style={{ padding: 14, color: C.text, display: "flex", flexDirection: "column", height: "100%", fontSize: 12 }}>
+      {/* MEANING FIRST — what Nexus is, graspable in under 10 seconds. Persistent
+          across every beat so the purpose never depends on waiting for the story. */}
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 8.5, letterSpacing: 2, color: C.borderSoft, textTransform: "uppercase" }}>Nexus · Human Orientation</div>
+        <div style={{ fontSize: 19, fontWeight: 800, lineHeight: 1.15, marginTop: 3 }}>
+          Private Burden <span style={{ color: C.borderSoft }}>→</span> <span style={{ color: C.green }}>Shared Responsibility</span>
+        </div>
+        <div style={{ fontSize: 11.5, color: "#9fc7df", lineHeight: 1.5, marginTop: 5 }}>
+          Nexus doesn’t measure you. It locates where resistance concentrates — then shares the load.
+        </div>
+        <div style={{ fontSize: 9.5, color: C.borderSoft, letterSpacing: 0.3, marginTop: 7 }}>
+          ↓ Below: one real orientation forming in five moves. The numbers are the evidence, not the point.
+        </div>
+      </div>
+
       {/* Tracker */}
       <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
         {TRACK.map((label, i) => {
@@ -108,10 +123,10 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
         // ── Closing screen ──
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "center", gap: 14 }}>
           <div style={{ fontSize: 18, fontWeight: 800, color: C.green }}>
-            Private Burden <span style={{ color: C.borderSoft }}>→</span> Shared Responsibility
+            That was one orientation, located.
           </div>
           <div style={{ fontSize: 12, color: "#9fc7df", lineHeight: 1.6 }}>
-            Nexus does not begin by measuring people.<br />Nexus begins by locating resistance.
+            Nexus began with the resistance — not a score.
           </div>
           <div style={{ fontSize: 10, color: C.borderSoft, letterSpacing: 1 }}>
             Resistance → Leakage → Support → Action → Orientation
