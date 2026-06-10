@@ -14,7 +14,7 @@
  */
 
 import { useMemo } from "react";
-import { computeNoaChain, type NoaChain } from "../lib/noa";
+import { computeNoaChain, deptLabel, type NoaChain } from "../lib/noa";
 import type { IntakeProfile } from "./UserIntake";
 
 const C = {
@@ -99,7 +99,7 @@ export default function PersonalMap({ profile, chain }: { profile?: IntakeProfil
       {/* 1 · Strongest resistance */}
       <Card n={1} q="Strongest resistance" accent={C.red}>
         <div style={big(C.red)}>{resField?.name ?? "Connection ↔ Disconnection"}</div>
-        <div style={sub}>{resField?.department ?? "Emotional"} · pressure {resField?.intensity ?? 90}</div>
+        <div style={sub}>{deptLabel(resField?.department ?? "Emotional")} · pressure {resField?.intensity ?? 90}</div>
       </Card>
 
       {/* 2 · Where energy is leaking */}
