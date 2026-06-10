@@ -25,6 +25,7 @@ import {
   type LinkType,
 } from "../lib/philos";
 import { loadProfile, dominantBaseForce, type UserProfile } from "../lib/profile";
+import { getCurrentPerson, type Person } from "../lib/personStore";
 import { computeDailySummary, IMPACT_COLOR, IMPACT_LABEL, type DailySummary } from "../lib/daily";
 import { computeMatches, URGENCY_COLOR, URGENCY_LABEL, type Match } from "../lib/match";
 import {
@@ -127,6 +128,7 @@ export default function Page() {
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [allNodes, setAllNodes] = useState<UserNode[]>([]);
+  const [currentPerson, setCurrentPerson] = useState<Person | null>(null);
   const [filter, setFilter] = useState<Filter>({});
   const [target, setTarget] = useState<RankQuery>({});
 
@@ -186,6 +188,7 @@ export default function Page() {
   useEffect(() => {
     setAllNodes(loadNodes());
     setProfile(loadProfile());
+    setCurrentPerson(getCurrentPerson()); // L1 local person, if one exists
     setStances(loadStances());
     setAllProofs(loadProofs());
   }, []);
@@ -405,13 +408,32 @@ export default function Page() {
     };
   }, [profile]);
 
-  /* combined points: anchor + ranked nodes */
+  /* L1 current person as an honest active node: value-colored, pulsing,
+     non-selectable. No invented connections (links come from buildLinks over the
+     ranked nodes) and no community (communityStars skips _anchor). V1: intake
+     captures no location, so the marker sits at a neutral default — it asserts
+     "you are in the value-network", not a geographic claim. */
+  const personNode = useMemo(() => {
+    if (!currentPerson) return null;
+    return {
+      _anchor: true,
+      _person: true,
+      id: "__person__",
+      name: currentPerson.name || "You",
+      lat: 20, lng: 0,
+      color: VALUE_COLOR[currentPerson.primaryValue] ?? "#38bdf8",
+      primaryValue: currentPerson.primaryValue,
+    };
+  }, [currentPerson]);
+
+  /* combined points: anchors (demo profile + L1 person) + ranked nodes */
   const pointsData = useMemo(() => {
     const arr: any[] = [];
     if (profileAnchor) arr.push(profileAnchor);
+    if (personNode) arr.push(personNode);
     arr.push(...ranked);
     return arr;
-  }, [profileAnchor, ranked]);
+  }, [profileAnchor, personNode, ranked]);
 
   /* GLOBE PULSE — active nodes (anchor + top) emit expanding rings */
   const pulseRings = useMemo(
@@ -668,6 +690,13 @@ export default function Page() {
               return topIds.has(d.id) ? base * 1.9 : base * (topIds.size ? 0.7 : 1);
             }}
             pointLabel={(d: any) => {
+              if (d._person) {
+                return `<div style="font-family:system-ui;padding:4px 2px">
+                  <b style="color:${d.color}">★ ${escapeHtml(d.name)}</b><br/>
+                  <span style="color:${d.color}">● ${escapeHtml(d.primaryValue || "")}</span><br/>
+                  <span style="color:#8bb8cc">you · stored locally</span>
+                </div>`;
+              }
               if (d._anchor) {
                 return `<div style="font-family:system-ui;padding:4px 2px">
                   <b style="color:${d.color}">⚓ ${escapeHtml(d.name)}</b> · ${d.age}<br/>
