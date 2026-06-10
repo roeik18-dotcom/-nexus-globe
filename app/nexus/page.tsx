@@ -109,7 +109,6 @@ const VALUE_COLOR: Record<string, string> = {
   Responsibility: "#fb923c", Dignity: "#fbbf24", // Truth=Blue Justice=Purple Protection=Green Responsibility=Orange Dignity=Gold
 };
 function nodeValue(n: any): string { return FORCE_VALUE[n?.dominantForce] ?? "Truth"; }
-function nodeValueColor(n: any): string { return VALUE_COLOR[nodeValue(n)] ?? "#38bdf8"; }
 function hexToRgba(hex: string, a: number): string {
   const h = hex.replace("#", "");
   const n = parseInt(h.length === 3 ? h.split("").map(c => c + c).join("") : h, 16);
@@ -249,22 +248,23 @@ export default function Page() {
         const s = byId[l.source], t = byId[l.target];
         if (!s || !t) return null;
         const hot = topIds.has(s.id) || topIds.has(t.id);
-        // pass proof-enhanced trust so high-proof nodes get green links
-        const sWithTrust = proofTrustMap[s.id] !== undefined
-          ? { ...s, trustScore: proofTrustMap[s.id] } : s;
-        const tWithTrust = proofTrustMap[t.id] !== undefined
-          ? { ...t, trustScore: proofTrustMap[t.id] } : t;
-        const col = getLinkSemanticColor(l, sWithTrust, tWithTrust);
+        // LINE OPACITY = TRUST. Lines are NEUTRAL white/cyan — never value colors.
+        const trustS = proofTrustMap[s.id] ?? s.trustScore;
+        const trustT = proofTrustMap[t.id] ?? t.trustScore;
+        const trust = (trustS + trustT) / 2;
+        const alpha = 0.08 + Math.min(0.42, (trust / 100) * 0.42); // capped — lines stay secondary
+        const col = `rgba(176,212,245,${alpha.toFixed(2)})`;        // neutral white/cyan
         return {
           _link: l,
           startLat: s.lat, startLng: s.lng,
           endLat: t.lat,   endLng: t.lng,
           color: [col, col],
-          stroke: 0.25 + l.strength * 0.9 + (hot ? 0.3 : 0),
+          stroke: 0.2 + l.strength * 0.85 + (hot ? 0.2 : 0), // LINE THICKNESS = STRENGTH
           altitude: 0.12 + l.strength * 0.15,
-          dash: l.directional ? 0.25 : 0.6,
+          dash: l.directional ? 0.25 : 0.6,                  // LINE MOTION = ACTIVITY FLOW
           gap:  l.directional ? 0.15 : 0.05,
           speed: l.directional ? 900 : 2500,
+          trust: Math.round(trust),
         };
       })
       .filter(Boolean) as any[];
@@ -422,15 +422,35 @@ export default function Page() {
   /* COMMUNITY STARS — one star per community (context), at its centroid.
      Members + Values are derived from the cluster's existing nodes (no new data). */
   const communityStars = useMemo(() => {
-    const g = new Map<string, { lat: number; lng: number; n: number; context: string; values: Set<string> }>();
+    const g = new Map<string, { lat: number; lng: number; n: number; context: string; values: Set<string>; trust: number }>();
     for (const d of pointsData as any[]) {
       if (d._anchor || !d.context) continue;
-      const e = g.get(d.context) ?? { lat: 0, lng: 0, n: 0, context: d.context, values: new Set<string>() };
-      e.lat += d.lat; e.lng += d.lng; e.n += 1; e.values.add(nodeValue(d)); g.set(d.context, e);
+      const e = g.get(d.context) ?? { lat: 0, lng: 0, n: 0, context: d.context, values: new Set<string>(), trust: 0 };
+      e.lat += d.lat; e.lng += d.lng; e.n += 1; e.values.add(nodeValue(d));
+      e.trust += (proofTrustMap[d.id] ?? d.trustScore ?? 0); g.set(d.context, e);
     }
-    return [...g.values()].filter(e => e.n > 0)
-      .map(e => ({ lat: e.lat / e.n, lng: e.lng / e.n, context: e.context, count: e.n, values: [...e.values] }));
-  }, [pointsData]);
+    return [...g.values()].filter(e => e.n > 0).map(e => ({
+      lat: e.lat / e.n, lng: e.lng / e.n, context: e.context, count: e.n,
+      values: [...e.values], cohesion: Math.round(e.trust / e.n), // cohesion ≈ avg member trust
+    }));
+  }, [pointsData, proofTrustMap]);
+
+  /* Strongest connection per node — for the node hover "why" line */
+  const strongestByNode = useMemo(() => {
+    const byId: Record<string, UserNode> = {};
+    visible.forEach(n => (byId[n.id] = n));
+    const m = new Map<string, { other: string; reason: string; strength: number }>();
+    for (const l of filteredLinks) {
+      for (const [a, b] of [[l.source, l.target], [l.target, l.source]] as const) {
+        const other = byId[b];
+        const cur = m.get(a);
+        if (other && (!cur || l.strength > cur.strength)) {
+          m.set(a, { other: other.name, reason: l.reason, strength: l.strength });
+        }
+      }
+    }
+    return m;
+  }, [visible, filteredLinks]);
 
   /* connections for selected node (for Pentagon panel) */
   const selectedConnections = useMemo(() => {
@@ -619,7 +639,7 @@ export default function Page() {
               fontSize: 11, color: "#8bb8cc",
             }}
           >
-            אין עדיין נודים. מלא את הטופס ב־<a href="/" style={{ color: "#38bdf8" }}>דף הבית</a>.
+            Create the first connection. <a href="/" style={{ color: "#38bdf8" }}>דף הבית →</a>
           </div>
         )}
 
@@ -635,7 +655,8 @@ export default function Page() {
             pointsData={pointsData}
             pointLat={(d: any) => d.lat}
             pointLng={(d: any) => d.lng}
-            pointColor={(d: any) => d._anchor ? d.color : nodeValueColor(d)}
+            /* NODE COLOR = PRIMARY VALUE (palette). State → pulse, trust → line opacity. */
+            pointColor={(d: any) => d._anchor ? d.color : (VALUE_COLOR[nodeValue(d)] ?? "#38bdf8")}
             pointAltitude={(d: any) => {
               if (d._anchor) return 0.06;
               const base = d.intensity / 10;
@@ -655,12 +676,14 @@ export default function Page() {
                 </div>`;
               }
               const val = nodeValue(d); const vc = VALUE_COLOR[val];
-              return `<div style="font-family:system-ui;padding:7px 9px;min-width:150px;background:rgba(2,13,26,.92);border:1px solid ${vc}55;border-radius:8px">
-                <div style="font-size:13px;font-weight:700;color:#e0f2fe">${escapeHtml(d.name)} <span style="color:#38bdf8;font-weight:400">#${d.rank}</span></div>
+              const active = topIds.has(d.id);
+              const sc = strongestByNode.get(d.id);
+              return `<div style="font-family:system-ui;padding:7px 9px;min-width:160px;background:rgba(2,13,26,.92);border:1px solid ${vc}55;border-radius:8px">
+                <div style="font-size:13px;font-weight:700;color:#e0f2fe">${escapeHtml(d.name)} <span style="color:#8bb8cc;font-weight:400">#${d.rank}</span></div>
                 <div style="font-size:11px;color:${vc};margin:3px 0">● ${val}</div>
-                <div style="font-size:10px;color:#8bb8cc">${FORCE_LABEL[d.dominantForce as DominantForce]} · ${CONTEXT_LABEL[d.context as NodeContext]}</div>
-                <div style="font-size:10px;color:#fbbf24">impact · trust ${Math.round(proofTrustMap[d.id] ?? d.trustScore)} · intensity ${d.intensity}</div>
-                <div style="font-size:10px;color:#00f5d4">${escapeHtml(d.action)}</div>
+                <div style="font-size:10px;color:#8bb8cc">community: ${CONTEXT_LABEL[d.context as NodeContext]} · activity: ${active ? "active" : "calm"}</div>
+                <div style="font-size:10px;color:#fbbf24">impact ${d.intensity}/10 · trust ${Math.round(proofTrustMap[d.id] ?? d.trustScore)}</div>
+                ${sc ? `<div style="font-size:10px;color:#00f5d4">↔ ${escapeHtml(sc.other)}: ${escapeHtml(sc.reason)}</div>` : ""}
               </div>`;
             }}
             onPointClick={(p: any) => {
@@ -676,7 +699,8 @@ export default function Page() {
             ringPropagationSpeed={1.5}
             ringRepeatPeriod={(d: any) => (d._anchor ? 850 : 1500)}
             ringColor={(d: any) => {
-              const c = d._anchor ? (d.color as string) : nodeValueColor(d);
+              // NODE PULSE = CURRENT STATE (resistance heat) — a separate channel from node color (= value)
+              const c = d._anchor ? (d.color as string) : getNodeSemanticColor(d as UserNode, proofTrustMap[(d as UserNode).id]);
               return (t: number) => hexToRgba(c, 1 - t);
             }}
             /* COMMUNITY STARS — one glowing labelled star per community cluster */
@@ -689,10 +713,11 @@ export default function Page() {
             labelDotRadius={(d: any) => 0.4 + Math.min(0.8, d.count * 0.08)}
             labelAltitude={0.02}
             labelResolution={2}
-            labelLabel={(d: any) => `<div style="font-family:system-ui;padding:7px 9px;min-width:150px;background:rgba(2,13,26,.92);border:1px solid #38bdf855;border-radius:8px">
+            labelLabel={(d: any) => `<div style="font-family:system-ui;padding:7px 9px;min-width:160px;background:rgba(2,13,26,.92);border:1px solid #38bdf855;border-radius:8px">
               <div style="font-size:13px;font-weight:700;color:#cfe6f5">✦ ${CONTEXT_LABEL[d.context as NodeContext]}</div>
-              <div style="font-size:10px;color:#8bb8cc;margin-top:2px">Community · ${d.count} ${d.count === 1 ? "member" : "members"}</div>
+              <div style="font-size:10px;color:#8bb8cc;margin-top:2px">${d.count} ${d.count === 1 ? "member" : "members"} · activity: ${d.count >= 3 ? "high" : "low"}</div>
               <div style="font-size:10px;color:#38bdf8">values: ${(d.values as string[]).join(" · ")}</div>
+              <div style="font-size:10px;color:#34d399">cohesion: ${d.cohesion}/100</div>
             </div>`}
             arcsData={activeTopic ? topicArcs : arcs}
             arcStartLat={(d: any) => d.startLat}
@@ -716,10 +741,11 @@ export default function Page() {
                 </div>`;
               }
               const l: Link = d._link;
-              return `<div style="font-family:system-ui;padding:4px 2px">
-                <b style="color:${LINK_COLOR[l.type]}">${LINK_LABEL[l.type]}</b><br/>
-                ${escapeHtml(l.reason)}<br/>
-                <span style="color:#8bb8cc">strength ${l.strength.toFixed(2)}</span>
+              return `<div style="font-family:system-ui;padding:7px 9px;min-width:170px;background:rgba(2,13,26,.92);border:1px solid #1e4060;border-radius:8px">
+                <div style="font-size:11px;font-weight:700;color:#cfe6f5">${escapeHtml(l.source)} ↔ ${escapeHtml(l.target)}</div>
+                <div style="font-size:10px;color:${LINK_COLOR[l.type]};margin:2px 0">${LINK_LABEL[l.type]}</div>
+                <div style="font-size:10px;color:#8bb8cc">${escapeHtml(l.reason)}</div>
+                <div style="font-size:10px;color:#fbbf24">strength ${(l.strength * 100).toFixed(0)}% · trust ${d.trust ?? "—"} · ${l.directional ? "flowing" : "stable"}</div>
               </div>`;
             }}
             onArcClick={(d: any) => {
