@@ -98,6 +98,24 @@ function getNodeSemanticColor(n: UserNode, effectiveTrust?: number): string {
   return SEMANTIC_C.yellow;
 }
 
+// ── Living-globe visualization (visual-only): map the 5 forces → 5 core values ──
+const FORCE_VALUE: Record<string, string> = {
+  rational: "Truth", superego: "Justice", ego: "Dignity",
+  physical: "Responsibility", id: "Responsibility",
+  emotional: "Protection", social: "Protection",
+};
+const VALUE_COLOR: Record<string, string> = {
+  Truth: "#38bdf8", Justice: "#a78bfa", Protection: "#34d399",
+  Responsibility: "#fb923c", Dignity: "#fbbf24", // Truth=Blue Justice=Purple Protection=Green Responsibility=Orange Dignity=Gold
+};
+function nodeValue(n: any): string { return FORCE_VALUE[n?.dominantForce] ?? "Truth"; }
+function nodeValueColor(n: any): string { return VALUE_COLOR[nodeValue(n)] ?? "#38bdf8"; }
+function hexToRgba(hex: string, a: number): string {
+  const h = hex.replace("#", "");
+  const n = parseInt(h.length === 3 ? h.split("").map(c => c + c).join("") : h, 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${Math.max(0, Math.min(1, a)).toFixed(2)})`;
+}
+
 const TOP_N = 5;
 const ALL_LINK_TYPES: LinkType[] = ["alignment", "complementary", "influence", "opportunity"];
 
@@ -145,7 +163,12 @@ export default function Page() {
       const g = globeRef.current;
       if (g && typeof g.scene === "function") {
         const scene = g.scene();
-        if (scene) { cleanup = createSolarSystem(scene); return; }
+        if (scene) {
+          // MOTION — slow ambient auto-rotation (never static)
+          try { const ctrls = g.controls?.(); if (ctrls) { ctrls.autoRotate = true; ctrls.autoRotateSpeed = 0.35; } } catch { /* ignore */ }
+          cleanup = createSolarSystem(scene);
+          return;
+        }
       }
       if (tries++ < 180) raf = requestAnimationFrame(tryMount);
     };
@@ -390,6 +413,25 @@ export default function Page() {
     return arr;
   }, [profileAnchor, ranked]);
 
+  /* GLOBE PULSE — active nodes (anchor + top) emit expanding rings */
+  const pulseRings = useMemo(
+    () => pointsData.filter((d: any) => d._anchor || topIds.has(d.id)),
+    [pointsData, topIds],
+  );
+
+  /* COMMUNITY STARS — one star per community (context), at its centroid.
+     Members + Values are derived from the cluster's existing nodes (no new data). */
+  const communityStars = useMemo(() => {
+    const g = new Map<string, { lat: number; lng: number; n: number; context: string; values: Set<string> }>();
+    for (const d of pointsData as any[]) {
+      if (d._anchor || !d.context) continue;
+      const e = g.get(d.context) ?? { lat: 0, lng: 0, n: 0, context: d.context, values: new Set<string>() };
+      e.lat += d.lat; e.lng += d.lng; e.n += 1; e.values.add(nodeValue(d)); g.set(d.context, e);
+    }
+    return [...g.values()].filter(e => e.n > 0)
+      .map(e => ({ lat: e.lat / e.n, lng: e.lng / e.n, context: e.context, count: e.n, values: [...e.values] }));
+  }, [pointsData]);
+
   /* connections for selected node (for Pentagon panel) */
   const selectedConnections = useMemo(() => {
     if (!selected) return [];
@@ -593,7 +635,7 @@ export default function Page() {
             pointsData={pointsData}
             pointLat={(d: any) => d.lat}
             pointLng={(d: any) => d.lng}
-            pointColor={(d: any) => d._anchor ? d.color : getNodeSemanticColor(d as UserNode, proofTrustMap[(d as UserNode).id])}
+            pointColor={(d: any) => d._anchor ? d.color : nodeValueColor(d)}
             pointAltitude={(d: any) => {
               if (d._anchor) return 0.06;
               const base = d.intensity / 10;
@@ -612,11 +654,13 @@ export default function Page() {
                   <span style="color:#fbbf24">base force: ${FORCE_LABEL[d.force as DominantForce]}</span>
                 </div>`;
               }
-              return `<div style="font-family:system-ui;padding:4px 2px">
-                <b>${escapeHtml(d.name)}</b> <span style="color:#38bdf8">#${d.rank}</span><br/>
-                ${FORCE_LABEL[d.dominantForce as DominantForce]} · ${CONTEXT_LABEL[d.context as NodeContext]}<br/>
-                <span style="color:#fbbf24">score ${d.score.toFixed(2)}</span><br/>
-                <span style="color:#00f5d4">${escapeHtml(d.action)}</span>
+              const val = nodeValue(d); const vc = VALUE_COLOR[val];
+              return `<div style="font-family:system-ui;padding:7px 9px;min-width:150px;background:rgba(2,13,26,.92);border:1px solid ${vc}55;border-radius:8px">
+                <div style="font-size:13px;font-weight:700;color:#e0f2fe">${escapeHtml(d.name)} <span style="color:#38bdf8;font-weight:400">#${d.rank}</span></div>
+                <div style="font-size:11px;color:${vc};margin:3px 0">● ${val}</div>
+                <div style="font-size:10px;color:#8bb8cc">${FORCE_LABEL[d.dominantForce as DominantForce]} · ${CONTEXT_LABEL[d.context as NodeContext]}</div>
+                <div style="font-size:10px;color:#fbbf24">impact · trust ${Math.round(proofTrustMap[d.id] ?? d.trustScore)} · intensity ${d.intensity}</div>
+                <div style="font-size:10px;color:#00f5d4">${escapeHtml(d.action)}</div>
               </div>`;
             }}
             onPointClick={(p: any) => {
@@ -624,6 +668,32 @@ export default function Page() {
               setSelected(p);
               setSelectedLink(null);
             }}
+            /* GLOBE PULSE — expanding rings on active nodes */
+            ringsData={pulseRings}
+            ringLat={(d: any) => d.lat}
+            ringLng={(d: any) => d.lng}
+            ringMaxRadius={(d: any) => (d._anchor ? 5 : 3.4)}
+            ringPropagationSpeed={1.5}
+            ringRepeatPeriod={(d: any) => (d._anchor ? 850 : 1500)}
+            ringColor={(d: any) => {
+              const c = d._anchor ? (d.color as string) : nodeValueColor(d);
+              return (t: number) => hexToRgba(c, 1 - t);
+            }}
+            /* COMMUNITY STARS — one glowing labelled star per community cluster */
+            labelsData={communityStars}
+            labelLat={(d: any) => d.lat}
+            labelLng={(d: any) => d.lng}
+            labelText={(d: any) => `✦ ${CONTEXT_LABEL[d.context as NodeContext]}`}
+            labelColor={() => "rgba(207,230,245,0.9)"}
+            labelSize={(d: any) => 0.9 + Math.min(1.2, d.count * 0.12)}
+            labelDotRadius={(d: any) => 0.4 + Math.min(0.8, d.count * 0.08)}
+            labelAltitude={0.02}
+            labelResolution={2}
+            labelLabel={(d: any) => `<div style="font-family:system-ui;padding:7px 9px;min-width:150px;background:rgba(2,13,26,.92);border:1px solid #38bdf855;border-radius:8px">
+              <div style="font-size:13px;font-weight:700;color:#cfe6f5">✦ ${CONTEXT_LABEL[d.context as NodeContext]}</div>
+              <div style="font-size:10px;color:#8bb8cc;margin-top:2px">Community · ${d.count} ${d.count === 1 ? "member" : "members"}</div>
+              <div style="font-size:10px;color:#38bdf8">values: ${(d.values as string[]).join(" · ")}</div>
+            </div>`}
             arcsData={activeTopic ? topicArcs : arcs}
             arcStartLat={(d: any) => d.startLat}
             arcStartLng={(d: any) => d.startLng}
