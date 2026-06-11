@@ -14,6 +14,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { computeNoaChain } from "../lib/noa";
 import { buildBurdenNarrative, buildBurdenFlow } from "../lib/burdenNarrative";
+import NoaOpm from "./NoaOpm";
 
 const C = {
   bg: "#030f1e", card: "#040e1c", border: "#0a2a4a", borderSoft: "#1e4060",
@@ -153,6 +154,10 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
         /* ── ANALYSIS — the diagnostic evidence (numbers), revealed on demand ── */
         <>
           <button onClick={() => setAnalysis(false)} style={{ alignSelf: "flex-start", marginBottom: 12, padding: "5px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.borderSoft }}>← Noa&apos;s story</button>
+
+      {/* ── OPM — Operational Process Map: the full burden flow across departments,
+           before the Burden Flow summary and the diagnostic beats. ── */}
+      <NoaOpm chain={chain} />
 
       {/* ── BURDEN FLOW — proves the law (capacity < burden) BEFORE any score.
            Renderer over existing chain outputs; the diagnostic beats follow below. ── */}
