@@ -13,7 +13,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { computeNoaChain } from "../lib/noa";
-import { buildBurdenNarrative } from "../lib/burdenNarrative";
+import { buildBurdenNarrative, buildBurdenFlow } from "../lib/burdenNarrative";
 
 const C = {
   bg: "#030f1e", card: "#040e1c", border: "#0a2a4a", borderSoft: "#1e4060",
@@ -35,6 +35,7 @@ const DURATIONS = [6000, 6000, 8000, 7000, 3000];
 export default function NoaTransformation({ onContinue }: { onContinue?: () => void }) {
   const chain = useMemo(() => computeNoaChain(0), []);
   const narrative = useMemo(() => buildBurdenNarrative(chain), [chain]);
+  const burdenFlow = useMemo(() => buildBurdenFlow(chain), [chain]);
   const [beat, setBeat] = useState(0);     // 0..4
   const [done, setDone] = useState(false); // closing screen
   const [playing, setPlaying] = useState(true);
@@ -151,6 +152,28 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
         /* ── ANALYSIS — the diagnostic evidence (numbers), revealed on demand ── */
         <>
           <button onClick={() => setAnalysis(false)} style={{ alignSelf: "flex-start", marginBottom: 12, padding: "5px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.borderSoft }}>← Noa&apos;s story</button>
+
+      {/* ── BURDEN FLOW — proves the law (capacity < burden) BEFORE any score.
+           Renderer over existing chain outputs; the diagnostic beats follow below. ── */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 9, letterSpacing: 2, color: C.borderSoft, textTransform: "uppercase", marginBottom: 8 }}>Burden Flow — before the numbers</div>
+        {burdenFlow.maps.map((m) => (
+          <div key={m.key} style={{ background: C.card, border: `1px solid ${C.border}`, borderInlineStart: `3px solid ${m.key === "capacity" ? C.orange : C.cyan}`, borderRadius: 8, padding: "9px 11px", marginBottom: 8 }}>
+            <div style={{ fontSize: 9, letterSpacing: 1, color: C.purple, textTransform: "uppercase" }}>{m.title}</div>
+            <div style={{ fontSize: 10.5, color: C.borderSoft, marginTop: 1, marginBottom: 6 }}>{m.question}</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
+              {m.rows.map((r, i) => (
+                <div key={i} style={{ display: "flex", gap: 6, alignItems: "baseline", fontSize: 11, padding: "3px 8px", borderRadius: 6, background: C.bg, border: `1px solid ${r.accent ? (m.key === "capacity" ? C.orange : C.cyan) : C.border}` }}>
+                  <span style={{ color: r.accent ? (m.key === "capacity" ? C.orange : C.cyan) : C.text, fontWeight: r.accent ? 700 : 500 }}>{r.label}</span>
+                  {r.value && <span style={{ color: C.borderSoft }}>{r.value}</span>}
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: 11.5, color: m.key === "capacity" ? C.orange : "#9fc7df", fontWeight: m.key === "capacity" ? 700 : 400, lineHeight: 1.5 }}>{m.statement}</div>
+          </div>
+        ))}
+        <div style={{ fontSize: 9, color: C.borderSoft, letterSpacing: 0.5 }}>↓ The diagnostic beats below show the same flow as measured signals.</div>
+      </div>
 
       {/* Tracker */}
       <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>

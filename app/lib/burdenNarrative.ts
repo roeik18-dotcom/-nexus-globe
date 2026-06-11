@@ -78,3 +78,99 @@ export function buildBurdenNarrative(chain: NoaChain = computeNoaChain(0)): Burd
     stabilization: "When burden is redistributed, orientation stabilizes again.",
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BURDEN FLOW — the bridge between the Event Zero law and the diagnostic beats.
+//
+// Four read-only maps over existing chain outputs (loadModel + actionImpact) that
+// PROVE the law ("available carrying capacity < burden being created") before any
+// score is shown. Renderer only — no new engine, no new data model, no scores
+// changed. "Who should carry" = who shares relevant values with the case (the
+// value-network), never blame or named missing people.
+//
+//   Responsibility ← helpers · ROLE_VALUE
+//   Capacity       ← loadModel.beforeIndividualLoad / distributedLoad
+//   Distribution   ← loadModel.beforePct / afterPct / communityPct
+//   Action         ← chain.action (actionImpact)
+
+const ROLE_VALUE: Record<string, string> = {
+  lawyer: "Justice", therapist: "Protection", journalist: "Truth",
+  donor: "Responsibility", peer_survivor: "Dignity",
+};
+
+function cap(s: string): string { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+export interface BurdenFlowRow { label: string; value?: string; accent?: boolean; }
+export interface BurdenFlowMap {
+  key: "responsibility" | "capacity" | "distribution" | "action";
+  title: string;
+  question: string;
+  rows: BurdenFlowRow[];
+  statement: string;
+}
+export interface BurdenFlow { maps: BurdenFlowMap[]; }
+
+/** Render the four Burden-Flow maps from a chain. Pure; reads existing outputs only. */
+export function buildBurdenFlow(chain: NoaChain = computeNoaChain(0)): BurdenFlow {
+  const load = chain.load;
+  const action = chain.action;
+  const helpers = load?.helpers ?? [];
+  const name = "Noa"; // English case label (chain's individualName is Hebrew; keep the narrative consistent)
+
+  // 1 · Responsibility — who shares the burden through shared values (not blame).
+  const values: string[] = [];
+  for (const h of helpers) { const v = ROLE_VALUE[h.role]; if (v && !values.includes(v)) values.push(v); }
+  const responsibility: BurdenFlowMap = {
+    key: "responsibility",
+    title: "Responsibility",
+    question: "Who is connected to the burden through shared values?",
+    rows: (values.length ? values : ["—"]).map(v => ({ label: v })),
+    statement: "These are the values that can carry part of the burden.",
+  };
+
+  // 2 · Capacity — burden created vs available carrying capacity (proves the law).
+  const burdenCreated = load?.beforeIndividualLoad ?? 100;
+  const carryingCapacity = load?.distributedLoad ?? 0;
+  const capacityGap = Math.max(0, burdenCreated - carryingCapacity);
+  const capacity: BurdenFlowMap = {
+    key: "capacity",
+    title: "Capacity",
+    question: "Is there enough carrying capacity for the burden?",
+    rows: [
+      { label: "Burden created", value: `${burdenCreated}` },
+      { label: "Available carrying capacity", value: `${carryingCapacity}` },
+      { label: "Capacity gap", value: `${capacityGap}`, accent: true },
+    ],
+    statement: carryingCapacity < burdenCreated
+      ? "Available carrying capacity is lower than the burden being created."
+      : "Available carrying capacity now meets the burden being created.",
+  };
+
+  // 3 · Distribution — before vs after redistribution.
+  const beforePct = load?.beforePct ?? 100;
+  const afterPct = load?.afterPct ?? 100;
+  const communityPct = load?.communityPct ?? 0;
+  const distribution: BurdenFlowMap = {
+    key: "distribution",
+    title: "Distribution",
+    question: "What changes when the burden is redistributed?",
+    rows: [
+      { label: "Before", value: `${beforePct}% on ${name}` },
+      { label: "After", value: `${afterPct}% on ${name} · ${communityPct}% shared`, accent: true },
+    ],
+    statement: `Before, the burden concentrates on ${name}. After, part of the load is redistributed.`,
+  };
+
+  // 4 · Action — the first redistribution move (not generic advice).
+  const actionMap: BurdenFlowMap = {
+    key: "action",
+    title: "Action",
+    question: "What is the next move?",
+    rows: [
+      { label: `${cap(action?.recommendedAction ?? "stabilize")} → ${action?.targetDimension ?? "Physical"}`, accent: true },
+    ],
+    statement: "This is not generic advice — it is the first redistribution move.",
+  };
+
+  return { maps: [responsibility, capacity, distribution, actionMap] };
+}
