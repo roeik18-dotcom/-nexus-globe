@@ -20,59 +20,58 @@
 
 import { computeNoaChain, type NoaChain } from "./noa";
 
+// ── CASE ZERO — NOA ──────────────────────────────────────────────────────────
+// LOCKED CASE FACT: Noa experienced sexual violence. The event itself is NOT the
+// focus of the product and is never described — no graphic detail, no
+// sensationalizing, no victim archetype. On screen the event reads "a severe
+// violation". The focus is what happened to the BURDEN after the event.
+//   Sexual violence    = the event
+//   Burden concentration = the phenomenon
+//   Redistribution      = the intervention
+// Noa is Case Zero: a concrete window onto the burden-concentration law.
+
 export interface BurdenNarrative {
-  title: string;              // "NOA · CASE ZERO"
-  person: string;             // human window, one line
-  event: string;              // what happened
-  concentrationLines: string[];   // burden concentrated (← loadModel)
-  consequenceLead: string;        // "As the burden concentrated,"
-  consequenceItems: string[];     // what deteriorated (← leakage + orientation)
-  lawIntro: string;           // "The problem is not the number of people."
-  law: string;                // capacity < burden (← helpers vs load)
-  identifies: string[];       // what Nexus identifies (← action / redistribution)
-  stabilization: string;      // outcome when redistributed
+  title: string;               // "NOA · CASE ZERO"
+  person: string;              // human window, one line
+  event: string;               // the event — named, never described
+  burdenAccumulation: string;  // the burdens that accumulated after the event
+  concentrationLines: string[];// should have been shared → concentrated on one
+  consequenceLead: string;     // "As the burden concentrated:"
+  consequenceItems: string[];  // what deteriorated
+  principleIntro: string;      // "The problem is not Noa."
+  principle: string;           // "The problem is burden concentration."
+  analyzesIntro: string;       // "Nexus analyzes:"
+  analyzes: string[];          // what Nexus analyzes around the case
+  stabilization: string;       // redistribution → stabilizes
 }
 
 /**
- * Render the burden-concentration narrative from a chain (Noa = default case).
- * Pure & deterministic; safe on the server. Reads existing chain outputs only.
+ * Render the burden-concentration narrative for Case Zero (Noa).
+ * Pure & deterministic; reads existing chain outputs only (the chain confirms the
+ * phenomenon — concentration — without surfacing any number in the story).
  */
 export function buildBurdenNarrative(chain: NoaChain = computeNoaChain(0)): BurdenNarrative {
-  const load = chain.load;
-  const leak = chain.leakage;
-  const orient = chain.orientation;
-
-  // ── qualitative signals derived from the chain (no numbers surfaced here) ──
-  const burdenCreated = load?.beforePct ?? 100;             // burden being created (loadModel)
-  const concentrated = burdenCreated >= 80;                 // it gathered in one place
-  const leaks = (leak?.totalLeakage ?? 0) >= 40;            // energy leaked (energyLeakage)
-  const level = orient?.level ?? "low";
-  const unstable = level === "low" || level === "medium";   // orientation unstable (orientationScore)
-  const availableCapacity = load?.distributedLoad ?? 0;     // carrying capacity (helpers/support)
-  const capacityShort = availableCapacity < burdenCreated;  // capacity < burden
-
-  // Consequence is built from what ACTUALLY deteriorated in the chain.
-  const consequenceItems: string[] = [];
-  if (leaks) consequenceItems.push("energy leaked");
-  consequenceItems.push("capacity decreased");
-  if (unstable) consequenceItems.push("orientation became unstable");
+  const concentrated = (chain.load?.beforePct ?? 100) >= 80;
 
   return {
     title: "NOA · CASE ZERO",
     person: "Noa, 28.",
-    event: "A single event created a burden that should have been distributed.",
+    event: "Noa experienced a severe violation.",
+    burdenAccumulation:
+      "After the event, emotional, social, practical and informational burdens began to accumulate around her.",
     concentrationLines: concentrated
-      ? ["The burden was not distributed.", "It began to concentrate in one place."]
-      : ["The burden was only partly distributed.", "Pressure still gathered in one place."],
-    consequenceLead: "As the burden concentrated,",
-    consequenceItems,
-    lawIntro: "The problem is not the number of people.",
-    law: capacityShort
-      ? "The problem is that available carrying capacity is lower than the burden being created."
-      : "The problem is where the carrying capacity sits relative to the burden.",
-    identifies: [
-      "where burden concentration formed",
-      "where carrying capacity exists",
+      ? ["Many of these burdens should have been shared.", "Instead, they concentrated on a single person."]
+      : ["Many of these burdens should have been shared.", "Some were shared — but pressure still gathered on one person."],
+    consequenceLead: "As the burden concentrated:",
+    consequenceItems: ["energy leaked", "decision-making became harder", "trust weakened", "capacity decreased"],
+    principleIntro: "The problem is not Noa.",
+    principle: "The problem is burden concentration.",
+    analyzesIntro: "Nexus analyzes:",
+    analyzes: [
+      "where burden accumulated",
+      "what capacity exists around the case",
+      "what support is connected",
+      "what support is missing",
       "how burden can be redistributed",
     ],
     stabilization: "When burden is redistributed, orientation stabilizes again.",

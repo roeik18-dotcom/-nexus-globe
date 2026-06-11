@@ -105,34 +105,35 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
             </div>
           </div>
 
-          {/* 2 · EVENT — what happened */}
+          {/* 2 · EVENT — named, never described */}
           <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.45, color: C.text }}>{narrative.event}</div>
 
-          {/* 3 · BURDEN — concentration (← loadModel) */}
+          {/* 3 · BURDEN — what accumulated, then concentrated */}
+          <div style={{ fontSize: 12.5, color: "#9fc7df", lineHeight: 1.6 }}>{narrative.burdenAccumulation}</div>
           <div style={{ fontSize: 13, color: "#cfe6f5", lineHeight: 1.65 }}>
             {narrative.concentrationLines.map((l, i) => <div key={i}>{l}</div>)}
           </div>
 
-          {/* 4 · CONSEQUENCE — what deteriorated (← energyLeakage + orientationScore) */}
+          {/* 4 · CONSEQUENCE — what deteriorated as the burden concentrated */}
           <div style={{ fontSize: 12.5, lineHeight: 1.7 }}>
             <div style={{ color: "#9fc7df" }}>{narrative.consequenceLead}</div>
             {narrative.consequenceItems.map((l, i) => (
               <div key={i} style={{ color: C.orange, fontWeight: 600 }}>
-                {l}{i < narrative.consequenceItems.length - 1 ? "," : "."}
+                • {l}{i < narrative.consequenceItems.length - 1 ? "" : "."}
               </div>
             ))}
           </div>
 
-          {/* 5 · CAPACITY — the LAW, the emphasized core (← helpers vs burden) */}
+          {/* 5 · PRINCIPLE — not Noa, but burden concentration (the emphasized core) */}
           <div style={{ borderInlineStart: `4px solid ${C.cyan}`, background: "#06223a", borderRadius: 8, padding: "11px 13px" }}>
-            <div style={{ fontSize: 11.5, color: C.borderSoft, marginBottom: 5 }}>{narrative.lawIntro}</div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: C.cyan, lineHeight: 1.4 }}>{narrative.law}</div>
+            <div style={{ fontSize: 11.5, color: C.borderSoft, marginBottom: 5 }}>{narrative.principleIntro}</div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: C.cyan, lineHeight: 1.4 }}>{narrative.principle}</div>
           </div>
 
-          {/* 6 · REDISTRIBUTION — what can be done (← action) */}
+          {/* 6 · REDISTRIBUTION — what Nexus analyzes around the case */}
           <div style={{ fontSize: 12.5, color: "#cfe6f5", lineHeight: 1.6 }}>
-            <div style={{ color: C.borderSoft, marginBottom: 4 }}>Nexus identifies:</div>
-            {narrative.identifies.map((l, i) => <div key={i}>• {l}</div>)}
+            <div style={{ color: C.borderSoft, marginBottom: 4 }}>{narrative.analyzesIntro}</div>
+            {narrative.analyzes.map((l, i) => <div key={i}>• {l}</div>)}
           </div>
           <div style={{ fontSize: 13, fontWeight: 700, color: C.green, lineHeight: 1.5 }}>{narrative.stabilization}</div>
 
