@@ -34,10 +34,10 @@ export const CLASS_ORDER: ClassKey[] = [
 export const LEVEL_ORDER: LevelKey[] = ["physical", "emotional", "rational"];
 
 // Visible labels are Philos canon (Freud terms removed). Object keys stay internal.
-//   id → דחף (Drive) · ego → אישי (Personal) · superego → חברתי (Social)
+//   id → דחף (Drive) · ego → מיידעי (Informational) · superego → חברתי (Social)
 export const CLASS_LABEL: Record<ClassKey, string> = {
   id:        "דחף",
-  ego:       "אישי",
+  ego:       "מיידעי",
   superego:  "חברתי",
   emotional: "רגשי",
   rational:  "רציונלי",
@@ -124,7 +124,7 @@ export const MATRIX: OrientationMatrix = {
   ego: {
     physical: {
       expressions:     ["מראה", "כוח", "ביצועים", "תחרות", "שליטה גופנית"],
-      description:     "האישי מתבטא בגוף — זהות דרך כוח ומראה",
+      description:     "המיידעי מתבטא בגוף — זהות דרך כוח ומראה",
       risk:            "תחרותיות קיצונית, קריסה כשהגוף נחלש",
       opportunity:     "הישגים ממשיים, אנרגיה ממוקדת",
       balancingClass:  "superego",
@@ -132,7 +132,7 @@ export const MATRIX: OrientationMatrix = {
     },
     emotional: {
       expressions:     ["גאווה", "בושה", "הכרה", "השפלה", "פחד מכישלון"],
-      description:     "האישי מתבטא ברגש — כבוד עצמי וצורך בהכרה",
+      description:     "המיידעי מתבטא ברגש — כבוד עצמי וצורך בהכרה",
       risk:            "אינפלציה, ניפוץ קשה כשאין הכרה",
       opportunity:     "זהות רגשית, מנהיגות, ביטחון עצמי",
       balancingClass:  "id",
@@ -140,7 +140,7 @@ export const MATRIX: OrientationMatrix = {
     },
     rational: {
       expressions:     ["אסטרטגיה", "תכנון עצמי", "הצדקה עצמית", "מיתוג"],
-      description:     "האישי מתבטא בחשיבה — בניית זהות ותדמית",
+      description:     "המיידעי מתבטא בחשיבה — בניית זהות ותדמית",
       risk:            "רציונליזציה, הגנה על האני בכל מחיר",
       opportunity:     "תכנון אסטרטגי, בניית שם",
       balancingClass:  "superego",

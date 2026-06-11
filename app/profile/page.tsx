@@ -178,9 +178,9 @@ export default function Page() {
         </Section>
 
         {/* AXIS */}
-        <Section title="ציר אישי ↔ חברתי">
+        <Section title="ציר יחידני ↔ קולקטיבי">
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#1e4060", marginBottom: 4 }}>
-            <span>אישי −10</span><span>0</span><span>+10 חברתי</span>
+            <span>יחידני −10</span><span>0</span><span>+10 קולקטיבי</span>
           </div>
           <input
             type="range" min={-10} max={10}
@@ -189,8 +189,8 @@ export default function Page() {
             style={{ width: "100%", accentColor: "#a78bfa" }}
           />
           <div style={{ textAlign: "center", fontSize: 12, marginTop: 4, color: "#a78bfa" }}>
-            {p.personalVsSocial > 2 ? "נוטה לחברתי" :
-             p.personalVsSocial < -2 ? "נוטה לאישי" : "מאוזן"}
+            {p.personalVsSocial > 2 ? "נוטה לקולקטיבי" :
+             p.personalVsSocial < -2 ? "נוטה ליחידני" : "מאוזן"}
             {" · "}
             <b style={{ color: "#e0f2fe" }}>{p.personalVsSocial > 0 ? "+" : ""}{p.personalVsSocial}</b>
           </div>
@@ -238,9 +238,9 @@ export default function Page() {
         <Section title="ניגודים מדודים — איפה אתה על הצירים">
           {([
             ["emotion_logic",       "רגש",      "היגיון",  "#38bdf8"],
-            ["ego_social",          "אגו",       "חברתי",   "#a78bfa"],
+            ["ego_social",          "מיידעי",    "חברתי",   "#a78bfa"],
             ["action_avoidance",    "הימנעות",  "פעולה",   "#00f5d4"],
-            ["personal_collective", "אישי",     "קולקטיב", "#fb923c"],
+            ["personal_collective", "יחידני",   "קולקטיב", "#fb923c"],
           ] as [keyof ConflictBars, string, string, string][]).map(([k, left, right, col]) => {
             const v = p.conflictBars?.[k] ?? 0.5;
             return (
