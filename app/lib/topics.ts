@@ -65,7 +65,7 @@ export const SEED_TOPICS: Topic[] = [
     color: "#22c55e",
     axes: [
       { key: "action_caution",        left: "פעולה מיידית",    right: "זהירות כלכלית" },
-      { key: "collective_individual", left: "פתרון קולקטיבי",  right: "בחירה אישית" },
+      { key: "collective_individual", left: "פתרון קולקטיבי",  right: "בחירה יחידנית" },
       { key: "tech_nature",           left: "פתרון טכנולוגי",  right: "התאמה לטבע" },
     ],
   },

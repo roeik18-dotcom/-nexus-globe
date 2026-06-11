@@ -861,7 +861,7 @@ export default function Page() {
                 base: {FORCE_LABEL[dominantBaseForce(profile)]}
               </Pill>
               <Pill color="#a78bfa">
-                אישי↔חברתי: {profile.personalVsSocial > 0 ? "+" : ""}{profile.personalVsSocial}
+                יחידני↔קולקטיבי: {profile.personalVsSocial > 0 ? "+" : ""}{profile.personalVsSocial}
               </Pill>
               <Pill color="#00f5d4">
                 צמיחה: {profile.growthCoefficient > 0 ? "+" : ""}{profile.growthCoefficient.toFixed(2)}
@@ -900,7 +900,7 @@ export default function Page() {
             </span>
           </div>
 
-          <ScoreBar label="personal" value={daily.personalScore} color="#38bdf8" />
+          <ScoreBar label="individual" value={daily.personalScore} color="#38bdf8" />
           <ScoreBar label="social"   value={daily.socialScore}   color="#fb923c" />
           <ScoreBar label="value"    value={daily.valueScore}    color={IMPACT_COLOR[daily.impact]} />
 
