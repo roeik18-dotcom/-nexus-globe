@@ -13,6 +13,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { computeNoaChain } from "../lib/noa";
+import { buildBurdenNarrative } from "../lib/burdenNarrative";
 
 const C = {
   bg: "#030f1e", card: "#040e1c", border: "#0a2a4a", borderSoft: "#1e4060",
@@ -33,6 +34,7 @@ const DURATIONS = [6000, 6000, 8000, 7000, 3000];
 
 export default function NoaTransformation({ onContinue }: { onContinue?: () => void }) {
   const chain = useMemo(() => computeNoaChain(0), []);
+  const narrative = useMemo(() => buildBurdenNarrative(chain), [chain]);
   const [beat, setBeat] = useState(0);     // 0..4
   const [done, setDone] = useState(false); // closing screen
   const [playing, setPlaying] = useState(true);
@@ -92,34 +94,49 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
            numbers. Ask "what is she experiencing?" before "what are the metrics?".
            Everything quantitative (orientation, energy, community, helpers, matrix,
            diagnostics) lives behind "See Analysis". Reads like Netflix, not Excel. ── */
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 18 }}>
-          {/* Person — human first */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-start", gap: 13, overflowY: "auto" }}>
+          {/* 1 · HUMAN — the window, not the subject */}
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 46, height: 46, borderRadius: "50%", background: `linear-gradient(135deg, ${C.purple}, ${C.red} 55%, ${C.green})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "#fff", boxShadow: "0 0 0 2px rgba(255,255,255,0.22)" }}>N</div>
+            <div style={{ width: 44, height: 44, borderRadius: "50%", background: `linear-gradient(135deg, ${C.purple}, ${C.red} 55%, ${C.green})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 800, color: "#fff", boxShadow: "0 0 0 2px rgba(255,255,255,0.22)" }}>N</div>
             <div>
-              <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: 0.5, lineHeight: 1 }}>Noa</div>
-              <div style={{ fontSize: 9, letterSpacing: 2, color: C.purple, textTransform: "uppercase", marginTop: 4 }}>Case Zero</div>
+              <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 0.3, lineHeight: 1 }}>{narrative.person}</div>
+              <div style={{ fontSize: 9, letterSpacing: 2, color: C.purple, textTransform: "uppercase", marginTop: 4 }}>{narrative.title}</div>
             </div>
           </div>
 
-          {/* Burden — first person, the emotional center; the strongest element */}
-          <div style={{ fontSize: 23, fontWeight: 800, lineHeight: 1.4, color: C.text }}>
-            <span style={{ color: C.borderSoft, fontWeight: 400 }}>“</span>I am carrying alone what should have been carried by a community.<span style={{ color: C.borderSoft, fontWeight: 400 }}>”</span>
+          {/* 2 · EVENT — what happened */}
+          <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.45, color: C.text }}>{narrative.event}</div>
+
+          {/* 3 · BURDEN — concentration (← loadModel) */}
+          <div style={{ fontSize: 13, color: "#cfe6f5", lineHeight: 1.65 }}>
+            {narrative.concentrationLines.map((l, i) => <div key={i}>{l}</div>)}
           </div>
 
-          {/* Need — obvious */}
-          <div style={{ border: `1px solid ${C.cyan}`, borderInlineStart: `4px solid ${C.cyan}`, background: "#06223a", borderRadius: 8, padding: "11px 13px" }}>
-            <div style={{ fontSize: 9, letterSpacing: 1.5, color: C.borderSoft, textTransform: "uppercase", marginBottom: 3 }}>Need</div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: C.cyan }}>Shared support before collapse.</div>
+          {/* 4 · CONSEQUENCE — what deteriorated (← energyLeakage + orientationScore) */}
+          <div style={{ fontSize: 12.5, lineHeight: 1.7 }}>
+            <div style={{ color: "#9fc7df" }}>{narrative.consequenceLead}</div>
+            {narrative.consequenceItems.map((l, i) => (
+              <div key={i} style={{ color: C.orange, fontWeight: 600 }}>
+                {l}{i < narrative.consequenceItems.length - 1 ? "," : "."}
+              </div>
+            ))}
           </div>
 
-          {/* Thesis */}
-          <div style={{ fontSize: 16, fontWeight: 800 }}>
-            Private Burden <span style={{ color: C.borderSoft }}>→</span> <span style={{ color: C.green }}>Shared Responsibility</span>
+          {/* 5 · CAPACITY — the LAW, the emphasized core (← helpers vs burden) */}
+          <div style={{ borderInlineStart: `4px solid ${C.cyan}`, background: "#06223a", borderRadius: 8, padding: "11px 13px" }}>
+            <div style={{ fontSize: 11.5, color: C.borderSoft, marginBottom: 5 }}>{narrative.lawIntro}</div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: C.cyan, lineHeight: 1.4 }}>{narrative.law}</div>
           </div>
 
-          {/* Reveal — the only path to the numbers */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 9, marginTop: 2 }}>
+          {/* 6 · REDISTRIBUTION — what can be done (← action) */}
+          <div style={{ fontSize: 12.5, color: "#cfe6f5", lineHeight: 1.6 }}>
+            <div style={{ color: C.borderSoft, marginBottom: 4 }}>Nexus identifies:</div>
+            {narrative.identifies.map((l, i) => <div key={i}>• {l}</div>)}
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.green, lineHeight: 1.5 }}>{narrative.stabilization}</div>
+
+          {/* Reveal — the only path to the numbers (7 · Measurement) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 9, marginTop: 4 }}>
             <button onClick={openAnalysis} style={{ alignSelf: "flex-start", padding: "9px 18px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.text }}>
               See Analysis →
             </button>
