@@ -30,6 +30,19 @@ const DEPT_CANON: { key: string; en: string; he: string }[] = [
   { key: "SUPEREGO",  en: "Social",        he: "חברתי" },
 ];
 
+// Canonical energy-flow topology (a fixed Philos model, NOT chain data): energy
+// flows UP from the body to the communal layer. Each edge = "A feeds into B".
+//   גופני → דחף → (רגשי | רציונלי) → (חברתי | מיידעי) → קהילתי
+export const OPM_FLOW: { from: string; to: string }[] = [
+  { from: "Physical",  to: "ID" },         // גופני → דחף
+  { from: "ID",        to: "Emotional" },  // דחף → רגשי
+  { from: "ID",        to: "Rational" },   // דחף → רציונלי
+  { from: "Emotional", to: "SUPEREGO" },   // רגשי → חברתי (Social)
+  { from: "Rational",  to: "EGO" },        // רציונלי → מיידעי (Informational)
+  { from: "SUPEREGO",  to: "Communal" },   // חברתי → קהילתי
+  { from: "EGO",       to: "Communal" },   // מיידעי → קהילתי
+];
+
 export interface DeptExplain {
   meaning: string;  // what this department is
   raises: string;   // what raises the load on it

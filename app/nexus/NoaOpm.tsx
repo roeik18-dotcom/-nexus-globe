@@ -12,7 +12,7 @@
 
 import { useMemo, useState } from "react";
 import { computeNoaChain, type NoaChain } from "../lib/noa";
-import { buildOpm, type FlowTone } from "../lib/opm";
+import { buildOpm, type FlowTone, type DeptExplain } from "../lib/opm";
 
 const C = {
   bg: "#030f1e", card: "#040e1c", border: "#0a2a4a", borderSoft: "#1e4060",
@@ -22,29 +22,45 @@ const C = {
 const TONE: Record<FlowTone, string> = { neutral: C.borderSoft, bad: C.orange, good: C.green };
 const sec: React.CSSProperties = { fontSize: 9, color: C.borderSoft, letterSpacing: 2, textTransform: "uppercase", margin: "14px 0 7px" };
 
-function Bar({ pct, color }: { pct: number; color: string }) {
-  return (
-    <div style={{ flex: 1, height: 6, background: "#0a1a2e", borderRadius: 3, overflow: "hidden" }}>
-      <div style={{ width: `${Math.max(0, Math.min(100, pct))}%`, height: "100%", background: color, borderRadius: 3 }} />
-    </div>
-  );
-}
+// Energy-flow layout (top → bottom): Communal at the top, Physical at the root.
+// Energy flows UP — each layer feeds the one above (see OPM_FLOW in lib/opm).
+const FLOW_ROWS: string[][] = [
+  ["Communal"],
+  ["SUPEREGO", "EGO"],        // חברתי · מיידעי
+  ["Emotional", "Rational"],  // רגשי · רציונלי
+  ["ID"],                     // דחף
+  ["Physical"],               // גופני
+];
 
-function Row({ label, value, pct, color }: { label: string; value: string; pct: number; color: string }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-      <div style={{ width: 92, fontSize: 9.5, color: C.borderSoft }}>{label}</div>
-      <Bar pct={pct} color={color} />
-      <div style={{ width: 28, fontSize: 9.5, fontWeight: 700, color, textAlign: "right" }}>{value}</div>
-    </div>
-  );
-}
+type FlowNode = {
+  key: string; he: string; en: string;
+  load: number; capacity: number; gap: number;
+  communal: boolean; leaking?: boolean; actionTarget?: boolean;
+  explain?: DeptExplain;
+};
 
 export default function NoaOpm({ chain }: { chain?: NoaChain }) {
   const fallback = useMemo(() => computeNoaChain(0), []);
   const opm = useMemo(() => buildOpm(chain ?? fallback), [chain, fallback]);
   const [open, setOpen] = useState<string | null>(null);
   const toggle = (k: string) => setOpen(o => (o === k ? null : k));
+
+  // Unified node accessor for the energy-flow map (departments + the communal layer).
+  const deptByKey = useMemo(() => {
+    const m: Record<string, typeof opm.departments[number]> = {};
+    for (const d of opm.departments) m[d.key] = d;
+    return m;
+  }, [opm]);
+  const nodeOf = (key: string): FlowNode => {
+    if (key === "Communal") {
+      const c = opm.communal;
+      return { key, he: c.he, en: c.en, load: 0, capacity: c.carryingCapacity, gap: c.gap, communal: true };
+    }
+    const d = deptByKey[key];
+    if (!d) return { key, he: key, en: key, load: 0, capacity: 0, gap: 0, communal: false };
+    return { key, he: d.he, en: d.en, load: d.load, capacity: d.capacityApplied, gap: d.missingCapacity, communal: false, leaking: d.leaking, actionTarget: d.actionTarget, explain: d.explain };
+  };
+  const openNode = open ? nodeOf(open) : null;
 
   return (
     <div dir="ltr" style={{ marginBottom: 16, color: C.text, fontSize: 12 }}>
@@ -75,72 +91,82 @@ export default function NoaOpm({ chain }: { chain?: NoaChain }) {
         ))}
       </div>
 
-      {/* 2 + 3 · IMPACT DEPARTMENTS (load / capacity / gap + expandable More) */}
-      <div style={sec}>Impact departments</div>
-      {opm.departments.map(d => {
-        const isOpen = open === d.key;
-        return (
-          <div key={d.key} style={{ background: C.card, border: `1px solid ${d.actionTarget ? C.cyan : C.border}`, borderRadius: 8, padding: "9px 11px", marginBottom: 7 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 13, fontWeight: 800 }}>{d.he}</span>
-              <span style={{ fontSize: 10, color: C.borderSoft }}>{d.en}</span>
-              <span style={{ flex: 1 }} />
-              {d.leaking && <span style={{ fontSize: 8, color: C.red, border: `1px solid ${C.red}55`, borderRadius: 8, padding: "1px 6px" }}>leaking</span>}
-              {d.actionTarget && <span style={{ fontSize: 8, color: C.cyan, border: `1px solid ${C.cyan}55`, borderRadius: 8, padding: "1px 6px" }}>action</span>}
-              <button onClick={() => toggle(d.key)} style={{ fontSize: 10, cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.borderSoft, borderRadius: 6, padding: "2px 8px" }}>
-                {isOpen ? "סגור" : "עוד / More"}
-              </button>
+      {/* 2 + 3 · DEPARTMENT ENERGY-FLOW MAP — one connected system, NOT isolated
+           cards. Energy flows up: גופני → דחף → (רגשי|רציונלי) → (חברתי|מיידעי) →
+           קהילתי. Each node carries Load (L) · Capacity (C) · Gap (G). Tap a node
+           for its detail (incl. which department it flows into). */}
+      <div style={sec}>Energy-flow map · load → capacity → gap</div>
+      <div style={{ background: "radial-gradient(circle at 50% 0%, #07182b 0%, #030f1e 80%)", border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 10px" }}>
+        {FLOW_ROWS.map((row, ri) => (
+          <div key={ri}>
+            {ri > 0 && <div style={{ textAlign: "center", color: C.borderSoft, fontSize: 11, lineHeight: 1, margin: "2px 0" }}>▲</div>}
+            <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+              {row.map(key => {
+                const n = nodeOf(key);
+                const sev = n.communal ? C.green : n.gap >= 50 ? C.red : n.gap >= 25 ? C.orange : C.green;
+                const isSel = open === key;
+                return (
+                  <button key={key} onClick={() => toggle(key)} style={{
+                    flex: row.length > 1 ? 1 : "0 0 62%", minWidth: 0, textAlign: "left", cursor: "pointer",
+                    background: isSel ? "#06223a" : C.card,
+                    border: `1px solid ${isSel ? C.cyan : sev + "88"}`, borderRadius: 8, padding: "7px 9px",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 800, color: C.text }}>{n.he}</span>
+                      <span style={{ fontSize: 8, color: C.borderSoft }}>{n.en}</span>
+                      {n.leaking && <span title="strongest leak" style={{ width: 6, height: 6, borderRadius: "50%", background: C.red, display: "inline-block" }} />}
+                      {n.actionTarget && <span title="action target" style={{ fontSize: 8, color: C.cyan }}>◆</span>}
+                    </div>
+                    <div style={{ display: "flex", gap: 7, marginTop: 4, fontSize: 9.5, fontWeight: 700 }}>
+                      {!n.communal && <span style={{ color: C.red }}>L {n.load}</span>}
+                      <span style={{ color: C.green }}>C {n.capacity}</span>
+                      <span style={{ color: sev }}>G {n.gap}</span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-            <Row label="current load" value={`${d.load}`} pct={d.load} color={C.red} />
-            <Row label="capacity in" value={`${d.capacityApplied}`} pct={d.capacityApplied} color={C.green} />
-            <Row label="missing cap." value={`${d.missingCapacity}`} pct={d.missingCapacity} color={C.orange} />
-
-            {isOpen && (
-              <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}`, fontSize: 11, lineHeight: 1.6, color: "#9fc7df" }}>
-                <p style={{ margin: "0 0 6px", color: C.text }}>{d.explain.meaning}</p>
-                <div><b style={{ color: C.orange }}>Raises load:</b> {d.explain.raises}</div>
-                <div><b style={{ color: C.green }}>Lowers load:</b> {d.explain.lowers}</div>
-                <div><b style={{ color: C.purple }}>Affects others:</b> {d.explain.affects}</div>
-                {/* energy-flow mini diagram */}
-                <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "7px 0", fontSize: 10 }}>
-                  <span style={{ color: C.red }}>load {d.load}</span>
-                  <span style={{ color: C.borderSoft }}>→ capacity −{d.capacityApplied} →</span>
-                  <span style={{ color: C.orange }}>gap {d.missingCapacity}</span>
-                </div>
-                <div style={{ background: "#06223a", border: `1px solid ${C.cyan}`, borderRadius: 6, padding: "6px 9px", color: C.cyan, fontWeight: 600 }}>
-                  Action: {d.explain.action}
-                </div>
-              </div>
-            )}
           </div>
-        );
-      })}
-
-      {/* Communal carrying layer (where capacity exists) */}
-      <div style={{ background: C.card, border: `1px solid ${C.green}55`, borderInlineStart: `3px solid ${C.green}`, borderRadius: 8, padding: "9px 11px", marginBottom: 7 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-          <span style={{ fontSize: 13, fontWeight: 800 }}>{opm.communal.he}</span>
-          <span style={{ fontSize: 10, color: C.borderSoft }}>{opm.communal.en} · carrying layer</span>
-        </div>
-        <div style={{ fontSize: 10.5, color: "#9fc7df", lineHeight: 1.6 }}>
-          Where carrying capacity exists. <b style={{ color: C.green }}>{opm.communal.carryingCapacity}</b> of load can be absorbed by the value-network · community now carries <b style={{ color: C.green }}>{opm.communal.communityPct}%</b> · still concentrated: <b style={{ color: C.orange }}>{opm.communal.gap}</b>.
+        ))}
+        <div style={{ fontSize: 9, color: C.borderSoft, textAlign: "center", marginTop: 9, lineHeight: 1.5 }}>
+          ▲ energy flows up — each layer feeds the one above · L load · C capacity · G gap
         </div>
       </div>
 
-      {/* 6 · DEPARTMENT OCCUPANCY (capacity language, not people-count) */}
-      <div style={sec}>Department occupancy</div>
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: "9px 11px" }}>
-        {opm.departments.map(d => (
-          <div key={d.key} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, fontSize: 10.5 }}>
-            <span style={{ width: 64, color: C.text }}>{d.he}</span>
-            <span style={{ color: d.supported ? C.green : C.borderSoft }}>capacity {d.supported ? "connected" : "—"} +{d.capacityApplied}</span>
+      {/* tapped-node detail (rendered below the map so the layout stays stable) */}
+      {openNode && openNode.explain && (
+        <div style={{ background: C.card, border: `1px solid ${C.cyan}`, borderRadius: 8, padding: "10px 12px", marginTop: 8, fontSize: 11, lineHeight: 1.6, color: "#9fc7df" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 5 }}>
+            <span style={{ fontSize: 13, fontWeight: 800, color: C.text }}>{openNode.he}</span>
+            <span style={{ fontSize: 9, color: C.borderSoft }}>{openNode.en}</span>
             <span style={{ flex: 1 }} />
-            <span style={{ color: d.missingCapacity > 0 ? C.orange : C.green }}>{d.missingCapacity > 0 ? `gap ${d.missingCapacity}` : "covered"}</span>
+            <span style={{ fontSize: 9.5, color: C.red }}>L {openNode.load}</span>
+            <span style={{ fontSize: 9.5, color: C.green }}>C {openNode.capacity}</span>
+            <span style={{ fontSize: 9.5, color: C.orange }}>G {openNode.gap}</span>
           </div>
-        ))}
-        <div style={{ fontSize: 10, color: C.borderSoft, marginTop: 6, paddingTop: 6, borderTop: `1px solid ${C.border}`, lineHeight: 1.5 }}>
-          Next move: <b style={{ color: C.cyan }}>{opm.action.label} → {opm.action.targetHe}</b> · the first redistribution step (−{opm.action.loadReduction} load · +{opm.action.energyGain} energy · +{opm.action.orientationGain} orientation).
+          <p style={{ margin: "0 0 6px", color: C.text }}>{openNode.explain.meaning}</p>
+          <div><b style={{ color: C.orange }}>Raises load:</b> {openNode.explain.raises}</div>
+          <div><b style={{ color: C.green }}>Lowers load:</b> {openNode.explain.lowers}</div>
+          <div><b style={{ color: C.purple }}>Affects (flows into):</b> {openNode.explain.affects}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "7px 0", fontSize: 10 }}>
+            <span style={{ color: C.red }}>load {openNode.load}</span>
+            <span style={{ color: C.borderSoft }}>→ capacity −{openNode.capacity} →</span>
+            <span style={{ color: C.orange }}>gap {openNode.gap}</span>
+          </div>
+          <div style={{ background: "#06223a", border: `1px solid ${C.cyan}`, borderRadius: 6, padding: "6px 9px", color: C.cyan, fontWeight: 600 }}>
+            Action: {openNode.explain.action}
+          </div>
         </div>
+      )}
+      {openNode && openNode.communal && (
+        <div style={{ background: C.card, border: `1px solid ${C.green}66`, borderRadius: 8, padding: "10px 12px", marginTop: 8, fontSize: 10.5, color: "#9fc7df", lineHeight: 1.6 }}>
+          <b style={{ color: C.text }}>{openNode.he} · {openNode.en}</b> — the carrying layer where capacity collects. Available capacity <b style={{ color: C.green }}>{openNode.capacity}</b> · community now carries <b style={{ color: C.green }}>{opm.communal.communityPct}%</b> · still concentrated <b style={{ color: C.orange }}>{openNode.gap}</b>.
+        </div>
+      )}
+
+      {/* next move — the first redistribution step */}
+      <div style={{ fontSize: 10.5, color: C.borderSoft, marginTop: 10, paddingTop: 8, borderTop: `1px solid ${C.border}`, lineHeight: 1.5 }}>
+        Next move: <b style={{ color: C.cyan }}>{opm.action.label} → {opm.action.targetHe}</b> · the first redistribution step (−{opm.action.loadReduction} load · +{opm.action.energyGain} energy · +{opm.action.orientationGain} orientation).
       </div>
     </div>
   );
