@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="980" viewBox="0 0 1180 980" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e3a5f"/>
+    </marker>
+    <marker id="arrowG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2f9e6b"/>
+    </marker>
+    <marker id="effect" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#b06b00"/>
+    </marker>
+    <marker id="agent" viewBox="0 0 12 12" refX="6" refY="6" markerWidth="11" markerHeight="11" orient="auto">
+      <circle cx="6" cy="6" r="5" fill="#1e3a5f"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1180" height="980" fill="#f7fafc"/>
+  <text x="32" y="40" font-size="22" font-weight="800" fill="#0a2540">OPM Causal Spine — Nexus Case Zero</text>
+  <text x="32" y="62" font-size="13" fill="#5b6b7b">Object-Process Diagram (OPD).  Spine: Event → Values Harmed → Impact → Community Response → Recovery</text>
+
+  <!-- ===== Legend ===== -->
+  <g font-size="11" fill="#33475b">
+    <rect x="760" y="24" width="392" height="92" rx="8" fill="#ffffff" stroke="#cfd9e3"/>
+    <text x="772" y="42" font-weight="700" fill="#0a2540">Legend</text>
+    <rect x="772" y="52" width="34" height="16" rx="2" fill="#eef2f7" stroke="#5b6b7b"/><text x="814" y="64">Object</text>
+    <ellipse cx="889" cy="60" rx="20" ry="10" fill="#e7eefc" stroke="#3b6bd6"/><text x="915" y="64">Process</text>
+    <rect x="975" y="52" width="34" height="16" rx="8" fill="#fff" stroke="#5b6b7b"/><text x="1017" y="64">State</text>
+    <line x1="772" y1="86" x2="804" y2="86" stroke="#1e3a5f" marker-end="url(#agent)"/><text x="812" y="90">Agent (●)</text>
+    <line x1="900" y1="86" x2="935" y2="86" stroke="#b06b00" marker-start="url(#effect)" marker-end="url(#effect)"/><text x="942" y="90">Effect (state change)</text>
+    <line x1="772" y1="104" x2="804" y2="104" stroke="#2f9e6b" stroke-dasharray="4 3" marker-end="url(#arrowG)"/><text x="812" y="108">c = Condition (consent)</text>
+    <line x1="975" y1="104" x2="1007" y2="104" stroke="#1e3a5f" marker-end="url(#arrow)"/><text x="1015" y="108">Result / Consumption</text>
+  </g>
+
+  <!-- ===== Survivor object + Wellbeing states (far left spine) ===== -->
+  <rect x="32" y="150" width="170" height="690" rx="10" fill="#eef2f7" stroke="#33475b" stroke-width="1.5"/>
+  <text x="117" y="176" font-size="14" font-weight="800" fill="#0a2540" text-anchor="middle">Survivor (Noa)</text>
+  <text x="117" y="193" font-size="10.5" fill="#5b6b7b" text-anchor="middle">Wellbeing</text>
+  <rect x="52" y="210" width="130" height="40" rx="20" fill="#fde8e8" stroke="#c0392b"/><text x="117" y="234" font-size="12" text-anchor="middle" fill="#7d241a">harmed</text>
+  <rect x="52" y="470" width="130" height="40" rx="20" fill="#fff3e0" stroke="#b06b00"/><text x="117" y="494" font-size="12" text-anchor="middle" fill="#7a4a00">supported</text>
+  <rect x="52" y="630" width="130" height="40" rx="20" fill="#e9f7ef" stroke="#2f9e6b"/><text x="117" y="654" font-size="12" text-anchor="middle" fill="#1d6b47">recovering</text>
+  <rect x="52" y="790" width="130" height="40" rx="20" fill="#e3f0ff" stroke="#3b6bd6"/><text x="117" y="814" font-size="12" text-anchor="middle" fill="#1f4ba0">restored</text>
+
+  <!-- ===== Process spine (center ellipses) ===== -->
+  <!-- P0 Classifying -->
+  <ellipse cx="430" cy="120" rx="95" ry="34" fill="#f0e9fb" stroke="#7c4dd6" stroke-width="1.6"/>
+  <text x="430" y="118" font-size="14" font-weight="700" text-anchor="middle" fill="#4b2a8a">Classifying</text>
+  <text x="430" y="134" font-size="9.5" text-anchor="middle" fill="#6b53a0">consent-gated</text>
+  <!-- P1 Harming -->
+  <ellipse cx="430" cy="270" rx="95" ry="34" fill="#fdecea" stroke="#c0392b" stroke-width="1.6"/>
+  <text x="430" y="274" font-size="14" font-weight="700" text-anchor="middle" fill="#7d241a">Harming</text>
+  <!-- P2 Impacting -->
+  <ellipse cx="430" cy="430" rx="95" ry="34" fill="#fdecea" stroke="#c0392b" stroke-width="1.6"/>
+  <text x="430" y="434" font-size="14" font-weight="700" text-anchor="middle" fill="#7d241a">Impacting</text>
+  <!-- P3 Responding -->
+  <ellipse cx="430" cy="590" rx="95" ry="34" fill="#e9f7ef" stroke="#2f9e6b" stroke-width="1.6"/>
+  <text x="430" y="594" font-size="14" font-weight="700" text-anchor="middle" fill="#1d6b47">Responding</text>
+  <!-- P4 Recovering -->
+  <ellipse cx="430" cy="750" rx="95" ry="34" fill="#e3f0ff" stroke="#3b6bd6" stroke-width="1.6"/>
+  <text x="430" y="754" font-size="14" font-weight="700" text-anchor="middle" fill="#1f4ba0">Recovering</text>
+
+  <!-- spine sequence arrows (invocation) -->
+  <line x1="430" y1="154" x2="430" y2="236" stroke="#1e3a5f" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="430" y1="304" x2="430" y2="396" stroke="#1e3a5f" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="430" y1="464" x2="430" y2="556" stroke="#1e3a5f" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="430" y1="624" x2="430" y2="716" stroke="#1e3a5f" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+  <!-- effect links: processes change Wellbeing states (double-headed) -->
+  <line x1="335" y1="270" x2="182" y2="230" stroke="#b06b00" stroke-width="1.4" marker-start="url(#effect)" marker-end="url(#effect)"/>
+  <line x1="335" y1="590" x2="182" y2="490" stroke="#b06b00" stroke-width="1.4" marker-start="url(#effect)" marker-end="url(#effect)"/>
+  <line x1="335" y1="750" x2="182" y2="650" stroke="#b06b00" stroke-width="1.4" marker-start="url(#effect)" marker-end="url(#effect)"/>
+  <line x1="335" y1="760" x2="182" y2="810" stroke="#b06b00" stroke-width="1.4" marker-start="url(#effect)" marker-end="url(#effect)"/>
+
+  <!-- ===== Stage objects (right) with parts (aggregation) ===== -->
+  <!-- Event -->
+  <rect x="600" y="78" width="330" height="96" rx="8" fill="#ffffff" stroke="#7c4dd6" stroke-width="1.5"/>
+  <text x="616" y="98" font-size="13" font-weight="800" fill="#4b2a8a">Event</text>
+  <text x="616" y="116" font-size="11" fill="#33475b">Event Type = <tspan font-weight="700">הטרדה מינית · Sexual Harassment</tspan></text>
+  <text x="616" y="134" font-size="11" fill="#33475b">Publication Consent : {withheld, <tspan font-weight="700" fill="#1d6b47">granted</tspan>}</text>
+  <text x="616" y="152" font-size="11" fill="#33475b">Classification Status : {private, <tspan font-weight="700" fill="#1d6b47">published</tspan>}</text>
+
+  <!-- Affected Values -->
+  <rect x="600" y="226" width="330" height="88" rx="8" fill="#ffffff" stroke="#c0392b" stroke-width="1.5"/>
+  <text x="616" y="246" font-size="13" font-weight="800" fill="#7d241a">Affected Values  <tspan font-size="10" font-weight="400" fill="#5b6b7b">(state: harmed)</tspan></text>
+  <text x="616" y="266" font-size="11.5" fill="#33475b">▲ Dignity   ▲ Autonomy</text>
+  <text x="616" y="285" font-size="11.5" fill="#33475b">▲ Personal Security   ▲ Trust</text>
+  <text x="616" y="304" font-size="9.5" fill="#9aa7b4">aggregation-participation (whole–part)</text>
+
+  <!-- Impact -->
+  <rect x="600" y="386" width="330" height="88" rx="8" fill="#ffffff" stroke="#c0392b" stroke-width="1.5"/>
+  <text x="616" y="406" font-size="13" font-weight="800" fill="#7d241a">Impact</text>
+  <text x="616" y="426" font-size="11.5" fill="#33475b">▲ Harm Burden   ▲ Energy Leakage</text>
+  <text x="616" y="445" font-size="11.5" fill="#33475b">▲ Functional Impairment   ▲ Trust Loss</text>
+  <text x="616" y="464" font-size="9.5" fill="#9aa7b4">measured-effect objects (numeric metrics)</text>
+
+  <!-- Community Response -->
+  <rect x="600" y="546" width="330" height="88" rx="8" fill="#ffffff" stroke="#2f9e6b" stroke-width="1.5"/>
+  <text x="616" y="566" font-size="13" font-weight="800" fill="#1d6b47">Community Response</text>
+  <text x="616" y="586" font-size="11.5" fill="#33475b">▲ Support   ▲ Validation</text>
+  <text x="616" y="605" font-size="11.5" fill="#33475b">▲ Exposure   ▲ Funding</text>
+  <text x="616" y="624" font-size="9.5" fill="#9aa7b4">provided by Community (agent)</text>
+
+  <!-- Recovery -->
+  <rect x="600" y="706" width="330" height="88" rx="8" fill="#ffffff" stroke="#3b6bd6" stroke-width="1.5"/>
+  <text x="616" y="726" font-size="13" font-weight="800" fill="#1f4ba0">Recovery</text>
+  <text x="616" y="746" font-size="11.5" fill="#33475b">▲ Rehabilitation   ▲ Trust Restoration</text>
+  <text x="616" y="765" font-size="11.5" fill="#33475b">▲ Return to Function   ▲ New Opportunities</text>
+
+  <!-- result links: each process yields its stage object -->
+  <line x1="525" y1="120" x2="600" y2="126" stroke="#1e3a5f" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="525" y1="270" x2="600" y2="270" stroke="#1e3a5f" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="525" y1="430" x2="600" y2="430" stroke="#1e3a5f" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="525" y1="590" x2="600" y2="590" stroke="#1e3a5f" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="525" y1="750" x2="600" y2="750" stroke="#1e3a5f" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- condition link: granted consent enables Classifying -->
+  <path d="M600,134 C560,150 545,140 528,128" fill="none" stroke="#2f9e6b" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#arrowG)"/>
+  <text x="556" y="170" font-size="11" font-weight="700" fill="#1d6b47">c</text>
+
+  <!-- instrument link: Impact drives nothing extra; Affected Values enable Impacting -->
+  <line x1="600" y1="270" x2="525" y2="290" stroke="#1e3a5f" stroke-width="1" stroke-dasharray="2 2"/>
+
+  <!-- ===== Community agent ===== -->
+  <rect x="262" y="892" width="150" height="48" rx="8" fill="#eef2f7" stroke="#33475b" stroke-width="1.5"/>
+  <text x="337" y="913" font-size="13" font-weight="800" text-anchor="middle" fill="#0a2540">Community</text>
+  <text x="337" y="930" font-size="9.5" text-anchor="middle" fill="#5b6b7b">agent</text>
+  <!-- agent links to Classifying and Responding -->
+  <path d="M337,892 C337,820 360,160 422,150" fill="none" stroke="#1e3a5f" stroke-width="1.3" marker-end="url(#agent)"/>
+  <path d="M380,900 C470,860 470,660 500,612" fill="none" stroke="#1e3a5f" stroke-width="1.3" marker-end="url(#agent)"/>
+</svg>
