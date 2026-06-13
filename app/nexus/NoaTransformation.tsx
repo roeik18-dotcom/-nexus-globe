@@ -106,8 +106,21 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
             </div>
           </div>
 
-          {/* 2 · EVENT — named, never described */}
-          <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.45, color: C.text }}>{narrative.event}</div>
+          {/* 2 · EVENT — leads with the classified type once the victim approves
+               community publication; otherwise stays named-but-never-described. */}
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 800, lineHeight: 1.45, color: C.text }}>
+              {narrative.classification.classified
+                ? `${narrative.classification.labelHe} · ${narrative.classification.labelEn}`
+                : narrative.event}
+            </div>
+            {narrative.classification.classified && narrative.classification.statusHe && (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 6, padding: "2px 9px", borderRadius: 999, background: `${C.green}1a`, border: `1px solid ${C.green}66` }}>
+                <span style={{ width: 5, height: 5, borderRadius: "50%", background: C.green, display: "inline-block" }} />
+                <span style={{ fontSize: 10, fontWeight: 700, color: C.green }}>{narrative.classification.statusHe} · {narrative.classification.statusEn}</span>
+              </div>
+            )}
+          </div>
 
           {/* 3 · BURDEN — what accumulated, then concentrated */}
           <div style={{ fontSize: 12.5, color: "#9fc7df", lineHeight: 1.6 }}>{narrative.burdenAccumulation}</div>

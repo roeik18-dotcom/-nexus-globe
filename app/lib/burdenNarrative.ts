@@ -21,19 +21,78 @@
 import { computeNoaChain, type NoaChain } from "./noa";
 
 // ── CASE ZERO — NOA ──────────────────────────────────────────────────────────
-// LOCKED CASE FACT: Noa experienced sexual violence. The event itself is NOT the
-// focus of the product and is never described — no graphic detail, no
-// sensationalizing, no victim archetype. On screen the event reads "a severe
-// violation". The focus is what happened to the BURDEN after the event.
-//   Sexual violence    = the event
+// LOCKED CASE FACT: Noa's event is classified as sexual harassment. The event
+// itself is NOT the focus of the product and is never described — no graphic
+// detail, no sensationalizing, no victim archetype. Without consent the event
+// reads "a severe violation"; with the victim's community-publication consent it
+// reads as the exact classified type. The focus stays on the BURDEN after the event.
+//   Sexual harassment  = the event (classified type — see NOA_CLASSIFICATION)
 //   Burden concentration = the phenomenon
 //   Redistribution      = the intervention
 // Noa is Case Zero: a concrete window onto the burden-concentration law.
 
+// ── EVENT CLASSIFICATION (privacy-gated) ─────────────────────────────────────
+// The classified event TYPE is the primary descriptor — but it is surfaced ONLY
+// when the victim has EXPLICITLY approved community publication. Without that
+// consent we fall back to the privacy-safe, non-descriptive label and never
+// reveal the classification. Classification leads; severity / autonomy / trust /
+// energy-leakage and the rest stay SEPARATE, derived metrics
+// (Event Type → Impact Metrics, never Impact Metrics → Event Type).
+export interface CaseClassification {
+  eventTypeEn: string;        // classified event type, e.g. "Sexual harassment"
+  eventTypeHe: string;        // classified event type (Hebrew), e.g. "הטרדה מינית"
+  communityApproved: boolean; // victim explicitly approved community publication
+}
+
+// Case Zero — Noa. communityApproved gates whether the real type is shown.
+export const NOA_CLASSIFICATION: CaseClassification = {
+  eventTypeEn: "Sexual harassment",
+  eventTypeHe: "הטרדה מינית",
+  communityApproved: true,
+};
+
+export interface EventDescriptor {
+  classified: boolean;        // true → real classified type shown; false → privacy fallback
+  labelEn: string;            // PRIMARY title (English)
+  labelHe: string;            // PRIMARY title (Hebrew)
+  statusEn: string | null;    // approval-status line — only when classified
+  statusHe: string | null;
+  sentence: string;           // summary-friendly form of the primary descriptor
+}
+
+// Privacy fallback — never describes the event (used when consent is absent).
+const PRIVACY_LABEL_EN = "A severe violation";
+const PRIVACY_LABEL_HE = "אירוע חמור";
+
+/** Resolve the on-screen event descriptor, honoring the victim's consent. */
+export function resolveEventDescriptor(
+  cls: CaseClassification = NOA_CLASSIFICATION,
+): EventDescriptor {
+  if (cls.communityApproved) {
+    return {
+      classified: true,
+      labelEn: cls.eventTypeEn,
+      labelHe: cls.eventTypeHe,
+      statusEn: "Approved for community publication",
+      statusHe: "אושר לפרסום קהילתי",
+      sentence: cls.eventTypeEn,
+    };
+  }
+  return {
+    classified: false,
+    labelEn: PRIVACY_LABEL_EN,
+    labelHe: PRIVACY_LABEL_HE,
+    statusEn: null,
+    statusHe: null,
+    sentence: "Noa experienced a severe violation.",
+  };
+}
+
 export interface BurdenNarrative {
   title: string;               // "NOA · CASE ZERO"
   person: string;              // human window, one line
-  event: string;               // the event — named, never described
+  event: string;               // PRIMARY descriptor — classified type if approved, else privacy-safe
+  classification: EventDescriptor; // structured event classification + consent status
   burdenAccumulation: string;  // the burdens that accumulated after the event
   concentrationLines: string[];// should have been shared → concentrated on one
   consequenceLead: string;     // "As the burden concentrated:"
@@ -52,11 +111,13 @@ export interface BurdenNarrative {
  */
 export function buildBurdenNarrative(chain: NoaChain = computeNoaChain(0)): BurdenNarrative {
   const concentrated = (chain.load?.beforePct ?? 100) >= 80;
+  const classification = resolveEventDescriptor();
 
   return {
     title: "NOA · CASE ZERO",
     person: "Noa, 28.",
-    event: "Noa experienced a severe violation.",
+    event: classification.sentence,
+    classification,
     burdenAccumulation:
       "After the event, emotional, social, practical and informational burdens began to accumulate around her.",
     concentrationLines: concentrated

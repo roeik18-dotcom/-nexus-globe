@@ -68,34 +68,66 @@ export default function NoaOpm({ chain }: { chain?: NoaChain }) {
         OPM — Operational Process Map
       </div>
 
-      {/* 1 · EVENT NODE */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderInlineStart: `3px solid ${C.purple}`, borderRadius: 8, padding: "9px 11px", marginBottom: 12 }}>
-        <div style={{ fontSize: 8.5, color: C.purple, letterSpacing: 1.5, textTransform: "uppercase" }}>Event</div>
-        <div style={{ fontSize: 13, fontWeight: 700, marginTop: 2 }}>{opm.event}</div>
-        <div style={{ fontSize: 10, color: C.borderSoft, marginTop: 3 }}>The event is the trigger. The map tracks the burden — not the event.</div>
-      </div>
+      {/* PRIMARY — the causal path is the dominant view */}
+      <div style={{ fontSize: 11, color: C.cyan, letterSpacing: 2.5, textTransform: "uppercase", fontWeight: 800 }}>Causal Path</div>
+      <div style={{ fontSize: 9.5, color: C.borderSoft, marginTop: 2, marginBottom: 10 }}>event → values harmed → impact → community response → recovery</div>
 
-      {/* 4 · FLOW DIAGRAM (the spine) */}
-      <div style={sec}>Flow</div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: 0, marginBottom: 4 }}>
-        {opm.flow.map((s, i) => (
-          <div key={s.key}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 6, border: `1px solid ${TONE[s.tone]}44`, background: `${TONE[s.tone]}0f` }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: TONE[s.tone] }}>{s.label}</span>
-              <span style={{ fontSize: 10.5, color: C.text }}>{s.value}</span>
+      {/* CAUSALITY MAP — the rigid, event-type-agnostic spine:
+           event → values harmed → impact → community response → recovery.
+           Reads "what happened → what was harmed → the cost → what the community
+           does → recovery state" in ~3s. Stage 1 stays consent-gated; the numeric
+           OPM metrics are unchanged and live below in the energy-flow map. */}
+      {opm.causality.map((stage, i) => {
+        const accent = TONE[stage.tone];
+        const isEvent = stage.key === "event";
+        return (
+          <div key={stage.key}>
+            <div style={{ background: C.card, border: `1px solid ${accent}55`, borderInlineStart: `3px solid ${accent}`, borderRadius: 8, padding: "9px 11px" }}>
+              <div style={{ fontSize: 8.5, color: accent, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 700 }}>{stage.titleEn}</div>
+              {isEvent ? (
+                <div style={{ marginTop: 4 }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: C.text }}>{stage.items[0].he}</span>
+                    <span style={{ fontSize: 10, color: C.borderSoft }}>{stage.items[0].en}</span>
+                  </div>
+                  {stage.items[1]?.badge && (
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 6, padding: "2px 8px", borderRadius: 999, background: `${C.green}1a`, border: `1px solid ${C.green}66` }}>
+                      <span style={{ width: 5, height: 5, borderRadius: "50%", background: C.green, display: "inline-block" }} />
+                      <span style={{ fontSize: 9.5, fontWeight: 700, color: C.green }}>{stage.items[1].he} · {stage.items[1].en}</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px 10px", marginTop: 6 }}>
+                  {stage.items.map(it => (
+                    <div key={it.en} style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
+                      <span style={{ width: 4, height: 4, borderRadius: "50%", background: accent, display: "inline-block", flex: "0 0 auto" }} />
+                      <span style={{ fontSize: 12, fontWeight: 700, color: C.text }}>{it.he}</span>
+                      <span style={{ fontSize: 8.5, color: C.borderSoft }}>{it.en}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            {i < opm.flow.length - 1 && (
-              <div style={{ textAlign: "center", fontSize: 10, color: C.borderSoft, lineHeight: 1.1, margin: "1px 0" }}>↓</div>
+            {i < opm.causality.length - 1 && (
+              <div style={{ textAlign: "center", fontSize: 13, color: C.borderSoft, lineHeight: 1, margin: "3px 0" }}>↓</div>
             )}
           </div>
-        ))}
-      </div>
+        );
+      })}
 
-      {/* 2 + 3 · DEPARTMENT ENERGY-FLOW MAP — one connected system, NOT isolated
-           cards. Energy flows up: גופני → דחף → (רגשי|רציונלי) → (חברתי|מיידעי) →
-           קהילתי. Each node carries Load (L) · Capacity (C) · Gap (G). Tap a node
-           for its detail (incl. which department it flows into). */}
-      <div style={sec}>Energy-flow map · load → capacity → gap</div>
+      {/* SECONDARY — measured effects: the numbers behind the causal path.
+           Visually de-emphasized (subordinate to the spine). Calculations and the
+           energy-flow map itself are UNCHANGED — only the hierarchy is. */}
+      <div style={{ marginTop: 18, paddingTop: 12, borderTop: `1px solid ${C.border}`, opacity: 0.72 }}>
+        <div style={{ fontSize: 9, color: C.borderSoft, letterSpacing: 2, textTransform: "uppercase", fontWeight: 600 }}>Measured Effects</div>
+        <div style={{ fontSize: 9, color: C.muted, marginTop: 2 }}>secondary · the metrics behind the causal path</div>
+
+        {/* 2 + 3 · DEPARTMENT ENERGY-FLOW MAP — one connected system, NOT isolated
+             cards. Energy flows up: גופני → דחף → (רגשי|רציונלי) → (חברתי|מיידעי) →
+             קהילתי. Each node carries Load (L) · Capacity (C) · Gap (G). Tap a node
+             for its detail (incl. which department it flows into). */}
+        <div style={sec}>Energy-flow map · load → capacity → gap</div>
       <div style={{ background: "radial-gradient(circle at 50% 0%, #07182b 0%, #030f1e 80%)", border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 10px" }}>
         {FLOW_ROWS.map((row, ri) => (
           <div key={ri}>
@@ -164,9 +196,10 @@ export default function NoaOpm({ chain }: { chain?: NoaChain }) {
         </div>
       )}
 
-      {/* next move — the first redistribution step */}
-      <div style={{ fontSize: 10.5, color: C.borderSoft, marginTop: 10, paddingTop: 8, borderTop: `1px solid ${C.border}`, lineHeight: 1.5 }}>
-        Next move: <b style={{ color: C.cyan }}>{opm.action.label} → {opm.action.targetHe}</b> · the first redistribution step (−{opm.action.loadReduction} load · +{opm.action.energyGain} energy · +{opm.action.orientationGain} orientation).
+        {/* next move — the first redistribution step */}
+        <div style={{ fontSize: 10.5, color: C.borderSoft, marginTop: 10, paddingTop: 8, borderTop: `1px solid ${C.border}`, lineHeight: 1.5 }}>
+          Next move: <b style={{ color: C.cyan }}>{opm.action.label} → {opm.action.targetHe}</b> · the first redistribution step (−{opm.action.loadReduction} load · +{opm.action.energyGain} energy · +{opm.action.orientationGain} orientation).
+        </div>
       </div>
     </div>
   );

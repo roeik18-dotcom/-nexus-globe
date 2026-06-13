@@ -18,7 +18,7 @@
 // therapy advice — operational/redistribution framing only.
 
 import { computeNoaChain, type NoaChain } from "./noa";
-import { buildBurdenNarrative } from "./burdenNarrative";
+import { buildBurdenNarrative, type EventDescriptor } from "./burdenNarrative";
 
 // Canon department labels (internal keys stay Freudian; visible labels are canon).
 const DEPT_CANON: { key: string; en: string; he: string }[] = [
@@ -122,6 +122,47 @@ export interface OpmCommunal {
 export type FlowTone = "neutral" | "bad" | "good";
 export interface OpmFlowStep { key: string; label: string; value: string; tone: FlowTone; }
 
+// ── CAUSALITY MAP ────────────────────────────────────────────────────────────
+// A rigid, event-type-agnostic spine that reframes the OPM from numbers →
+// interpretation into a causal chain: event → values harmed → impact →
+// community response → recovery. The structure is FIXED so different event types
+// (harassment, violence, fraud, abandonment, discrimination …) are read in the
+// same frame and stay comparable. Stage 1 is the consent-gated classification;
+// stages 2-5 are a canonical taxonomy (categories, not scores — the numeric
+// metrics stay in the energy-flow map, unchanged).
+export interface OpmCausalityItem { he: string; en: string; badge?: boolean; }
+export interface OpmCausalityStage {
+  key: string;
+  titleEn: string;   // section header, e.g. "Values Harmed"
+  tone: FlowTone;    // accent (harm = bad, restoration = good)
+  items: OpmCausalityItem[];
+}
+
+const CAUSALITY_VALUES_HARMED: OpmCausalityItem[] = [
+  { he: "כבוד",        en: "Dignity" },
+  { he: "אוטונומיה",   en: "Autonomy" },
+  { he: "ביטחון אישי", en: "Personal Security" },
+  { he: "אמון",        en: "Trust" },
+];
+const CAUSALITY_IMPACT: OpmCausalityItem[] = [
+  { he: "נטל נזק",       en: "Harm Burden" },
+  { he: "דליפת אנרגיה",  en: "Energy Leakage" },
+  { he: "פגיעה תפקודית", en: "Functional Impairment" },
+  { he: "אובדן אמון",    en: "Trust Loss" },
+];
+const CAUSALITY_COMMUNITY: OpmCausalityItem[] = [
+  { he: "תמיכה", en: "Support" },
+  { he: "אימות", en: "Validation" },
+  { he: "חשיפה", en: "Exposure" },
+  { he: "מימון", en: "Funding" },
+];
+const CAUSALITY_RECOVERY: OpmCausalityItem[] = [
+  { he: "שיקום",          en: "Rehabilitation" },
+  { he: "השבת אמון",      en: "Trust Restoration" },
+  { he: "חזרה לתפקוד",    en: "Return to Function" },
+  { he: "הזדמנויות חדשות", en: "New Opportunities" },
+];
+
 export interface OpmAction {
   label: string;
   targetEn: string;
@@ -132,7 +173,9 @@ export interface OpmAction {
 }
 
 export interface Opm {
-  event: string;
+  event: string;                    // PRIMARY descriptor (classified type when approved)
+  classification: EventDescriptor;  // classified event type + consent status
+  causality: OpmCausalityStage[];   // fixed causal spine: event → values → impact → community → recovery
   flow: OpmFlowStep[];
   departments: OpmDepartment[];
   communal: OpmCommunal;
@@ -183,7 +226,7 @@ export function buildOpm(chain: NoaChain = computeNoaChain(0)): Opm {
   };
 
   const flowSteps: OpmFlowStep[] = [
-    { key: "event",        label: "Event",                  value: "a severe violation", tone: "neutral" },
+    { key: "event",        label: "Event",                  value: narrative.classification.labelEn, tone: "neutral" },
     { key: "created",      label: "Burden created",         value: `${load?.beforeIndividualLoad ?? 100}`, tone: "bad" },
     { key: "concentrates", label: "Burden concentrates",    value: `${load?.beforePct ?? 100}% on Noa`, tone: "bad" },
     { key: "leaks",        label: "Energy leaks",           value: `${leak?.totalLeakage ?? 0} / 100`, tone: "bad" },
@@ -202,8 +245,26 @@ export function buildOpm(chain: NoaChain = computeNoaChain(0)): Opm {
     orientationGain: action?.expectedOrientationGain ?? 0,
   };
 
+  // Causal spine — stage 1 is the consent-gated classification; the rest is the
+  // fixed taxonomy. Privacy is preserved: when consent is absent the event stage
+  // shows the privacy-safe label and no approval badge.
+  const cls = narrative.classification;
+  const eventItems: OpmCausalityItem[] = [{ he: cls.labelHe, en: cls.labelEn }];
+  if (cls.classified && cls.statusHe) {
+    eventItems.push({ he: cls.statusHe, en: cls.statusEn ?? "", badge: true });
+  }
+  const causality: OpmCausalityStage[] = [
+    { key: "event",     titleEn: "Event Classification", tone: "neutral", items: eventItems },
+    { key: "values",    titleEn: "Values Harmed",        tone: "bad",     items: CAUSALITY_VALUES_HARMED },
+    { key: "impact",    titleEn: "Impact",               tone: "bad",     items: CAUSALITY_IMPACT },
+    { key: "community", titleEn: "Community Response",    tone: "good",    items: CAUSALITY_COMMUNITY },
+    { key: "recovery",  titleEn: "Recovery",             tone: "good",    items: CAUSALITY_RECOVERY },
+  ];
+
   return {
-    event: narrative.event,
+    event: narrative.classification.labelEn,
+    classification: narrative.classification,
+    causality,
     flow: flowSteps,
     departments,
     communal,
