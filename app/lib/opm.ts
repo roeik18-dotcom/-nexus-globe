@@ -19,6 +19,23 @@
 
 import { computeNoaChain, type NoaChain } from "./noa";
 import { buildBurdenNarrative, type EventDescriptor } from "./burdenNarrative";
+import { projectToCausalSpine, PHILOS_CASE_ZERO, verifyPhilos } from "./causalEngine";
+
+// ── BUILD-TIME / STARTUP GUARD ───────────────────────────────────────────────
+// The OPM causality spine is generated from the VERIFIED causal graph. If that
+// graph fails verification (cycle, undeclared dependency, illegal Wellbeing
+// transition, ungated consent disclosure …) the module fails to load — which
+// fails `next build` and server start LOUDLY. No UI may render an unverified
+// causal spine. This runs at import time on both build and runtime.
+{
+  const __philos = verifyPhilos();
+  if (!__philos.ok) {
+    throw new Error(
+      "Philos causal graph failed verification — refusing to build/start. " +
+        __philos.errors.map((e) => `${e.code}${e.node ? "@" + e.node : ""}: ${e.detail}`).join("; "),
+    );
+  }
+}
 
 // Canon department labels (internal keys stay Freudian; visible labels are canon).
 const DEPT_CANON: { key: string; en: string; he: string }[] = [
@@ -245,21 +262,29 @@ export function buildOpm(chain: NoaChain = computeNoaChain(0)): Opm {
     orientationGain: action?.expectedOrientationGain ?? 0,
   };
 
-  // Causal spine — stage 1 is the consent-gated classification; the rest is the
-  // fixed taxonomy. Privacy is preserved: when consent is absent the event stage
-  // shows the privacy-safe label and no approval badge.
+  // Causal spine — GENERATED from the verified causal graph (not a hand-written
+  // array). The ORDER and the stages come from projectToCausalSpine(); the
+  // per-stage display taxonomy (and the consent-gated event items) are attached
+  // by node id. Stage 1 stays the consent-gated classification — privacy
+  // behavior is unchanged.
   const cls = narrative.classification;
   const eventItems: OpmCausalityItem[] = [{ he: cls.labelHe, en: cls.labelEn }];
   if (cls.classified && cls.statusHe) {
     eventItems.push({ he: cls.statusHe, en: cls.statusEn ?? "", badge: true });
   }
-  const causality: OpmCausalityStage[] = [
-    { key: "event",     titleEn: "Event Classification", tone: "neutral", items: eventItems },
-    { key: "values",    titleEn: "Values Harmed",        tone: "bad",     items: CAUSALITY_VALUES_HARMED },
-    { key: "impact",    titleEn: "Impact",               tone: "bad",     items: CAUSALITY_IMPACT },
-    { key: "community", titleEn: "Community Response",    tone: "good",    items: CAUSALITY_COMMUNITY },
-    { key: "recovery",  titleEn: "Recovery",             tone: "good",    items: CAUSALITY_RECOVERY },
-  ];
+  // Display content per verified graph node (content only — order is the graph's).
+  const STAGE_VIEW: Record<string, { key: string; tone: FlowTone; items: OpmCausalityItem[] }> = {
+    classifying: { key: "event",     tone: "neutral", items: eventItems },
+    harming:     { key: "values",    tone: "bad",     items: CAUSALITY_VALUES_HARMED },
+    impacting:   { key: "impact",    tone: "bad",     items: CAUSALITY_IMPACT },
+    responding:  { key: "community", tone: "good",    items: CAUSALITY_COMMUNITY },
+    recovering:  { key: "recovery",  tone: "good",    items: CAUSALITY_RECOVERY },
+  };
+  const causality: OpmCausalityStage[] = projectToCausalSpine(PHILOS_CASE_ZERO).map((stage) => {
+    const view = STAGE_VIEW[stage.id];
+    if (!view) throw new Error(`OPM: no display mapping for verified causal stage '${stage.id}'`);
+    return { key: view.key, titleEn: stage.title, tone: view.tone, items: view.items };
+  });
 
   return {
     event: narrative.classification.labelEn,
