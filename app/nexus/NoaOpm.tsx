@@ -13,6 +13,14 @@
 import { useMemo, useState } from "react";
 import { computeNoaChain, type NoaChain } from "../lib/noa";
 import { buildOpm, type FlowTone, type DeptExplain } from "../lib/opm";
+import NoaOpmGraph, { type OpmAgent } from "./NoaOpmGraph";
+
+// Display labels for value-network roles (agents in the OPM graph view).
+const ROLE_LABEL: Record<string, string> = {
+  lawyer: "Lawyer", therapist: "Therapist", journalist: "Journalist", donor: "Donor",
+  peer_survivor: "Peer Survivor", volunteer: "Volunteer", coordinator: "Coordinator",
+  activist: "Activist", expert: "Expert",
+};
 
 const C = {
   bg: "#030f1e", card: "#040e1c", border: "#0a2a4a", borderSoft: "#1e4060",
@@ -44,6 +52,16 @@ export default function NoaOpm({ chain }: { chain?: NoaChain }) {
   const opm = useMemo(() => buildOpm(chain ?? fallback), [chain, fallback]);
   const [open, setOpen] = useState<string | null>(null);
   const toggle = (k: string) => setOpen(o => (o === k ? null : k));
+  const [view, setView] = useState<"card" | "opm">("card");
+
+  // Agents for the OPM graph view — real value-network carriers (allocated > 0).
+  const agents = useMemo<OpmAgent[]>(() => {
+    const helpers = (chain ?? fallback).load?.helpers ?? [];
+    return helpers
+      .filter(h => h.allocated > 0)
+      .sort((a, b) => b.allocated - a.allocated)
+      .map(h => ({ role: h.role, label: ROLE_LABEL[h.role] ?? h.role, allocated: h.allocated }));
+  }, [chain, fallback]);
 
   // Unified node accessor for the energy-flow map (departments + the communal layer).
   const deptByKey = useMemo(() => {
@@ -69,15 +87,29 @@ export default function NoaOpm({ chain }: { chain?: NoaChain }) {
       </div>
 
       {/* PRIMARY — the causal path is the dominant view */}
-      <div style={{ fontSize: 11, color: C.cyan, letterSpacing: 2.5, textTransform: "uppercase", fontWeight: 800 }}>Causal Path</div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <div style={{ fontSize: 11, color: C.cyan, letterSpacing: 2.5, textTransform: "uppercase", fontWeight: 800 }}>Causal Path</div>
+        <div style={{ display: "inline-flex", border: `1px solid ${C.border}`, borderRadius: 6, overflow: "hidden" }}>
+          {(["card", "opm"] as const).map(v => (
+            <button key={v} onClick={() => setView(v)} style={{
+              cursor: "pointer", border: "none", padding: "3px 9px", fontSize: 9, fontWeight: 700,
+              letterSpacing: 0.5, textTransform: "uppercase",
+              background: view === v ? C.cyan : "transparent",
+              color: view === v ? "#03101e" : C.borderSoft,
+            }}>{v === "card" ? "Card View" : "OPM View"}</button>
+          ))}
+        </div>
+      </div>
       <div style={{ fontSize: 9.5, color: C.borderSoft, marginTop: 2, marginBottom: 10 }}>event → values harmed → impact → community response → recovery</div>
 
       {/* CAUSALITY MAP — the rigid, event-type-agnostic spine:
            event → values harmed → impact → community response → recovery.
            Reads "what happened → what was harmed → the cost → what the community
            does → recovery state" in ~3s. Stage 1 stays consent-gated; the numeric
-           OPM metrics are unchanged and live below in the energy-flow map. */}
-      {opm.causality.map((stage, i) => {
+           OPM metrics are unchanged and live below in the energy-flow map.
+           The Card View (vertical list) and OPM View (object/process graph) are
+           two renderings of the SAME verified causal spine. */}
+      {view === "card" && opm.causality.map((stage, i) => {
         const accent = TONE[stage.tone];
         const isEvent = stage.key === "event";
         return (
@@ -115,6 +147,8 @@ export default function NoaOpm({ chain }: { chain?: NoaChain }) {
           </div>
         );
       })}
+
+      {view === "opm" && <NoaOpmGraph opm={opm} agents={agents} />}
 
       {/* SECONDARY — measured effects: the numbers behind the causal path.
            Visually de-emphasized (subordinate to the spine). Calculations and the
