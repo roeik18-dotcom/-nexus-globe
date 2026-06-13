@@ -109,6 +109,9 @@ const VALUE_COLOR: Record<string, string> = {
   Truth: "#38bdf8", Justice: "#a78bfa", Protection: "#34d399",
   Responsibility: "#fb923c", Dignity: "#fbbf24", // Truth=Blue Justice=Purple Protection=Green Responsibility=Orange Dignity=Gold
 };
+// "You" accent — a coordinated, palette-neutral self marker (not a clashing
+// force color). Reads as "you" against the value-colored network.
+const YOU_COLOR = "#e0f2fe";
 function nodeValue(n: any): string { return FORCE_VALUE[n?.dominantForce] ?? "Truth"; }
 function hexToRgba(hex: string, a: number): string {
   const h = hex.replace("#", "");
@@ -186,7 +189,15 @@ export default function Page() {
   const [showNoa,      setShowNoa]      = useState(false);
 
   useEffect(() => {
-    setAllNodes(loadNodes());
+    // Auto-populate demo seed nodes when the network is empty, so the globe shows
+    // a living value-network instead of a single lone anchor. Visualization/seed
+    // data only — no engine, verifier, or calculation change.
+    let nodes = loadNodes();
+    if (nodes.length === 0) {
+      generateSeedNodes().forEach(n => saveNode(n));
+      nodes = loadNodes();
+    }
+    setAllNodes(nodes);
     setProfile(loadProfile());
     setCurrentPerson(getCurrentPerson()); // L1 local person, if one exists
     setStances(loadStances());
@@ -678,16 +689,21 @@ export default function Page() {
             pointLat={(d: any) => d.lat}
             pointLng={(d: any) => d.lng}
             /* NODE COLOR = PRIMARY VALUE (palette). State → pulse, trust → line opacity. */
-            pointColor={(d: any) => d._anchor ? d.color : (VALUE_COLOR[nodeValue(d)] ?? "#38bdf8")}
+            /* NODE COLOR = value palette. "You" person keeps its value color;
+               the demo profile anchor uses the coordinated YOU accent (no clashing
+               orange). */
+            pointColor={(d: any) => d._person ? (d.color ?? YOU_COLOR) : d._anchor ? YOU_COLOR : (VALUE_COLOR[nodeValue(d)] ?? "#38bdf8")}
             pointAltitude={(d: any) => {
-              if (d._anchor) return 0.06;
-              const base = d.intensity / 10;
-              return topIds.has(d.id) ? base + 0.15 : base;
+              // Anchors sit low and flat (no giant bar). Nodes use a gentler,
+              // smoother height curve so no single point spikes out.
+              if (d._anchor) return 0.02;
+              const base = (d.intensity ?? 0) / 22;
+              return topIds.has(d.id) ? base + 0.08 : base;
             }}
             pointRadius={(d: any) => {
-              if (d._anchor) return 1.4;
-              const base = 0.4 + d.intensity / 20;
-              return topIds.has(d.id) ? base * 1.9 : base * (topIds.size ? 0.7 : 1);
+              if (d._anchor) return 0.55;
+              const base = 0.34 + (d.intensity ?? 0) / 26;
+              return topIds.has(d.id) ? base * 1.5 : base * (topIds.size ? 0.75 : 1);
             }}
             pointLabel={(d: any) => {
               if (d._person) {
