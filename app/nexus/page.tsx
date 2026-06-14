@@ -113,6 +113,27 @@ const VALUE_COLOR: Record<string, string> = {
 // "You" accent — a coordinated, palette-neutral self marker (not a clashing
 // force color). Reads as "you" against the value-colored network.
 const YOU_COLOR = "#e0f2fe";
+
+// Approximate country from lat/lng (hover-card only). Nearest centroid from a
+// small offline table — uses existing coordinates, no geocoding/network.
+const COUNTRY_POINTS: { name: string; lat: number; lng: number }[] = [
+  { name: "Israel", lat: 31.7, lng: 35.0 }, { name: "USA", lat: 39.0, lng: -98.0 },
+  { name: "UK", lat: 54.0, lng: -2.0 }, { name: "Germany", lat: 51.0, lng: 10.0 },
+  { name: "France", lat: 46.6, lng: 2.4 }, { name: "Italy", lat: 42.8, lng: 12.8 },
+  { name: "Japan", lat: 36.2, lng: 138.3 }, { name: "India", lat: 22.0, lng: 79.0 },
+  { name: "UAE", lat: 24.0, lng: 54.0 }, { name: "Brazil", lat: -10.0, lng: -52.0 },
+  { name: "Australia", lat: -25.0, lng: 133.0 }, { name: "China", lat: 35.0, lng: 103.0 },
+  { name: "Russia", lat: 60.0, lng: 90.0 }, { name: "Canada", lat: 56.0, lng: -106.0 },
+  { name: "S. Africa", lat: -29.0, lng: 24.0 },
+];
+function coarseCountry(lat: number, lng: number): string {
+  let best = COUNTRY_POINTS[0], bd = Infinity;
+  for (const c of COUNTRY_POINTS) {
+    const dlat = lat - c.lat, dlng = lng - c.lng, dd = dlat * dlat + dlng * dlng;
+    if (dd < bd) { bd = dd; best = c; }
+  }
+  return best.name;
+}
 function nodeValue(n: any): string { return FORCE_VALUE[n?.dominantForce] ?? "Truth"; }
 function hexToRgba(hex: string, a: number): string {
   const h = hex.replace("#", "");
@@ -480,22 +501,18 @@ export default function Page() {
     }));
   }, [pointsData, proofTrustMap]);
 
-  /* Strongest connection per node — for the node hover "why" line */
-  const strongestByNode = useMemo(() => {
-    const byId: Record<string, UserNode> = {};
-    visible.forEach(n => (byId[n.id] = n));
-    const m = new Map<string, { other: string; reason: string; strength: number }>();
-    for (const l of filteredLinks) {
-      for (const [a, b] of [[l.source, l.target], [l.target, l.source]] as const) {
-        const other = byId[b];
-        const cur = m.get(a);
-        if (other && (!cur || l.strength > cur.strength)) {
-          m.set(a, { other: other.name, reason: l.reason, strength: l.strength });
-        }
-      }
-    }
+  /* Hover-card helpers (visualization only): id→node lookup and per-context
+     counts (community reach). Derived from existing visible nodes. */
+  const nodeById = useMemo(() => {
+    const m: Record<string, UserNode> = {};
+    visible.forEach(n => { m[n.id] = n; });
     return m;
-  }, [visible, filteredLinks]);
+  }, [visible]);
+  const contextCounts = useMemo(() => {
+    const c: Record<string, number> = {};
+    visible.forEach(n => { c[n.context] = (c[n.context] ?? 0) + 1; });
+    return c;
+  }, [visible]);
 
   /* connections for selected node (for Pentagon panel) */
   const selectedConnections = useMemo(() => {
@@ -739,15 +756,52 @@ export default function Page() {
                   <span style="color:#fbbf24">base force: ${FORCE_LABEL[d.force as DominantForce]}</span>
                 </div>`;
               }
-              const val = nodeValue(d); const vc = VALUE_COLOR[val];
-              const active = topIds.has(d.id);
-              const sc = strongestByNode.get(d.id);
-              return `<div style="font-family:system-ui;padding:7px 9px;min-width:160px;background:rgba(2,13,26,.92);border:1px solid ${vc}55;border-radius:8px">
-                <div style="font-size:13px;font-weight:700;color:#e0f2fe">${escapeHtml(d.name)} <span style="color:#8bb8cc;font-weight:400">#${d.rank}</span></div>
-                <div style="font-size:11px;color:${vc};margin:3px 0">● ${val}</div>
-                <div style="font-size:10px;color:#8bb8cc">community: ${CONTEXT_LABEL[d.context as NodeContext]} · activity: ${active ? "active" : "calm"}</div>
-                <div style="font-size:10px;color:#fbbf24">impact ${d.intensity}/10 · trust ${Math.round(proofTrustMap[d.id] ?? d.trustScore)}</div>
-                ${sc ? `<div style="font-size:10px;color:#00f5d4">↔ ${escapeHtml(sc.other)}: ${escapeHtml(sc.reason)}</div>` : ""}
+              /* RICH HOVER CARD — all fields from existing node/value/link data;
+                 Load/Capacity/Gap/Country are transparent derivations (labeled). */
+              const val = nodeValue(d); const vc = VALUE_COLOR[val] ?? "#38bdf8";
+              const country = coarseCountry(d.lat, d.lng);
+              const role = CONTEXT_LABEL[d.context as NodeContext] ?? d.context;
+              const cap = Math.round(proofTrustMap[d.id] ?? d.trustScore ?? 0);
+              const load = Math.round((d.intensity ?? 0) * 10);
+              const gap = Math.max(0, load - cap);
+              const reach = contextCounts[d.context] ?? 1;
+              // mutual value links: connected nodes sharing this node's value
+              let mutual = 0;
+              for (const l of filteredLinks) {
+                const other = l.source === d.id ? l.target : l.target === d.id ? l.source : null;
+                if (other && nodeById[other] && nodeValue(nodeById[other]) === val) mutual++;
+              }
+              // reference for shared-values / affinity: sync value if selected, else subject person
+              const refVals = sync.value ? [sync.value] : (currentPerson?.values ?? []);
+              const shared = refVals.includes(val) ? [val] : [];
+              const affinity = shared.length;
+              const matchHtml = sync.value
+                ? (val === sync.value
+                    ? `<div style="font-size:10px;color:#34d399;margin:2px 0">✓ matches selected value · ${escapeHtml(sync.value)}</div>`
+                    : `<div style="font-size:10px;color:#8bb8cc;margin:2px 0">✗ different from selected · ${escapeHtml(sync.value)}</div>`)
+                : "";
+              const cell = (label: string, value: string, color = "#cfe6f5") =>
+                `<span style="color:#8bb8cc">${label} <b style="color:${color}">${value}</b></span>`;
+              return `<div style="font-family:system-ui;min-width:210px;max-width:248px;background:rgba(2,13,26,.95);border:1px solid ${vc}66;border-radius:9px;padding:9px 11px;box-shadow:0 6px 24px rgba(0,0,0,.45)">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+                  <span style="font-size:13px;font-weight:800;color:#e0f2fe">${escapeHtml(d.name)}</span>
+                  <span style="font-size:10px;color:#8bb8cc">influence #${d.rank ?? "—"}</span>
+                </div>
+                <div style="font-size:10px;color:#8bb8cc;margin-top:1px">${escapeHtml(country)} · ${escapeHtml(role)}</div>
+                <div style="font-size:11px;color:${vc};margin:5px 0 1px">● ${escapeHtml(val)} <span style="color:#8bb8cc;font-weight:400">primary value</span></div>
+                ${matchHtml}
+                <div style="height:1px;background:#0a2a4a;margin:6px 0"></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;font-size:10px">
+                  ${cell("Load", String(load), "#fb923c")}
+                  ${cell("Capacity", String(cap), "#34d399")}
+                  ${cell("Gap", String(gap), gap > 0 ? "#ef4444" : "#34d399")}
+                  ${cell("Impact", `${d.intensity}/10`)}
+                  ${cell("Affinity", String(affinity), "#38bdf8")}
+                  ${cell("Reach", `${reach}`, "#cfe6f5")}
+                  ${cell("Mutual links", String(mutual), "#a78bfa")}
+                  ${cell("Shared", shared.length ? escapeHtml(shared.join(", ")) : "—")}
+                </div>
+                <div style="font-size:8px;color:#5b7488;margin-top:6px">Load=intensity·10 · Capacity=trust · Gap=Load−Capacity · Reach=community size</div>
               </div>`;
             }}
             onPointClick={(p: any) => {
