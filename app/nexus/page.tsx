@@ -293,6 +293,7 @@ export default function Page() {
         const col = `rgba(176,212,245,${alpha.toFixed(2)})`;        // neutral white/cyan
         return {
           _link: l,
+          srcValue: nodeValue(s), tgtValue: nodeValue(t), // for value-bridge link highlight
           startLat: s.lat, startLng: s.lng,
           endLat: t.lat,   endLng: t.lng,
           color: [col, col],
@@ -843,12 +844,37 @@ export default function Page() {
             arcStartLng={(d: any) => d.startLng}
             arcEndLat={(d: any) => d.endLat}
             arcEndLng={(d: any) => d.endLng}
-            arcColor={(d: any) => d.color}
-            arcStroke={(d: any) => d.stroke}
-            arcAltitude={(d: any) => d.altitude}
-            arcDashLength={(d: any) => d.dash}
-            arcDashGap={(d: any) => d.gap}
-            arcDashAnimateTime={(d: any) => d.speed}
+            /* Globe↔OPM value-bridge: matching links glow (cyan), the rest fade.
+               Topic arcs (no srcValue) are left untouched. */
+            arcColor={(d: any) => {
+              if (!sync.value || d.srcValue === undefined) return d.color;
+              const match = d.srcValue === sync.value || d.tgtValue === sync.value;
+              // matching = strong cyan glow (cyan → bright cyan-white); else fade out
+              return match ? ["rgba(56,189,248,1)", "rgba(130,228,255,1)"] : ["rgba(176,212,245,0.035)", "rgba(176,212,245,0.035)"];
+            }}
+            arcStroke={(d: any) => {
+              if (!sync.value || d.srcValue === undefined) return d.stroke;
+              const match = d.srcValue === sync.value || d.tgtValue === sync.value;
+              return match ? Math.max(1.9, d.stroke + 1.1) : 0.05;
+            }}
+            arcAltitude={(d: any) => {
+              // lift matching arcs slightly so the glowing connections read clearly
+              if (!sync.value || d.srcValue === undefined) return d.altitude;
+              return (d.srcValue === sync.value || d.tgtValue === sync.value) ? d.altitude + 0.07 : d.altitude;
+            }}
+            /* matching arcs flow with fast short "particles"; others keep their base motion */
+            arcDashLength={(d: any) => {
+              if (!sync.value || d.srcValue === undefined) return d.dash;
+              return (d.srcValue === sync.value || d.tgtValue === sync.value) ? 0.12 : d.dash;
+            }}
+            arcDashGap={(d: any) => {
+              if (!sync.value || d.srcValue === undefined) return d.gap;
+              return (d.srcValue === sync.value || d.tgtValue === sync.value) ? 0.16 : d.gap;
+            }}
+            arcDashAnimateTime={(d: any) => {
+              if (!sync.value || d.srcValue === undefined) return d.speed;
+              return (d.srcValue === sync.value || d.tgtValue === sync.value) ? 1000 : d.speed;
+            }}
             arcLabel={(d: any) => {
               if (d._topicEdge) {
                 const e: TopicEdge = d._topicEdge;
