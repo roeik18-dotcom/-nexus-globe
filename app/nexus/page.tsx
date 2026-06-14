@@ -53,6 +53,7 @@ import {
   type Edge as TopicEdge,
 } from "../lib/topics";
 import { generateSeedNodes } from "../lib/seed";
+import { useSyncSelection, selectSync } from "./syncStore";
 import {
   generateOpportunities, generateAllOpportunities,
   OPPORTUNITY_TYPE_LABEL, OPPORTUNITY_TYPE_COLOR,
@@ -131,6 +132,7 @@ export default function Page() {
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [allNodes, setAllNodes] = useState<UserNode[]>([]);
+  const sync = useSyncSelection(); // Globe ↔ OPM shared selection (value-bridged)
   const [currentPerson, setCurrentPerson] = useState<Person | null>(null);
   const [filter, setFilter] = useState<Filter>({});
   const [target, setTarget] = useState<RankQuery>({});
@@ -446,6 +448,16 @@ export default function Page() {
     return arr;
   }, [profileAnchor, personNode, ranked]);
 
+  /* Globe↔OPM sync: when an OPM agent drives the selection, center the camera on
+     a same-value globe node (visualization only — no data change). */
+  useEffect(() => {
+    if (sync.source !== "opm" || !sync.value) return;
+    const g = globeRef.current;
+    if (!g || typeof g.pointOfView !== "function") return;
+    const match = pointsData.find((d: any) => !d._anchor && nodeValue(d) === sync.value);
+    if (match) g.pointOfView({ lat: match.lat, lng: match.lng, altitude: 1.7 }, 800);
+  }, [sync, pointsData]);
+
   /* GLOBE PULSE — active nodes (anchor + top) emit expanding rings */
   const pulseRings = useMemo(
     () => pointsData.filter((d: any) => d._anchor || topIds.has(d.id)),
@@ -692,7 +704,12 @@ export default function Page() {
             /* NODE COLOR = value palette. "You" person keeps its value color;
                the demo profile anchor uses the coordinated YOU accent (no clashing
                orange). */
-            pointColor={(d: any) => d._person ? (d.color ?? YOU_COLOR) : d._anchor ? YOU_COLOR : (VALUE_COLOR[nodeValue(d)] ?? "#38bdf8")}
+            pointColor={(d: any) => {
+              const base = d._person ? (d.color ?? YOU_COLOR) : d._anchor ? YOU_COLOR : (VALUE_COLOR[nodeValue(d)] ?? "#38bdf8");
+              // Globe↔OPM sync: when a value is selected, fade non-matching nodes.
+              if (!sync.value || d._anchor) return base;
+              return nodeValue(d) === sync.value ? base : hexToRgba(base, 0.12);
+            }}
             pointAltitude={(d: any) => {
               // Anchors sit low and flat (no giant bar). Nodes use a gentler,
               // smoother height curve so no single point spikes out.
@@ -703,7 +720,9 @@ export default function Page() {
             pointRadius={(d: any) => {
               if (d._anchor) return 0.55;
               const base = 0.34 + (d.intensity ?? 0) / 26;
-              return topIds.has(d.id) ? base * 1.5 : base * (topIds.size ? 0.75 : 1);
+              let r = topIds.has(d.id) ? base * 1.5 : base * (topIds.size ? 0.75 : 1);
+              if (sync.value && nodeValue(d) === sync.value) r *= 1.8; // emphasize matched value
+              return r;
             }}
             pointLabel={(d: any) => {
               if (d._person) {
@@ -735,6 +754,7 @@ export default function Page() {
               if (p._anchor) return; // anchor is non-selectable
               setSelected(p);
               setSelectedLink(null);
+              selectSync(nodeValue(p), "globe", p.id); // → OPM highlights the same-value agent
             }}
             /* GLOBE PULSE — expanding rings on active nodes */
             ringsData={pulseRings}

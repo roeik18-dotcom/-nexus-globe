@@ -14,6 +14,7 @@
 import type { ReactNode } from "react";
 import type { Opm } from "../lib/opm";
 import { PHILOS_CASE_ZERO, WELLBEING_STATES, type Wellbeing } from "../lib/causalEngine";
+import { useSyncSelection, selectSync } from "./syncStore";
 
 const C = {
   card: "#040e1c", border: "#0a2a4a", borderSoft: "#1e4060", text: "#cfe6f5",
@@ -26,7 +27,7 @@ const STATE_COLOR: Record<Wellbeing, string> = {
   Destroyed: C.red, Damaged: C.orange, Fragile: C.yellow, Stable: C.cyan, Recovered: C.green,
 };
 
-export type OpmAgent = { role: string; label: string; allocated: number };
+export type OpmAgent = { role: string; label: string; allocated: number; value: string };
 
 // Display mapping per verified graph node (labels only — structure is the graph's).
 const NODE_VIEW: Record<string, { proc: string; obj: string; tone: Tone }> = {
@@ -40,6 +41,8 @@ const NODE_VIEW: Record<string, { proc: string; obj: string; tone: Tone }> = {
 export default function NoaOpmGraph({ opm, agents }: { opm: Opm; agents: OpmAgent[] }) {
   const W = 360;
   const cx = W / 2;
+  const sync = useSyncSelection(); // Globe ↔ OPM shared selection (value-bridged)
+  const agentMatched = sync.value != null && agents.some((a) => a.value === sync.value);
   const nodes = PHILOS_CASE_ZERO.nodes;
   const classifying = nodes.find((n) => n.id === "classifying");
   const hasConsentGate = !!classifying?.inputs.some((i) => i.type === "gates" && i.resource === "PublicationConsent");
@@ -70,11 +73,13 @@ export default function NoaOpmGraph({ opm, agents }: { opm: Opm; agents: OpmAgen
     );
     y += 22;
   };
-  const ellipse = (key: string, label: string, tone: Tone) => {
+  const ellipse = (key: string, label: string, tone: Tone, highlight = false) => {
     const cyc = y + 21;
+    const stroke = highlight ? C.cyan : TONE[tone];
     els.push(
       <g key={key}>
-        <ellipse cx={cx} cy={cyc} rx={84} ry={21} fill={C.card} stroke={TONE[tone]} strokeWidth={1.6} />
+        {highlight && <ellipse cx={cx} cy={cyc} rx={89} ry={25} fill="none" stroke={`${C.cyan}55`} strokeWidth={1} />}
+        <ellipse cx={cx} cy={cyc} rx={84} ry={21} fill={highlight ? "#06223a" : C.card} stroke={stroke} strokeWidth={highlight ? 2.2 : 1.6} />
         <text x={cx} y={cyc + 4} fontSize={12} fontWeight={700} fill={C.text} textAnchor="middle">{label}</text>
       </g>,
     );
@@ -119,7 +124,8 @@ export default function NoaOpmGraph({ opm, agents }: { opm: Opm; agents: OpmAgen
   nodes.forEach((n, idx) => {
     const v = NODE_VIEW[n.id];
     if (!v) return;
-    ellipse(`p-${n.id}`, v.proc, v.tone);
+    // Redistribute Burden glows when a matched agent is selected (the burden path).
+    ellipse(`p-${n.id}`, v.proc, v.tone, n.id === "responding" && agentMatched);
 
     // agents attach to the Redistribute Burden process (value-network carriers)
     if (n.id === "responding") {
@@ -136,13 +142,19 @@ export default function NoaOpmGraph({ opm, agents }: { opm: Opm; agents: OpmAgen
           )}
           {shown.map((a, i) => {
             const ax = startX + i * (aw + gapx);
+            // Globe↔OPM sync: clicking an agent selects its value; a value
+            // selected from the globe highlights the matching agent here.
+            const matched = sync.value != null && a.value === sync.value;
+            const dim = sync.value != null && a.value !== sync.value;
+            const stroke = matched ? C.cyan : `${C.green}88`;
             return (
-              <g key={a.role}>
-                <line x1={cx} y1={y + 2} x2={ax + aw / 2} y2={y + 12} stroke={C.green} strokeWidth={1} />
-                <circle cx={cx} cy={y + 2} r={3} fill={C.green} />
-                <rect x={ax} y={y + 12} width={aw} height={28} rx={5} fill={C.card} stroke={`${C.green}88`} />
+              <g key={a.role} onClick={() => selectSync(a.value, "opm", a.role)}
+                style={{ cursor: "pointer" }} opacity={dim ? 0.32 : 1}>
+                <line x1={cx} y1={y + 2} x2={ax + aw / 2} y2={y + 12} stroke={matched ? C.cyan : C.green} strokeWidth={matched ? 1.6 : 1} />
+                <circle cx={cx} cy={y + 2} r={3} fill={matched ? C.cyan : C.green} />
+                <rect x={ax} y={y + 12} width={aw} height={28} rx={5} fill={matched ? "#06223a" : C.card} stroke={stroke} strokeWidth={matched ? 2 : 1} />
                 <text x={ax + aw / 2} y={y + 25} fontSize={8} fontWeight={700} fill={C.text} textAnchor="middle">{a.label}</text>
-                <text x={ax + aw / 2} y={y + 35} fontSize={7} fill={C.borderSoft} textAnchor="middle">load {a.allocated}</text>
+                <text x={ax + aw / 2} y={y + 35} fontSize={7} fill={matched ? C.cyan : C.borderSoft} textAnchor="middle">{a.value || `load ${a.allocated}`}</text>
               </g>
             );
           })}

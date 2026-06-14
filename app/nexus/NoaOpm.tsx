@@ -14,6 +14,7 @@ import { useMemo, useState } from "react";
 import { computeNoaChain, type NoaChain } from "../lib/noa";
 import { buildOpm, type FlowTone, type DeptExplain } from "../lib/opm";
 import NoaOpmGraph, { type OpmAgent } from "./NoaOpmGraph";
+import { ROLE_VALUE } from "./syncStore";
 
 // Display labels for value-network roles (agents in the OPM graph view).
 const ROLE_LABEL: Record<string, string> = {
@@ -60,7 +61,7 @@ export default function NoaOpm({ chain }: { chain?: NoaChain }) {
     return helpers
       .filter(h => h.allocated > 0)
       .sort((a, b) => b.allocated - a.allocated)
-      .map(h => ({ role: h.role, label: ROLE_LABEL[h.role] ?? h.role, allocated: h.allocated }));
+      .map(h => ({ role: h.role, label: ROLE_LABEL[h.role] ?? h.role, allocated: h.allocated, value: ROLE_VALUE[h.role] ?? "" }));
   }, [chain, fallback]);
 
   // Unified node accessor for the energy-flow map (departments + the communal layer).
