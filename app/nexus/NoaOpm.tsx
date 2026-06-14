@@ -14,6 +14,7 @@ import { useMemo, useState } from "react";
 import { computeNoaChain, type NoaChain } from "../lib/noa";
 import { buildOpm, type FlowTone, type DeptExplain } from "../lib/opm";
 import NoaOpmGraph, { type OpmAgent } from "./NoaOpmGraph";
+import NoaNetworkEffects from "./NoaNetworkEffects";
 import { ROLE_VALUE } from "./syncStore";
 
 // Display labels for value-network roles (agents in the OPM graph view).
@@ -150,6 +151,10 @@ export default function NoaOpm({ chain }: { chain?: NoaChain }) {
       })}
 
       {view === "opm" && <NoaOpmGraph opm={opm} agents={agents} />}
+
+      {/* NETWORK EFFECTS — value-recovery-network overview, between Causal Path
+          and Measured Effects. Visualization only; existing value-affinity data. */}
+      <NoaNetworkEffects chain={chain ?? fallback} />
 
       {/* SECONDARY — measured effects: the numbers behind the causal path.
            Visually de-emphasized (subordinate to the spine). Calculations and the
