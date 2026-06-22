@@ -76,7 +76,7 @@ export default function PersonalMap({ profile, chain }: { profile?: IntakeProfil
     : c.tension?.strongest;
   // 3 · Balancing force — the user's need dimension (else strongest inflow).
   const balDim = profile?.needDim ?? flow?.strongestInflowDimension ?? "Emotional";
-  const balInflow = flow?.dimensions.find(d => d.dimension === balDim)?.inflow ?? flow?.totalInflow ?? 0;
+  const balInflow = flow?.dimensions.find(d => d.dimension === balDim)?.dimensionInflow ?? flow?.totalInflow ?? 0;
   // 4 · Who is helping — helpers whose value the user holds (else everyone).
   const matched = profile
     ? allHelpers.filter(h => profile.values.includes(ROLE_VALUE[h.role] ?? ""))

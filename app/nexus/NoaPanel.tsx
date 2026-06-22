@@ -714,7 +714,7 @@ export default function NoaPanel() {
                 <span>{d.dimensionPressure} → <b style={{ color: C.green }}>{d.dimensionDeficit}</b></span>
               </div>
               <Bar pct={d.coveragePct} color={`linear-gradient(90deg,${C.cyan},${C.green})` as unknown as string} />
-              <div style={metaTxt}>inflow <span style={{ color: C.green }}>+{d.inflow}</span> · coverage {d.coveragePct}%</div>
+              <div style={metaTxt}>inflow <span style={{ color: C.green }}>+{d.dimensionInflow}</span> · capacity {d.dimensionCapacity} · coverage {d.coveragePct}% · <span style={{ color: d.failureType === 'resolved' ? C.green : d.failureType === 'capacity_shortage' ? C.red : C.yellow }}>{d.failureType.replace('_', ' ')}</span></div>
             </div>
           ))}
           <div style={{ ...sectionLabel, margin: "10px 0 6px" }}>department rebalance</div>

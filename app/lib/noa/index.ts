@@ -122,7 +122,7 @@ export function buildNoaSnapshot(nodeId = 0): string {
   }
   if (c.flow) {
     L.push('[6] HARMONIC FLOW');
-    for (const d of c.flow.dimensions) L.push(`- ${d.dimension}: pressure ${d.dimensionPressure} → deficit ${d.dimensionDeficit} (inflow +${d.inflow})`);
+    for (const d of c.flow.dimensions) L.push(`- ${d.dimension}: pressure ${d.dimensionPressure} · capacity ${d.dimensionCapacity} · inflow ${d.dimensionInflow} → deficit ${d.dimensionDeficit} [${d.failureType}]`);
     L.push(`strongest inflow: ${c.flow.strongestInflowDimension} · most rebalanced: ${deptLabel(c.flow.mostRebalancedDepartment)}`);
     L.push('');
   }

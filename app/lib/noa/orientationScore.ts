@@ -70,7 +70,7 @@ export function calculateOrientationScore(nodeId: number): OrientationScore | nu
 
   // 1. Balance gain — recovery vs. root (dimension) deficits.
   const totalDeficit = hf.dimensions.reduce((s, d) => s + d.dimensionPressure, 0);
-  const totalInflow = hf.dimensions.reduce((s, d) => s + d.inflow, 0);
+  const totalInflow = hf.dimensions.reduce((s, d) => s + d.dimensionInflow, 0);
   const balanceGain = totalDeficit ? round((totalInflow / totalDeficit) * 100) : 0;
 
   // 2. Energy recovery — straight from the load distribution.
