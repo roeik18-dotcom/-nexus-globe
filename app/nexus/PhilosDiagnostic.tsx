@@ -46,7 +46,7 @@ export default function PhilosDiagnostic({ chain }: { chain?: NoaChain }) {
   const tension = c.tension;
   const fields = tension?.fields ?? [];
   const strongest = tension?.strongest;
-  const dims = c.resource?.dimensionDeficits ?? { Physical: 0, Emotional: 0, Rational: 0 };
+  const dims = c.resource?.dimensionPressure ?? { Physical: 0, Emotional: 0, Rational: 0 };
   const leak = c.leakage?.totalLeakage ?? 0;
   const load = c.load;
   const action = c.action;

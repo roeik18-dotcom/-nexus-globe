@@ -51,7 +51,7 @@ export const DEPARTMENT_TO_DIMENSION_WEIGHTS: Record<DepartmentName, Record<Dime
 
 export type DeficitLevel = 'minimal' | 'low' | 'medium' | 'high' | 'very high';
 
-export interface DimensionDeficits {
+export interface DimensionPressure {
   Physical: number;
   Emotional: number;
   Rational: number;
@@ -64,7 +64,7 @@ export interface RootResourceDeficit {
 }
 
 export interface ResourceState {
-  dimensionDeficits: DimensionDeficits;
+  dimensionPressure: DimensionPressure;
   dimensionLevels: Record<Dimension, DeficitLevel>;
   strongestRoot: Dimension;             // dimension with the highest deficit
   mostAffectedDepartments: string[];    // top departments by deficit
@@ -92,7 +92,7 @@ export function getDepartmentResources(department: DepartmentName): string[] {
 export function mapDepartmentToDimensions(
   department: DepartmentName,
   value: number,
-): DimensionDeficits {
+): DimensionPressure {
   const w = DEPARTMENT_TO_DIMENSION_WEIGHTS[department];
   return {
     Physical: value * w.Physical,
@@ -108,7 +108,7 @@ export function mapDepartmentToDimensions(
  * dimension's column-weight sum) so dimensions stay on a comparable 0–100
  * scale regardless of how much total weight each receives.
  */
-export function calculateDimensionDeficits(collapseMap: CollapseMap): DimensionDeficits {
+export function calculateDimensionPressure(collapseMap: CollapseMap): DimensionPressure {
   const num: Record<Dimension, number> = { Physical: 0, Emotional: 0, Rational: 0 };
   const den: Record<Dimension, number> = { Physical: 0, Emotional: 0, Rational: 0 };
 
@@ -146,17 +146,17 @@ export function calculateRootResourceDeficits(collapseMap: CollapseMap): RootRes
 
 /** Full resource-state summary used by the UI + snapshot. */
 export function summarizeResourceState(collapseMap: CollapseMap): ResourceState {
-  const dimensionDeficits = calculateDimensionDeficits(collapseMap);
+  const dimensionPressure = calculateDimensionPressure(collapseMap);
 
   const dimensionLevels: Record<Dimension, DeficitLevel> = {
-    Physical: deficitLevel(dimensionDeficits.Physical),
-    Emotional: deficitLevel(dimensionDeficits.Emotional),
-    Rational: deficitLevel(dimensionDeficits.Rational),
+    Physical: deficitLevel(dimensionPressure.Physical),
+    Emotional: deficitLevel(dimensionPressure.Emotional),
+    Rational: deficitLevel(dimensionPressure.Rational),
   };
 
-  // Strongest depleted root = dimension with the highest deficit.
+  // Strongest depleted root = dimension with the highest pressure.
   const strongestRoot = DIMENSIONS.reduce<Dimension>(
-    (best, d) => (dimensionDeficits[d] > dimensionDeficits[best] ? d : best),
+    (best, d) => (dimensionPressure[d] > dimensionPressure[best] ? d : best),
     DIMENSIONS[0],
   );
 
@@ -164,7 +164,7 @@ export function summarizeResourceState(collapseMap: CollapseMap): ResourceState 
   const mostAffectedDepartments = rootDeficits.slice(0, 3).map(r => r.department);
 
   return {
-    dimensionDeficits,
+    dimensionPressure,
     dimensionLevels,
     strongestRoot,
     mostAffectedDepartments,

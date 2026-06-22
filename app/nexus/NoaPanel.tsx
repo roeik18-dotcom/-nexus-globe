@@ -527,7 +527,7 @@ export default function NoaPanel() {
           <div style={sectionLabel}>4 · Root Resource Matrix</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
             {(["Physical", "Emotional", "Rational"] as const).map(dim => (
-              <Stat key={dim} label={`${dim} deficit`} value={`${c.resource!.dimensionDeficits[dim]}`} color={levelColor[c.resource!.dimensionLevels[dim]] ?? C.text} />
+              <Stat key={dim} label={`${dim} pressure`} value={`${c.resource!.dimensionPressure[dim]}`} color={levelColor[c.resource!.dimensionLevels[dim]] ?? C.text} />
             ))}
           </div>
           <div style={{ ...line, marginTop: 8 }}>Strongest depleted root: <b style={{ color: C.cyan }}>{c.resource.strongestRoot}</b> · most affected: {c.resource.mostAffectedDepartments.map(deptLabel).join(", ")}</div>
@@ -711,7 +711,7 @@ export default function NoaPanel() {
             <div key={d.dimension} style={{ ...card, marginBottom: 6 }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
                 <span>{d.dimension}</span>
-                <span>{d.deficitBefore} → <b style={{ color: C.green }}>{d.deficitAfter}</b></span>
+                <span>{d.dimensionPressure} → <b style={{ color: C.green }}>{d.dimensionDeficit}</b></span>
               </div>
               <Bar pct={d.coveragePct} color={`linear-gradient(90deg,${C.cyan},${C.green})` as unknown as string} />
               <div style={metaTxt}>inflow <span style={{ color: C.green }}>+{d.inflow}</span> · coverage {d.coveragePct}%</div>

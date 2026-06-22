@@ -19,7 +19,7 @@ import {
   DIMENSIONS,
   DEPARTMENTS,
   DEPARTMENT_TO_DIMENSION_WEIGHTS,
-  calculateDimensionDeficits,
+  calculateDimensionPressure,
   type Dimension,
   type DepartmentName,
 } from './resourceMatrix';
@@ -48,10 +48,10 @@ export interface FlowContributor {
 
 export interface DimensionFlow {
   dimension: Dimension;
-  deficitBefore: number;   // from the resource matrix
-  inflow: number;          // helper resource routed into this dimension
-  deficitAfter: number;    // max(0, before - inflow)
-  coveragePct: number;     // inflow / deficitBefore
+  dimensionPressure: number;  // gross load on this dimension before any support
+  inflow: number;             // helper resource routed into this dimension
+  dimensionDeficit: number;   // net deficit remaining after support: max(0, pressure - inflow)
+  coveragePct: number;        // inflow / dimensionPressure
   contributors: FlowContributor[];
 }
 
@@ -79,7 +79,7 @@ export function computeHarmonicFlow(
   collapseMap: CollapseMap,
   loadDistribution: LoadDistribution,
 ): HarmonicFlow {
-  const dimDeficits = calculateDimensionDeficits(collapseMap);
+  const dimPressures = calculateDimensionPressure(collapseMap);
 
   // 1. Route each helper's resource into the dimensions.
   const inflowRaw: Record<Dimension, number> = { Physical: 0, Emotional: 0, Rational: 0 };
@@ -96,10 +96,10 @@ export function computeHarmonicFlow(
 
   const dimensions: DimensionFlow[] = DIMENSIONS.map(dim => {
     const inflow = round(inflowRaw[dim]);
-    const deficitBefore = dimDeficits[dim];
-    const deficitAfter = Math.max(0, deficitBefore - inflow);
-    const coveragePct = deficitBefore ? round((inflow / deficitBefore) * 100) : 0;
-    return { dimension: dim, deficitBefore, inflow, deficitAfter, coveragePct, contributors: contributors[dim] };
+    const dimensionPressure = dimPressures[dim];
+    const dimensionDeficit = Math.max(0, dimensionPressure - inflow);
+    const coveragePct = dimensionPressure ? round((inflow / dimensionPressure) * 100) : 0;
+    return { dimension: dim, dimensionPressure, inflow, dimensionDeficit, coveragePct, contributors: contributors[dim] };
   });
 
   // 2. Rebalance departments: distribute each dimension's inflow back to the
