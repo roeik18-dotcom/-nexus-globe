@@ -65,14 +65,14 @@ dimensionDeficit
 failureType
 ```
 
-| Concept | Answers | Formula |
-|---------|---------|---------|
-| **dimensionPressure** | How much force presses on this dimension? | Weighted average of dept loads → this dimension |
-| **dimensionCapacity** | How much help could theoretically arrive? | Σ(helper.capacity × weight[dim]) |
-| **dimensionInflow** | How much help actually arrived? | Σ(helper.allocated × weight[dim]) |
-| **dimensionDeficit** | What remains unresolved? | max(0, pressure − inflow) |
-| **mobilizationGap** | How much capacity is not being mobilized? | max(0, capacity − inflow) |
-| **coveragePct** | What percentage of pressure is covered? | round((inflow / pressure) × 100) |
+| Concept | Answers | Formula | Status |
+|---------|---------|---------|--------|
+| **dimensionPressure** | How much force presses on this dimension? | Σ(dept.negativeDominance × weight[dim]) / Σ weights | stable |
+| **dimensionCapacity** | How much help could theoretically arrive? | Σ(helper.capacity × weight[dim]) | stable |
+| **dimensionInflow** | How much help actually arrived? | Σ(helper.allocated × weight[dim]) | stable |
+| **dimensionDeficit** | What remains unresolved? | max(0, pressure − inflow) | stable |
+| **mobilizationGap** | How much capacity is not being mobilized? | max(0, capacity − inflow) | stable |
+| **coveragePct** | What percentage of pressure is covered? | round((inflow / pressure) × 100) | stable |
 
 **Key constraint:** `dimensionInflow ≤ dimensionCapacity` always.
 
@@ -95,23 +95,25 @@ Same deficit value, different root causes, different required actions.
 
 First move only. No coercion. No plan. No decision on behalf of the person.
 
-| Concept | Answers |
-|---------|---------|
-| **Action** | What is the single next recommended move? |
-| **firstMove** | Why only one move? (principle) |
-| **redistributionMove** | What kind of action? (principle: always redistribution) |
-| **targetDimension** | Which dimension needs the first move most? |
-| **targetDepartment** | Which department should the move target? |
+| Concept | Kind | Answers |
+|---------|------|---------|
+| **Action** | composite | What is the single next recommended move? |
+| **firstMove** | concept | Why only one move? (principle) |
+| **redistributionMove** | concept | What kind of action? (principle: always redistribution) |
+| **targetDimension** | metric | Which dimension needs the first move most? |
+| **targetDepartment** | metric | Which department should the move target? |
 
 ### ActionId Options
 
+Each ActionId is a registered concept (kind: `action-type`, status: `stable`).
+
 | ActionId | Targets | Indicated When |
 |----------|---------|----------------|
-| **stabilize** | Physical | Physical deficit is strongest |
-| **support** | Emotional | Emotional deficit is strongest |
-| **clarify** | Rational | Rational deficit is strongest |
-| **distribute** | All (collective) | Collective distribution is the priority |
-| **amplify** | Orientation | mobilizationGap is high |
+| **stabilize** | Physical | Physical dimensionDeficit is strongest |
+| **support** | Emotional | Emotional dimensionDeficit is strongest |
+| **clarify** | Rational | Rational dimensionDeficit is strongest |
+| **distribute** | All (collective) | Collective redistribution is the priority |
+| **amplify** | Orientation / Navigation | mobilizationGap is high (flow_disconnection) |
 
 ---
 
@@ -119,14 +121,15 @@ First move only. No coercion. No plan. No decision on behalf of the person.
 
 The system shows alternatives. The person chooses.
 
-| Mode | Answers | Status |
-|------|---------|--------|
-| **currentAllocation** | What does the current redistribution look like? | stable |
-| **maxCarryAllocation** | What if every helper gave as much as they could? | experimental |
-| **balancedAllocation** | What if the load were spread equally? | experimental |
-| **valuePreservingAllocation** | What if only value-aligned helpers were used? | experimental |
-| **peakUtilization** | Is any helper carrying a disproportionate share? | experimental |
-| **finalGap** | How much remains on the individual after this allocation? | experimental |
+| Concept | Kind | Answers | Status |
+|---------|------|---------|--------|
+| **currentAllocation** | allocation-mode | What does the current redistribution look like? | stable |
+| **maxCarryAllocation** | allocation-mode | What if every helper gave as much as they could? | experimental |
+| **balancedAllocation** | allocation-mode | What if the load were spread equally? | experimental |
+| **valuePreservingAllocation** | allocation-mode | What if only value-aligned helpers were used? | experimental |
+| **paretoStatus** | metric | Is this allocation Pareto-optimal? | experimental |
+| **peakUtilization** | metric | Is any helper carrying a disproportionate share? | experimental |
+| **finalGap** | metric | How much remains on the individual after this allocation? | experimental |
 
 ---
 
