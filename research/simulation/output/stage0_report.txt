@@ -1,0 +1,35 @@
+
+══════════════════════════════════════════════════════
+  Stage 0 — Null FEP Model — Report
+══════════════════════════════════════════════════════
+         π         max h      GD error   verdict
+  ────────────────────────────────────────────────
+     0.050      3.68e-12      1.84e-12      PASS
+     0.100      3.78e-12      1.89e-12      PASS
+     0.150      3.76e-12      1.88e-12      PASS
+     0.200      3.68e-12      1.84e-12      PASS
+     0.250      3.75e-12      1.88e-12      PASS
+     0.300      3.67e-12      1.83e-12      PASS
+     0.350      3.67e-12      1.83e-12      PASS
+     0.400      3.78e-12      1.89e-12      PASS
+     0.450      3.65e-12      1.82e-12      PASS
+     0.500      3.66e-12      1.83e-12      PASS
+     0.550      3.63e-12      1.82e-12      PASS
+     0.600      3.76e-12      1.88e-12      PASS
+     0.650      3.68e-12      1.84e-12      PASS
+     0.700      3.77e-12      1.88e-12      PASS
+     0.750      3.64e-12      1.82e-12      PASS
+     0.800      3.69e-12      1.84e-12      PASS
+     0.850      3.72e-12      1.86e-12      PASS
+     0.900      3.75e-12      1.87e-12      PASS
+     0.950      3.76e-12      1.88e-12      PASS
+
+  Global max h : 3.78e-12
+  Threshold    : 1.00e-06
+
+  RESULT: PASS
+  Null model shows h ≈ 0 across all precision values.
+  No spurious hysteresis — simulation is clean.
+  Axiom 1 survives the null kill attempt.
+  Proceed to Stage 1 (non-linear landscape / dynamic precision).
+══════════════════════════════════════════════════════
