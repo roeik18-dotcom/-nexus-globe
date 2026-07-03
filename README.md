@@ -49,6 +49,9 @@ Every claim carries an evidence level:
 | Full Adams et al. MDP formulation reproduces the same mechanism | Not yet tested | — | Stage 0e.1 (planned) |
 | Sacred values differ dynamically from matched high-utility preferences (D4) | Not yet tested | — | Stage 1 (planned) |
 | Subject-authored evidence accumulation produces different opportunities than observer-extracted reputation | Not yet tested | — | Stage 2 (planned) |
+| 5-var Marketplace constraint graph (linear) converges uniquely | **Supported** | A | Stage 0b-arch |
+| 5-var constraint graph: convergence holds across α × β parameter space | **Supported** | A | Stage 0c-arch |
+| 10-var expanded Marketplace graph converges uniquely in operating region | **Supported** | A | Stage 0d-arch |
 
 ---
 
@@ -65,6 +68,37 @@ Locked single-level Gaussian FEP. Fixed precision. Gradient descent only.
 
 Simulation: `research/simulation/stage0_null_fep.py`
 Report: `research/simulation/output/stage0_report.txt`
+
+---
+
+### Stage 0b-arch — 5-var constraint graph convergence (COMPLETE)
+Linear null model. 5 variables: Trust, Support, Outcomes, Evidence, Reputation.
+
+**Result:** ρ(A) = 0.6202 < 1. 500/500 inits converge to unique fixed point. max h = 2.80 × 10⁻¹². Critical scale ×1.65 → instability. **PASS.**
+
+Simulation: `research/simulation/stage0b_constraint_convergence.py`
+Report: `research/simulation/output/stage0b_arch_report.txt`
+
+---
+
+### Stage 0c-arch — 5-var convergence harness: α × β sweep (COMPLETE)
+Same 5-variable system. Sweeps coupling scale α ∈ [0.2, 3.0] × sigmoid nonlinearity β ∈ [0, 4]. 18,000 total runs. §7 classification per cell.
+
+**Result:** Operating region (α ∈ [0.5,1.5], β ∈ [0,2]) = 100% Type A. Kill condition NOT triggered. Sigmoid activation rescues divergence at high coupling scales. **PASS.**
+
+Simulation: `research/simulation/stage0c_convergence_harness.py`
+Report: `research/simulation/output/stage0c_arch_report.txt`
+
+---
+
+### Stage 0d-arch — 10-var expanded Marketplace convergence (COMPLETE)
+Expanded system: Trust, Evidence, Support, Outcomes, Reputation, Match, Resolution, Resources, Governance, Value-alignment. Same α × β sweep. 18,000 runs.
+
+**Result:** ρ(W) = 0.70. Linear stability boundary at α ≈ 1.43. Operating region = 100% Type A. All hysteresis spot-checks path-independent. Kill condition NOT triggered. **PASS.**
+
+Architecture spec: `docs/marketplace-core-v0.md`, `docs/marketplace-dynamics-v0.md`
+Simulation: `research/simulation/stage0d_arch_marketplace_convergence.py`
+Report: `research/simulation/output/stage0d_arch_report.txt`
 
 ---
 
@@ -136,11 +170,22 @@ The program makes one narrow claim: that a specific formal signature (hysteresis
 ```
 research/
   simulation/
-    stage0_null_fep.py          ← Stage 0a simulation
+    stage0_null_fep.py                       ← Stage 0a: FEP null model
+    stage0b_constraint_convergence.py        ← Stage 0b-arch: 5-var convergence
+    stage0c_convergence_harness.py           ← Stage 0c-arch: 5-var α×β sweep
+    stage0d_arch_marketplace_convergence.py  ← Stage 0d-arch: 10-var Marketplace
     output/
-      stage0_null_fep.png       ← Plots
-      stage0_report.txt         ← Numeric report
+      stage0_report.txt                      ← Stage 0a report
+      stage0_null_fep.png                    ← Stage 0a plots
+      stage0b_arch_report.txt                ← Stage 0b-arch report
+      stage0b_arch_convergence.png           ← Stage 0b-arch plots
+      stage0c_arch_report.txt                ← Stage 0c-arch report
+      stage0c_arch_convergence.png           ← Stage 0c-arch plots
+      stage0d_arch_report.txt                ← Stage 0d-arch report
+      stage0d_arch_convergence.png           ← Stage 0d-arch plots
 docs/
+  marketplace-core-v0.md        ← Marketplace entity taxonomy and constraint graph
+  marketplace-dynamics-v0.md    ← Matching Engine, Resolution Engine, update equations
   philos-research-questions.md  ← Open questions tracker
   philos-orientation-engine.md  ← Orientation Engine spec (Layer 4)
   philos-calibration.md         ← Calibration requirements
