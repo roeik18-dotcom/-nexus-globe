@@ -42,3 +42,4 @@ next-env.d.ts
 
 # local Claude preview/dev config
 .claude/
+__pycache__/
