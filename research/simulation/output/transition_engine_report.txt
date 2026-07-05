@@ -1,0 +1,213 @@
+TRANSITION ENGINE SIMULATION REPORT
+Layer 1 (OPM Extension) | Evidence: D — Hypothesis
+Spec: docs/transition-engine-v0.md
+
+Parameters (all uncalibrated hypotheses):
+  CAPACITY   = 1.0
+  THRESH     = 0.05    channel activation threshold
+  LEAK_RATE  = 0.08    fraction lost in transit
+  DECAY_RATE = 0.8    natural energy decay per step
+  SOURCE_DEP = False    source depletion on transfer (conductance model)
+  PRESS_RATE = 1.12    recursive pressure factor (Law T6.R)
+  DELAY_WIN  = 3       delay-compress window (steps)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CASE 1 — Base: single gap in Personal department
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Initial: P=0.5, all others 0.0 | All channels open
+  Case 1: Single personal gap
+  Peak energy:
+    Personal    : 0.5000
+    Social      : 0.7046
+    Cognitive   : 0.7701
+    Emotional   : 0.7440
+    Behavioral  : 0.8375
+    Learning    : 0.4385
+  Dominant dept  : Behavioral
+  Saturated depts: none
+  Steps to eq.   : 60
+  Total leakage  : 2.0805
+
+Interpretation:
+  P fires P→E (k=1.4), P→S (k=0.7), P→C (convert).
+  Emotional peaks rapidly from amplification.
+  Behavioral activates from E→B (k=1.3) and C→B (convert).
+  B→L fires after 3 steps; L→P fires after another 3 steps.
+  Natural decay (0.8/step) produces damping spiral.
+  Result demonstrates Law T4 with g < 1 (gap closes over time).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CASE 2 — Social pressure added (S₀=0.5)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Initial: P=0.5, S=0.3, others 0.0 | All channels open
+  Case 2: Social pressure (S=0.35)
+  Peak energy:
+    Personal    : 0.5000
+    Social      : 0.8334
+    Cognitive   : 0.8348
+    Emotional   : 0.8376
+    Behavioral  : 0.8356
+    Learning    : 0.4710
+  Dominant dept  : Emotional
+  Saturated depts: none
+  Steps to eq.   : 60
+  Total leakage  : 5.2009
+
+Emotional peak delta vs. Case 1: +0.0935
+Behavioral peak delta vs. Case 1: -0.0020
+
+Interpretation:
+  Social input adds a second amplification path to Emotional (S→E, k=1.2).
+  S→C fires, increasing Cognitive activation independently.
+  S→B fires, providing an additional direct route to Behavioral.
+  Net effect: Emotional and Behavioral peaks are higher than Case 1.
+  This models the phenomenology: external social pressure amplifies internal
+  emotional intensity and accelerates behavioral activation.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CASE 3 — Trust vs. shame (soft blocker on P→S)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Initial: P=0.5, S=0.1, others 0.0
+High shame: P→S soft_strength=0.75 | High trust: P→S soft_strength=0.10
+  Case 3a: High shame  (P→S blocked 80%)
+  Peak energy:
+    Personal    : 0.5000
+    Social      : 0.4232
+    Cognitive   : 0.4861
+    Emotional   : 0.4685
+    Behavioral  : 0.6153
+    Learning    : 0.2903
+  Dominant dept  : Behavioral
+  Saturated depts: none
+  Steps to eq.   : 60
+  Total leakage  : 1.4240
+  Case 3b: High trust  (P→S blocked  5%)
+  Peak energy:
+    Personal    : 0.5000
+    Social      : 0.7529
+    Cognitive   : 0.8357
+    Emotional   : 0.8187
+    Behavioral  : 0.8358
+    Learning    : 0.4559
+  Dominant dept  : Behavioral
+  Saturated depts: none
+  Steps to eq.   : 60
+  Total leakage  : 2.3717
+
+Social peak delta   (trust - shame): +0.3297
+Emotional peak delta (trust - shame): +0.3502
+
+Interpretation:
+  Shame reduces effective P→S energy by 75%; trust reduces it by only 10%.
+  Higher S energy under trust propagates via S→E and S→C.
+  Social department peak is measurably higher with trust.
+  This is the quantifiable cost of shame: energy trapped in Personal rather
+  than propagating into the social system.
+  Law T3 applies here as a soft blocker — high enough P energy can still
+  partially overcome the shame blocker.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CASE 4 — Hard block on E→B (value constraint active)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Initial: P=0.5, others 0.0 | Hard block: E→B
+  Case 4: E→B hard blocked (value constraint)
+  Peak energy:
+    Personal    : 0.5000
+    Social      : 0.7588
+    Cognitive   : 0.8362
+    Emotional   : 0.9264
+    Behavioral  : 0.7042
+    Learning    : 0.3694
+  Dominant dept  : Emotional
+  Saturated depts: none
+  Steps to eq.   : 60
+  Total leakage  : 3.1938
+
+Emotional peak delta vs. Case 1: +0.1824
+Behavioral peak (blocked):        0.7042 (compare to Case 1: 0.8375)
+
+Interpretation:
+  E→B is hard-blocked (value constraint; Law T3 — cannot be overridden).
+  Recursive pressure law (T6.R): energy[E] amplifies at 1.12x per step.
+  Emotional builds higher than Case 1 before natural decay overcomes pressure.
+  E→C (convert) fires as the only available Emotional outlet — Cognitive
+  receives elevated activation (rumination, over-analysis).
+  Behavioral remains near-zero throughout.
+  This models: suppression does not reduce emotional energy.
+  It increases it. The blocked channel amplifies pressure in the source.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CASE 5 — Value change: E→B unblocked at step 25
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Initial: P=0.5, others 0.0
+Phase A (steps 0–20):  E→B hard blocked
+Phase B (steps 21–50): hard block lifted (value changed)
+Emotional energy at pivot (step 25): 0.4972
+  Case 5: E→B unblocked at step 25
+  Peak energy:
+    Personal    : 0.5000
+    Social      : 0.7636
+    Cognitive   : 0.8360
+    Emotional   : 0.8288
+    Behavioral  : 0.8335
+    Learning    : 0.4573
+  Dominant dept  : Cognitive
+  Saturated depts: none
+  Steps to eq.   : 60
+  Total leakage  : 2.3884
+
+Interpretation:
+  After 20 steps of blocking, Emotional has accumulated to 0.497.
+  When the block is lifted, E→B fires immediately with k=1.3 on 0.497.
+  Behavioral activation post-unblock is disproportionate to current stimulus.
+  This is the key prediction of Law T6.R: suppression does not prevent action.
+  It stores energy and increases the magnitude of eventual action.
+  Intervention timing matters: unblocking earlier produces smaller behavioral
+  surge; unblocking after long suppression produces larger surge.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CROSS-CASE COMPARISON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Emotional peak:
+  Case 1 (base)          : 0.7440
+  Case 2 (+social, S=0.5): 0.8376  Δ=+0.0935
+  Case 4 (E→B blocked)   : 0.9264  Δ=+0.1824
+
+Behavioral peak:
+  Case 1 (base)          : 0.8375
+  Case 2 (+social)       : 0.8356
+  Case 4 (E→B blocked)   : 0.7042
+  Case 5 (post-unblock)  : 0.8335
+
+Social peak (Case 3):
+  High shame (P→S 75%)   : 0.4232
+  High trust (P→S 10%)   : 0.7529  Δ=+0.3297
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OPEN QUESTIONS SURFACED BY SIMULATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Q1. Does the source department lose energy when it transfers to a target?
+    Current model: NO. Source energy is preserved; only target gains.
+    Alternative: source depletes proportionally to energy sent.
+    This choice changes cycle gain substantially. (§10 open question)
+
+Q2. Should the step function be synchronous or sequential?
+    Current: synchronous (all channels read t, write t+1 simultaneously).
+    Alternative: sequential (each channel sees immediately updated values).
+    (§10 open question from transition-engine-v0.md)
+
+Q3. Are the k-values (§7 channel table) realistic?
+    All values are initial estimates. Require HPE case data for calibration.
+
+Q4. What is DECAY_RATE empirically?
+    Currently 0.97/step. A free parameter. Should be derived from
+    observed gap-closure rates in real cases.
+
+Q5. Cycle gain factor g (Law T4) cannot be extracted analytically from
+    the step function. Requires per-cycle energy tracking.
+    Next step: instrument the step function to track full-cycle traversals.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Evidence: D — Hypothesis
+No empirical data was used to set or validate these parameters.
+Results show model-internal dynamics only, not predictions about real behavior.
