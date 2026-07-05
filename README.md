@@ -168,6 +168,15 @@ The program makes one narrow claim: that a specific formal signature (hysteresis
 ## Repository structure
 
 ```
+docs/
+  philos-reality-flow-v0.md     ← Layer 0: Matter + Space + Time axiom, 5 laws, energy flow
+  marketplace-core-v0.md        ← Marketplace entity taxonomy and constraint graph
+  marketplace-dynamics-v0.md    ← Matching Engine, Resolution Engine, update equations
+  philos-research-questions.md  ← Open questions tracker
+  philos-orientation-engine.md  ← Orientation Engine spec (Layer 4)
+  philos-calibration.md         ← Calibration requirements
+  philos-opm-spec.md            ← Object-Process Model spec
+  philos-temporal-model.md      ← Temporal model
 research/
   simulation/
     stage0_null_fep.py                       ← Stage 0a: FEP null model
@@ -183,14 +192,7 @@ research/
       stage0c_arch_convergence.png           ← Stage 0c-arch plots
       stage0d_arch_report.txt                ← Stage 0d-arch report
       stage0d_arch_convergence.png           ← Stage 0d-arch plots
-docs/
-  marketplace-core-v0.md        ← Marketplace entity taxonomy and constraint graph
-  marketplace-dynamics-v0.md    ← Matching Engine, Resolution Engine, update equations
-  philos-research-questions.md  ← Open questions tracker
-  philos-orientation-engine.md  ← Orientation Engine spec (Layer 4)
-  philos-calibration.md         ← Calibration requirements
-  philos-opm-spec.md            ← Object-Process Model spec
-  philos-temporal-model.md      ← Temporal model
+  (listed above)
 app/                            ← Next.js application (separate)
 ```
 
