@@ -1,367 +1,282 @@
-# Philos — Reality Flow Model v0
+# Philos — Reality Flow Model (RFM)
 
-**Layer 0 (Foundation) | Evidence status: D — Hypothesis**
+**Version 0.1 | Layer 0 (Ontology) | Evidence status: D — Hypothesis**
 
-*This document formalizes the foundational ontology proposed in the July 2026 design session.
-It sits below all other Philos layers. Everything in OPM, Marketplace, and the falsification
-program is derived from or constrained by this layer. None of the claims here have been
-empirically validated. They are the axioms on which the architecture is built.*
+*This document proposes the minimal primitives required to describe every dynamic system —
+physical, biological, psychological, social, organizational, or economic. It is the base layer
+from which OPM, Human Systems, and Marketplace architecture are derived.*
 
-*Independence note: The Reality Flow Model does not depend on the D4 hypothesis or the FEP
-falsification program. However, it does produce implications for how D4 should be formalized.
-See §6.*
+*Scientific status: foundational hypothesis. See §Scientific Status for falsifiable predictions.*
 
 ---
 
-## §0 Three Primitives (Level 0)
+## Purpose
 
-Every system — physical, social, cognitive, institutional — is built from exactly three
-primitives and nothing else.
+The Reality Flow Model proposes the minimal primitives required to describe every dynamic
+system, whether physical, biological, psychological, social, organizational, or economic.
 
-| Primitive | Hebrew | Definition |
-|---|---|---|
-| **Matter** | חומר | Any entity that exists: person, object, organization, information, idea, sound, community |
-| **Space** | מרווח | Any separation between entities: physical, emotional, social, value-based, cognitive, economic, epistemic, temporal |
-| **Time** | זמן | The dimension in which relationships change |
-
-**Axiom (Philos Level 0):**
-
-> Matter + Space + Time = any possible system
-
-Nothing in the model is introduced from outside these three. Scarcity, force, energy, emotion,
-decision — all are derived.
-
-### Why this ordering matters
-
-- Without Space: no distinction → no system.
-- Without Time: no change → no process → no dynamics.
-- Without Matter: nothing to distinguish → Space and Time are vacuous.
-
-The three are jointly necessary. None is sufficient alone.
+Rather than beginning from emotions, decisions, or markets, it begins from the smallest
+possible structural assumptions.
 
 ---
 
-## §1 Derivation Chain
+## Axiom 1 — Three Irreducible Primitives
 
-When matter exists in space across time, interaction arises.
-Interaction produces contrast. Contrast produces tension. Tension produces force.
-Force produces movement. Movement produces rhythm, beat, and stillness.
-Over time, cycles of development, decay, and change emerge.
+Reality consists of three irreducible primitives.
 
-**Full chain:**
+### Matter
+
+Any identifiable entity.
+
+Examples: person, object, organization, information, idea, sound, institution, community.
+
+Matter is simply "something that exists."
+
+### Space (Gap / Interval)
+
+Every distinction or separation between entities.
+
+This includes: physical distance, emotional distance, informational distance, value difference,
+social hierarchy, economic inequality, knowledge gap, temporal separation.
+
+**The gap itself is neutral. It is not automatically a problem.**
+
+### Time
+
+The dimension in which relationships evolve.
+
+Without time: no interaction, no change, no causality, no adaptation.
+
+---
+
+## Fundamental Principle
+
+Nothing meaningful exists in isolation.
+
+Meaning emerges from relationships.
+
+Exactly as music depends not only on notes but also on silence, reality depends not only on
+matter but also on the intervals separating matter.
+
+---
+
+## Interaction Principle
+
+Whenever matter exists within space over time, interactions become possible.
 
 ```
-Matter + Space + Time
+Interaction creates forces.
+Forces mobilize energy.
+Energy changes relationships.
+Relationships create new gaps.
+The process repeats continuously.
+```
+
+---
+
+## Interpretation Principle
+
+**A gap is not inherently scarcity. Scarcity is an interpretation.**
+
+Different observers may assign completely different meanings to the same objective gap.
+
+Example:
+
+| Person | Situation | Interpretation | Energy generated |
+|---|---|---|---|
+| A | "I don't know enough" | Curiosity | Approach energy |
+| B | "I don't know enough" | Fear | Avoidance energy |
+
+Same gap. Different interpretation. Different energy. Different behavior.
+
+---
+
+## Reality Flow Chain
+
+```
+Matter
     │
     ▼
-Interaction
+Gap (objective)
     │
     ▼
-Contrast / Opposition
+Interpretation (subjective)
     │
     ▼
-Tension
+Perceived Scarcity
     │
     ▼
 Force
     │
     ▼
-Energy (directed movement)
+Energy
     │
     ▼
-Rhythm / Beat / Stillness
+Behavior
     │
     ▼
-Development / Decay / Cycles
+Outcome
+    │
+    ▼
+New Gap
+    │
+    ▼
+Cycle repeats
 ```
-
-The human appears only at the **Interpretation** layer. The human does not interpret matter
-directly. The human interprets **relationships** between matters — that is, gaps (מרווח).
 
 ---
 
-## §2 The Scarcity Claim — Five Laws
+## Five Laws of Reality Flow
 
-**Core claim:** Scarcity (מחסור) is NOT a primitive.
+**Law 1 — Interaction requires all three primitives.**
+Every interaction requires matter, space, and time simultaneously. Remove any one and the
+system cannot change state.
 
-Scarcity is NOT:
-- matter
-- a force
-- energy
+**Law 2 — Gaps are objective; scarcity is subjective.**
+The gap between current and desired state exists independently of any observer.
+The interpretation of that gap as scarcity (or opportunity, or irrelevance) is observer-dependent.
 
-Scarcity IS: **an interpretation of a gap**.
+**Law 3 — Interpretation transforms objective gaps into motivational forces.**
+The same gap can generate attraction, repulsion, or indifference depending on the
+interpretation applied. Interpretation is the lever; the gap is the fulcrum.
 
-When a gap exists between current state and desired state, the person interprets that gap.
-That interpretation is called scarcity.
+**Law 4 — Energy flows toward perceived gap reduction.**
+Energy always flows toward reducing, increasing, or maintaining perceived gaps — depending
+on what the observer interprets as the desired state.
 
-### The Five Laws
-
-**Law 1 — Scarcity is derived, not primary:**
-```
-Gap (מרווח) → Interpretation (פרשנות) → Scarcity (מחסור)
-```
-Not the reverse. The gap is ontologically prior to the scarcity.
-
-**Law 2 — Scarcity produces force:**
-```
-Scarcity → Force
-```
-
-**Law 3 — Force produces directed energy:**
-```
-Scarcity → Force → Energy
-```
-
-**Law 4 — Energy seeks to reduce the gap:**
-Energy is directional. Its attractor is the reduction of the gap that generated the scarcity.
-
-**Law 5 — The cycle:**
-After the gap changes, a new interpretation arises, which generates new scarcity.
-The system is inherently cyclic.
-
-### Corollary — Perception is relative
-
-Intensity is interpreted relative to the observer's range. A very faint signal and a very
-loud signal may both be perceived as silence — both lie outside the observer's detection
-range. This means the same gap can produce different scarcities in different observers, or
-none at all. The interpretation function is observer-dependent.
+**Law 5 — Every closed gap generates new gaps.**
+Reality therefore never reaches permanent equilibrium. It continuously reorganizes.
 
 ---
 
-## §3 OPM Extension — Energy Flow Variables
+## Extension to OPM
 
-The existing OPM specification tracks **variables** (what exists).
+Traditional OPM variables describe **state** (what exists at a moment).
 
-The Reality Flow Model requires OPM to also track **energy flows** (how state propagates
-between variables).
+Reality Flow extends every variable to also include **flow** (how state propagates).
 
-Every variable now carries two records:
-
-### 3a — Static record (existing OPM)
-- Identity, type, current value, constraints
-
-### 3b — Flow record (new)
+Each variable should specify:
 
 | Field | Description |
 |---|---|
-| Source (מקור) | Which variable or event generated this energy |
-| Target (יעד) | Which variable this energy is directed toward |
-| Time (זמן) | When this flow was initiated and when it resolves |
-| Intensity (עוצמה) | Magnitude of the energy flow |
-| Direction (כיוון) | Constructive (closes gap) or destructive (widens gap) |
-| Amplifiers (מגבירי אנרגיה) | Variables or actors that increase intensity in transit |
-| Attenuators (מחלישי אנרגיה) | Variables or actors that decrease intensity |
-| Blockers (חסמים) | Variables or actors that halt the flow entirely |
-| Feedback loops (לולאות משוב) | Where output becomes new input |
+| Source | Which variable or event generated this energy |
+| Target | Which variable this energy is directed toward |
+| Direction | Constructive (closes gap) or destructive (widens gap) |
+| Magnitude | Size of the energy flow |
+| Velocity | Rate of change |
+| Duration | How long the flow persists |
+| Amplifiers | Variables or actors that increase magnitude in transit |
+| Attenuators | Variables or actors that decrease magnitude |
+| Blockers | Variables or actors that halt the flow entirely |
+| Leakage | Energy lost without reaching the target |
+| Feedback loops | Where output becomes new input, closing a cycle |
 
-**Goal:** not only "which variables exist?" but "where did this energy originate, through
-which path did it travel, where was it amplified or blocked, and where is the highest-
-leverage intervention point?"
+This allows the model to represent dynamic systems rather than static snapshots.
 
 ---
 
-## §4 Six-Department Flow Model (Human Systems)
+## Human Reality Engine — Six Departments
 
-For human systems, the energy flow passes through six functional departments.
-These are not sequential stages — they are interactive subsystems with bidirectional
-connections. The dominant flow direction for a single cycle is:
+The six departments describe where energy is transformed.
 
-```
-Personal → Social → Cognitive → Emotional → Behavioral → Learning → (back to Personal)
-```
+Energy circulates continuously across all departments rather than moving linearly through them.
 
-### Department 1 — Personal (מחלקה אישית)
-**Energy source.** Gap interpretation happens here first.
+| Department | Function | Examples |
+|---|---|---|
+| 1. Personal | Identity, values, desires, goals | Needs, self-concept, value commitments |
+| 2. Social | Expectations, comparison, status, norms | Family pressure, peer comparison, cultural norms |
+| 3. Cognitive | Analysis, prediction, evaluation | Risk assessment, ranking, scenario planning |
+| 4. Emotional | Confidence, fear, attraction, aversion | Anxiety, hope, shame, excitement |
+| 5. Behavioral | Action, execution, habits | Choice, avoidance, speech, movement |
+| 6. Learning | Memory, adaptation, belief revision | Experience integration, belief update, value revision |
 
-Generates:
-- Scarcity
-- Desire
-- Values and value constraints
-- Identity
-- Needs
-- Goals
+---
 
-### Department 2 — Social (מחלקה חברתית)
-Energy exits into the social field.
+## Marketplace Interpretation
 
-Encounters:
-- Family, friends, culture, religion, social networks, norms
+The same framework applies beyond individuals. Markets are energy systems.
 
-Produces:
-- External pressure
-- Comparisons
-- Expectations
-- Criticism
+Instead of emotions alone, energy moves through: trust, information, reputation, expertise,
+attention, budgets, incentives, influence.
 
-Generates a **new gap**: between personal desire and social expectation.
-This secondary gap feeds new scarcity back into the cycle.
+Every purchase, investment, or decision is an energy redistribution driven by interpreted gaps.
 
-### Department 3 — Cognitive (מחלקה שכלית)
-The cognitive system processes the energy.
+The Marketplace constraint graph (docs/marketplace-core-v0.md) models the structural stability
+of these energy loops. A system where energy loops converge to a fixed point (Type A in §7
+classification) is a system where interventions have predictable effects.
 
-Produces:
-- Comparisons and rankings
-- Analysis
-- Probability estimates
-- Risk assessment
-- Alternatives
+---
 
-### Department 4 — Emotional (מחלקה רגשית)
-Cognitive output returns as emotional energy.
+## Scientific Status
 
-Produces:
-- Confidence / lack of confidence
-- Fear / anxiety
-- Hope
-- Guilt
-- Calm
+The Reality Flow Model is currently a **foundational hypothesis, not an established theory**.
 
-### Department 5 — Behavioral (מחלקת התנהגות)
-Energy resolves into action (or non-action).
+Several claims are empirically testable:
 
-Examples:
-- Choose / avoid
-- Speak / stay silent
-- Approach / retreat
+1. **Interpretation determines energy direction**: Do identical objective gaps consistently
+   produce different behaviors because of differences in interpretation, controlling for
+   all other factors?
 
-### Department 6 — Learning (מחלקת למידה)
-The outcome of behavior re-enters the system.
+2. **Interpretation is the lever**: Does changing interpretation without changing the objective
+   gap alter energy allocation and subsequent behavior?
 
-Produces:
-- Experience
-- Memory
-- New beliefs
-- Value revision
+3. **Flow models outperform state models**: Can system outcomes be predicted more accurately
+   by modeling energy flows than by modeling only static states?
 
-The Learning department's output becomes new matter in the next cycle, which
-resets the Personal department and opens new gaps.
+4. **Interpretation-targeted interventions**: Do interventions targeting interpretation
+   outperform interventions targeting objective conditions in some domains?
 
-### Closed example (loneliness / partner search)
+These predictions provide potential paths for falsification. Finding that (2) is false —
+that interpretation change without gap change produces no behavioral change — would
+substantially weaken the model.
+
+---
+
+## Position within Philos
 
 ```
-Emotional gap (current vs desired state)
-    │
-    ▼ [Law 1: gap → interpretation]
-Scarcity: "I lack connection"
-    │
-    ▼ [Law 2: scarcity → force]
-Desire: seeking a partner
+Level 0 — Reality Flow Model (Ontology)
+    Matter | Space (Gap) | Time | Interpretation | Energy Flow
     │
     ▼
-Encounter new person [new matter enters]
+Level 1 — OPM
+    Dynamic representation of states and flows
     │
-    ├──► Cognitive: comparison, ranking, analysis
+    ▼
+Level 2 — Human Systems
+    Six departments | Behavior | Learning | Decision making
     │
-    └──► Social: family/friends/networks introduce pressure
-              │
-              ▼
-          New gap: personal desire vs social expectation
-              │
-              ▼
-          Scarcity: "I am not enough"
-              │
-              ▼
-          Cognitive: self-comparison, doubt
-              │
-              ▼
-          Emotional: anxiety, low confidence
-              │
-              ▼
-          Greater emotional scarcity than at start
-              │
-              ▼
-          Loop: scarcity → seeking → comparison → criticism → scarcity
+    ▼
+Level 3 — Social and Market Systems
+    Organizations | Communities | Economies | Digital marketplaces
+    │
+    ▼
+Level 4 — Applications
+    Philos Orientation | Marketplace architecture
+    Decision engines | Simulations | Intervention design
 ```
 
-The loop is a feedback cycle. The gap is not necessarily closing — it may be widening
-through the cycle. Intervention requires identifying which department is amplifying or
-blocking the flow, not just which behavior appears at the output.
+---
+
+## Open Refinement
+
+**On the term "Energy":**
+
+"Energy" risks being interpreted as physical energy. The framework uses it as a cross-domain
+explanatory construct. A more rigorous definition will be required if the model is intended
+to support falsifiable scientific claims.
+
+Candidate definitions:
+- *The capacity of a system to produce state transitions*
+- *Motivational flow*
+- *Activation flow*
+- *State-transition potential*
+
+This definition is deferred to v0.2. Until then, "energy" should be read as shorthand for
+"the directed capacity to change system state."
 
 ---
 
-## §5 Marketplace Application
-
-The Marketplace is the same energy flow model applied to institutional actors.
-The primitives are identical; the energies differ.
-
-| Human system | Marketplace |
-|---|---|
-| Emotional gap | Case (unresolved problem) |
-| Scarcity | Resource gap, expertise gap, value conflict |
-| Desire | Mission objective |
-| Social pressure | Value Office constraints, Governance |
-| Cognitive analysis | Matching Engine, Resolution Engine |
-| Emotional response | Trust scores, reputation |
-| Behavior | Resolution, resource allocation, execution |
-| Learning | Evidence, outcome measurement, trust update |
-
-Marketplace questions mapped to energy flow:
-- Where did the energy start? (Which actor or case created the initial gap)
-- Who amplified it? (Which actor increased urgency or complexity)
-- Who attenuated it? (Which actor reduced pressure or contributed resolution)
-- Where is it blocked? (Missing actor, missing resource, value conflict)
-- Where is the feedback loop? (Trust→Evidence→Outcomes→Trust cycle)
-- Where is the highest-leverage intervention? (Not necessarily the visible bottleneck)
-
-The Marketplace convergence work (Stage 0b-arch through Stage 0d-arch) tests the structural
-stability of these energy loops. A system where energy loops converge to a fixed point
-(Type A) is a system where interventions have predictable effects.
-
----
-
-## §6 Implications for the Falsification Program
-
-The Reality Flow Model generates a more precise formulation of D4.
-
-**D4 (current formulation):** Sacred values exhibit behavioral hysteresis — the system
-does not return to its prior state along the same path when pressure toward violation is
-applied and then removed.
-
-**D4 (Reality Flow formulation):**
-
-Sacred value violation creates a gap that activates a **qualitatively different
-interpretation function** from ordinary preference gaps.
-
-For ordinary preferences:
-- Interpretation is continuous: larger gap → more scarcity → more force
-- Removing the gap restores the previous state
-- Hysteresis ≈ 0
-
-For sacred values:
-- Below the violation threshold: gap is interpreted as ordinary scarcity
-- At threshold crossing: the interpretation function switches — the gap is re-interpreted
-  as an identity threat or categorical violation, not a quantitative deficiency
-- Above threshold: energy does not follow the same path back after the gap closes, because
-  the interpretation function does not automatically revert
-
-**This is the mechanism behind h > 0 in the sacred value case:**
-Hysteresis is not stored in the gap itself. It is stored in the **interpretation function**
-applied to the gap. The interpretation function has memory; the gap does not.
-
-**Testable prediction (new, from this model):**
-If interpretation-function switching is the mechanism, then:
-- Agents who explicitly re-evaluate their interpretation after pressure removal should show
-  lower h than agents who do not.
-- The threshold for interpretation switch should be predictable from the agent's
-  value-function structure, not from the gap magnitude alone.
-
-These predictions are not yet tested. They belong to Stage 1 (behavioral dissociation)
-and Stage 0e (FEP with action conditioning).
-
----
-
-## §7 Open Questions
-
-| Question | Status |
-|---|---|
-| Is the 3-primitive axiom falsifiable, or is it definitionally true? | Open — may be a framework choice, not an empirical claim |
-| Does the interpretation function switch discretely at threshold, or continuously? | Open — testable in Stage 0c (non-linear landscape) |
-| Are the 6 departments distinct enough to measure separately, or do they collapse? | Open — requires Stage 1 experimental design |
-| Does the energy-flow OPM model produce different predictions from the variable-only OPM? | Open — requires simulation comparison |
-| Is "gap" in the sacred value context the same kind of gap as in ordinary preference contexts? | Open — this is the core question of D4 |
-
----
-
-*Layer 0 (Foundation) | Evidence: D — Hypothesis*
-*This model is the proposed axiom layer. It generates predictions; it is not itself a
-prediction. The falsification program tests what follows from it, not the axioms themselves.*
+*Version 0.1 | Layer 0 (Ontology) | Evidence: D — Hypothesis*
+*This model is the proposed axiom layer. It generates testable predictions (§Scientific Status);
+the axioms themselves are not empirical claims but structural choices.*
