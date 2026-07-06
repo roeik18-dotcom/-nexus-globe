@@ -290,9 +290,9 @@ export function findMatches(
     byAction.set(m.action, existing);
   }
 
-  const actionPaths: ActionPath[] = [...byAction.entries()]
+  const actionPaths: ActionPath[] = Array.from(byAction.entries())
     .map(([action, cases]) => {
-      const od = distribution(cases.map(c => c.outcome));
+      const od = distribution(cases.map((c: CaseMatch) => c.outcome));
       return {
         action,
         frequency:            cases.length / (scored.length || 1),
