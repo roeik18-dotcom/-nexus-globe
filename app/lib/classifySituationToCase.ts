@@ -1,16 +1,20 @@
 /**
- * Situation → Case classifier
- * Converts raw human situation text into a validated Case (Schema v0)
- * using claude-opus-4-8 with adaptive thinking.
+ * Situation → Case classifier and analysis pipeline (Schema v0)
+ *
+ * Full flow:
+ *   raw text
+ *   → classifySituationToCase()  — LLM structured extraction, schema validation
+ *   → analyzeHumanSituation()    — findMatches + outcome distribution + action paths + explanation
  *
  * Usage:
- *   const c = await classifySituationToCase("My employer changed my contract retroactively...");
- *   const matches = findMatches(c, SEED_CASES_V0);
+ *   import { analyzeHumanSituation } from '@/app/lib/classifySituationToCase';
+ *   const result = await analyzeHumanSituation(text, SEED_CASES_V0);
  */
 
 import Anthropic from '@anthropic-ai/sdk';
 import {
   validateCase,
+  findMatches,
   type Case,
   type GapType,
   type PressureType,
@@ -18,6 +22,7 @@ import {
   type OutcomeClass,
   type ValueID,
   type ParticipantType,
+  type MatchOutput,
 } from './caseSchema';
 
 const client = new Anthropic();
@@ -33,7 +38,7 @@ const SYSTEM_PROMPT = `\
 You are a psychological and social situation analyst. Classify a human situation \
 into Case Schema v0 fields for pattern-based outcome prediction.
 
-## gap_type — the deepest structural tension
+## gap_type — the deepest structural tension (pick exactly one)
   value      : what I believe vs. what is demanded of me
   relational : connection sought vs. disconnection experienced
   resource   : what is needed vs. what is available
@@ -49,9 +54,9 @@ into Case Schema v0 fields for pattern-based outcome prediction.
   legal     : institutional, regulatory, juridical
   moral     : ethical demands, value violation
 
-## action — what the person did (pick the most accurate)
+## action — what the person has already done (pick the most accurate)
   approach  : moved toward the source of tension
-  avoid     : withdrew from the situation
+  avoid     : withdrew or has not yet addressed the situation
   transform : attempted to change the frame or relationship
   surrender : accepted the gap without addressing it
   mobilize  : sought external support or resources
@@ -64,7 +69,7 @@ into Case Schema v0 fields for pattern-based outcome prediction.
   escalated   : situation worsened
   transformed : situation fundamentally restructured
 
-## values — what is genuinely at stake (1–4 values)
+## values — what is genuinely at stake (1–4 most relevant)
   truth     : accurate representation of reality
   justice   : fair treatment and accountability
   safety    : freedom from harm
@@ -80,10 +85,11 @@ into Case Schema v0 fields for pattern-based outcome prediction.
 ## Classification rules
 1. Identify the PRIMARY gap_type — the deepest structural tension, not every surface conflict.
 2. List ALL pressures present; under-listing is more costly than over-listing.
-3. For action: what the person has actually done, not what they hope to do.
-4. For outcome: the current state as described — if unresolved and worsening, that is escalated.
+3. For action: what the person has ALREADY done, not what they wish to do.
+4. For outcome: the current state as described. If unchanged and the person has not acted → unresolved.
+   If unchanged and things are getting worse → escalated.
 5. For values: only values that are genuinely threatened or in tension, not peripheral ones.
-6. intensity 0.0–1.0: estimate severity from the language used (fear, urgency, stakes).
+6. intensity 0.0–1.0: estimate severity from the language used (fear, urgency, described stakes).
 7. gap_description format: "[what person needs/believes] vs. [what the situation imposes]".`;
 
 // ── Tool definition ───────────────────────────────────────────────────────────
@@ -101,17 +107,14 @@ const CLASSIFY_TOOL: Anthropic.Tool = {
       },
       pressure: {
         type: 'array',
-        items: {
-          type: 'string',
-          enum: ['social', 'emotional', 'economic', 'physical', 'legal', 'moral'],
-        },
+        items: { type: 'string', enum: ['social', 'emotional', 'economic', 'physical', 'legal', 'moral'] },
         minItems: 1,
         description: 'All pressure types present.',
       },
       action: {
         type: 'string',
         enum: ['approach', 'avoid', 'transform', 'surrender', 'mobilize', 'none'],
-        description: 'What the person has done.',
+        description: 'What the person has already done.',
       },
       outcome: {
         type: 'string',
@@ -150,6 +153,25 @@ const CLASSIFY_TOOL: Anthropic.Tool = {
   },
 };
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface RawClassification {
+  gap_type:         GapType;
+  pressure:         PressureType[];
+  action:           ActionType;
+  outcome:          OutcomeClass;
+  values:           ValueID[];
+  participants?:    ParticipantType[];
+  gap_description?: string;
+  intensity?:       number;
+}
+
+export interface AnalysisOutput {
+  case:        Case;
+  matches:     MatchOutput;
+  explanation: string;
+}
+
 // ── Errors ────────────────────────────────────────────────────────────────────
 
 export class ClassificationError extends Error {
@@ -162,23 +184,79 @@ export class ClassificationError extends Error {
   }
 }
 
-// ── Raw input shape returned by the tool ─────────────────────────────────────
+// ── Explanation builder ───────────────────────────────────────────────────────
 
-interface RawClassification {
-  gap_type:        GapType;
-  pressure:        PressureType[];
-  action:          ActionType;
-  outcome:         OutcomeClass;
-  values:          ValueID[];
-  participants?:   ParticipantType[];
-  gap_description?: string;
-  intensity?:      number;
+function pct(n: number): string {
+  return `${Math.round(n * 100)}%`;
 }
 
-// ── Main export ───────────────────────────────────────────────────────────────
+function outcomeVerb(o: OutcomeClass): string {
+  const verbs: Record<OutcomeClass, string> = {
+    resolved:    'resolved',
+    partial:     'partially improved',
+    unresolved:  'stayed unresolved',
+    escalated:   'escalated',
+    transformed: 'transformed',
+  };
+  return verbs[o];
+}
+
+function riskAdj(r: 'low' | 'medium' | 'high'): string {
+  return { low: 'low', medium: 'moderate', high: 'elevated' }[r];
+}
+
+function buildExplanation(c: Case, m: MatchOutput): string {
+  const gap = c.gap_description
+    ? `a ${c.gap_type} gap — ${c.gap_description}`
+    : `a ${c.gap_type} gap`;
+
+  if (m.confidence === 'insufficient') {
+    return (
+      `Your situation shows ${gap}. ` +
+      `The database does not yet have enough similar cases to project an outcome reliably. ` +
+      `As more cases are added, this analysis will improve.`
+    );
+  }
+
+  const n = m.total_matches;
+
+  const sortedOutcomes = (Object.entries(m.outcome_distribution) as [OutcomeClass, number][])
+    .sort(([, a], [, b]) => b - a);
+
+  const outcomeSummary = sortedOutcomes
+    .slice(0, 2)
+    .map(([o, f]) => `${pct(f)} ${outcomeVerb(o)}`)
+    .join(', ');
+
+  const topPath = m.action_paths[0];
+
+  const safestPath = [...m.action_paths].sort((a, b) => {
+    const rank = { low: 0, medium: 1, high: 2 } as const;
+    return rank[a.risk_level] - rank[b.risk_level];
+  })[0];
+
+  const pathLine = topPath
+    ? `The most common response in similar cases was to **${topPath.action}** (${pct(topPath.frequency)}), ` +
+      `with ${riskAdj(topPath.risk_level)} escalation risk.`
+    : '';
+
+  const safeLine =
+    safestPath && safestPath.action !== topPath?.action
+      ? ` Cases where people chose to **${safestPath.action}** showed lower escalation risk.`
+      : '';
+
+  return (
+    `Your situation shows ${gap}. ` +
+    `Across ${n} similar case${n === 1 ? '' : 's'}, ${outcomeSummary}. ` +
+    pathLine +
+    safeLine
+  );
+}
+
+// ── Core classifier ───────────────────────────────────────────────────────────
 
 /**
- * Convert raw human situation text into a validated Case (Schema v0).
+ * Convert raw situation text into a validated Case (Schema v0).
  * Throws ClassificationError if the model output fails schema validation.
  */
 export async function classifySituationToCase(situationText: string): Promise<Case> {
@@ -187,11 +265,11 @@ export async function classifySituationToCase(situationText: string): Promise<Ca
   }
 
   const response = await client.messages.create({
-    model:      'claude-opus-4-8',
-    max_tokens: 4096,
-    thinking:   { type: 'adaptive' },
-    system:     SYSTEM_PROMPT,
-    tools:      [CLASSIFY_TOOL],
+    model:       'claude-opus-4-8',
+    max_tokens:  4096,
+    thinking:    { type: 'adaptive' },
+    system:      SYSTEM_PROMPT,
+    tools:       [CLASSIFY_TOOL],
     tool_choice: { type: 'tool', name: 'classify_situation' },
     messages: [
       { role: 'user', content: `Classify this situation:\n\n${situationText}` },
@@ -216,9 +294,9 @@ export async function classifySituationToCase(situationText: string): Promise<Ca
     action:         raw.action,
     outcome:        raw.outcome,
     values:         raw.values,
-    ...(raw.participants?.length      && { participants:     raw.participants }),
-    ...(raw.gap_description           && { gap_description:  raw.gap_description }),
-    ...(raw.intensity !== undefined   && { intensity:        raw.intensity }),
+    ...(raw.participants?.length    && { participants:    raw.participants }),
+    ...(raw.gap_description         && { gap_description: raw.gap_description }),
+    ...(raw.intensity !== undefined && { intensity:       raw.intensity }),
   };
 
   const validation = validateCase(classified);
@@ -230,4 +308,20 @@ export async function classifySituationToCase(situationText: string): Promise<Ca
   }
 
   return classified;
+}
+
+// ── Full pipeline ─────────────────────────────────────────────────────────────
+
+/**
+ * Full analysis pipeline: text → Case → findMatches → explanation.
+ * Pass your case database as the second argument.
+ */
+export async function analyzeHumanSituation(
+  situationText: string,
+  database: Case[],
+): Promise<AnalysisOutput> {
+  const classified  = await classifySituationToCase(situationText);
+  const matches     = findMatches(classified, database);
+  const explanation = buildExplanation(classified, matches);
+  return { case: classified, matches, explanation };
 }
