@@ -178,6 +178,12 @@ constraint network, or if non-convergence is explicitly detected and reported.
 Sequential update is valid only as a debugging variant; synchronous fixed-point iteration is
 the primary dynamics.
 
+**I5 — Evidence layer precedence**: No human variable (Trust, Reputation, Expertise,
+Availability, Collaboration, Impact) may be updated on the basis of declared intent alone.
+Behavioral or Outcome evidence is required to move any variable's value beyond its prior.
+Intent registers a preference; it does not constitute evidence of performance.
+See §7 for the full three-layer framework.
+
 ---
 
 ## §6 Open Risks
@@ -190,6 +196,49 @@ the primary dynamics.
 | Value conflict | Two Value Offices enforce mutually exclusive constraints | Governance layer + Mediator role |
 | Coverage gap | No actors available for a required role | Resource adequacy variable |
 | Coupling fragility | Weights are unchosen; real calibration unknown | Sensitivity sweep over α |
+
+---
+
+## §7 Evidence Layers for Human Variables
+
+Human-facing variables in the Marketplace (Trust, Reputation, Expertise, Availability,
+Collaboration, and Impact) carry three evidence layers. These layers must not be treated as
+equivalent inputs to any score function or update rule.
+
+| Layer | Definition | Evidential weight |
+|---|---|---|
+| **Intent** | What the actor declares they will do or value | **Weak** — registers a preference, establishes a prior |
+| **Behavior** | What the actor demonstrably does, observable across cases | **Stronger** — pattern of action, independent of self-report |
+| **Outcomes** | What changed as a measurable result of the actor's contribution | **Strongest** — consequence-grounded, verifiable |
+
+**Core rule: Intent is an input. Behavior and Outcomes are updates.**
+
+A declared intent ("I want to help with education") is a starting prior, not evidence.
+Behavior (repeated educational contributions) updates the prior. Outcomes (documented
+results: gaps closed, problems resolved) establish the posterior.
+
+### §7.1 Application to Each Variable
+
+| Variable | Intent (weak prior) | Behavior (update) | Outcomes (strongest update) |
+|---|---|---|---|
+| **Trust** | Actor claims reliability | History of kept commitments | Resolutions that depended on this actor succeeded |
+| **Reputation** | Self-reported credentials | External assessments, peer reviews | Cases where reputation predicted performance correctly |
+| **Expertise** | Stated skills and domain | Work completed in domain | Results quality in domain-matched assignments |
+| **Availability** | Declared capacity | Load history, completion rates | On-time delivery rate across cases |
+| **Collaboration** | Willingness to collaborate declared | Co-resolution history | Team outcomes on cases with this actor |
+| **Impact** | Stated impact goals | Choices made in impact-aligned roles | Gaps closed in target domain, measurable results |
+
+### §7.2 Constraint
+
+A Marketplace state computed from Intent-only inputs is structurally invalid — the fixed
+point may be computationally real, but it does not represent the true state of the system.
+
+This constraint governs score functions (§8.2), update equations (§10), and any future
+Matching Engine. See §10.4 of `marketplace-dynamics-v0.md` for the enforcement mechanism.
+
+*This is an architectural constraint, not an empirical finding. Whether weighting by
+Behavior and Outcomes improves matching quality in practice is an open empirical question
+(Claim B; requires controlled evaluation).*
 
 ---
 

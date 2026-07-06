@@ -179,6 +179,32 @@ Cycle B (long):  T → M → O → E → Rep → T → V → M
 Both cycles pass through Trust and Evidence. If Trust and Evidence diverge, all downstream
 variables are unreliable.
 
+### §10.4 Evidence Source Constraint
+
+The update equations in §10.2 accept variable values as inputs. Those input values must
+themselves be grounded in the appropriate evidence layer (see §7 of `marketplace-core-v0.md`).
+Intent-only inputs are not valid sources for any variable update.
+
+| Variable | Minimum evidence required to update the value |
+|---|---|
+| **T** (Trust) | Behavioral or Outcome evidence — declared intent alone is not sufficient |
+| **E** (Evidence) | Outcome evidence preferred; behavioral evidence accepted with quality weight |
+| **Rep** (Reputation) | Behavioral evidence minimum; Outcome evidence preferred |
+| **M** (Match quality) | Observed post-match outcomes |
+| **O** (Outcomes) | Measured results; self-reported outcomes require independent verification |
+| **V** (Value alignment) | Behavioral or Outcome evidence — declared alignment is not sufficient |
+| **G** (Governance) | Auditor-verified compliance records |
+| **S, R, RA** | Derived from the above; inherit the evidence-layer constraint transitively |
+
+**Enforcement:** A Marketplace state whose T, E, Rep, O, or V values derive solely from
+actor-declared intent is structurally invalid under Invariant I5. The fixed point produced
+by the §10.2 equations is numerically valid but epistemically void — it reflects stated
+preferences, not evidence of performance.
+
+*This constraint does not change the coupling matrix W or the update equations. It governs
+what may be used as input to those equations. Real calibration of the constraint weights
+requires Outcome-level data that does not yet exist.*
+
 ---
 
 ## §11 Convergence Analysis Protocol
