@@ -135,12 +135,14 @@ function gapSim(a: GapType, b: GapType): number {
  *       + 0.10 · participants_jaccard
  */
 export function computeSimilarity(a: Case, b: Case): number {
-  return (
-    0.40 * jaccard(a.values,                         b.values)
-  + 0.30 * jaccard(a.pressure,                       b.pressure)
-  + 0.20 * gapSim(a.gap_type,                        b.gap_type)
-  + 0.10 * jaccard(a.participants ?? [],             b.participants ?? [])
+  const raw = (
+    0.40 * jaccard(a.values,               b.values)
+  + 0.30 * jaccard(a.pressure,             b.pressure)
+  + 0.20 * gapSim(a.gap_type,              b.gap_type)
+  + 0.10 * jaccard(a.participants ?? [],   b.participants ?? [])
   );
+  // Clamp to [0, 1]: IEEE 754 weight accumulation can produce values slightly outside range.
+  return Math.min(1, Math.max(0, raw));
 }
 
 // ── Validation ────────────────────────────────────────────────────────────
