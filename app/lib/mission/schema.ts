@@ -19,15 +19,10 @@
  * through MissionRepository, not through this file directly.
  */
 
-// ─── Shared primitives ───────────────────────────────────────────────────────
+// ─── Shared primitives (canonical source: app/lib/types.ts) ─────────────────
 
-export type EvidenceGrade =
-  | "Frozen"
-  | "Candidate"
-  | "Placeholder"
-  | "Not established";
-
-export type SignalType = "Intent" | "Behavior" | "Outcomes";
+import type { EvidenceGrade, SignalType, ValueRef } from "../types";
+export type { EvidenceGrade, SignalType, ValueRef };
 
 export type MissionStatus = "active" | "completed" | "abandoned" | "paused";
 
@@ -81,15 +76,6 @@ export interface MissionConstraints {
  */
 export interface GapRef {
   gapId: string;
-}
-
-/**
- * Pure pointer to a Value node (one of the 12 Candidate values).
- * Value label and evidenceGrade are owned by the Value node.
- * Resolve from ValueRepository (not yet built) when display data is needed.
- */
-export interface ValueRef {
-  valueId: string;
 }
 
 /**

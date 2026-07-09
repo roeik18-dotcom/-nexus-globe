@@ -17,7 +17,7 @@
  * It does NOT own Mission data, Value data, Capability data, or Provider data.
  */
 
-import type { EvidenceGrade, SignalType } from "../mission/schema";
+import type { EvidenceGrade, SignalType, ValueRef } from "../types";
 export type { EvidenceGrade, SignalType };
 
 // ─── Gap-specific types ───────────────────────────────────────────────────────
@@ -54,15 +54,6 @@ export interface GapContext {
   missionId: string;
   description: string;
   domain: string | null;
-}
-
-/**
- * Pure pointer to a Value node required to close this Gap.
- * Value label and grade are owned by the Value node.
- * Resolve from ValueRepository when display data is needed.
- */
-export interface ValueRef {
-  valueId: string;
 }
 
 /**
