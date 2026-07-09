@@ -1,0 +1,163 @@
+/**
+ * Mission Schema v0.1 — Candidate
+ *
+ * Source: docs/philos-universal-data-model-v0.md §2.2
+ * Grade:  Candidate — structure designed; not validated on real mission records.
+ *         Do not promote to Frozen until at least one real Mission record has been
+ *         created, read, and found complete.
+ *
+ * The Mission is the root entity of the PUDM chain:
+ *   Mission → Gap → Value → Capability → Provider
+ *
+ * Design rule: Mission owns only what it originates. It holds pure reference
+ * pointers (id only) to Gap, Value, Capability, and Provider nodes. Display
+ * names, labels, grades, and lifecycle state of referenced nodes are owned by
+ * those nodes and must be looked up from their respective repositories — never
+ * stored here.
+ *
+ * All subsystems (OPM, Marketplace, World, Agents) interact with Mission
+ * through MissionRepository, not through this file directly.
+ */
+
+// ─── Shared primitives ───────────────────────────────────────────────────────
+
+export type EvidenceGrade =
+  | "Frozen"
+  | "Candidate"
+  | "Placeholder"
+  | "Not established";
+
+export type SignalType = "Intent" | "Behavior" | "Outcomes";
+
+export type MissionStatus = "active" | "completed" | "abandoned" | "paused";
+
+export type MissionHorizon = "immediate" | "medium" | "long";
+
+export type ActorType = "Person" | "Organization" | "Community";
+
+// ─── Sub-structures (4-layer PUDM node model) ────────────────────────────────
+
+/** Layer 1 + base: Identity — what this Mission is. */
+export interface MissionIdentity {
+  id: string;
+  type: "Mission";
+  createdAt: string;  // ISO 8601
+  updatedAt: string;  // ISO 8601
+  evidenceGrade: EvidenceGrade;
+}
+
+/** Layer 2a: State — current lifecycle position. */
+export interface MissionState {
+  status: MissionStatus;
+  horizon: MissionHorizon;
+}
+
+/**
+ * Layer 2b: Context — who is running this Mission and why.
+ *
+ * actor.id + actor.type are the pointer to the actor node.
+ * actor display name and properties are owned by the Person / Organization /
+ * Community node and must be resolved from there — not stored here.
+ */
+export interface MissionContext {
+  actor: {
+    id: string;
+    type: ActorType;
+  };
+  statement: string;    // what the actor is trying to achieve
+  domain: string | null;
+}
+
+/** Layer 2c: Constraints — what limits or assumptions shape this Mission. */
+export interface MissionConstraints {
+  constraints: string[];
+  assumptions: string[];
+}
+
+/**
+ * Pure pointer to a Gap node.
+ * Gap description, status, and lifecycle are owned by the Gap node.
+ * Resolve from GapRepository (not yet built) when display data is needed.
+ */
+export interface GapRef {
+  gapId: string;
+}
+
+/**
+ * Pure pointer to a Value node (one of the 12 Candidate values).
+ * Value label and evidenceGrade are owned by the Value node.
+ * Resolve from ValueRepository (not yet built) when display data is needed.
+ */
+export interface ValueRef {
+  valueId: string;
+}
+
+/**
+ * Single evidence signal scoped to the Mission statement itself.
+ *
+ * TEMPORARY — v0.1 only.
+ * Per PUDM §4.3, evidence belongs on relation instances, not on nodes.
+ * This field represents only "evidence that the Mission statement is accurately
+ * stated by the actor" — it is NOT relation evidence (Mission → Gap, etc.).
+ * Will migrate to relation-level evidence when the Gap node is built.
+ */
+export interface EvidenceRecord {
+  signal: SignalType;
+  source: string | null;
+  observedAt: string | null;  // ISO 8601
+  note: string;
+}
+
+/** Layer 4a: Timeline — when things happened or are expected. */
+export interface MissionTimeline {
+  startedAt: string | null;   // ISO 8601
+  targetAt: string | null;
+  completedAt: string | null;
+}
+
+/** Layer 3 (Relations): other Missions this one connects to. */
+export interface MissionRelations {
+  relatedMissions: string[];  // MissionId[]
+}
+
+// ─── Full Mission node ────────────────────────────────────────────────────────
+
+/**
+ * Mission is the root entity of the PUDM chain. It owns:
+ *   - Its own statement, state, constraints, assumptions, and timeline.
+ *   - Pure reference pointers to Gap and Value nodes it originated.
+ *   - Temporary self-scoped evidence (see EvidenceRecord above).
+ *
+ * Mission does NOT own:
+ *   - Actor display names or properties (owned by actor node).
+ *   - Gap descriptions, statuses, or lifecycle (owned by Gap node).
+ *   - Value labels or evidence grades (owned by Value node).
+ *   - Capabilities or Providers (resolved by traversing the chain via Marketplace).
+ */
+export interface Mission extends MissionIdentity {
+  state: MissionState;
+  context: MissionContext;
+  constraints: MissionConstraints;
+  gaps: GapRef[];
+  requiredValues: ValueRef[];
+  evidence: EvidenceRecord[];
+  timeline: MissionTimeline;
+  relations: MissionRelations;
+}
+
+// ─── Input types (used by MissionRepository) ─────────────────────────────────
+
+/** Everything needed to create a new Mission. id, type, createdAt, updatedAt are
+ *  generated by the repository; evidenceGrade defaults to "Candidate". */
+export type CreateMissionInput = Omit<
+  Mission,
+  "id" | "type" | "createdAt" | "updatedAt"
+> & {
+  evidenceGrade?: EvidenceGrade;
+};
+
+/** Partial update — only supply the fields that change.
+ *  id, type, and createdAt are immutable after creation. */
+export type UpdateMissionInput = Partial<
+  Omit<Mission, "id" | "type" | "createdAt">
+>;
