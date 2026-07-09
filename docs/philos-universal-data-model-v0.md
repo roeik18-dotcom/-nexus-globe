@@ -3,7 +3,8 @@
 **Status:** Candidate — structure designed, individual node types vary in evidence grade.
 **Relation to existing specs:** This document is the meta model. All existing specs
 (`philos-opm-spec.md`, `marketplace-core-v0.md`, `dimension-reading-proposal.md`, etc.)
-are projections of this model onto specific domains.
+can be described as projections of this model onto specific domains. PUDM was written
+retroactively to encompass them — it does not imply the specs were designed from PUDM.
 
 ---
 
