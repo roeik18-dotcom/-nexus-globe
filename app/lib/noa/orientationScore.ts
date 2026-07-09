@@ -69,8 +69,8 @@ export function calculateOrientationScore(nodeId: number): OrientationScore | nu
   if (!el) return null;
 
   // 1. Balance gain — recovery vs. root (dimension) deficits.
-  const totalDeficit = hf.dimensions.reduce((s, d) => s + d.deficitBefore, 0);
-  const totalInflow = hf.dimensions.reduce((s, d) => s + d.inflow, 0);
+  const totalDeficit = hf.dimensions.reduce((s, d) => s + d.dimensionPressure, 0);
+  const totalInflow = hf.dimensions.reduce((s, d) => s + d.dimensionInflow, 0);
   const balanceGain = totalDeficit ? round((totalInflow / totalDeficit) * 100) : 0;
 
   // 2. Energy recovery — straight from the load distribution.
@@ -100,9 +100,9 @@ export function calculateOrientationScore(nodeId: number): OrientationScore | nu
 
   // What's still least covered after the network's help.
   const remaining = hf.dimensions.reduce(
-    (b, d) => (d.deficitAfter > b.deficitAfter ? d : b), hf.dimensions[0],
+    (b, d) => (d.dimensionDeficit > b.dimensionDeficit ? d : b), hf.dimensions[0],
   );
-  const strongestRemainingDeficit = { dimension: remaining.dimension, deficit: remaining.deficitAfter };
+  const strongestRemainingDeficit = { dimension: remaining.dimension, deficit: remaining.dimensionDeficit };
 
   const summary =
     `Nexus improves orientation by distributing collective burden, restoring energy, ` +

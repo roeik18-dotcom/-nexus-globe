@@ -1,22 +1,24 @@
 // PHILOS NEXUS · canon department labels.
 //
-// The chain's internal department KEYS (ID/EGO/SUPEREGO) are Freudian and remain
-// as internal identifiers only. Every VISIBLE rendering must go through deptLabel
-// so the product shows the Philos canon vectors instead:
-//   ID → Drive · EGO → Informational · SUPEREGO → Social   (Physical/Emotional/Rational unchanged)
-// Person (אדם) is the orientation reference point; these are influence vectors
-// relative to the Person. Freud terms may remain only in code/comments, never in UI.
+// Internal department KEYS are stable identifiers (Physical/Emotional/Rational/ID/EGO/SUPEREGO).
+// Every VISIBLE rendering must go through deptLabel so the product shows the Nexus
+// canon names instead — which are distinct from the Dimension names (Physical/Emotional/Rational).
+//
+// Dimension → what the person has (resource)
+// Department → where load is registered and processed (engine)
+//   Physical dept → Body   · Emotional dept → Heart  · Rational dept → Mind
+//   ID → Drive            · EGO → Navigation         · SUPEREGO → Values
 
 export const DEPT_LABEL: Record<string, string> = {
-  Physical: 'Physical',
-  Emotional: 'Emotional',
-  Rational: 'Rational',
+  Physical: 'Body',
+  Emotional: 'Heart',
+  Rational: 'Mind',
   ID: 'Drive',
-  EGO: 'Informational',
-  SUPEREGO: 'Social',
+  EGO: 'Navigation',
+  SUPEREGO: 'Values',
 };
 
-/** Map an internal department key to its visible canon label (never shows Freud terms). */
+/** Map an internal department key to its visible canon name. */
 export function deptLabel(dept: string | null | undefined): string {
   return dept ? (DEPT_LABEL[dept] ?? dept) : '—';
 }

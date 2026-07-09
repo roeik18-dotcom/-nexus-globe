@@ -40,7 +40,8 @@ export interface HelperAllocation {
   name: string;
   role: LoadRole;
   loadType: string;   // Hebrew category label
-  allocated: number;  // load units absorbed
+  capacity: number;   // max this helper can contribute (role × supportCapacity ceiling)
+  allocated: number;  // load units actually absorbed (≤ capacity, constrained by queue)
 }
 
 export interface LoadDistribution {
@@ -143,10 +144,11 @@ export function computeLoadDistribution(
     if (!node) continue;
     const prof = seedLoadProfiles[node.id];
     const roleLoad = ROLE_LOAD[role];
-    const alloc = Math.min(roleLoad.amount, prof.supportCapacity, remaining);
+    const capacity = Math.min(roleLoad.amount, prof.supportCapacity);
+    const alloc = Math.min(capacity, remaining);
     if (alloc <= 0) continue;
     remaining -= alloc;
-    helpers.push({ id: node.id, name: node.name, role, loadType: roleLoad.loadType, allocated: alloc });
+    helpers.push({ id: node.id, name: node.name, role, loadType: roleLoad.loadType, capacity, allocated: alloc });
   }
 
   const distributedLoad = distributable - remaining;

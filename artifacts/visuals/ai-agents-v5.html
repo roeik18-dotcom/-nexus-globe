@@ -1,0 +1,574 @@
+<title>AI Agent Architecture</title>
+
+<style>
+:root {
+  --bg:#0B0F17; --sf:#131A24; --sf2:#1A2232; --bd:#273142;
+  --tx:#F3F5F7; --mu:#93A1B3; --dim:#5B6B7E;
+  --blue:#5B8CFF;   --blue-bg:rgba(91,140,255,.1);   --blue-bd:rgba(91,140,255,.28);
+  --purple:#A371F7; --purple-bg:rgba(163,113,247,.1); --purple-bd:rgba(163,113,247,.28);
+  --teal:#2DA890;   --teal-bg:rgba(45,168,144,.1);    --teal-bd:rgba(45,168,144,.28);
+  --green:#2FBF71;  --green-bg:rgba(47,191,113,.1);   --green-bd:rgba(47,191,113,.28);
+  --amber:#FFB84D;  --amber-bg:rgba(255,184,77,.1);   --amber-bd:rgba(255,184,77,.28);
+  --red:#FF6B6B;    --red-bg:rgba(255,107,107,.1);    --red-bd:rgba(255,107,107,.28);
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Fira Code','Cascadia Mono','Courier New',monospace;
+}
+@media(prefers-color-scheme:light){
+  :root{--bg:#F0F2F5;--sf:#FFF;--sf2:#F5F7FA;--bd:#D0D7E0;--tx:#0B0F17;--mu:#4A5568;--dim:#8897AA;}
+}
+:root[data-theme=dark]{--bg:#0B0F17;--sf:#131A24;--sf2:#1A2232;--bd:#273142;--tx:#F3F5F7;--mu:#93A1B3;--dim:#5B6B7E;}
+:root[data-theme=light]{--bg:#F0F2F5;--sf:#FFF;--sf2:#F5F7FA;--bd:#D0D7E0;--tx:#0B0F17;--mu:#4A5568;--dim:#8897AA;}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);background:var(--bg);color:var(--tx);-webkit-font-smoothing:antialiased;}
+.page{max-width:1040px;margin:0 auto;padding:0 28px 80px;border-left:1px solid var(--bd);border-right:1px solid var(--bd);min-height:100vh;}
+
+/* === Header === */
+header{padding:56px 0 40px;border-bottom:1px solid var(--bd);margin-bottom:48px;display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;}
+.h-left{}
+.h-eyebrow{font-family:var(--mono);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:12px;}
+.h-title{font-size:clamp(1.8rem,4vw,2.6rem);font-weight:700;letter-spacing:-.025em;line-height:1.1;text-wrap:balance;}
+.h-title .ac{color:var(--blue);}
+.h-sub{font-size:.82rem;color:var(--mu);margin-top:8px;}
+.h-badge{font-family:var(--mono);font-size:.65rem;color:var(--mu);background:var(--sf);border:1px solid var(--bd);padding:4px 10px;border-radius:4px;}
+
+/* === Section label === */
+.sl{font-family:var(--mono);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+.sl::after{content:'';flex:1;height:1px;background:var(--bd);}
+.sec{margin-bottom:52px;}
+
+/* === Layer === */
+.layer{margin-bottom:48px;}
+.layer-head{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:10px 14px;background:var(--sf);border:1px solid var(--bd);border-left:3px solid var(--lc,var(--blue));border-radius:6px;}
+.layer-num{font-family:var(--mono);font-size:.6rem;color:var(--dim);letter-spacing:.1em;}
+.layer-name{font-size:.82rem;font-weight:600;color:var(--tx);}
+.layer-desc{font-size:.75rem;color:var(--mu);margin-left:auto;}
+
+/* === Cards === */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:stretch;}
+.cards.col4{grid-template-columns:repeat(4,1fr);}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:16px 18px 18px;position:relative;overflow:hidden;display:flex;flex-direction:column;transition:border-color .15s;}
+.card:hover{border-color:var(--cc,var(--blue));}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--cc,var(--blue));}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;}
+.card-id{display:flex;align-items:center;gap:8px;}
+.ci{width:28px;height:28px;border-radius:5px;background:var(--cc-bg,var(--blue-bg));border:1px solid var(--cc-bd,var(--blue-bd));display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ci svg{width:14px;height:14px;fill:none;stroke:var(--cc,var(--blue));stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.cn{font-size:.88rem;font-weight:600;color:var(--tx);}
+.badge{font-family:var(--mono);font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;border-radius:3px;background:var(--cc-bg,var(--blue-bg));color:var(--cc,var(--blue));border:1px solid var(--cc-bd,var(--blue-bd));white-space:nowrap;flex-shrink:0;}
+
+/* 4-field rows */
+.fields{flex:1;display:flex;flex-direction:column;gap:0;border-top:1px solid var(--bd);padding-top:10px;margin-top:2px;}
+.field{display:grid;grid-template-columns:68px 1fr;gap:6px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03);}
+.field:last-of-type{border-bottom:none;}
+.fl{font-family:var(--mono);font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);padding-top:1px;}
+.fv{font-size:.76rem;color:var(--mu);line-height:1.6;}
+.fv .dot{color:var(--dim);}
+
+/* Hebrew field */
+.fhe{font-size:.72rem;color:var(--dim);direction:rtl;text-align:right;border-top:1px solid var(--bd);padding-top:8px;margin-top:8px;line-height:1.65;}
+
+/* === Execution Flow === */
+.flow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 24px;}
+.flow-col{display:flex;flex-direction:column;}
+.flow-step{display:flex;align-items:flex-start;gap:10px;padding:10px 0;}
+.flow-step + .flow-step{border-top:1px solid var(--bd);}
+.fnum{font-family:var(--mono);font-size:.8rem;color:var(--blue);width:22px;flex-shrink:0;font-weight:700;}
+.fstep{flex:1;}
+.fstep-name{font-size:.82rem;font-weight:600;color:var(--tx);margin-bottom:2px;}
+.fstep-desc{font-size:.72rem;color:var(--mu);line-height:1.5;}
+
+/* === Knowledge Graph === */
+.graph-wrap{background:var(--sf);border:1px solid var(--bd);border-radius:8px;overflow:hidden;}
+#kg{width:100%;display:block;}
+
+/* === Confusions === */
+.conf-table{width:100%;border-collapse:collapse;font-size:.8rem;}
+.conf-table th{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);padding:8px 14px;text-align:left;border-bottom:1px solid var(--bd);}
+.conf-table td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:top;line-height:1.5;}
+.conf-table tr:last-child td{border-bottom:none;}
+.conf-table td:first-child{font-family:var(--mono);font-size:.72rem;color:var(--amber);white-space:nowrap;}
+.conf-table td:last-child{color:var(--mu);}
+.conf-table tr:hover td{background:var(--sf2);}
+.conf-wrap{background:var(--sf);border:1px solid var(--bd);border-radius:8px;overflow:hidden;}
+
+/* === Footer === */
+footer{border-top:1px solid var(--bd);padding-top:20px;margin-top:52px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+.ft{font-family:var(--mono);font-size:.6rem;color:var(--dim);}
+
+/* === Responsive === */
+@media(max-width:780px){.cards,.cards.col4{grid-template-columns:1fr 1fr;}.flow{grid-template-columns:1fr;}.h-badge{display:none;}}
+@media(max-width:520px){.cards,.cards.col4{grid-template-columns:1fr;}.page{padding:0 14px 60px;}}
+@media print{body{background:#fff;color:#000;}.page{border:none;}}
+</style>
+
+<div class="page">
+
+<header>
+  <div class="h-left">
+    <div class="h-eyebrow">System Architecture · Engineering Reference</div>
+    <h1 class="h-title"><span class="ac">AI Agent</span> Architecture</h1>
+    <p class="h-sub">Layers, concepts, execution model, and dependency map for modern AI Agent systems.</p>
+  </div>
+  <div class="h-badge">v2.0 · 2026</div>
+</header>
+
+<!-- ─── Layer 1: Foundation ─── -->
+<section class="layer" style="--lc:var(--blue)">
+  <div class="layer-head">
+    <span class="layer-num">LAYER 01</span>
+    <span class="layer-name">Foundation</span>
+    <span class="layer-desc">What every agent is built on</span>
+  </div>
+  <div class="cards">
+
+    <div class="card" style="--cc:var(--blue);--cc-bg:var(--blue-bg);--cc-bd:var(--blue-bd)">
+      <div class="card-head">
+        <div class="card-id">
+          <div class="ci"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+          <span class="cn">Model (LLM)</span>
+        </div>
+        <span class="badge">LLM</span>
+      </div>
+      <div class="fields">
+        <div class="field"><span class="fl">Purpose</span><span class="fv">Compute language — generate text, tool calls, and reasoning traces from a context window.</span></div>
+        <div class="field"><span class="fl">Input</span><span class="fv">Context window (prompt <span class="dot">·</span> history <span class="dot">·</span> retrieved docs <span class="dot">·</span> tool results)</span></div>
+        <div class="field"><span class="fl">Output</span><span class="fv">Text tokens, tool call instructions, chain-of-thought</span></div>
+        <div class="field"><span class="fl">Runtime</span><span class="fv">Every inference step</span></div>
+      </div>
+      <div class="fhe">מחשב שפה — מייצר טקסט, קריאות כלים ועקבות חשיבה מתוך חלון ההקשר.</div>
+    </div>
+
+    <div class="card" style="--cc:var(--blue);--cc-bg:var(--blue-bg);--cc-bd:var(--blue-bd)">
+      <div class="card-head">
+        <div class="card-id">
+          <div class="ci"><svg viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div>
+          <span class="cn">Prompt</span>
+        </div>
+        <span class="badge">PROMPT</span>
+      </div>
+      <div class="fields">
+        <div class="field"><span class="fl">Purpose</span><span class="fv">Define task, persona, constraints, output format, and tools available to the model.</span></div>
+        <div class="field"><span class="fl">Input</span><span class="fv">Human-authored instructions <span class="dot">·</span> dynamic variables <span class="dot">·</span> tool schemas</span></div>
+        <div class="field"><span class="fl">Output</span><span class="fv">System prompt injected at the top of the context window</span></div>
+        <div class="field"><span class="fl">Runtime</span><span class="fv">Per session or per request</span></div>
+      </div>
+      <div class="fhe">מגדיר משימה, אישיות, מגבלות, פורמט פלט וכלים זמינים למודל.</div>
+    </div>
+
+    <div class="card" style="--cc:var(--blue);--cc-bg:var(--blue-bg);--cc-bd:var(--blue-bd)">
+      <div class="card-head">
+        <div class="card-id">
+          <div class="ci"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <span class="cn">Context</span>
+        </div>
+        <span class="badge">CONTEXT</span>
+      </div>
+      <div class="fields">
+        <div class="field"><span class="fl">Purpose</span><span class="fv">Supply all working information to the model for a single inference step.</span></div>
+        <div class="field"><span class="fl">Input</span><span class="fv">Prompt <span class="dot">·</span> conversation history <span class="dot">·</span> retrieved docs <span class="dot">·</span> tool results</span></div>
+        <div class="field"><span class="fl">Output</span><span class="fv">Full context window passed to the LLM</span></div>
+        <div class="field"><span class="fl">Runtime</span><span class="fv">Assembled fresh per inference step · bounded by model limit</span></div>
+      </div>
+      <div class="fhe">מספק את כל המידע הפעיל למודל לשלב הסקה בודד. מוגבל בחלון ההקשר.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─── Layer 2: Cognitive ─── -->
+<section class="layer" style="--lc:var(--purple)">
+  <div class="layer-head">
+    <span class="layer-num">LAYER 02</span>
+    <span class="layer-name">Cognitive</span>
+    <span class="layer-desc">How the agent thinks</span>
+  </div>
+  <div class="cards">
+
+    <div class="card" style="--cc:var(--purple);--cc-bg:var(--purple-bg);--cc-bd:var(--purple-bd)">
+      <div class="card-head">
+        <div class="card-id">
+          <div class="ci"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.6-1.4 4.9-3.5 6.1L15 17H9l-.5-1.9C6.4 13.9 5 11.6 5 9a7 7 0 0 1 7-7z"/><path d="M9 21h6M10 17v-2h4v2"/></svg></div>
+          <span class="cn">Reasoning</span>
+        </div>
+        <span class="badge">REASONING</span>
+      </div>
+      <div class="fields">
+        <div class="field"><span class="fl">Purpose</span><span class="fv">Work through multi-step problems, weigh options, produce intermediate conclusions.</span></div>
+        <div class="field"><span class="fl">Input</span><span class="fv">Context <span class="dot">·</span> goal <span class="dot">·</span> prior observations</span></div>
+        <div class="field"><span class="fl">Output</span><span class="fv">Chain-of-thought, decision path, ranked options</span></div>
+        <div class="field"><span class="fl">Used by</span><span class="fv">Agent <span class="dot">·</span> Planning</span></div>
+      </div>
+      <div class="fhe">מעבד בעיות רב-שלביות, שוקל אפשרויות, ומייצר מסקנות ביניים מפורשות.</div>
+    </div>
+
+    <div class="card" style="--cc:var(--purple);--cc-bg:var(--purple-bg);--cc-bd:var(--purple-bd)">
+      <div class="card-head">
+        <div class="card-id">
+          <div class="ci"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
+          <span class="cn">Planning</span>
+        </div>
+        <span class="badge">PLANNER</span>
+      </div>
+      <div class="fields">
+        <div class="field"><span class="fl">Purpose</span><span class="fv">Decompose a complex goal into an ordered, executable sequence of subtasks.</span></div>
+        <div class="field"><span class="fl">Input</span><span class="fv">Goal <span class="dot">·</span> Reasoning output <span class="dot">·</span> available tools</span></div>
+        <div class="field"><span class="fl">Output</span><span class="fv">Ordered step plan with dependencies</span></div>
+        <div class="field"><span class="fl">Used by</span><span class="fv">Agent <span class="dot">·</span> Orchestrator</span></div>
+      </div>
+      <div class="fhe">מפרק מטרה מורכבת לרצף מסודר של משימות משנה הניתנות לביצוע.</div>
+    </div>
+
+    <div class="card" style="--cc:var(--teal);--cc-bg:var(--teal-bg);--cc-bd:var(--teal-bd)">
+      <div class="card-head">
+        <div class="card-id">
+          <div class="ci"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
+          <span class="cn">Memory</span>
+        </div>
+        <span class="badge">MEMORY</span>
+      </div>
+      <div class="fields">
+        <div class="field"><span class="fl">Purpose</span><span class="fv">Persist and retrieve information across interactions and agent iterations.</span></div>
+        <div class="field"><span class="fl">Input</span><span class="fv">Conversation history <span class="dot">·</span> tool results <span class="dot">·</span> episodic data</span></div>
+        <div class="field"><span class="fl">Output</span><span class="fv">Retrieved context injected into prompt or used by Planner</span></div>
+        <div class="field"><span class="fl">Runtime</span><span class="fv">Read before each step · written after each step</span></div>
+      </div>
+      <div class="fhe">מאחסן ומאחזר מידע לאורך אינטראקציות ואיטרציות סוכן.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─── Layer 3: Runtime ─── -->
+<section class="layer" style="--lc:var(--teal)">
+  <div class="layer-head">
+    <span class="layer-num">LAYER 03</span>
+    <span class="layer-name">Runtime</span>
+    <span class="layer-desc">What executes at run time</span>
+  </div>
+  <div class="cards col4">
+
+    <div class="card" style="--cc:var(--blue);--cc-bg:var(--blue-bg);--cc-bd:var(--blue-bd)">
+      <div class="card-head">
+        <div class="card-id">
+          <div class="ci"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/></svg></div>
+          <span class="cn">Agent</span>
+        </div>
+        <span class="badge">AGENT</span>
+      </div>
+      <div class="fields">
+        <div class="field"><span class="fl">Purpose</span><span class="fv">Autonomous loop: perceive, plan, act, observe, repeat until goal met.</span></div>
+        <div class="field"><span class="fl">Input</span><span class="fv">Goal <span class="dot">·</span> Tools <span class="dot">·</span> Memory <span class="dot">·</span> Model</span></div>
+        <div class="field"><span class="fl">Output</span><span class="fv">Actions, tool calls, final response</span></div>
+        <div class="field"><span class="fl">Runtime</span><span class="fv">Iterative loop until done or limit</span></div>
+      </div>
+      <div class="fhe">לולאה אוטונומית: תפיסה, תכנון, פעולה, תצפית — עד להשגת המטרה.</div>
+    </div>
+
+    <div class="card" style="--cc:var(--green);--cc-bg:var(--green-bg);--cc-bd:var(--green-bd)">
+      <div class="card-head">
+        <div class="card-id">
+          <div class="ci"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg></div>
+          <span class="cn">Tools</span>
+        </div>
+        <span class="badge">TOOL</span>
+      </div>
+      <div class="fields">
+        <div class="field"><span class="fl">Purpose</span><span class="fv">Execute a single callable action in the environment.</span></div>
+        <div class="field"><span class="fl">Input</span><span class="fv">Tool name <span class="dot">·</span> parameters from model output</span></div>
+        <div class="field"><span class="fl">Output</span><span class="fv">Result returned to model as an observation</span></div>
+        <div class="field"><span class="fl">Runtime</span><span class="fv">On demand, per tool call</span></div>
+      </div>
+      <div class="fhe">מבצע פעולה קריאה בודדת בסביבה ומחזיר תוצאה כתצפית.</div>
+    </div>
+
+    <div class="card" style="--cc:var(--red);--cc-bg:var(--red-bg);--cc-bd:var(--red-bd)">
+      <div class="card-head">
+        <div class="card-id">
+          <div class="ci"><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg></div>
+          <span class="cn">Workflow</span>
+        </div>
+        <span class="badge">WORKFLOW</span>
+      </div>
+      <div class="fields">
+        <div class="field"><span class="fl">Purpose</span><span class="fv">Deterministic, code-controlled sequence of LLM calls and tool steps.</span></div>
+        <div class="field"><span class="fl">Input</span><span class="fv">Pipeline spec <span class="dot">·</span> initial data</span></div>
+        <div class="field"><span class="fl">Output</span><span class="fv">Structured result from final step</span></div>
+        <div class="field"><span class="fl">Runtime</span><span class="fv">Code-driven — loop is NOT model-controlled</span></div>
+      </div>
+      <div class="fhe">רצף דטרמיניסטי ונשלט-קוד של קריאות LLM וכלים — הלולאה בשליטת הקוד, לא המודל.</div>
+    </div>
+
+    <div class="card" style="--cc:var(--amber);--cc-bg:var(--amber-bg);--cc-bd:var(--amber-bd)">
+      <div class="card-head">
+        <div class="card-id">
+          <div class="ci"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <span class="cn">Observation</span>
+        </div>
+        <span class="badge">OBS</span>
+      </div>
+      <div class="fields">
+        <div class="field"><span class="fl">Purpose</span><span class="fv">Feed tool results and environment state back to the model for next step.</span></div>
+        <div class="field"><span class="fl">Input</span><span class="fv">Tool output <span class="dot">·</span> environment state</span></div>
+        <div class="field"><span class="fl">Output</span><span class="fv">New context added for next reasoning step</span></div>
+        <div class="field"><span class="fl">Runtime</span><span class="fv">After every tool execution</span></div>
+      </div>
+      <div class="fhe">מזין תוצאות כלים ומצב סביבה חזרה למודל כקלט לשלב הבא.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─── Layer 4: Orchestration ─── -->
+<section class="layer" style="--lc:var(--green)">
+  <div class="layer-head">
+    <span class="layer-num">LAYER 04</span>
+    <span class="layer-name">Orchestration &amp; Infrastructure</span>
+    <span class="layer-desc">Coordination and external resources</span>
+  </div>
+  <div class="cards col4">
+
+    <div class="card" style="--cc:var(--blue);--cc-bg:var(--blue-bg);--cc-bd:var(--blue-bd)">
+      <div class="card-head">
+        <div class="card-id">
+          <div class="ci"><svg viewBox="0 0 24 24"><circle cx="12" cy="4" r="2"/><circle cx="4" cy="20" r="2"/><circle cx="20" cy="20" r="2"/><path d="M12 6v4M8.5 18.5 12 10M15.5 18.5 12 10"/></svg></div>
+          <span class="cn">Orchestrator</span>
+        </div>
+        <span class="badge">ORCH</span>
+      </div>
+      <div class="fields">
+        <div class="field"><span class="fl">Purpose</span><span class="fv">Coordinate multiple agents, sub-agents, or pipeline steps.</span></div>
+        <div class="field"><span class="fl">Input</span><span class="fv">High-level goal <span class="dot">·</span> agent registry <span class="dot">·</span> constraints</span></div>
+        <div class="field"><span class="fl">Output</span><span class="fv">Routed tasks, aggregated results, final synthesis</span></div>
+        <div class="field"><span class="fl">Used by</span><span class="fv">Multi-Agent systems <span class="dot">·</span> complex pipelines</span></div>
+      </div>
+      <div class="fhe">מתאם בין מספר סוכנים או שלבי צינור, מנתב משימות ומאגד תוצאות.</div>
+    </div>
+
+    <div class="card" style="--cc:var(--purple);--cc-bg:var(--purple-bg);--cc-bd:var(--purple-bd)">
+      <div class="card-head">
+        <div class="card-id">
+          <div class="ci"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4"/><circle cx="17" cy="17" r="4"/><path d="M13 21h8"/><path d="M17 13v8"/></svg></div>
+          <span class="cn">Multi-Agent</span>
+        </div>
+        <span class="badge">MULTI</span>
+      </div>
+      <div class="fields">
+        <div class="field"><span class="fl">Purpose</span><span class="fv">Distribute work across specialized agents running concurrently or sequentially.</span></div>
+        <div class="field"><span class="fl">Input</span><span class="fv">Decomposed subtasks <span class="dot">·</span> shared context</span></div>
+        <div class="field"><span class="fl">Output</span><span class="fv">Parallel results aggregated by orchestrator</span></div>
+        <div class="field"><span class="fl">Used by</span><span class="fv">Complex workflows <span class="dot">·</span> long-horizon tasks</span></div>
+      </div>
+      <div class="fhe">מפיץ עבודה בין סוכנים מתמחים הפועלים במקביל או ברצף.</div>
+    </div>
+
+    <div class="card" style="--cc:var(--teal);--cc-bg:var(--teal-bg);--cc-bd:var(--teal-bd)">
+      <div class="card-head">
+        <div class="card-id">
+          <div class="ci"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+          <span class="cn">RAG</span>
+        </div>
+        <span class="badge">RAG</span>
+      </div>
+      <div class="fields">
+        <div class="field"><span class="fl">Purpose</span><span class="fv">Ground responses in retrieved external knowledge.</span></div>
+        <div class="field"><span class="fl">Input</span><span class="fv">Query <span class="dot">·</span> vector store <span class="dot">·</span> document corpus</span></div>
+        <div class="field"><span class="fl">Output</span><span class="fv">Relevant chunks injected into context before generation</span></div>
+        <div class="field"><span class="fl">Runtime</span><span class="fv">On query, before each LLM call</span></div>
+      </div>
+      <div class="fhe">מעגן תגובות בידע חיצוני שנשלף ממאגר וקטורים לפני היצירה.</div>
+    </div>
+
+    <div class="card" style="--cc:var(--green);--cc-bg:var(--green-bg);--cc-bd:var(--green-bd)">
+      <div class="card-head">
+        <div class="card-id">
+          <div class="ci"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+          <span class="cn">MCP</span>
+        </div>
+        <span class="badge">MCP</span>
+      </div>
+      <div class="fields">
+        <div class="field"><span class="fl">Purpose</span><span class="fv">Standardize how agents connect to external tools, data, and services.</span></div>
+        <div class="field"><span class="fl">Input</span><span class="fv">Tool definitions <span class="dot">·</span> server connections</span></div>
+        <div class="field"><span class="fl">Output</span><span class="fv">Callable tools exposed to the model via standard protocol</span></div>
+        <div class="field"><span class="fl">Runtime</span><span class="fv">Session init + per tool call</span></div>
+      </div>
+      <div class="fhe">מתקנן חיבור סוכנים לכלים, נתונים ושירותים חיצוניים דרך פרוטוקול אחיד.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─── Execution Flow ─── -->
+<section class="sec">
+  <div class="sl">Execution Flow</div>
+  <div style="background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:24px 28px;">
+    <div class="flow">
+      <div class="flow-col">
+        <div class="flow-step"><span class="fnum">①</span><div class="fstep"><div class="fstep-name">Receive Goal</div><div class="fstep-desc">User input arrives; intent extracted</div></div></div>
+        <div class="flow-step"><span class="fnum">②</span><div class="fstep"><div class="fstep-name">Build Context</div><div class="fstep-desc">Prompt assembled; memory + RAG injected</div></div></div>
+        <div class="flow-step"><span class="fnum">③</span><div class="fstep"><div class="fstep-name">Reason</div><div class="fstep-desc">LLM produces chain-of-thought</div></div></div>
+      </div>
+      <div class="flow-col">
+        <div class="flow-step"><span class="fnum">④</span><div class="fstep"><div class="fstep-name">Plan</div><div class="fstep-desc">Steps decomposed; dependencies mapped</div></div></div>
+        <div class="flow-step"><span class="fnum">⑤</span><div class="fstep"><div class="fstep-name">Select Tool</div><div class="fstep-desc">Model emits tool call with parameters</div></div></div>
+        <div class="flow-step"><span class="fnum">⑥</span><div class="fstep"><div class="fstep-name">Execute</div><div class="fstep-desc">Tool runs; result returned to model</div></div></div>
+      </div>
+      <div class="flow-col">
+        <div class="flow-step"><span class="fnum">⑦</span><div class="fstep"><div class="fstep-name">Observe Result</div><div class="fstep-desc">Output evaluated; loop back to ③ if needed</div></div></div>
+        <div class="flow-step"><span class="fnum">⑧</span><div class="fstep"><div class="fstep-name">Update Memory</div><div class="fstep-desc">Interaction stored for future retrieval</div></div></div>
+        <div class="flow-step"><span class="fnum">⑨</span><div class="fstep"><div class="fstep-name">Return Response</div><div class="fstep-desc">Final output delivered to user</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Knowledge Graph ─── -->
+<section class="sec">
+  <div class="sl">Knowledge Graph</div>
+  <div class="graph-wrap">
+    <svg id="kg" viewBox="0 0 740 480" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+</section>
+
+<!-- ─── Common Confusions ─── -->
+<section class="sec">
+  <div class="sl">Common Confusions</div>
+  <div class="conf-wrap">
+    <table class="conf-table">
+      <thead><tr><th>Confusion</th><th>Correct Interpretation</th></tr></thead>
+      <tbody>
+        <tr><td>Agent vs LLM</td><td>The LLM <em>generates</em> text. The Agent <em>orchestrates</em> — it decides when to call the LLM, which tools to invoke, and when the goal is met.</td></tr>
+        <tr><td>Memory vs Context</td><td>Context exists only for the current inference step. Memory persists across steps and sessions; it feeds into Context when retrieved.</td></tr>
+        <tr><td>Planning vs Reasoning</td><td>Reasoning <em>thinks through</em> a problem and weighs options. Planning <em>sequences</em> the output of reasoning into an executable order.</td></tr>
+        <tr><td>Tool vs Workflow</td><td>A Tool executes a single capability (one function call). A Workflow coordinates many calls — LLM + tool steps — in a defined sequence.</td></tr>
+        <tr><td>RAG vs Memory</td><td>RAG retrieves <em>external, document-level</em> knowledge from a vector store. Memory stores <em>prior interaction history</em> and episodic data.</td></tr>
+        <tr><td>MCP vs API</td><td>An API exposes a service. MCP is a <em>standard protocol</em> that makes that service natively callable by AI models in a consistent format.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <span class="ft">AI Agent Architecture · Reference v2.0</span>
+  <span class="ft">Engineering Reference · 2026</span>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  const svg = document.getElementById('kg');
+  const NS = 'http://www.w3.org/2000/svg';
+  const st = getComputedStyle(document.documentElement);
+  const c = {
+    bg:   st.getPropertyValue('--sf').trim()   || '#131A24',
+    bd:   st.getPropertyValue('--bd').trim()   || '#273142',
+    tx:   st.getPropertyValue('--tx').trim()   || '#F3F5F7',
+    mu:   st.getPropertyValue('--mu').trim()   || '#93A1B3',
+    dim:  st.getPropertyValue('--dim').trim()  || '#5B6B7E',
+    blue: st.getPropertyValue('--blue').trim() || '#5B8CFF',
+    pur:  st.getPropertyValue('--purple').trim()|| '#A371F7',
+    teal: st.getPropertyValue('--teal').trim() || '#2DA890',
+    grn:  st.getPropertyValue('--green').trim()|| '#2FBF71',
+    sf2:  st.getPropertyValue('--sf2').trim()  || '#1A2232',
+    mono: st.getPropertyValue('--mono').trim() || 'monospace',
+  };
+
+  function mk(tag, attrs){
+    const el = document.createElementNS(NS, tag);
+    for(const [k,v] of Object.entries(attrs)) el.setAttribute(k,v);
+    return el;
+  }
+
+  // Arrowhead marker
+  const defs = mk('defs',{});
+  ['blue','purple','teal','green'].forEach(name=>{
+    const col = name==='purple'?c.pur:name==='teal'?c.teal:name==='green'?c.grn:c.blue;
+    const m = mk('marker',{id:'arr-'+name,'markerWidth':'8','markerHeight':'8','refX':'6','refY':'3','orient':'auto','markerUnits':'userSpaceOnUse'});
+    const p = mk('path',{d:'M0,0 L0,6 L8,3 z',fill:col});
+    m.appendChild(p); defs.appendChild(m);
+  });
+  svg.appendChild(defs);
+
+  // Background
+  svg.appendChild(mk('rect',{x:0,y:0,width:740,height:480,fill:c.bg}));
+
+  // Node spec: [id, label, sublabel, cx, cy, color, markerColor]
+  const nodes = [
+    ['prompt',  'Prompt',        'PROMPT', 130, 55,  c.blue, 'blue'],
+    ['context', 'Context',       'CONTEXT',430, 55,  c.blue, 'blue'],
+    ['llm',     'LLM Model',     'LLM',    280, 155, c.blue, 'blue'],
+    ['reason',  'Reasoning',     'COG',    110, 268, c.pur,  'purple'],
+    ['memory',  'Memory',        'MEM',    450, 268, c.teal, 'teal'],
+    ['plan',    'Planning',      'PLAN',   280, 370, c.pur,  'purple'],
+    ['agent',   'Agent',         'AGENT',  280, 455, c.blue, 'blue'],
+    ['tools',   'Tools',         'TOOL',   130, 455, c.grn,  'green'],
+    ['rag',     'RAG',           'RAG',    450, 390, c.teal, 'teal'],
+  ];
+
+  // Edges: [from, to, marker-color]
+  const edges = [
+    ['prompt','llm','blue'],['context','llm','blue'],
+    ['llm','reason','purple'],['llm','memory','teal'],
+    ['reason','plan','purple'],['memory','plan','teal'],
+    ['plan','agent','blue'],
+    ['agent','tools','green'],
+    ['rag','plan','teal'],
+  ];
+
+  const pos = {};
+  nodes.forEach(([id,,,cx,cy])=>pos[id]={cx,cy});
+
+  // Draw edges first
+  edges.forEach(([a,b,col])=>{
+    const {cx:ax,cy:ay}=pos[a], {cx:bx,cy:by}=pos[b];
+    const dx=bx-ax, dy=by-ay, len=Math.sqrt(dx*dx+dy*dy);
+    const ux=dx/len, uy=dy/len;
+    const pad=42;
+    const x1=ax+ux*pad, y1=ay+uy*pad;
+    const x2=bx-ux*(pad+6), y2=by-uy*(pad+6);
+    const colVal=col==='purple'?c.pur:col==='teal'?c.teal:col==='green'?c.grn:c.blue;
+    const line = mk('line',{x1,y1,x2,y2,stroke:colVal,'stroke-width':'1.2','stroke-opacity':'.5','marker-end':'url(#arr-'+col+')'});
+    svg.appendChild(line);
+  });
+
+  // Draw nodes
+  const NW=108, NH=34, R=6;
+  nodes.forEach(([id,label,sublabel,cx,cy,col])=>{
+    const x=cx-NW/2, y=cy-NH/2;
+    const g = mk('g',{});
+    // Background rect
+    const rect=mk('rect',{x,y,width:NW,height:NH,rx:R,fill:c.sf2,stroke:col,'stroke-width':'1.2','stroke-opacity':'.6'});
+    g.appendChild(rect);
+    // Top stripe
+    const stripe=mk('rect',{x,y,width:NW,height:2,rx:R,fill:col,'fill-opacity':'.9'});
+    g.appendChild(stripe);
+    // Label
+    const txt=mk('text',{x:cx,y:cy+1,'text-anchor':'middle','dominant-baseline':'middle','font-size':'11','font-weight':'600',fill:c.tx,'font-family':c.mono});
+    txt.textContent=label;
+    g.appendChild(txt);
+    // Sublabel badge
+    const bw=sublabel.length*6.5+10, bx2=cx+NW/2-bw-4, by2=cy-NH/2+5;
+    const bg=mk('rect',{x:bx2,y:by2,width:bw,height:13,rx:2,fill:col,'fill-opacity':'.15',stroke:col,'stroke-width':'.6','stroke-opacity':'.4'});
+    g.appendChild(bg);
+    const btxt=mk('text',{x:bx2+bw/2,y:by2+6.5,'text-anchor':'middle','dominant-baseline':'middle','font-size':'7','letter-spacing':'.08em',fill:col,'font-family':c.mono});
+    btxt.textContent=sublabel;
+    g.appendChild(btxt);
+    svg.appendChild(g);
+  });
+
+  // Layer labels
+  [
+    [280, 14, 'FOUNDATION', c.blue],
+    [280, 210, 'COGNITIVE', c.pur],
+    [280, 330, 'ORCHESTRATION', c.grn],
+    [280, 418, 'RUNTIME', c.teal],
+  ].forEach(([x,y,label,col])=>{
+    const t=mk('text',{x,y,'text-anchor':'middle','font-size':'8','letter-spacing':'.18em',fill:col,'font-family':c.mono,'font-weight':'700','fill-opacity':'.55'});
+    t.textContent=label;
+    svg.insertBefore(t, svg.firstChild.nextSibling);
+  });
+
+})();
+</script>

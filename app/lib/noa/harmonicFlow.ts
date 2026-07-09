@@ -19,7 +19,7 @@ import {
   DIMENSIONS,
   DEPARTMENTS,
   DEPARTMENT_TO_DIMENSION_WEIGHTS,
-  calculateDimensionDeficits,
+  calculateDimensionPressure,
   type Dimension,
   type DepartmentName,
 } from './resourceMatrix';
@@ -46,12 +46,22 @@ export interface FlowContributor {
   amount: number;
 }
 
+// Why a dimension remains under-resourced.
+export type FailureType =
+  | 'capacity_shortage'   // not enough helpers available to cover the pressure
+  | 'flow_disconnection'  // capacity exists but is not being mobilized
+  | 'mobilization_gap'    // mostly covered — small residual gap remains
+  | 'resolved';           // deficit ≤ 0
+
 export interface DimensionFlow {
   dimension: Dimension;
-  deficitBefore: number;   // from the resource matrix
-  inflow: number;          // helper resource routed into this dimension
-  deficitAfter: number;    // max(0, before - inflow)
-  coveragePct: number;     // inflow / deficitBefore
+  dimensionPressure: number;   // gross load before any support
+  dimensionCapacity: number;   // max support helpers COULD provide (theoretical ceiling)
+  dimensionInflow: number;     // support that actually reached this dimension
+  dimensionDeficit: number;    // net remaining: max(0, pressure − inflow)
+  mobilizationGap: number;     // capacity not mobilized: max(0, capacity − inflow)
+  coveragePct: number;         // dimensionInflow / dimensionPressure × 100
+  failureType: FailureType;
   contributors: FlowContributor[];
 }
 
@@ -79,10 +89,11 @@ export function computeHarmonicFlow(
   collapseMap: CollapseMap,
   loadDistribution: LoadDistribution,
 ): HarmonicFlow {
-  const dimDeficits = calculateDimensionDeficits(collapseMap);
+  const dimPressures = calculateDimensionPressure(collapseMap);
 
-  // 1. Route each helper's resource into the dimensions.
+  // 1. Route each helper's resource into the dimensions (actual inflow + theoretical capacity).
   const inflowRaw: Record<Dimension, number> = { Physical: 0, Emotional: 0, Rational: 0 };
+  const capacityRaw: Record<Dimension, number> = { Physical: 0, Emotional: 0, Rational: 0 };
   const contributors: Record<Dimension, FlowContributor[]> = { Physical: [], Emotional: [], Rational: [] };
   for (const h of loadDistribution.helpers) {
     const w = HELPER_DIMENSION_WEIGHTS[h.role];
@@ -90,16 +101,24 @@ export function computeHarmonicFlow(
     for (const dim of DIMENSIONS) {
       const amt = h.allocated * w[dim];
       inflowRaw[dim] += amt;
+      capacityRaw[dim] += h.capacity * w[dim];
       if (amt > 0) contributors[dim].push({ role: h.role, name: h.name, amount: round(amt) });
     }
   }
 
   const dimensions: DimensionFlow[] = DIMENSIONS.map(dim => {
-    const inflow = round(inflowRaw[dim]);
-    const deficitBefore = dimDeficits[dim];
-    const deficitAfter = Math.max(0, deficitBefore - inflow);
-    const coveragePct = deficitBefore ? round((inflow / deficitBefore) * 100) : 0;
-    return { dimension: dim, deficitBefore, inflow, deficitAfter, coveragePct, contributors: contributors[dim] };
+    const dimensionPressure = dimPressures[dim];
+    const dimensionCapacity = round(capacityRaw[dim]);
+    const dimensionInflow = round(inflowRaw[dim]);
+    const dimensionDeficit = Math.max(0, dimensionPressure - dimensionInflow);
+    const mobilizationGap = Math.max(0, dimensionCapacity - dimensionInflow);
+    const coveragePct = dimensionPressure ? round((dimensionInflow / dimensionPressure) * 100) : 0;
+    const failureType: FailureType =
+      dimensionDeficit <= 0                            ? 'resolved' :
+      dimensionCapacity < dimensionPressure * 0.40    ? 'capacity_shortage' :
+      dimensionInflow   < dimensionCapacity * 0.40    ? 'flow_disconnection' :
+                                                         'mobilization_gap';
+    return { dimension: dim, dimensionPressure, dimensionCapacity, dimensionInflow, dimensionDeficit, mobilizationGap, coveragePct, failureType, contributors: contributors[dim] };
   });
 
   // 2. Rebalance departments: distribute each dimension's inflow back to the
@@ -125,7 +144,7 @@ export function computeHarmonicFlow(
 
   const totalInflow = loadDistribution.helpers.reduce((s, h) => s + h.allocated, 0);
   const strongestInflowDimension = dimensions.reduce(
-    (best, x) => (x.inflow > best.inflow ? x : best), dimensions[0],
+    (best, x) => (x.dimensionInflow > best.dimensionInflow ? x : best), dimensions[0],
   ).dimension;
   const mostRebalancedDepartment = departments.reduce(
     (best, x) => (x.recovery > best.recovery ? x : best), departments[0],

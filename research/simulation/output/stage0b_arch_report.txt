@@ -1,0 +1,41 @@
+
+══════════════════════════════════════════════════════════════
+  Stage 0b-arch: Marketplace Constraint Graph — Report
+  Layer 3 (Architecture) | Evidence status: Unknown
+══════════════════════════════════════════════════════════════
+
+  Constraint graph (null linear model, default coupling weights):
+  Trust←Rep(0.30)+Ev(0.30) | Sup←Trust(0.50)
+  Out←Sup(0.40)+Trust(0.30) | Ev←Out(0.60) | Rep←Ev(0.70)
+
+  Q1 — Convergence  (spectral radius)
+    ρ(A) = 0.620168
+    ρ < 1?  YES
+
+  Q2 — Uniqueness  (500 random initialisations)
+    Converged: 500/500
+    Max spread σ across variables: 1.30e-12
+    Unique fixed point? YES
+    Analytic x* = [0.0000, 0.0000, 0.0000, 0.0000, 0.0000]
+
+  Q3 — Path-independence  (pressure sweep ±3)
+    Global max h = 2.80e-12
+    Threshold    = 1e-06
+    Path-independent? YES
+
+  Stability boundary:
+    Default coupling scale = 1.0  →  ρ = 0.6202
+    ρ crosses 1 at scale ≈ 1.65  (weights × 1.65 → unstable)
+
+  RESULT: PASS
+  Constraint graph converges to a unique, path-independent fixed point
+  under null (linear) coupling.
+  Architecture is well-defined at default weights.
+  OPEN RISK: if real coupling weights scale by >1.7×, the graph
+  crosses the stability boundary → multistability / divergence.
+  Proceed to Stage 0c-arch: non-linear / hard-boundary coupling.
+
+  Independence note:
+  This result does NOT confirm or refute D4 (sacred value hysteresis).
+  It tests only whether the §6 constraint graph is internally consistent.
+══════════════════════════════════════════════════════════════

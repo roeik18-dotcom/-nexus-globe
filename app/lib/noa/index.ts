@@ -99,7 +99,7 @@ export function buildNoaSnapshot(nodeId = 0): string {
   }
   if (c.resource) {
     L.push('[4] ROOT RESOURCE MATRIX');
-    L.push(`Physical ${c.resource.dimensionDeficits.Physical} (${c.resource.dimensionLevels.Physical}) · Emotional ${c.resource.dimensionDeficits.Emotional} (${c.resource.dimensionLevels.Emotional}) · Rational ${c.resource.dimensionDeficits.Rational} (${c.resource.dimensionLevels.Rational})`);
+    L.push(`Physical ${c.resource.dimensionPressure.Physical} (${c.resource.dimensionLevels.Physical}) · Emotional ${c.resource.dimensionPressure.Emotional} (${c.resource.dimensionLevels.Emotional}) · Rational ${c.resource.dimensionPressure.Rational} (${c.resource.dimensionLevels.Rational})`);
     L.push(`strongest depleted root: ${c.resource.strongestRoot}`);
     L.push('');
   }
@@ -122,7 +122,7 @@ export function buildNoaSnapshot(nodeId = 0): string {
   }
   if (c.flow) {
     L.push('[6] HARMONIC FLOW');
-    for (const d of c.flow.dimensions) L.push(`- ${d.dimension}: deficit ${d.deficitBefore} -> ${d.deficitAfter} (inflow +${d.inflow})`);
+    for (const d of c.flow.dimensions) L.push(`- ${d.dimension}: pressure ${d.dimensionPressure} · capacity ${d.dimensionCapacity} · inflow ${d.dimensionInflow} → deficit ${d.dimensionDeficit} [${d.failureType}]`);
     L.push(`strongest inflow: ${c.flow.strongestInflowDimension} · most rebalanced: ${deptLabel(c.flow.mostRebalancedDepartment)}`);
     L.push('');
   }

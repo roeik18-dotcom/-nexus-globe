@@ -37,14 +37,15 @@ import { projectToCausalSpine, PHILOS_CASE_ZERO, verifyPhilos } from "./causalEn
   }
 }
 
-// Canon department labels (internal keys stay Freudian; visible labels are canon).
+// Canon department labels — Departments are processors, Dimensions are resources.
+// Internal keys stay stable; visible names remove overlap with Dimension names.
 const DEPT_CANON: { key: string; en: string; he: string }[] = [
-  { key: "Physical",  en: "Physical",      he: "גופני" },
-  { key: "Emotional", en: "Emotional",     he: "רגשי" },
-  { key: "Rational",  en: "Rational",      he: "רציונלי" },
-  { key: "ID",        en: "Drive",         he: "דחף" },
-  { key: "EGO",       en: "Informational", he: "מיידעי" },
-  { key: "SUPEREGO",  en: "Social",        he: "חברתי" },
+  { key: "Physical",  en: "Body",       he: "גוף" },
+  { key: "Emotional", en: "Heart",      he: "לב" },
+  { key: "Rational",  en: "Mind",       he: "שכל" },
+  { key: "ID",        en: "Drive",      he: "דחף" },
+  { key: "EGO",       en: "Navigation", he: "ניווט" },
+  { key: "SUPEREGO",  en: "Values",     he: "ערכים" },
 ];
 
 // Canonical energy-flow topology (a fixed Philos model, NOT chain data): energy

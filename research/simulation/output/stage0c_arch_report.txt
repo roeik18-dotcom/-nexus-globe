@@ -1,0 +1,28 @@
+
+══════════════════════════════════════════════════════════════════
+  Stage 0c-arch: Layer 3c Convergence Harness
+  Layer 3 (Architecture) | Evidence status: Unknown
+══════════════════════════════════════════════════════════════════
+
+  §7 Classification Table:
+    A = Unique convergence (well-defined)    ✓
+    B = Multistability (path-dependent)      ⚠
+    C = Limit cycle / non-convergent         ✗
+    D = Divergence                           ✗
+
+  Sweep: α ∈ [0.2,3.0] (15 pts)  ×  β ∈ [0.0,4.0] (12 pts)
+  100 random initialisations per grid point
+
+  Operating region (α ∈ [0.5,1.5], β ∈ [0,2]):
+    Mean Type-A rate: 100.0%
+    Kill condition triggered? NO — architecture holds in op. region
+
+  Hysteresis spot-checks:
+    α=1.0 β=0.0  max h = 2.30e-09  [path-indep]
+    α=1.5 β=1.0  max h = 4.85e-10  [path-indep]
+    α=2.0 β=2.0  max h = 7.49e-10  [path-indep]
+
+  Independence note:
+  These results do NOT confirm or refute D4.
+  They test only structural well-posedness of the §6 constraint graph.
+══════════════════════════════════════════════════════════════════

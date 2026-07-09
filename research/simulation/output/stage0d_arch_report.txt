@@ -1,0 +1,38 @@
+
+══════════════════════════════════════════════════════════════════
+  Stage 0d-arch: Expanded Marketplace Convergence Harness
+  10-variable constraint graph (marketplace-dynamics-v0.md §10)
+  Layer 3 (Architecture) | Evidence status: Unknown
+══════════════════════════════════════════════════════════════════
+
+  Variables: Trust, Evidence, Support, Outcomes, Reputation,
+             Match, Resolution, Resources, Governance, Value
+
+  §7 Classification Table:
+    A = Unique convergence (well-defined)    ✓
+    B = Multistability (path-dependent)      ⚠
+    C = Limit cycle / non-convergent         ✗
+    D = Divergence                           ✗
+
+  Coupling matrix W: all row sums = 0.70
+  ρ(W) = 0.7000  (linear stability at α=1.0)
+  Linear stability boundary: ρ(αW)=1 at α ≈ 1.45
+
+  Sweep: α ∈ [0.2,3.0] (15 pts)  ×  β ∈ [0.0,4.0] (12 pts)
+  100 random initialisations per grid point
+
+  Operating region (α ∈ [0.5,1.5], β ∈ [0,2]):
+    Mean Type-A rate: 100.0%
+    Kill condition triggered? NO — architecture holds in op. region
+
+  Hysteresis spot-checks (Trust pressure sweep, all variables):
+    α=1.0 β=0.0  max h = 4.17e-09  [path-indep]
+    α=1.5 β=1.0  max h = 5.73e-10  [path-indep]
+    α=2.0 β=2.0  max h = 6.96e-10  [path-indep]
+
+  Independence note:
+  These results do NOT confirm or refute D4 (sacred value hysteresis).
+  They test only structural well-posedness of the expanded §6 constraint graph.
+  Architectural hysteresis here would indicate a constraint graph defect,
+  not confirmation of D4.
+══════════════════════════════════════════════════════════════════
