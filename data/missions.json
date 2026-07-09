@@ -1,1 +1,71 @@
-[]
+[
+  {
+    "id": "mission_1751000000000_f3a9k2b",
+    "type": "Mission",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-09T00:00:00.000Z",
+    "updatedAt": "2026-07-09T00:00:00.000Z",
+
+    "state": {
+      "status": "active",
+      "horizon": "medium"
+    },
+
+    "context": {
+      "actor": {
+        "id": "person_fashion_entrepreneur_001",
+        "type": "Person"
+      },
+      "statement": "Launch an inclusive fashion brand that serves underrepresented body types and identities — making premium design accessible across sizes, genders, and budgets.",
+      "domain": "Fashion"
+    },
+
+    "constraints": {
+      "constraints": [
+        "No seed funding secured yet",
+        "No manufacturing partner identified",
+        "No existing distribution channel"
+      ],
+      "assumptions": [
+        "Demand exists among underrepresented groups who currently find mainstream fashion exclusionary",
+        "Inclusive positioning is a durable competitive advantage, not a trend",
+        "A community-first launch model can substitute for paid acquisition in early stages"
+      ]
+    },
+
+    "gaps": [
+      { "gapId": "gap_capital_seed_001" },
+      { "gapId": "gap_supply_chain_001" },
+      { "gapId": "gap_community_launch_001" },
+      { "gapId": "gap_brand_creative_001" }
+    ],
+
+    "requiredValues": [
+      { "valueId": "capital" },
+      { "valueId": "creativity" },
+      { "valueId": "community" },
+      { "valueId": "knowledge" },
+      { "valueId": "trust" },
+      { "valueId": "growth" }
+    ],
+
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "person_fashion_entrepreneur_001",
+        "observedAt": "2026-07-09T00:00:00.000Z",
+        "note": "Actor stated the mission. Intent-grade only — no behavioral or outcome signal yet. Statement accuracy is unverified."
+      }
+    ],
+
+    "timeline": {
+      "startedAt": "2026-07-09T00:00:00.000Z",
+      "targetAt": null,
+      "completedAt": null
+    },
+
+    "relations": {
+      "relatedMissions": []
+    }
+  }
+]
