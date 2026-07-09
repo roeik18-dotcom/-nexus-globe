@@ -167,6 +167,12 @@ The program makes one narrow claim: that a specific formal signature (hysteresis
 
 ## Artifact Index
 
+### Meta model
+
+| File | Contents | Evidence grade |
+|---|---|---|
+| `docs/philos-universal-data-model-v0.md` | PUDM v0.1 — universal node/relation/evidence/dynamics model; all subsystems are projections | Candidate |
+
 ### Core program docs
 
 | File | Contents | Evidence grade |
