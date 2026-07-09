@@ -1,0 +1,553 @@
+
+<title>Philos / Nexus — Project Status Map</title>
+<style>
+/* ── Tokens ──────────────────────────────────────────────────────────────── */
+:root {
+  --bg:       #F3F6FC;
+  --bg-2:     #E9EDF6;
+  --bg-3:     #DDE2F0;
+  --text:     #1A1C2C;
+  --text-2:   #4A5078;
+  --text-3:   #7C82A4;
+  --accent:   #2F52D4;
+  --done:     #176B47;
+  --done-bg:  #E4F2EC;
+  --next:     #985200;
+  --next-bg:  #FEF0E2;
+  --miss:     #8B3220;
+  --miss-bg:  #FBE9E5;
+  --border:   #CDD1E4;
+  --mono:     'Cascadia Code', 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+}
+@media (prefers-color-scheme: dark) { :root {
+  --bg:#121420;--bg-2:#1A1C2C;--bg-3:#22253A;--text:#E2E6FC;--text-2:#7C82A8;
+  --text-3:#545A7A;--accent:#6278F8;--done:#34C47A;--done-bg:#0A2C1D;
+  --next:#F5A54A;--next-bg:#2E1800;--miss:#F07060;--miss-bg:#2C0A06;--border:#282C42;
+}}
+:root[data-theme="light"] {
+  --bg:#F3F6FC;--bg-2:#E9EDF6;--bg-3:#DDE2F0;--text:#1A1C2C;--text-2:#4A5078;
+  --text-3:#7C82A4;--accent:#2F52D4;--done:#176B47;--done-bg:#E4F2EC;
+  --next:#985200;--next-bg:#FEF0E2;--miss:#8B3220;--miss-bg:#FBE9E5;--border:#CDD1E4;
+}
+:root[data-theme="dark"] {
+  --bg:#121420;--bg-2:#1A1C2C;--bg-3:#22253A;--text:#E2E6FC;--text-2:#7C82A8;
+  --text-3:#545A7A;--accent:#6278F8;--done:#34C47A;--done-bg:#0A2C1D;
+  --next:#F5A54A;--next-bg:#2E1800;--miss:#F07060;--miss-bg:#2C0A06;--border:#282C42;
+}
+
+/* ── Base ────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  direction: rtl;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', 'Noto Sans Hebrew', 'Arial', sans-serif;
+  font-size: 14.5px;
+  line-height: 1.65;
+  padding: 40px 20px 80px;
+}
+.page { max-width: 840px; margin: 0 auto; }
+
+/* ── Type ────────────────────────────────────────────────────────────────── */
+h1 {
+  font-family: Georgia, 'Frank Ruehl CLM', serif;
+  font-size: 28px;
+  font-weight: normal;
+  letter-spacing: -0.2px;
+  line-height: 1.2;
+  text-wrap: balance;
+  color: var(--text);
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+h2 {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+h3 { font-size: 14px; font-weight: 600; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+.section { margin-bottom: 48px; }
+hr.div { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.header {
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 36px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.header-right { text-align: left; direction: ltr; }
+.header-date { font-size: 11px; color: var(--text-3); font-family: var(--mono); }
+.header-sub { font-size: 14px; color: var(--text-2); margin-top: 5px; max-width: 480px; }
+
+/* ── Estimate summary grid ────────────────────────────────────────────────── */
+.est-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 44px;
+}
+@media (max-width: 560px) { .est-grid { grid-template-columns: repeat(2,1fr); } }
+.est-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+.est-n {
+  font-family: Georgia, serif;
+  font-size: 28px;
+  font-weight: normal;
+  line-height: 1;
+  color: var(--accent);
+}
+.est-label {
+  font-size: 11.5px;
+  color: var(--text-3);
+  margin-top: 5px;
+}
+.est-card.warn .est-n { color: var(--miss); }
+
+/* ── Pills ────────────────────────────────────────────────────────────────── */
+.pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+.pill-done { background: var(--done-bg); color: var(--done); }
+.pill-next { background: var(--next-bg); color: var(--next); }
+.pill-miss { background: var(--miss-bg); color: var(--miss); }
+.pill-plan { background: var(--bg-3); color: var(--text-3); }
+
+/* ── Numbered rows (completed / missing) ──────────────────────────────────── */
+.item-list { display: flex; flex-direction: column; gap: 0; }
+.item-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 12px;
+  align-items: start;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.item-row:last-child { border-bottom: none; }
+.item-n {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-3);
+  padding-top: 2px;
+}
+.item-title { font-size: 13.5px; font-weight: 600; margin-bottom: 3px; }
+.item-body { font-size: 13px; color: var(--text-2); }
+.item-tags { font-size: 11.5px; color: var(--text-3); margin-top: 4px; font-family: var(--mono); direction: ltr; text-align: right; }
+
+/* ── Work order (steps) ───────────────────────────────────────────────────── */
+.steps-list { display: flex; flex-direction: column; gap: 10px; }
+.step-row {
+  display: grid;
+  grid-template-columns: 34px 1fr 110px;
+  gap: 12px;
+  align-items: start;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+.step-row.step-1 { border-color: var(--next); background: color-mix(in srgb, var(--next-bg) 60%, var(--bg-2)); }
+.step-n {
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: normal;
+  color: var(--text-3);
+  line-height: 1;
+  padding-top: 2px;
+}
+.step-row.step-1 .step-n { color: var(--next); }
+.step-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+.step-body { font-size: 13px; color: var(--text-2); }
+.step-est { font-size: 12px; font-family: var(--mono); color: var(--text-3); text-align: left; direction: ltr; padding-top: 2px; }
+.step-row.step-1 .step-est { color: var(--next); font-weight: 700; }
+
+/* ── Timeline table ────────────────────────────────────────────────────────── */
+.timeline-table { width: 100%; border-collapse: collapse; }
+.timeline-table th {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-3);
+  font-weight: 700;
+  text-align: right;
+  padding: 6px 10px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.timeline-table th.ltr { text-align: left; direction: ltr; }
+.timeline-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  vertical-align: top;
+}
+.timeline-table tr:last-child td { border-bottom: none; }
+.time-est { font-family: var(--mono); font-size: 12px; color: var(--accent); white-space: nowrap; direction: ltr; }
+.time-est.long { color: var(--miss); }
+
+/* ── Conclusion callout ────────────────────────────────────────────────────── */
+.conclusion {
+  background: var(--bg-2);
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  padding: 22px 24px;
+}
+.conclusion-title {
+  font-family: Georgia, serif;
+  font-size: 18px;
+  font-weight: normal;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.conclusion-body { font-size: 14px; color: var(--text-2); line-height: 1.7; }
+.next-action {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: color-mix(in srgb, var(--next-bg) 80%, var(--bg-2));
+  border: 1.5px solid var(--next);
+  border-radius: 5px;
+  padding: 14px 16px;
+}
+.next-action-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--next);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.next-action-text { font-size: 14px; font-weight: 600; color: var(--text); }
+
+/* ── Progress bar ─────────────────────────────────────────────────────────── */
+.pbar-wrap { background: var(--bg-3); border-radius: 2px; height: 4px; margin-top: 8px; overflow: hidden; }
+.pbar { height: 100%; border-radius: 2px; background: var(--accent); }
+.pbar-low { background: var(--miss); }
+</style>
+
+<div class="page">
+
+  <!-- Header -->
+  <header class="header">
+    <div>
+      <div class="eyebrow">Project Status Map</div>
+      <h1>Philos / Nexus Globe</h1>
+      <p class="header-sub">מיפוי מלא של מה שקיים, מה חסר, סדר התלויות, וכמה עבודה נשארה.</p>
+    </div>
+    <div class="header-right">
+      <div class="header-date">2026-07-06</div>
+      <div style="font-size:11px;color:var(--text-3);margin-top:4px;font-family:var(--mono)">nexus-globe · ~21,500 lines</div>
+    </div>
+  </header>
+
+  <!-- Estimate grid -->
+  <div class="est-grid">
+    <div class="est-card">
+      <div class="est-n">65%</div>
+      <div class="est-label">חשיבה ומבנה</div>
+      <div class="pbar-wrap"><div class="pbar" style="width:65%"></div></div>
+    </div>
+    <div class="est-card">
+      <div class="est-n">35%</div>
+      <div class="est-label">מנגנון מוצר</div>
+      <div class="pbar-wrap"><div class="pbar" style="width:35%"></div></div>
+    </div>
+    <div class="est-card warn">
+      <div class="est-n">25%</div>
+      <div class="est-label">MVP שמיש</div>
+      <div class="pbar-wrap"><div class="pbar pbar-low" style="width:25%"></div></div>
+    </div>
+    <div class="est-card warn">
+      <div class="est-n">&lt;10%</div>
+      <div class="est-label">מוכנות לשוק</div>
+      <div class="pbar-wrap"><div class="pbar pbar-low" style="width:10%"></div></div>
+    </div>
+  </div>
+
+  <!-- מה הושלם -->
+  <section class="section">
+    <h2>מה הושלם</h2>
+    <div class="item-list">
+
+      <div class="item-row">
+        <div class="item-n">01</div>
+        <div>
+          <div class="item-title">הגדרת חזון</div>
+          <div class="item-body">Philos הוא לא עוד צ׳אטבוט. הוא מערכת אוריינטציה שעוזרת לאדם להבין מצב, כוחות, ערכים, פערים, אפשרויות פעולה ותוצאות.</div>
+        </div>
+        <span class="pill pill-done">הושלם</span>
+      </div>
+
+      <div class="item-row">
+        <div class="item-n">02</div>
+        <div>
+          <div class="item-title">הגדרת מודל בסיס</div>
+          <div class="item-body">
+            חלוקה ל-Id / Ego / Superego. רגשי / שכלי / פיזי. אנרגיה אישית מול חברתית. מנוע מעבר: 6 מחלקות, 18 ערוצים, חוקים T1–T7.
+          </div>
+          <div class="item-tags">docs/transition-engine-v0.md · docs/philos-opm-spec.md</div>
+        </div>
+        <span class="pill pill-done">הושלם</span>
+      </div>
+
+      <div class="item-row">
+        <div class="item-n">03</div>
+        <div>
+          <div class="item-title">הגדרת MVP ראשון — Case Pattern Engine</div>
+          <div class="item-body">אדם נכנס עם מצב. המערכת מפרקת אותו, מחפשת מקרים דומים, מציגה דפוסים, פעולות אפשריות, סיכונים ותוצאות.</div>
+          <div class="item-tags">docs/human-pattern-engine-v0.md</div>
+        </div>
+        <span class="pill pill-done">הושלם</span>
+      </div>
+
+      <div class="item-row">
+        <div class="item-n">04</div>
+        <div>
+          <div class="item-title">פרימיטיבים מערכתיים</div>
+          <div class="item-body">
+            Pattern · Gap · Pressure · Values · Interpretation · Action · Outcome · Systemic Transition · Energy Spill · Social Support Path —
+            המושגים מוגדרים ומתועדים. בדיקות יציבות (convergence, deadlock, robustness, multistability, oscillations) הורצו.
+          </div>
+          <div class="item-tags">research/simulation/ — 6 scripts, 4 stages pass</div>
+        </div>
+        <span class="pill pill-done">הושלם</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- מה חסר -->
+  <section class="section">
+    <h2>מה עדיין חסר</h2>
+    <div class="item-list">
+
+      <div class="item-row">
+        <div class="item-n">01</div>
+        <div>
+          <div class="item-title">Schema סופי למקרה</div>
+          <div class="item-body">צריך להגדיר בדיוק אילו שדות יש לכל Case. בלי זה אין מנוע. יש טיוטה ב-<span class="mono" style="font-size:12px">human-pattern-engine-v0.md §2</span> — עדיין לא נעול.</div>
+        </div>
+        <span class="pill pill-miss">חסר</span>
+      </div>
+
+      <div class="item-row">
+        <div class="item-n">02</div>
+        <div>
+          <div class="item-title">חוקי דמיון בין מקרים</div>
+          <div class="item-body">צריך להחליט איך המערכת יודעת ששני מקרים דומים: לפי ערכים? לחץ? סוג פגיעה? יחסי כוח? תוצאה? מצב חברתי?</div>
+        </div>
+        <span class="pill pill-miss">חסר</span>
+      </div>
+
+      <div class="item-row">
+        <div class="item-n">03</div>
+        <div>
+          <div class="item-title">מאגר מקרים ראשוני</div>
+          <div class="item-body">צריך לפחות 50–100 מקרים ידניים לפני שאפשר לבדוק שהמנוע עובד. כרגע יש מקרה אחד (Noa / Case Zero).</div>
+        </div>
+        <span class="pill pill-miss">חסר</span>
+      </div>
+
+      <div class="item-row">
+        <div class="item-n">04</div>
+        <div>
+          <div class="item-title">פלט קבוע למשתמש</div>
+          <div class="item-body">צריך פורמט אחד ברור: "זה המצב שלך" · "אלה הכוחות שפועלים" · "אלה 3 מסלולי פעולה" · "אלה הסיכונים" · "אלה תוצאות שנראו במקרים דומים".</div>
+        </div>
+        <span class="pill pill-miss">חסר</span>
+      </div>
+
+      <div class="item-row">
+        <div class="item-n">05</div>
+        <div>
+          <div class="item-title">בדיקות יציבות של הפלט</div>
+          <div class="item-body">בדיקות הסימולציה קיימות למנוע. עדיין צריך לבדוק: שינוי קטן בקלט → תשובה סבירה? או שהמערכת מתפרקת?</div>
+        </div>
+        <span class="pill pill-next">בתהליך</span>
+      </div>
+
+      <div class="item-row">
+        <div class="item-n">06</div>
+        <div>
+          <div class="item-title">ממשק פשוט ושמיש</div>
+          <div class="item-body">לא אפליקציה גדולה — מסך אחד. הכנסת מצב → ניתוח → מפה → פעולה מומלצת. ה-UI הנוכחי מלא מדי ולא ממוקד.</div>
+          <div class="item-tags">app/nexus/page.tsx — 1,998 lines, too much</div>
+        </div>
+        <span class="pill pill-miss">חסר</span>
+      </div>
+
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <!-- סדר עבודה -->
+  <section class="section">
+    <h2>סדר עבודה נכון</h2>
+    <div class="steps-list">
+
+      <div class="step-row step-1">
+        <div class="step-n">1</div>
+        <div>
+          <div class="step-title">לנעול Case Schema</div>
+          <div class="step-body">להגדיר בדיוק אילו שדות יש לכל Case: situation, participants, values, gap, interpretation, pressure, action, outcome, pattern, counterfactual. בלי זה כל השאר נשאר רעיון.</div>
+        </div>
+        <div class="step-est">שבוע</div>
+      </div>
+
+      <div class="step-row">
+        <div class="step-n">2</div>
+        <div>
+          <div class="step-title">לבנות 20 מקרים ידניים</div>
+          <div class="step-body">לקחת 20 מצבים אמיתיים ולמלא אותם לפי ה-Schema שנוצר בשלב 1. אלה יהיו ה-ground truth לבדיקת המנוע.</div>
+        </div>
+        <div class="step-est">שבועיים</div>
+      </div>
+
+      <div class="step-row">
+        <div class="step-n">3</div>
+        <div>
+          <div class="step-title">להגדיר Similarity Rules</div>
+          <div class="step-body">להחליט על פי אילו מאפיינים המערכת מסווגת שני מקרים כדומים. לבדוק שהחוקים עובדים על 20 המקרים.</div>
+        </div>
+        <div class="step-est">שבוע</div>
+      </div>
+
+      <div class="step-row">
+        <div class="step-n">4</div>
+        <div>
+          <div class="step-title">להריץ 5 מצבי בדיקה</div>
+          <div class="step-body">להזין 5 מצבים חדשים למנוע ולבדוק שהוא מוצא מקרים דומים, מסכם נכון, ולא מתפרק על קלט לא צפוי.</div>
+        </div>
+        <div class="step-est">שבוע</div>
+      </div>
+
+      <div class="step-row">
+        <div class="step-n">5</div>
+        <div>
+          <div class="step-title">לבנות פלט משתמש קבוע</div>
+          <div class="step-body">להגדיר ולממש פורמט אחד: "זה המצב שלך" → "אלה הכוחות" → "3 מסלולים" → "סיכונים" → "תוצאות מקרים דומים".</div>
+        </div>
+        <div class="step-est">3–5 ימים</div>
+      </div>
+
+      <div class="step-row">
+        <div class="step-n">6</div>
+        <div>
+          <div class="step-title">להפוך לדמו</div>
+          <div class="step-body">מסך אחד שמישהו זר יכול להיכנס אליו, להזין מצב ולקבל ניתוח. לא MVP מלא — דמו שאפשר להראות ולקבל פידבק.</div>
+        </div>
+        <div class="step-est">שבועיים</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- הערכת זמן -->
+  <section class="section">
+    <h2>הערכת זמן ריאלית</h2>
+    <table class="timeline-table">
+      <thead>
+        <tr>
+          <th>שלב</th>
+          <th>תוצר</th>
+          <th class="ltr">הערכה</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="pill pill-next">עכשיו</span></td>
+          <td>Schema סופי למקרה — נעילת המבנה</td>
+          <td><span class="time-est">שבוע</span></td>
+        </tr>
+        <tr>
+          <td><span class="pill pill-plan">שלב 2</span></td>
+          <td>20 מקרים ידניים ראשונים</td>
+          <td><span class="time-est">שבועיים</span></td>
+        </tr>
+        <tr>
+          <td><span class="pill pill-plan">שלב 3</span></td>
+          <td>חוקי דמיון (Similarity Rules)</td>
+          <td><span class="time-est">שבוע</span></td>
+        </tr>
+        <tr>
+          <td><span class="pill pill-plan">שלב 4</span></td>
+          <td>בדיקות יציבות על 5 מקרים</td>
+          <td><span class="time-est">שבוע</span></td>
+        </tr>
+        <tr>
+          <td><span class="pill pill-plan">שלב 5</span></td>
+          <td>פלט משתמש קבוע</td>
+          <td><span class="time-est">3–5 ימים</span></td>
+        </tr>
+        <tr>
+          <td><span class="pill pill-plan">שלב 6</span></td>
+          <td>דמו שמישהו זר יכול לנסות</td>
+          <td><span class="time-est">שבועיים</span></td>
+        </tr>
+        <tr style="border-top: 2px solid var(--border);">
+          <td colspan="2" style="font-size:13px;font-weight:600">סה״כ לדמו רציני ראשון</td>
+          <td><span class="time-est long">6–8 שבועות</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:var(--text-3);margin-top:10px">
+      בתנאי: עבודה ממוקדת, ללא פתיחת רעיונות חדשים.
+    </p>
+  </section>
+
+  <!-- מסקנה -->
+  <section class="section">
+    <div class="conclusion">
+      <div class="conclusion-title">המסקנה</div>
+      <div class="conclusion-body">
+        הקצב לא איטי בגלל שלא מתקדמים.<br>
+        הקצב מרגיש איטי כי עדיין בשכבת היסוד.
+        <br><br>
+        זה החלק שלא נראה מבחוץ. ברגע שיש מנוע יציב, ה-Schema נעול, ויש 20 מקרים אמיתיים — הכל מאיץ. הבנייה מחוץ ל-foundation כמעט תמיד מהירה יותר מבנייתו.
+      </div>
+      <div class="next-action">
+        <div class="next-action-label">הפעולה הבאה</div>
+        <div class="next-action-text">לנעול את ה-Case Schema — בלי זה כל השאר נשאר רעיון.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <div style="border-top:1px solid var(--border);padding-top:18px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div style="font-size:11px;color:var(--text-3)">Philos / nexus-globe · 2026-07-06</div>
+    <div style="font-size:11px;color:var(--text-3)">כל פרמטרי הסימולציה: Evidence D — Hypothesis. אין ולידציה אמפירית.</div>
+  </div>
+
+</div>
