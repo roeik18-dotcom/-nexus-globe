@@ -1,0 +1,160 @@
+[
+  {
+    "id": "gap_capital_seed_001",
+    "type": "Gap",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-09T00:00:00.000Z",
+    "updatedAt": "2026-07-09T00:00:00.000Z",
+
+    "state": {
+      "status": "open",
+      "severity": "critical"
+    },
+
+    "context": {
+      "missionId": "mission_1751000000000_f3a9k2b",
+      "description": "No seed capital secured. The brand cannot source materials, produce samples, or run any paid marketing without initial funding. Blocks all downstream operational gaps.",
+      "domain": "Finance"
+    },
+
+    "requiredValues": [
+      { "valueId": "capital" },
+      { "valueId": "trust" }
+    ],
+
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "person_fashion_entrepreneur_001",
+        "observedAt": "2026-07-09T00:00:00.000Z",
+        "note": "Actor identified 'No seed funding secured yet' as an explicit constraint. Intent-grade only — gap existence inferred from stated constraint, not verified by financial records."
+      }
+    ],
+
+    "timeline": {
+      "openedAt": "2026-07-09T00:00:00.000Z",
+      "closedAt": null,
+      "deferredUntil": null
+    }
+  },
+
+  {
+    "id": "gap_supply_chain_001",
+    "type": "Gap",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-09T00:00:00.000Z",
+    "updatedAt": "2026-07-09T00:00:00.000Z",
+
+    "state": {
+      "status": "open",
+      "severity": "critical"
+    },
+
+    "context": {
+      "missionId": "mission_1751000000000_f3a9k2b",
+      "description": "No manufacturing partner identified. The brand's inclusive sizing mandate (broad size range, multiple gender cuts) requires a production partner who can handle extended size grading and small initial runs without prohibitive minimums.",
+      "domain": "Operations"
+    },
+
+    "requiredValues": [
+      { "valueId": "capital" },
+      { "valueId": "knowledge" },
+      { "valueId": "trust" }
+    ],
+
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "person_fashion_entrepreneur_001",
+        "observedAt": "2026-07-09T00:00:00.000Z",
+        "note": "Actor identified 'No manufacturing partner identified' as an explicit constraint. Intent-grade only — gap existence inferred from stated constraint."
+      }
+    ],
+
+    "timeline": {
+      "openedAt": "2026-07-09T00:00:00.000Z",
+      "closedAt": null,
+      "deferredUntil": null
+    }
+  },
+
+  {
+    "id": "gap_community_launch_001",
+    "type": "Gap",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-09T00:00:00.000Z",
+    "updatedAt": "2026-07-09T00:00:00.000Z",
+
+    "state": {
+      "status": "open",
+      "severity": "significant"
+    },
+
+    "context": {
+      "missionId": "mission_1751000000000_f3a9k2b",
+      "description": "No existing distribution channel or community base. The mission assumes a community-first launch model can substitute for paid acquisition, but no community has been built yet. Without an audience, the launch hypothesis cannot be tested.",
+      "domain": "Marketing"
+    },
+
+    "requiredValues": [
+      { "valueId": "community" },
+      { "valueId": "trust" },
+      { "valueId": "growth" }
+    ],
+
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "person_fashion_entrepreneur_001",
+        "observedAt": "2026-07-09T00:00:00.000Z",
+        "note": "Actor identified 'No existing distribution channel' as a constraint and stated a community-first assumption. Gap derived from the distance between the assumption and current state. Intent-grade only."
+      }
+    ],
+
+    "timeline": {
+      "openedAt": "2026-07-09T00:00:00.000Z",
+      "closedAt": null,
+      "deferredUntil": null
+    }
+  },
+
+  {
+    "id": "gap_brand_creative_001",
+    "type": "Gap",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-09T00:00:00.000Z",
+    "updatedAt": "2026-07-09T00:00:00.000Z",
+
+    "state": {
+      "status": "open",
+      "severity": "significant"
+    },
+
+    "context": {
+      "missionId": "mission_1751000000000_f3a9k2b",
+      "description": "No brand identity, visual language, or creative direction established. Inclusive premium positioning requires a coherent aesthetic that signals quality and belonging to underrepresented groups without alienating or appropriating. This creative foundation must exist before product or community work can be grounded.",
+      "domain": "Design"
+    },
+
+    "requiredValues": [
+      { "valueId": "creativity" },
+      { "valueId": "knowledge" },
+      { "valueId": "community" }
+    ],
+
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "person_fashion_entrepreneur_001",
+        "observedAt": "2026-07-09T00:00:00.000Z",
+        "note": "Gap inferred from mission statement: inclusive brand requires a defined creative identity that does not yet exist. Intent-grade only — no design work observed."
+      }
+    ],
+
+    "timeline": {
+      "openedAt": "2026-07-09T00:00:00.000Z",
+      "closedAt": null,
+      "deferredUntil": null
+    }
+  }
+]
