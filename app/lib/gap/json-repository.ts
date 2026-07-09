@@ -11,86 +11,56 @@
  * and swap the import in the consuming API route. Nothing else changes.
  */
 
-import fs from "fs";
 import path from "path";
+import { readJsonStore, writeJsonStore, generateId, nowIso, paginate } from "../json-store";
 import type { Gap, CreateGapInput, UpdateGapInput } from "./schema";
 import type { GapRepository, GapQuery } from "./repository";
 
 const DATA_PATH = path.join(process.cwd(), "data", "gaps.json");
 
-// ─── File helpers ─────────────────────────────────────────────────────────────
-
-function readStore(): Gap[] {
-  if (!fs.existsSync(DATA_PATH)) return [];
-  const raw = fs.readFileSync(DATA_PATH, "utf-8").trim();
-  if (!raw || raw === "") return [];
-  return JSON.parse(raw) as Gap[];
-}
-
-function writeStore(records: Gap[]): void {
-  fs.mkdirSync(path.dirname(DATA_PATH), { recursive: true });
-  fs.writeFileSync(DATA_PATH, JSON.stringify(records, null, 2) + "\n", "utf-8");
-}
-
-function generateId(): string {
-  return `gap_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-}
-
-function now(): string {
-  return new Date().toISOString();
-}
-
-// ─── Implementation ───────────────────────────────────────────────────────────
+const read = () => readJsonStore<Gap>(DATA_PATH);
+const write = (r: Gap[]) => writeJsonStore(DATA_PATH, r);
 
 export class JsonGapRepository implements GapRepository {
   async create(input: CreateGapInput): Promise<Gap> {
-    const store = readStore();
-    const ts = now();
+    const store = read();
+    const ts = nowIso();
     const gap: Gap = {
       ...input,
-      id: generateId(),
+      id: generateId("gap"),
       type: "Gap",
       evidenceGrade: input.evidenceGrade ?? "Candidate",
       createdAt: ts,
       updatedAt: ts,
     };
     store.push(gap);
-    writeStore(store);
+    write(store);
     return gap;
   }
 
   async get(id: string): Promise<Gap | null> {
-    const store = readStore();
-    return store.find((g) => g.id === id) ?? null;
+    return read().find((g) => g.id === id) ?? null;
   }
 
   async update(id: string, updates: UpdateGapInput): Promise<Gap> {
-    const store = readStore();
+    const store = read();
     const idx = store.findIndex((g) => g.id === id);
     if (idx === -1) throw new Error(`Gap not found: ${id}`);
-    const updated: Gap = {
-      ...store[idx],
-      ...updates,
-      id,
-      type: "Gap",
-      createdAt: store[idx].createdAt,
-      updatedAt: now(),
-    };
-    store[idx] = updated;
-    writeStore(store);
-    return updated;
+    store[idx] = { ...store[idx], ...updates, updatedAt: nowIso() };
+    write(store);
+    return store[idx];
   }
 
   async delete(id: string): Promise<void> {
-    const store = readStore();
+    const store = read();
     const idx = store.findIndex((g) => g.id === id);
     if (idx === -1) throw new Error(`Gap not found: ${id}`);
     store.splice(idx, 1);
-    writeStore(store);
+    write(store);
   }
 
   async search(query: GapQuery): Promise<Gap[]> {
-    let results = readStore();
+    let results = read();
 
     if (query.missionId !== undefined) {
       results = results.filter((g) => g.context.missionId === query.missionId);
@@ -100,12 +70,10 @@ export class JsonGapRepository implements GapRepository {
     }
     if (query.requiredValueId !== undefined) {
       results = results.filter((g) =>
-        g.requiredValues.some((v) => v.valueId === query.requiredValueId)
+        (g.requiredValues ?? []).some((v) => v.valueId === query.requiredValueId)
       );
     }
 
-    const offset = query.offset ?? 0;
-    const limit = query.limit ?? 50;
-    return results.slice(offset, offset + limit);
+    return paginate(results, query.offset, query.limit);
   }
 }
