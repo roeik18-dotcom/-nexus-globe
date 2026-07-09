@@ -165,18 +165,101 @@ The program makes one narrow claim: that a specific formal signature (hysteresis
 
 ---
 
+## Artifact Index
+
+### Core program docs
+
+| File | Contents | Evidence grade |
+|---|---|---|
+| `docs/research-charter.md` | Epistemic rules, forbidden moves, stop conditions | Frozen (methodology) |
+| `docs/evidence-roadmap.md` | Per-claim evidence grades, upgrade rules, missing validations | Candidate |
+| `docs/philos-research-questions.md` | Open questions tracker | Candidate |
+
+### OPM docs
+
+| File | Contents | Evidence grade |
+|---|---|---|
+| `docs/philos-opm-spec.md` | OPM formal specification | Candidate |
+| `docs/philos-orientation-engine.md` | Layer 4 orientation engine | Candidate |
+| `docs/philos-calibration.md` | Calibration requirements | Candidate |
+| `docs/philos-temporal-model.md` | Temporal model | Candidate |
+| `docs/opm-causal-spine.svg` | Causal spine diagram | Candidate |
+
+### Marketplace docs
+
+| File | Contents | Evidence grade |
+|---|---|---|
+| `docs/marketplace-core-v0.md` | Entity taxonomy, constraint graph, Invariants I1–I5, §7 Evidence Layers | Candidate |
+| `docs/marketplace-dynamics-v0.md` | Matching Engine, Resolution Engine, update equations | Candidate |
+| `docs/dimension-reading-proposal.md` | Entity 11 proposal — OPM→Marketplace interface | Candidate (unimplemented) |
+
+### Foundation docs
+
+| File | Contents | Evidence grade |
+|---|---|---|
+| `docs/philos-reality-flow-v0.md` | Layer 0: Matter + Space + Time, 5 laws, energy flow | Candidate |
+| `docs/nexus-ontology-v1.md` | Nexus ontology v1 canonical registry | Candidate |
+| `docs/human-pattern-engine-v0.md` | Human Pattern Engine (HPE) — counterfactual schema | Candidate |
+| `docs/case-schema-v0.md` | Case Schema v0 — locked | Candidate |
+| `docs/transition-engine-v0.md` | Transition Engine — energy flow laws | Candidate |
+
+### Research outputs (simulation)
+
+| File | Stage | Result |
+|---|---|---|
+| `research/simulation/output/stage0_null_fep.png` | Stage 0a | max h = 3.78×10⁻¹² — PASS |
+| `research/simulation/output/stage0b_arch_convergence.png` | Stage 0b-arch | ρ(A) = 0.62 — PASS |
+| `research/simulation/output/stage0c_arch_convergence.png` | Stage 0c-arch | Operating region 100% Type A — PASS |
+| `research/simulation/output/stage0d_arch_convergence.png` | Stage 0d-arch | ρ(W) = 0.70 — PASS |
+| `research/simulation/output/transition_engine_trajectories.png` | Transition Engine | 5 cases stable |
+| `research/simulation/output/transition_engine_stability.png` | Transition Engine | Stability confirmed |
+
+### Visual artifacts
+
+| File | Description | Status |
+|---|---|---|
+| `artifacts/visuals/philos-world.html` | Philos Ecosystem World Map — orbital SVG | Session artifact, preserved |
+| `artifacts/visuals/ai-agents-v5.html` | AI Agent Architecture reference card — bilingual | Session artifact, preserved |
+| `artifacts/visuals/project-status.html` | Project status map | Session artifact, preserved |
+| `docs/philos-potential-map-spec.md` | Visual spec for the Philos World Map | Candidate |
+
+### Missing / proposed (not yet written)
+
+| Item | Blocker | Priority |
+|---|---|---|
+| `docs/marketplace-core-v1.md` | 10 entities not yet formally frozen | High — required before DimensionReading |
+| `docs/marketplace-matching-engine-v0.md` | Required before §7 constraints can be implemented | High |
+| Trust/Confidence update equations | Required before Layer 3c convergence harness | High |
+| M9 G9 falsification field | No test specified; field intentionally empty | Medium |
+| Mode B validation (real-case) | Requires user with a real decision | Medium |
+
+---
+
 ## Repository structure
 
 ```
 docs/
-  philos-reality-flow-v0.md     ← Layer 0: Matter + Space + Time axiom, 5 laws, energy flow
-  marketplace-core-v0.md        ← Marketplace entity taxonomy and constraint graph
+  research-charter.md           ← Epistemic rules governing the program
+  evidence-roadmap.md           ← Per-claim evidence grades and upgrade status
+  philos-reality-flow-v0.md     ← Layer 0: Matter + Space + Time axiom, 5 laws
+  marketplace-core-v0.md        ← Marketplace entity taxonomy, Invariants, §7 Evidence Layers
   marketplace-dynamics-v0.md    ← Matching Engine, Resolution Engine, update equations
+  dimension-reading-proposal.md ← Entity 11 proposal (unimplemented)
+  philos-potential-map-spec.md  ← Visual spec for Philos World Map
   philos-research-questions.md  ← Open questions tracker
   philos-orientation-engine.md  ← Orientation Engine spec (Layer 4)
   philos-calibration.md         ← Calibration requirements
-  philos-opm-spec.md            ← Object-Process Model spec
+  philos-opm-spec.md            ← OPM formal specification
   philos-temporal-model.md      ← Temporal model
+  nexus-ontology-v1.md          ← Nexus ontology v1 registry
+  human-pattern-engine-v0.md    ← Human Pattern Engine spec
+  case-schema-v0.md             ← Case Schema v0 (locked)
+  transition-engine-v0.md       ← Transition Engine spec
+artifacts/
+  visuals/
+    philos-world.html           ← Philos Ecosystem World Map
+    ai-agents-v5.html           ← AI Agent Architecture reference card
+    project-status.html         ← Project status map
 research/
   simulation/
     stage0_null_fep.py                       ← Stage 0a: FEP null model
@@ -184,16 +267,13 @@ research/
     stage0c_convergence_harness.py           ← Stage 0c-arch: 5-var α×β sweep
     stage0d_arch_marketplace_convergence.py  ← Stage 0d-arch: 10-var Marketplace
     output/
-      stage0_report.txt                      ← Stage 0a report
       stage0_null_fep.png                    ← Stage 0a plots
-      stage0b_arch_report.txt                ← Stage 0b-arch report
       stage0b_arch_convergence.png           ← Stage 0b-arch plots
-      stage0c_arch_report.txt                ← Stage 0c-arch report
       stage0c_arch_convergence.png           ← Stage 0c-arch plots
-      stage0d_arch_report.txt                ← Stage 0d-arch report
       stage0d_arch_convergence.png           ← Stage 0d-arch plots
-  (listed above)
-app/                            ← Next.js application (separate)
+      transition_engine_trajectories.png     ← Transition Engine trajectories
+      transition_engine_stability.png        ← Transition Engine stability
+app/                            ← Next.js application (separate, see below)
 ```
 
 ---

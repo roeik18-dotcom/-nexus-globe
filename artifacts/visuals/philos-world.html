@@ -1,0 +1,660 @@
+<title>Philos — Human Orientation OS · World Map</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<style>
+/* ── TOKENS ────────────────────────────────────────────────────────────── */
+:root {
+  --bg:      #f0f3f9;
+  --sf:      #ffffff;
+  --sf2:     #e8ecf5;
+  --bd:      rgba(30,60,160,.12);
+  --tx:      #1a2040;
+  --mu:      #5a6888;
+  --frozen:  #43a047;
+  --cand:    #9c27b0;
+  --holder:  #f57c00;
+  --nest:    #d32f2f;
+  --user:    #1565c0;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#030a14;--sf:#0b1525;--sf2:#0e1a2e;--bd:rgba(80,130,220,.14);
+  --tx:#d5dff5;--mu:#6278a0;
+}}
+:root[data-theme=dark]{--bg:#030a14;--sf:#0b1525;--sf2:#0e1a2e;--bd:rgba(80,130,220,.14);--tx:#d5dff5;--mu:#6278a0;}
+:root[data-theme=light]{--bg:#f0f3f9;--sf:#ffffff;--sf2:#e8ecf5;--bd:rgba(30,60,160,.12);--tx:#1a2040;--mu:#5a6888;}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+body{
+  background:var(--bg);
+  color:var(--tx);
+  font-family:Georgia,'Times New Roman',Times,serif;
+  font-size:14px;
+  line-height:1.45;
+  min-height:100vh;
+}
+
+/* ── HEADER ────────────────────────────────────────────────────────────── */
+.hdr{
+  padding:16px 26px 13px;
+  border-bottom:1px solid var(--bd);
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:18px;
+  flex-wrap:wrap;
+}
+.hdr h1{
+  font-size:1.05rem;
+  font-weight:normal;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+}
+.hdr .sub{
+  font-size:.68rem;
+  color:var(--mu);
+  font-family:'Courier New',Courier,monospace;
+  margin-top:4px;
+  letter-spacing:.05em;
+}
+.status{
+  font-size:.63rem;
+  font-family:'Courier New',Courier,monospace;
+  color:var(--mu);
+  background:var(--sf2);
+  border:1px solid var(--bd);
+  border-radius:3px;
+  padding:7px 11px;
+  max-width:280px;
+  line-height:1.75;
+}
+
+/* ── LEGEND ────────────────────────────────────────────────────────────── */
+.leg{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  flex-wrap:wrap;
+  padding:7px 26px 8px;
+  border-bottom:1px solid var(--bd);
+  background:var(--sf);
+}
+.leg-lbl{
+  font-size:.61rem;
+  font-family:'Courier New',monospace;
+  color:var(--mu);
+  text-transform:uppercase;
+  letter-spacing:.1em;
+}
+.leg-item{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  font-size:.65rem;
+  font-family:'Courier New',monospace;
+  color:var(--mu);
+}
+.pip{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+/* ── WORLD ─────────────────────────────────────────────────────────────── */
+.world{
+  background:#020810;
+  display:flex;
+  justify-content:center;
+  overflow-x:auto;
+}
+#w{width:100%;max-width:1200px;display:block;}
+
+@keyframes pulse{0%,100%{opacity:.22;}50%{opacity:.55;}}
+.aura{animation:pulse 4.5s ease-in-out infinite;}
+@media(prefers-reduced-motion:reduce){.aura{animation:none;}}
+
+/* ── PANELS ────────────────────────────────────────────────────────────── */
+.panels{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  border-top:1px solid var(--bd);
+  background:var(--bd);
+  gap:1px;
+}
+.pnl{background:var(--sf);padding:17px 19px;}
+.pnl-h{
+  font-size:.61rem;
+  font-family:'Courier New',monospace;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:var(--mu);
+  border-bottom:1px solid var(--bd);
+  padding-bottom:9px;
+  margin-bottom:12px;
+}
+
+/* pipeline */
+.pipe{display:flex;flex-direction:column;gap:5px;}
+.pipe-row{display:flex;align-items:center;gap:9px;font-size:.77rem;}
+.pp{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.pa{font-size:.68rem;color:var(--mu);padding-left:17px;}
+
+/* carriers */
+.cars{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.car{display:flex;align-items:center;gap:6px;font-size:.76rem;padding:5px 8px;border:1px solid var(--bd);border-radius:4px;background:var(--sf2);}
+.ci{font-size:.95rem;}
+
+/* nine */
+.nine{display:flex;flex-direction:column;gap:5px;}
+.ng{border-radius:5px;border:1px solid rgba(156,39,176,.35);overflow:hidden;}
+.ngt{font-size:.61rem;font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:.1em;padding:4px 9px;background:rgba(100,60,200,.07);color:#ce93d8;}
+.ngi{display:flex;gap:7px;padding:5px 9px;font-size:.76rem;}
+.ns{color:var(--mu);}
+.nmd{text-align:center;font-size:.7rem;color:var(--mu);padding:1px 0;}
+.ndance{border:1px dashed var(--bd);border-radius:4px;text-align:center;padding:7px;font-size:.71rem;font-style:italic;color:var(--mu);margin-top:2px;}
+.ndance small{display:block;font-size:.61rem;font-family:'Courier New',monospace;margin-top:2px;font-style:normal;}
+
+/* evidence */
+.ev{display:flex;flex-direction:column;gap:4px;}
+.ev-row{display:flex;align-items:center;gap:9px;font-size:.77rem;}
+.ev-b{font-size:.59rem;font-family:'Courier New',monospace;padding:2px 6px;border-radius:3px;color:#fff;min-width:70px;text-align:center;flex-shrink:0;}
+.ev-a{font-size:.68rem;color:var(--mu);padding-left:17px;}
+.ev-note{margin-top:9px;font-size:.62rem;font-family:'Courier New',monospace;color:var(--mu);background:var(--sf2);border:1px solid var(--bd);border-radius:3px;padding:6px 9px;line-height:1.75;}
+
+/* ── USERS TABLE ────────────────────────────────────────────────────────── */
+.utop{
+  padding:11px 19px 9px;
+  font-size:.61rem;
+  font-family:'Courier New',monospace;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:var(--mu);
+  border-top:1px solid var(--bd);
+  border-bottom:1px solid var(--bd);
+  background:var(--sf);
+  display:flex;align-items:center;gap:10px;
+}
+.nd{background:rgba(245,124,0,.1);color:#e65100;border:1px solid rgba(245,124,0,.3);border-radius:3px;padding:2px 7px;font-size:.59rem;}
+.uscroll{overflow-x:auto;background:var(--sf);}
+table{width:100%;border-collapse:collapse;font-size:.71rem;font-family:'Courier New',monospace;min-width:680px;}
+th{text-align:left;padding:7px 11px;border-bottom:1px solid var(--bd);color:var(--mu);font-weight:normal;letter-spacing:.05em;background:var(--sf2);white-space:nowrap;}
+td{padding:6px 11px;border-bottom:1px solid rgba(80,120,200,.07);vertical-align:top;line-height:1.5;}
+tr:hover td{background:rgba(80,120,200,.04);}
+.gc{color:#d32f2f;}.gp{color:#e65100;}
+
+/* ── FOOTER ─────────────────────────────────────────────────────────────── */
+footer{
+  padding:11px 26px;
+  border-top:1px solid var(--bd);
+  font-size:.61rem;
+  font-family:'Courier New',monospace;
+  color:var(--mu);
+  line-height:1.9;
+  display:flex;
+  gap:22px;
+  flex-wrap:wrap;
+  background:var(--sf2);
+}
+</style>
+
+<!-- ═══ HEADER ════════════════════════════════════════════════════════════ -->
+<header class="hdr">
+  <div>
+    <h1>Philos · World Map</h1>
+    <div class="sub">Human Orientation Operating System — Conceptual Architecture, v0</div>
+  </div>
+  <div class="status">
+    Concept map of a system in active development.<br>
+    Use-cases shown are intended, not demonstrated.<br>
+    Color = evidence grade. Not decoration.
+  </div>
+</header>
+
+<!-- ═══ LEGEND ═══════════════════════════════════════════════════════════ -->
+<div class="leg">
+  <span class="leg-lbl">Evidence grade →</span>
+  <span class="leg-item"><span class="pip" style="background:#43a047"></span>Frozen (methodology)</span>
+  <span class="leg-item"><span class="pip" style="background:#9c27b0"></span>Candidate (designed, not validated)</span>
+  <span class="leg-item"><span class="pip" style="background:#f57c00"></span>Placeholder (concept only)</span>
+  <span class="leg-item"><span class="pip" style="background:#d32f2f"></span>Not established</span>
+  <span class="leg-item"><span class="pip" style="background:#1565c0"></span>Intended users</span>
+</div>
+
+<!-- ═══ WORLD DIAGRAM ════════════════════════════════════════════════════ -->
+<div class="world">
+  <svg id="w" viewBox="0 0 1200 1050" xmlns="http://www.w3.org/2000/svg"
+       preserveAspectRatio="xMidYMid meet"
+       aria-label="Philos ecosystem world map"></svg>
+</div>
+
+<!-- ═══ BOTTOM PANELS ════════════════════════════════════════════════════ -->
+<div class="panels">
+
+  <div class="pnl">
+    <div class="pnl-h">Mission Pipeline</div>
+    <div class="pipe">
+      <div class="pipe-row"><span class="pp" style="background:#1565c0"></span>Mission — any human purpose</div>
+      <div class="pa">↓</div>
+      <div class="pipe-row"><span class="pp" style="background:#9c27b0"></span>OPM — Gap detection &amp; classification</div>
+      <div class="pa">↓</div>
+      <div class="pipe-row"><span class="pp" style="background:#9c27b0"></span>Force mapping &amp; trajectories</div>
+      <div class="pa">↓</div>
+      <div class="pipe-row"><span class="pp" style="background:#f57c00"></span>Required values → Matching</div>
+      <div class="pa">↓</div>
+      <div class="pipe-row"><span class="pp" style="background:#f57c00"></span>Value providers → Execution</div>
+      <div class="pa">↓</div>
+      <div class="pipe-row"><span class="pp" style="background:#43a047"></span>Evidence collection (framework frozen)</div>
+      <div class="pa">↓</div>
+      <div class="pipe-row"><span class="pp" style="background:#d32f2f"></span>Learning → Next mission</div>
+    </div>
+  </div>
+
+  <div class="pnl">
+    <div class="pnl-h">Value Carriers · Marketplace</div>
+    <div class="cars">
+      <div class="car"><span class="ci">👤</span>People</div>
+      <div class="car"><span class="ci">🤖</span>AI Systems</div>
+      <div class="car"><span class="ci">🏢</span>Organizations</div>
+      <div class="car"><span class="ci">🌍</span>Communities</div>
+      <div class="car"><span class="ci">📚</span>Knowledge</div>
+      <div class="car"><span class="ci">💰</span>Capital</div>
+      <div class="car"><span class="ci">🛠</span>Resources</div>
+      <div class="car"><span class="ci">🎓</span>Mentors</div>
+    </div>
+  </div>
+
+  <div class="pnl">
+    <div class="pnl-h">Model of the Nine</div>
+    <div class="nine">
+      <div class="ng">
+        <div class="ngt">Reality</div>
+        <div class="ngi">Matter<span class="ns">·</span>Space<span class="ns">·</span>Time</div>
+      </div>
+      <div class="nmd">↕</div>
+      <div class="ng">
+        <div class="ngt">Human</div>
+        <div class="ngi">Body<span class="ns">·</span>Emotion<span class="ns">·</span>Mind</div>
+      </div>
+      <div class="nmd">↕</div>
+      <div class="ng">
+        <div class="ngt">Drives</div>
+        <div class="ngi">Instinct<span class="ns">·</span>Social<span class="ns">·</span>Knowledge</div>
+      </div>
+      <div class="ndance">Dance of the Nine · candidate
+        <small>H9: representational (weak). G9 falsification field: empty.</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="pnl">
+    <div class="pnl-h">Evidence Chain · I5</div>
+    <div class="ev">
+      <div class="ev-row"><span class="ev-b" style="background:#1565c0">Intent</span>Stated goal (weakest signal)</div>
+      <div class="ev-a">↓</div>
+      <div class="ev-row"><span class="ev-b" style="background:#f57c00">Behavior</span>Observed action</div>
+      <div class="ev-a">↓</div>
+      <div class="ev-row"><span class="ev-b" style="background:#9c27b0">Outcomes</span>Measured results</div>
+      <div class="ev-a">↓</div>
+      <div class="ev-row"><span class="ev-b" style="background:#9c27b0">Trust</span>Reputation update</div>
+      <div class="ev-a">↓</div>
+      <div class="ev-row"><span class="ev-b" style="background:#d32f2f">Impact</span>Systemic change (long-term)</div>
+      <div class="ev-note">Framework: FROZEN · Invariant I5<br>Evidence itself: always open</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ USERS TABLE ═══════════════════════════════════════════════════════ -->
+<div class="utop">
+  Entry Points — Intended Use-Cases
+  <span class="nd">not demonstrated</span>
+</div>
+<div class="uscroll">
+  <table>
+    <thead>
+      <tr>
+        <th>User</th>
+        <th>Mission</th>
+        <th>Critical Gaps ❌</th>
+        <th>Partial Gaps ⚠️</th>
+        <th>Marketplace Output</th>
+      </tr>
+    </thead>
+    <tbody id="tb"></tbody>
+  </table>
+</div>
+
+<!-- ═══ FOOTER ════════════════════════════════════════════════════════════ -->
+<footer>
+  <span><strong>Philos</strong> is a system concept in active development. No outcomes have been demonstrated.</span>
+  <span>Color = evidence grade — purple (candidate) means designed, not validated.</span>
+  <span>Model of 9: H9 (representational, weak claim). G9 (grammar/falsification): field intentionally empty.</span>
+</footer>
+
+<script>
+'use strict';
+
+/* ── DATA ────────────────────────────────────────────────────────────────── */
+const C = { frozen:'#43a047', cand:'#9c27b0', holder:'#f57c00', nest:'#d32f2f', user:'#1565c0' };
+
+const USERS = [
+  { e:'👗', n:'Fashion\nEntrepreneur', m:'Launch inclusive\nfashion brand',
+    crit:['Knowledge','Manufacturing','Funding'], part:['Community','Confidence'],
+    out:'Mentor · Factory · Designer · AI · Investor' },
+  { e:'🚀', n:'Startup\nFounder',     m:'Build AI startup',
+    crit:['Product-Market Fit','Team','Capital'], part:['Network','Resilience'],
+    out:'Investors · Advisors · Talent · Legal' },
+  { e:'🎓', n:'Student',             m:'Choose career path',
+    crit:['Direction','Skills'], part:['Mentorship','Resources','Confidence'],
+    out:'Mentor · Institution · Community · AI' },
+  { e:'❤️',  n:'Couple',             m:'Restore relationship',
+    crit:['Communication','Shared Vision'], part:['Financial Alignment','Support'],
+    out:'Therapist · Coach · Community' },
+  { e:'👨‍👩‍👧', n:'Family',             m:'Stabilize home',
+    crit:['Housing','Income'], part:['Education','Healthcare','Community'],
+    out:'Social Services · NGO · Community' },
+  { e:'👨‍⚕️', n:'Doctor',             m:'Treat complex patient',
+    crit:['Research Access','System Change'], part:['Burnout','Innovation'],
+    out:'Research Network · AI Diagnostics · Peers' },
+  { e:'🧠', n:'Therapist',           m:'Scale impact',
+    crit:['Scale','Research Base'], part:['Supervision','Tools','Community'],
+    out:'Platform · Peers · AI Tools · Research' },
+  { e:'🏢', n:'Company',             m:'Increase growth',
+    crit:['Talent','Market Position'], part:['Culture','Sustainability'],
+    out:'Talent Network · Strategy · AI · Partners' },
+  { e:'🏛️', n:'Municipality',        m:'Reduce homelessness',
+    crit:['Budget','Citizen Trust'], part:['Digital Infra','Speed'],
+    out:'NGOs · Data · Policy Network · Community' },
+  { e:'🌍', n:'NGO',                 m:'Recruit volunteers',
+    crit:['Funding','Impact Measurement'], part:['Scale','Partnerships'],
+    out:'Donors · Volunteers · AI · Visibility' },
+  { e:'📚', n:'Teacher',             m:'Help struggling student',
+    crit:['Resources','Engagement'], part:['Admin Load','Recognition'],
+    out:'Tools · AI Assistant · Peers · Content' },
+  { e:'🔬', n:'Researcher',          m:'Test hypothesis',
+    crit:['Funding','Collaboration'], part:['Publication Access','Impact Path'],
+    out:'Grants · Partners · Data · Publishing · AI' },
+  { e:'⚖️', n:'Lawyer',              m:'Expand access to justice',
+    crit:['Scale','Access to Justice'], part:['Innovation','Research'],
+    out:'LegalTech · AI · Policy · Data' },
+  { e:'💰', n:'Investor',            m:'Evaluate opportunity',
+    crit:['Deal Flow Quality','Due Diligence'], part:['Market Intel','Network'],
+    out:'Deal Sourcing · Analysis · AI · Expert Network' },
+  { e:'🤖', n:'AI Agent',            m:'Align to human values',
+    crit:['Human Context','Value Alignment'], part:['Trust','Interpretability'],
+    out:'Human Data · Ethics Framework · Oversight' },
+];
+
+/* ── SVG HELPERS ─────────────────────────────────────────────────────────── */
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('w');
+
+function el(tag, attrs) {
+  const e = document.createElementNS(NS, tag);
+  if (attrs) for (const [k,v] of Object.entries(attrs)) e.setAttribute(k, String(v));
+  return e;
+}
+function app(parent, tag, attrs) { const e = el(tag,attrs); parent.appendChild(e); return e; }
+function txt(parent, s, attrs)  {
+  const e = el('text', { 'text-anchor':'middle', 'dominant-baseline':'middle', ...attrs });
+  e.textContent = s;
+  parent.appendChild(e);
+  return e;
+}
+function polar(r, deg) {
+  const a = deg * Math.PI / 180;
+  return [CX + r * Math.cos(a), CY + r * Math.sin(a)];
+}
+function fmt(v) { return typeof v === 'number' ? v.toFixed(2) : v; }
+
+/* ── LAYOUT CONSTANTS ────────────────────────────────────────────────────── */
+const CX=600, CY=510;
+const R0=70, R1=198, R2=318, R3=428;
+
+/* ── DEFS ────────────────────────────────────────────────────────────────── */
+const defs = app(svg, 'defs');
+
+// Background gradient
+const bg1 = app(defs,'radialGradient',{id:'bg1',cx:'50%',cy:'48%',r:'72%'});
+[['0%','#0c1630'],['55%','#060e1e'],['100%','#020610']].forEach(([o,c])=>{
+  const s=el('stop',{offset:o}); s.setAttribute('stop-color',c); bg1.appendChild(s);
+});
+
+// Core gradient
+const cg = app(defs,'radialGradient',{id:'cg',cx:'50%',cy:'50%',r:'50%'});
+[['0%','#0a2214'],['100%','#030c06']].forEach(([o,c])=>{
+  const s=el('stop',{offset:o}); s.setAttribute('stop-color',c); cg.appendChild(s);
+});
+
+// Glow filter — core
+const gfc = app(defs,'filter',{id:'gfc',x:'-70%',y:'-70%',width:'240%',height:'240%'});
+app(gfc,'feGaussianBlur',{in:'SourceGraphic',stdDeviation:'12',result:'b'});
+const mc = app(gfc,'feMerge');
+['b','SourceGraphic'].forEach(r=>{ const n=el('feMergeNode'); n.setAttribute('in',r); mc.appendChild(n); });
+
+// Glow filter — node boxes
+const gfn = app(defs,'filter',{id:'gfn',x:'-40%',y:'-40%',width:'180%',height:'180%'});
+app(gfn,'feGaussianBlur',{in:'SourceGraphic',stdDeviation:'6',result:'b'});
+const mn = app(gfn,'feMerge');
+['b','SourceGraphic'].forEach(r=>{ const n=el('feMergeNode'); n.setAttribute('in',r); mn.appendChild(n); });
+
+// Soft glow (auras)
+const gfa = app(defs,'filter',{id:'gfa',x:'-10%',y:'-10%',width:'120%',height:'120%'});
+app(gfa,'feGaussianBlur',{in:'SourceGraphic',stdDeviation:'4'});
+
+/* ── BACKGROUND ──────────────────────────────────────────────────────────── */
+app(svg,'rect',{x:0,y:0,width:1200,height:1050,fill:'url(#bg1)'});
+
+// Star field — deterministic golden-angle spread
+for (let i=0; i<90; i++) {
+  const ang  = i * 137.508 * Math.PI / 180;
+  const rad  = 30 + (i * 71 % 540);
+  const sx   = (600 + rad * Math.cos(ang) * 1.0 + (i*97%300)).toFixed(1);
+  const sy   = (510 + rad * Math.sin(ang) * 0.9 + (i*53%280)).toFixed(1);
+  const sr   = (0.5 + (i%3)*0.45).toFixed(2);
+  const so   = (0.12 + (i%5)*0.07).toFixed(2);
+  app(svg,'circle',{cx:sx,cy:sy,r:sr,fill:'#c0d4ff',opacity:so});
+}
+
+/* ── ORBITAL RING GUIDES ─────────────────────────────────────────────────── */
+[[R1,'6,9'],[R2,'4,7'],[R3,'3,8']].forEach(([r,da])=>{
+  app(svg,'circle',{cx:CX,cy:CY,r,fill:'none',
+    stroke:'rgba(90,140,230,.18)','stroke-width':'1','stroke-dasharray':da});
+});
+
+// Tick marks at user positions
+for (let i=0;i<15;i++){
+  const a=(270+i*24)*Math.PI/180;
+  app(svg,'line',{
+    x1:fmt(CX+(R3-9)*Math.cos(a)), y1:fmt(CY+(R3-9)*Math.sin(a)),
+    x2:fmt(CX+(R3+9)*Math.cos(a)), y2:fmt(CY+(R3+9)*Math.sin(a)),
+    stroke:'rgba(21,101,192,.28)','stroke-width':'1.2'
+  });
+}
+
+/* ── CONNECTIONS ─────────────────────────────────────────────────────────── */
+// Faint user spokes (ring3 → ring2 zone)
+for (let i=0;i<15;i++){
+  const [x1,y1]=polar(R3-23,270+i*24);
+  const [x2,y2]=polar(R2+22,270+i*24);
+  app(svg,'line',{x1:fmt(x1),y1:fmt(y1),x2:fmt(x2),y2:fmt(y2),
+    stroke:'rgba(21,101,192,.1)','stroke-width':'1','stroke-dasharray':'2,7'});
+}
+
+// Ring2 triangle
+const [rX,rY]=polar(R2,270), [hX,hY]=polar(R2,30), [dX,dY]=polar(R2,150);
+app(svg,'path',{
+  d:`M${fmt(rX)},${fmt(rY)} L${fmt(hX)},${fmt(hY)} L${fmt(dX)},${fmt(dY)} Z`,
+  fill:'rgba(156,39,176,.05)',stroke:'rgba(156,39,176,.2)','stroke-width':'1.5'
+});
+
+// OPM/Marketplace centers
+const [oX,oY]=[CX-R1,CY], [mX,mY]=[CX+R1,CY];
+
+// Twin arcs: OPM ↔ Marketplace (particle-accelerator loop aesthetic)
+app(svg,'path',{
+  d:`M${oX+66},${oY-5} Q${CX},${CY-90} ${mX-66},${mY-5}`,
+  fill:'none',stroke:'rgba(156,39,176,.55)','stroke-width':'2'});
+app(svg,'path',{
+  d:`M${mX-66},${mY+5} Q${CX},${CY+90} ${oX+66},${oY+5}`,
+  fill:'none',stroke:'rgba(156,39,176,.55)','stroke-width':'2'});
+
+// Core ↔ engines
+app(svg,'line',{x1:CX-R0,y1:CY,x2:oX+66,y2:oY,stroke:'rgba(156,39,176,.35)','stroke-width':'1.6'});
+app(svg,'line',{x1:CX+R0,y1:CY,x2:mX-66,y2:mY,stroke:'rgba(156,39,176,.35)','stroke-width':'1.6'});
+
+// Core → Reality (dashed)
+app(svg,'line',{x1:CX,y1:CY-R0,x2:fmt(rX),y2:fmt(rY+32),
+  stroke:'rgba(156,39,176,.2)','stroke-width':'1','stroke-dasharray':'4,5'});
+
+// Learning loop arrow
+app(svg,'path',{
+  d:`M${CX+32},${CY+R0+52} Q${CX+95},${CY+38} ${CX+R0+8},${CY+14}`,
+  fill:'none',stroke:'rgba(211,47,47,.4)','stroke-width':'1.5','stroke-dasharray':'5,4'});
+txt(svg,'Learning ↺',{
+  x:CX+100,y:CY+78,fill:'rgba(211,47,47,.5)','font-size':'9',
+  'font-family':"'Courier New',monospace",'text-anchor':'middle'});
+
+/* ── RING 2: Reality / Human / Drives ────────────────────────────────────── */
+function r2node(px,py,title,items,col){
+  const W=130,H=64,rx=7,g=el('g');
+  // glow aura
+  g.appendChild(el('ellipse',{cx:px,cy:py,rx:W/2+12,ry:H/2+12,
+    fill:'none',stroke:col,'stroke-width':'1',opacity:'.18',filter:'url(#gfa)'}));
+  // box
+  g.appendChild(el('rect',{x:px-W/2,y:py-H/2,width:W,height:H,rx,
+    fill:'#070e1c',stroke:col,'stroke-width':'1.8',filter:'url(#gfn)'}));
+  txt(g,title,{x:px,y:py-13,fill:col,'font-size':'10.5',
+    'font-family':"'Courier New',monospace",'font-weight':'bold','letter-spacing':'.1em'});
+  g.appendChild(el('line',{x1:px-48,y1:py-2,x2:px+48,y2:py-2,
+    stroke:col,'stroke-width':'.5',opacity:'.35'}));
+  txt(g,items,{x:px,y:py+13,fill:'rgba(200,215,240,.72)','font-size':'9.5',
+    'font-family':"'Courier New',monospace"});
+  svg.appendChild(g);
+}
+r2node(rX,rY,'REALITY','Matter · Space · Time',C.cand);
+r2node(hX,hY,'HUMAN','Body · Emotion · Mind',C.cand);
+r2node(dX,dY,'DRIVES','Instinct · Social · Knowledge',C.cand);
+
+/* ── ENGINES: OPM + MARKETPLACE ──────────────────────────────────────────── */
+function engine(cx,cy,title,items,col,W,H){
+  const rx=13,g=el('g');
+  // outer glow
+  g.appendChild(el('ellipse',{cx,cy,rx:W/2+14,ry:H/2+14,
+    fill:'none',stroke:col,'stroke-width':'1',opacity:'.14',filter:'url(#gfn)'}));
+  // box
+  g.appendChild(el('rect',{x:cx-W/2,y:cy-H/2,width:W,height:H,rx,
+    fill:'#050b18',stroke:col,'stroke-width':'2.2',filter:'url(#gfn)'}));
+  // title bg strip
+  g.appendChild(el('rect',{x:cx-W/2,y:cy-H/2,width:W,height:28,rx,
+    fill:col,opacity:'.1'}));
+  g.appendChild(el('rect',{x:cx-W/2,y:cy-H/2+14,width:W,height:14,
+    fill:col,opacity:'.1'})); // square bottom of rounded-top strip
+  txt(g,title,{x:cx,y:cy-H/2+14,fill:col,'font-size':'12',
+    'font-family':"Georgia,serif",'font-weight':'bold','letter-spacing':'.08em'});
+  g.appendChild(el('line',{x1:cx-W/2+12,y1:cy-H/2+28,x2:cx+W/2-12,y2:cy-H/2+28,
+    stroke:col,'stroke-width':'.5',opacity:'.3'}));
+  items.forEach((s,i)=>{
+    txt(g,'· '+s,{x:cx,y:cy-H/2+43+i*16.8,fill:'rgba(205,220,245,.7)','font-size':'10',
+      'font-family':"'Courier New',monospace"});
+  });
+  svg.appendChild(g);
+}
+engine(oX,oY,'OPM',
+  ['Situation','State of Nine','Forces','Gaps','Energy','Values','Trajectories'],
+  C.cand,148,158);
+engine(mX,mY,'MARKETPLACE',
+  ['Required Values','Matching','Community','Experts','AI Systems','Organizations','Resources'],
+  C.holder,158,158);
+
+/* ── CORE: PHILOS ────────────────────────────────────────────────────────── */
+// Pulsing aura circle
+const aura = el('circle',{cx:CX,cy:CY,r:88,fill:'none',
+  stroke:C.frozen,'stroke-width':'1.2',opacity:'.22',class:'aura'});
+svg.appendChild(aura);
+
+// Second ring
+app(svg,'circle',{cx:CX,cy:CY,r:R0+14,fill:'none',
+  stroke:C.frozen,'stroke-width':'1',opacity:'.4',filter:'url(#gfa)'});
+
+// Core fill
+app(svg,'circle',{cx:CX,cy:CY,r:R0,fill:'url(#cg)',
+  stroke:C.frozen,'stroke-width':'2.6',filter:'url(#gfc)'});
+
+// Text
+txt(svg,'PHILOS',{x:CX,y:CY-18,fill:C.frozen,'font-size':'17.5',
+  'font-family':"Georgia,serif",'font-weight':'bold','letter-spacing':'.14em',
+  filter:'url(#gfc)'});
+txt(svg,'Human Orientation',{x:CX,y:CY-1,fill:'rgba(160,210,162,.65)','font-size':'8.5',
+  'font-family':"'Courier New',monospace",'letter-spacing':'.06em'});
+txt(svg,'Operating System',{x:CX,y:CY+11,fill:'rgba(160,210,162,.65)','font-size':'8.5',
+  'font-family':"'Courier New',monospace",'letter-spacing':'.06em'});
+
+// Evidence framework badge
+const efY=CY+R0+36;
+app(svg,'rect',{x:CX-62,y:efY-14,width:124,height:28,rx:4,
+  fill:'#061408',stroke:C.frozen,'stroke-width':'1.2'});
+txt(svg,'Evidence Framework',{x:CX,y:efY-3,fill:C.frozen,'font-size':'8.5',
+  'font-family':"'Courier New',monospace"});
+txt(svg,'[ FROZEN ]',{x:CX,y:efY+8,fill:C.frozen,'font-size':'7.5',
+  'font-family':"'Courier New',monospace",'letter-spacing':'.12em'});
+
+/* ── RING 3: 15 USERS ────────────────────────────────────────────────────── */
+USERS.forEach((u,i)=>{
+  const ang=270+i*24;
+  const [ux,uy]=polar(R3,ang);
+  const rad=ang*Math.PI/180;
+  const cosA=Math.cos(rad);
+  const isR=cosA>-0.06;
+  const tx=ux+(isR?30:-30);
+  const anch=isR?'start':'end';
+  const g=el('g');
+
+  // user circle
+  g.appendChild(el('circle',{cx:fmt(ux),cy:fmt(uy),r:22,
+    fill:'#070e1e',stroke:C.user,'stroke-width':'1.5'}));
+
+  // emoji
+  const em=el('text',{x:fmt(ux),y:fmt(uy),'text-anchor':'middle',
+    'dominant-baseline':'middle','font-size':'16'});
+  em.textContent=u.e;
+  g.appendChild(em);
+
+  // name (1 or 2 lines)
+  const np=u.n.split('\n');
+  const ny=uy-(np.length>1?8:0);
+  np.forEach((part,ni)=>{
+    const t=el('text',{x:fmt(tx),y:fmt(ny+ni*13.5),'text-anchor':anch,
+      'dominant-baseline':'middle',fill:'rgba(187,222,251,.88)','font-size':'10',
+      'font-family':"Georgia,serif"});
+    t.textContent=part;
+    g.appendChild(t);
+  });
+
+  // mission
+  const my0=ny+np.length*13.5+1;
+  u.m.split('\n').forEach((part,mi)=>{
+    const t=el('text',{x:fmt(tx),y:fmt(my0+mi*11),'text-anchor':anch,
+      'dominant-baseline':'middle',fill:'rgba(95,128,180,.62)','font-size':'8.5',
+      'font-family':"'Courier New',monospace",'font-style':'italic'});
+    t.textContent=part;
+    g.appendChild(t);
+  });
+
+  svg.appendChild(g);
+});
+
+// Diagram subtitle
+txt(svg,'15 entry points · any human mission · universal',{
+  x:CX,y:24,fill:'rgba(90,120,180,.35)','font-size':'9',
+  'font-family':"'Courier New',monospace",'letter-spacing':'.08em'});
+
+/* ── USERS TABLE ─────────────────────────────────────────────────────────── */
+const tb=document.getElementById('tb');
+USERS.forEach(u=>{
+  const tr=document.createElement('tr');
+  tr.innerHTML=
+    `<td>${u.e} ${u.n.replace('\n',' ')}</td>`+
+    `<td>${u.m.replace('\n',' ')}</td>`+
+    `<td>${u.crit.map(g=>`<span class="gc">${g}</span>`).join(' · ')}</td>`+
+    `<td>${u.part.map(g=>`<span class="gp">${g}</span>`).join(' · ')}</td>`+
+    `<td>${u.out}</td>`;
+  tb.appendChild(tr);
+});
+</script>
