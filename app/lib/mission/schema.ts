@@ -9,6 +9,12 @@
  * The Mission is the root entity of the PUDM chain:
  *   Mission → Gap → Value → Capability → Provider
  *
+ * Design rule: Mission owns only what it originates. It holds pure reference
+ * pointers (id only) to Gap, Value, Capability, and Provider nodes. Display
+ * names, labels, grades, and lifecycle state of referenced nodes are owned by
+ * those nodes and must be looked up from their respective repositories — never
+ * stored here.
+ *
  * All subsystems (OPM, Marketplace, World, Agents) interact with Mission
  * through MissionRepository, not through this file directly.
  */
@@ -46,14 +52,19 @@ export interface MissionState {
   horizon: MissionHorizon;
 }
 
-/** Layer 2b: Context — who is running this Mission and why. */
+/**
+ * Layer 2b: Context — who is running this Mission and why.
+ *
+ * actor.id + actor.type are the pointer to the actor node.
+ * actor display name and properties are owned by the Person / Organization /
+ * Community node and must be resolved from there — not stored here.
+ */
 export interface MissionContext {
   actor: {
     id: string;
     type: ActorType;
-    displayName: string;
   };
-  statement: string;   // what the actor is trying to achieve
+  statement: string;    // what the actor is trying to achieve
   domain: string | null;
 }
 
@@ -63,33 +74,33 @@ export interface MissionConstraints {
   assumptions: string[];
 }
 
-/** Reference to a Gap node. Gaps are resolved in the Gap domain (not yet built). */
+/**
+ * Pure pointer to a Gap node.
+ * Gap description, status, and lifecycle are owned by the Gap node.
+ * Resolve from GapRepository (not yet built) when display data is needed.
+ */
 export interface GapRef {
   gapId: string;
-  description: string;
-  status: "open" | "closed" | "deferred";
 }
 
-/** Reference to a Value node (one of the 12 Candidate values). */
+/**
+ * Pure pointer to a Value node (one of the 12 Candidate values).
+ * Value label and evidenceGrade are owned by the Value node.
+ * Resolve from ValueRepository (not yet built) when display data is needed.
+ */
 export interface ValueRef {
   valueId: string;
-  label: string;
-  grade: EvidenceGrade;
 }
 
-/** Reference to a Capability Domain node. */
-export interface CapabilityRef {
-  capabilityId: string;
-  domain: string;
-}
-
-/** Reference to a Provider node. */
-export interface ProviderRef {
-  providerId: string;
-  name: string;
-}
-
-/** Single evidence signal attached to this Mission. */
+/**
+ * Single evidence signal scoped to the Mission statement itself.
+ *
+ * TEMPORARY — v0.1 only.
+ * Per PUDM §4.3, evidence belongs on relation instances, not on nodes.
+ * This field represents only "evidence that the Mission statement is accurately
+ * stated by the actor" — it is NOT relation evidence (Mission → Gap, etc.).
+ * Will migrate to relation-level evidence when the Gap node is built.
+ */
 export interface EvidenceRecord {
   signal: SignalType;
   source: string | null;
@@ -111,14 +122,24 @@ export interface MissionRelations {
 
 // ─── Full Mission node ────────────────────────────────────────────────────────
 
+/**
+ * Mission is the root entity of the PUDM chain. It owns:
+ *   - Its own statement, state, constraints, assumptions, and timeline.
+ *   - Pure reference pointers to Gap and Value nodes it originated.
+ *   - Temporary self-scoped evidence (see EvidenceRecord above).
+ *
+ * Mission does NOT own:
+ *   - Actor display names or properties (owned by actor node).
+ *   - Gap descriptions, statuses, or lifecycle (owned by Gap node).
+ *   - Value labels or evidence grades (owned by Value node).
+ *   - Capabilities or Providers (resolved by traversing the chain via Marketplace).
+ */
 export interface Mission extends MissionIdentity {
   state: MissionState;
   context: MissionContext;
   constraints: MissionConstraints;
   gaps: GapRef[];
   requiredValues: ValueRef[];
-  capabilities: CapabilityRef[];
-  providers: ProviderRef[];
   evidence: EvidenceRecord[];
   timeline: MissionTimeline;
   relations: MissionRelations;
