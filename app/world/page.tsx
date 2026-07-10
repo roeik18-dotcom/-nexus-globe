@@ -219,7 +219,7 @@ export default function WorldPage() {
         >
           <strong style={{ color: "#FFB84D" }}>Potential Layer</strong> — dashed lines show the architecture&apos;s full design space.
           &nbsp;·&nbsp;
-          <strong style={{ color: "#34D399" }}>Live Layer</strong> — solid lines reflect actual data: {liveMissions.length} mission, {liveGaps.length} gaps, {liveValues.length} values.
+          <strong style={{ color: "#34D399" }}>Live Reference Layer</strong> — solid lines show values referenced by real records. Not observed flow.
         </div>
 
         <div style={{ display: "flex", gap: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
@@ -443,7 +443,7 @@ export default function WorldPage() {
                 ── ── POTENTIAL VALUE FLOW ── ──
               </text>
 
-              {/* Live Layer — solid connections from live JSON data */}
+              {/* Live Reference Layer — solid lines = real records from JSON stores, not observed flow */}
               <g>
                 {valueNodes.filter(v => liveValueIds.has(v.id)).map(v => (
                   <line
@@ -573,7 +573,7 @@ export default function WorldPage() {
               </div>
               <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
                 {[
-                  { line: "solid",  color: "#34D399", label: "Live value flow" },
+                  { line: "solid",  color: "#34D399", label: "Live value references" },
                   { line: "dashed", color: "#5B8CFF", label: "Potential flow" },
                   { line: "circle-sm", color: "#2a5a80", label: "Mission actor" },
                   { line: "circle-lg", color: "#5B8CFF", label: "Value node" },
