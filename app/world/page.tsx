@@ -230,7 +230,7 @@ export default function WorldPage() {
               viewBox="0 0 1000 960"
               width="100%"
               style={{ display: "block", overflow: "visible" }}
-              aria-label="Philos Living World potential value flow diagram"
+              aria-label="Philos Living World — potential relationships and live value references diagram"
             >
               <defs>
                 {VALUES.map((v) => (
@@ -440,7 +440,7 @@ export default function WorldPage() {
               <text x={CX} y={CY + USER_R + 32} textAnchor="middle" fontSize={7.5} fill="#0d2030"
                 letterSpacing="2"
                 style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace" }}>
-                ── ── POTENTIAL VALUE FLOW ── ──
+                ── ── POTENTIAL RELATIONSHIPS ── ──
               </text>
 
               {/* Live Reference Layer — solid lines = real records from JSON stores, not observed flow */}
@@ -574,7 +574,7 @@ export default function WorldPage() {
               <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
                 {[
                   { line: "solid",  color: "#34D399", label: "Live value references" },
-                  { line: "dashed", color: "#5B8CFF", label: "Potential flow" },
+                  { line: "dashed", color: "#5B8CFF", label: "Potential relationships" },
                   { line: "circle-sm", color: "#2a5a80", label: "Mission actor" },
                   { line: "circle-lg", color: "#5B8CFF", label: "Value node" },
                   { line: "dot", color: "#1a3a5a", label: "Capability domain" },
@@ -598,6 +598,62 @@ export default function WorldPage() {
                       )}
                     </svg>
                     <span style={{ fontSize: 10.5, color: "#1a3550" }}>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Layer semantics */}
+            <div>
+              <div
+                style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  letterSpacing: "2px",
+                  textTransform: "uppercase" as const,
+                  color: "#1a3550",
+                  marginBottom: 10,
+                }}
+              >
+                Layer Semantics
+              </div>
+              <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
+                {[
+                  {
+                    name: "Potential Layer",
+                    line: "dashed",
+                    color: "#5B8CFF",
+                    desc: "Architecturally possible relationships.",
+                  },
+                  {
+                    name: "Live Reference Layer",
+                    line: "solid",
+                    color: "#34D399",
+                    desc: "Relationships present in loaded repositories.",
+                  },
+                  {
+                    name: "Observed Flow",
+                    line: "none",
+                    color: "#6E7681",
+                    desc: "Reserved — requires Capability + execution evidence.",
+                  },
+                ].map((s) => (
+                  <div key={s.name} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                    <svg width={18} height={18} viewBox="0 0 18 18" style={{ flexShrink: 0, marginTop: 1 }}>
+                      {s.line === "dashed" && (
+                        <line x1={1} y1={9} x2={17} y2={9} stroke={s.color} strokeWidth={1.2} strokeDasharray="3 3" strokeOpacity={0.7} />
+                      )}
+                      {s.line === "solid" && (
+                        <line x1={1} y1={9} x2={17} y2={9} stroke={s.color} strokeWidth={1.8} strokeOpacity={0.8} />
+                      )}
+                      {s.line === "none" && (
+                        <line x1={1} y1={9} x2={17} y2={9} stroke={s.color} strokeWidth={1} strokeOpacity={0.3} strokeDasharray="1 4" />
+                      )}
+                    </svg>
+                    <div>
+                      <div style={{ fontSize: 9.5, fontWeight: 600, color: s.color, opacity: s.line === "none" ? 0.4 : 1, marginBottom: 1 }}>{s.name}</div>
+                      <div style={{ fontSize: 9, color: "#0f2030", lineHeight: 1.5 }}>{s.desc}</div>
+                    </div>
                   </div>
                 ))}
               </div>
