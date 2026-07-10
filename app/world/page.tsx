@@ -1,3 +1,9 @@
+import path from "path";
+import { readJsonStore } from "@/app/lib/json-store";
+import type { Mission } from "@/app/lib/mission/schema";
+import type { Gap } from "@/app/lib/gap/schema";
+import type { Value } from "@/app/lib/value/schema";
+
 const VALUES = [
   { id: "knowledge",   label: "Knowledge",   angle: 0   },
   { id: "trust",       label: "Trust",       angle: 30  },
@@ -101,6 +107,14 @@ const VALUE_COLOR: Record<string, string> = {
 };
 
 export default function WorldPage() {
+  const DATA = path.join(process.cwd(), "data");
+  const liveMissions = readJsonStore<Mission>(path.join(DATA, "missions.json"));
+  const liveGaps     = readJsonStore<Gap>(path.join(DATA, "gaps.json"));
+  const liveValues   = readJsonStore<Value>(path.join(DATA, "values.json"));
+  const liveValueIds = new Set(
+    liveMissions.flatMap(m => (m.requiredValues ?? []).map(r => r.valueId))
+  );
+
   const valueNodes = VALUES.map((v) => ({ ...v, ...polar(VALUE_R, v.angle) }));
   const valueMap = Object.fromEntries(valueNodes.map((v) => [v.id, v]));
 
@@ -150,6 +164,24 @@ export default function WorldPage() {
             >
               Potential Map
             </div>
+            <div
+              style={{
+                display: "inline-block",
+                background: "rgba(52,211,153,0.10)",
+                border: "1px solid rgba(52,211,153,0.25)",
+                borderRadius: 4,
+                padding: "2px 9px",
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "1.5px",
+                textTransform: "uppercase" as const,
+                color: "#34D399",
+                marginBottom: 10,
+                marginLeft: 8,
+              }}
+            >
+              Live · {liveMissions.length}M {liveGaps.length}G {liveValues.length}V
+            </div>
             <h1
               style={{
                 fontSize: 22,
@@ -162,8 +194,8 @@ export default function WorldPage() {
               Living World
             </h1>
             <p style={{ fontSize: 12.5, color: "#3a5a78", maxWidth: 500, lineHeight: 1.65 }}>
-              Illustrates what the Philos architecture is designed to enable.
-              No connection shown here has occurred. All flows are potential.
+              Potential layer (dashed) shows the architecture&apos;s design space.
+              Live layer (solid) reflects data loaded from JSON stores.
             </p>
           </div>
           <div style={{ display: "flex", gap: 10 }}>
@@ -185,9 +217,9 @@ export default function WorldPage() {
             lineHeight: 1.6,
           }}
         >
-          <strong style={{ color: "#FFB84D" }}>Potential Map</strong> — illustrates what the architecture is designed to enable.
-          No connection shown here has occurred. Values are Candidate-grade (designed, not validated).
-          All connections are dashed and labeled Potential.
+          <strong style={{ color: "#FFB84D" }}>Potential Layer</strong> — dashed lines show the architecture&apos;s full design space.
+          &nbsp;·&nbsp;
+          <strong style={{ color: "#34D399" }}>Live Reference Layer</strong> — solid lines show values referenced by real records. Not observed flow.
         </div>
 
         <div style={{ display: "flex", gap: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
@@ -198,7 +230,7 @@ export default function WorldPage() {
               viewBox="0 0 1000 960"
               width="100%"
               style={{ display: "block", overflow: "visible" }}
-              aria-label="Philos Living World potential value flow diagram"
+              aria-label="Philos Living World — potential relationships and live value references diagram"
             >
               <defs>
                 {VALUES.map((v) => (
@@ -408,7 +440,38 @@ export default function WorldPage() {
               <text x={CX} y={CY + USER_R + 32} textAnchor="middle" fontSize={7.5} fill="#0d2030"
                 letterSpacing="2"
                 style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace" }}>
-                ── ── POTENTIAL VALUE FLOW ── ──
+                ── ── POTENTIAL RELATIONSHIPS ── ──
+              </text>
+
+              {/* Live Reference Layer — solid lines = real records from JSON stores, not observed flow */}
+              <g>
+                {valueNodes.filter(v => liveValueIds.has(v.id)).map(v => (
+                  <line
+                    key={`live-cv-${v.id}`}
+                    x1={CX} y1={CY}
+                    x2={v.x} y2={v.y}
+                    stroke={VALUE_COLOR[v.id]}
+                    strokeWidth={1.8}
+                    strokeOpacity={0.7}
+                  />
+                ))}
+                {valueNodes.filter(v => liveValueIds.has(v.id)).map(v => (
+                  <circle
+                    key={`live-vring-${v.id}`}
+                    cx={v.x} cy={v.y} r={17}
+                    fill="none"
+                    stroke={VALUE_COLOR[v.id]}
+                    strokeWidth={1.5}
+                    strokeOpacity={0.55}
+                  />
+                ))}
+              </g>
+
+              {/* Live label */}
+              <text x={CX} y={CY + USER_R + 46} textAnchor="middle" fontSize={7.5} fill="#1a4a2a"
+                letterSpacing="2"
+                style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace" }}>
+                ── LIVE: {liveMissions.length}M · {liveGaps.length}G · {liveValues.length}V ──
               </text>
             </svg>
           </div>
@@ -463,37 +526,35 @@ export default function WorldPage() {
               >
                 Data Layers
               </div>
-              <div
-                style={{
-                  fontSize: 9.5,
-                  color: "#0f2030",
-                  lineHeight: 1.5,
-                  marginBottom: 8,
-                  fontStyle: "italic",
-                }}
-              >
-                Required by the architecture — not yet populated.
-              </div>
-              <div style={{ display: "flex", flexDirection: "column" as const, gap: 6 }}>
-                {DATA_LAYERS.map((layer, i) => (
-                  <div
-                    key={layer.label}
-                    style={{
-                      background: "#040d18",
-                      border: "1px solid #0a1c2e",
-                      borderRadius: 4,
-                      padding: "6px 9px",
-                    }}
-                  >
-                    <div style={{ fontSize: 10, fontWeight: 600, color: "#1a3a52", marginBottom: 2 }}>
-                      {String(i + 1).padStart(2, "0")} {layer.label}
-                    </div>
-                    <div style={{ fontSize: 9.5, color: "#0d1f2e", lineHeight: 1.45 }}>
-                      {layer.desc}
-                    </div>
+              {(() => {
+                const LIVE_LAYERS = new Set(["Mission", "Gap", "Value"]);
+                return (
+                  <div style={{ display: "flex", flexDirection: "column" as const, gap: 6 }}>
+                    {DATA_LAYERS.map((layer, i) => {
+                      const isLive = LIVE_LAYERS.has(layer.label);
+                      return (
+                        <div
+                          key={layer.label}
+                          style={{
+                            background: isLive ? "rgba(52,211,153,0.05)" : "#040d18",
+                            border: `1px solid ${isLive ? "rgba(52,211,153,0.2)" : "#0a1c2e"}`,
+                            borderRadius: 4,
+                            padding: "6px 9px",
+                          }}
+                        >
+                          <div style={{ fontSize: 10, fontWeight: 600, color: isLive ? "#34D399" : "#1a3a52", marginBottom: 2, display: "flex", justifyContent: "space-between" }}>
+                            <span>{String(i + 1).padStart(2, "0")} {layer.label}</span>
+                            {isLive && <span style={{ fontSize: 9, opacity: 0.75 }}>LIVE</span>}
+                          </div>
+                          <div style={{ fontSize: 9.5, color: isLive ? "#1a4a3a" : "#0d1f2e", lineHeight: 1.45 }}>
+                            {layer.desc}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
             </div>
 
             {/* Legend */}
@@ -512,13 +573,17 @@ export default function WorldPage() {
               </div>
               <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
                 {[
-                  { line: "dashed", color: "#5B8CFF", label: "Potential flow" },
+                  { line: "solid",  color: "#34D399", label: "Live value references" },
+                  { line: "dashed", color: "#5B8CFF", label: "Potential relationships" },
                   { line: "circle-sm", color: "#2a5a80", label: "Mission actor" },
                   { line: "circle-lg", color: "#5B8CFF", label: "Value node" },
                   { line: "dot", color: "#1a3a5a", label: "Capability domain" },
                 ].map((item) => (
                   <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <svg width={24} height={12} viewBox="0 0 24 12">
+                      {item.line === "solid" && (
+                        <line x1={0} y1={6} x2={24} y2={6} stroke={item.color} strokeWidth={1.8} strokeOpacity={0.8} />
+                      )}
                       {item.line === "dashed" && (
                         <line x1={0} y1={6} x2={24} y2={6} stroke={item.color} strokeWidth={1.2} strokeDasharray="3 3" strokeOpacity={0.7} />
                       )}
@@ -533,6 +598,62 @@ export default function WorldPage() {
                       )}
                     </svg>
                     <span style={{ fontSize: 10.5, color: "#1a3550" }}>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Layer semantics */}
+            <div>
+              <div
+                style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  letterSpacing: "2px",
+                  textTransform: "uppercase" as const,
+                  color: "#1a3550",
+                  marginBottom: 10,
+                }}
+              >
+                Layer Semantics
+              </div>
+              <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
+                {[
+                  {
+                    name: "Potential Layer",
+                    line: "dashed",
+                    color: "#5B8CFF",
+                    desc: "Architecturally possible relationships.",
+                  },
+                  {
+                    name: "Live Reference Layer",
+                    line: "solid",
+                    color: "#34D399",
+                    desc: "Relationships present in loaded repositories.",
+                  },
+                  {
+                    name: "Observed Flow",
+                    line: "none",
+                    color: "#6E7681",
+                    desc: "Reserved — requires Capability + execution evidence.",
+                  },
+                ].map((s) => (
+                  <div key={s.name} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                    <svg width={18} height={18} viewBox="0 0 18 18" style={{ flexShrink: 0, marginTop: 1 }}>
+                      {s.line === "dashed" && (
+                        <line x1={1} y1={9} x2={17} y2={9} stroke={s.color} strokeWidth={1.2} strokeDasharray="3 3" strokeOpacity={0.7} />
+                      )}
+                      {s.line === "solid" && (
+                        <line x1={1} y1={9} x2={17} y2={9} stroke={s.color} strokeWidth={1.8} strokeOpacity={0.8} />
+                      )}
+                      {s.line === "none" && (
+                        <line x1={1} y1={9} x2={17} y2={9} stroke={s.color} strokeWidth={1} strokeOpacity={0.3} strokeDasharray="1 4" />
+                      )}
+                    </svg>
+                    <div>
+                      <div style={{ fontSize: 9.5, fontWeight: 600, color: s.color, opacity: s.line === "none" ? 0.4 : 1, marginBottom: 1 }}>{s.name}</div>
+                      <div style={{ fontSize: 9, color: "#0f2030", lineHeight: 1.5 }}>{s.desc}</div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -587,7 +708,7 @@ export default function WorldPage() {
               fontFamily: "var(--font-geist-mono), monospace",
             }}
           >
-            /world · Philos Living World · Potential Map V1
+            /world · Potential + Live Layer · {liveMissions.length}M {liveGaps.length}G {liveValues.length}V
           </span>
           <span style={{ fontSize: 11, color: "#0d1e2e" }}>
             Values: Candidate grade — designed, not validated
