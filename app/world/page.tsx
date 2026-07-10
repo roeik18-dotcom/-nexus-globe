@@ -527,7 +527,7 @@ export default function WorldPage() {
                 Data Layers
               </div>
               {(() => {
-                const LIVE_LAYERS = new Set(["Mission", "Gap", "Value"]);
+                const LIVE_LAYERS = new Set(["Mission", "Gap", "Value", "Capability"]);
                 return (
                   <div style={{ display: "flex", flexDirection: "column" as const, gap: 6 }}>
                     {DATA_LAYERS.map((layer, i) => {

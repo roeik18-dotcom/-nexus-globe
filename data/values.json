@@ -4,13 +4,16 @@
     "type": "Value",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-09T00:00:00.000Z",
-    "updatedAt": "2026-07-09T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
     "context": {
       "label": "Capital",
       "description": "The resources — financial, material, and infrastructural — that enable Missions to act. Capital is the fuel that converts intent into execution. Without it, all other values remain potential.",
       "domain": "Finance"
     },
-    "capabilities": [],
+    "capabilities": [
+      { "capabilityId": "cap_seed_funding_001" },
+      { "capabilityId": "cap_supply_chain_sourcing_001" }
+    ],
     "evidence": [
       {
         "signal": "Intent",
@@ -26,13 +29,16 @@
     "type": "Value",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-09T00:00:00.000Z",
-    "updatedAt": "2026-07-09T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
     "context": {
       "label": "Trust",
       "description": "The earned confidence between actors — individuals, organizations, markets, communities — that makes coordination and exchange possible. Trust is the social substrate without which transactions, partnerships, and communities fail to form.",
       "domain": "Social"
     },
-    "capabilities": [],
+    "capabilities": [
+      { "capabilityId": "cap_seed_funding_001" },
+      { "capabilityId": "cap_community_growth_ops_001" }
+    ],
     "evidence": [
       {
         "signal": "Intent",
@@ -48,13 +54,16 @@
     "type": "Value",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-09T00:00:00.000Z",
-    "updatedAt": "2026-07-09T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
     "context": {
       "label": "Knowledge",
       "description": "Structured understanding of a domain — what works, what doesn't, and why. Knowledge reduces the cost of decisions and is the primary input to Capability development. Distinct from information: knowledge requires that patterns have been tested and integrated.",
       "domain": "Epistemic"
     },
-    "capabilities": [],
+    "capabilities": [
+      { "capabilityId": "cap_supply_chain_sourcing_001" },
+      { "capabilityId": "cap_brand_creative_direction_001" }
+    ],
     "evidence": [
       {
         "signal": "Intent",
@@ -70,13 +79,15 @@
     "type": "Value",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-09T00:00:00.000Z",
-    "updatedAt": "2026-07-09T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
     "context": {
       "label": "Creativity",
       "description": "The capacity to generate novel configurations of meaning, form, or function — combinations that did not previously exist. Creativity is what converts constraints into solutions and commodities into identities. It is not decoration; it is a primary competitive input.",
       "domain": "Design"
     },
-    "capabilities": [],
+    "capabilities": [
+      { "capabilityId": "cap_brand_creative_direction_001" }
+    ],
     "evidence": [
       {
         "signal": "Intent",
@@ -92,13 +103,16 @@
     "type": "Value",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-09T00:00:00.000Z",
-    "updatedAt": "2026-07-09T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
     "context": {
       "label": "Community",
       "description": "A shared context of identity, belonging, and mutual obligation among a defined group. Community is both a resource (access to people who care) and a product (something actors build and steward). It amplifies the value of every other node in the chain.",
       "domain": "Social"
     },
-    "capabilities": [],
+    "capabilities": [
+      { "capabilityId": "cap_community_growth_ops_001" },
+      { "capabilityId": "cap_brand_creative_direction_001" }
+    ],
     "evidence": [
       {
         "signal": "Intent",
@@ -114,13 +128,15 @@
     "type": "Value",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-09T00:00:00.000Z",
-    "updatedAt": "2026-07-09T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
     "context": {
       "label": "Growth",
       "description": "The expansion of capacity, reach, or impact over time. Growth is the compound mechanism — the force that converts early wins into durable scale. Includes audience growth, capability growth, and impact growth. Requires capital and community to sustain.",
       "domain": "Strategy"
     },
-    "capabilities": [],
+    "capabilities": [
+      { "capabilityId": "cap_community_growth_ops_001" }
+    ],
     "evidence": [
       {
         "signal": "Intent",
@@ -224,13 +240,15 @@
     "type": "Value",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-09T00:00:00.000Z",
-    "updatedAt": "2026-07-09T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
     "context": {
       "label": "Execution",
       "description": "The operational capacity to convert plans into delivered outcomes — on time, on scope, with quality. Execution is the bridge between strategy and result. Missions with superior strategy but weak execution are defeated by inferior strategies delivered reliably.",
       "domain": "Operations"
     },
-    "capabilities": [],
+    "capabilities": [
+      { "capabilityId": "cap_supply_chain_sourcing_001" }
+    ],
     "evidence": [
       {
         "signal": "Intent",

@@ -20,8 +20,8 @@
  * repositories — they are never stored on the Value node.
  */
 
-import type { EvidenceGrade, SignalType } from "../types";
-export type { EvidenceGrade, SignalType };
+import type { EvidenceGrade, SignalType, CapabilityRef } from "../types";
+export type { EvidenceGrade, SignalType, CapabilityRef };
 
 // ─── Sub-structures (4-layer PUDM node model) ────────────────────────────────
 
@@ -46,15 +46,6 @@ export interface ValueContext {
   label: string;
   description: string;
   domain: string | null;
-}
-
-/**
- * Pure pointer to a Capability node that can help fulfill this Value.
- * Capability label and evidence are owned by the Capability node.
- * Resolve from CapabilityRepository when display data is needed.
- */
-export interface CapabilityRef {
-  capabilityId: string;
 }
 
 /**

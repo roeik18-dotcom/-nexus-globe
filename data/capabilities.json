@@ -1,0 +1,112 @@
+[
+  {
+    "id": "cap_seed_funding_001",
+    "type": "Capability",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "context": {
+      "label": "Seed Funding & Investment",
+      "description": "The ability to identify, structure, and secure early-stage capital from investors — including angel rounds, pre-seed, and seed rounds. Addresses the capital gap that prevents Missions from moving from intent to execution. Requires clear pitch, credible traction signal, and investor trust.",
+      "domain": "Finance",
+      "maturity": "established"
+    },
+    "addressesValues": [
+      { "valueId": "capital" },
+      { "valueId": "trust" }
+    ],
+    "providers": [],
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-10T00:00:00.000Z",
+        "note": "Candidate definition. Defined as a required capability for gap_capital_seed_001. Not yet mapped to real providers or validated against closed funding rounds."
+      }
+    ]
+  },
+
+  {
+    "id": "cap_supply_chain_sourcing_001",
+    "type": "Capability",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "context": {
+      "label": "Supply Chain Sourcing",
+      "description": "The ability to identify, evaluate, and contract reliable production and logistics partners. Converts capital and domain knowledge into executable supply chains. Addresses the operational gap that blocks Missions from moving from product design to physical delivery.",
+      "domain": "Operations",
+      "maturity": "established"
+    },
+    "addressesValues": [
+      { "valueId": "capital" },
+      { "valueId": "knowledge" },
+      { "valueId": "execution" }
+    ],
+    "providers": [],
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-10T00:00:00.000Z",
+        "note": "Candidate definition. Defined as a required capability for gap_supply_chain_001. Not yet mapped to real providers."
+      }
+    ]
+  },
+
+  {
+    "id": "cap_community_growth_ops_001",
+    "type": "Capability",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "context": {
+      "label": "Community Growth Operations",
+      "description": "The ability to build, activate, and retain an audience around a Mission — from early adopters to a loyal community. Converts trust and shared identity into measurable growth. Addresses the launch gap that prevents Missions from establishing a market presence before they have distribution.",
+      "domain": "Marketing",
+      "maturity": "established"
+    },
+    "addressesValues": [
+      { "valueId": "community" },
+      { "valueId": "trust" },
+      { "valueId": "growth" }
+    ],
+    "providers": [],
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-10T00:00:00.000Z",
+        "note": "Candidate definition. Defined as a required capability for gap_community_launch_001. Not yet mapped to real providers."
+      }
+    ]
+  },
+
+  {
+    "id": "cap_brand_creative_direction_001",
+    "type": "Capability",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "context": {
+      "label": "Brand & Creative Direction",
+      "description": "The ability to define a brand's visual identity, voice, and positioning — and to produce creative output that expresses it consistently. Converts creative vision and domain knowledge into a recognizable market signal. Addresses the brand gap that prevents Missions from differentiating in commodity markets.",
+      "domain": "Design",
+      "maturity": "established"
+    },
+    "addressesValues": [
+      { "valueId": "creativity" },
+      { "valueId": "knowledge" },
+      { "valueId": "community" }
+    ],
+    "providers": [],
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-10T00:00:00.000Z",
+        "note": "Candidate definition. Defined as a required capability for gap_brand_creative_001. Not yet mapped to real providers."
+      }
+    ]
+  }
+]
