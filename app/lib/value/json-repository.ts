@@ -68,12 +68,6 @@ export class JsonValueRepository implements ValueRepository {
     if (query.evidenceGrade !== undefined) {
       results = results.filter((v) => v.evidenceGrade === query.evidenceGrade);
     }
-    if (query.capabilityId !== undefined) {
-      results = results.filter((v) =>
-        (v.capabilities ?? []).some((c) => c.capabilityId === query.capabilityId)
-      );
-    }
-
     return paginate(results, query.offset, query.limit);
   }
 }

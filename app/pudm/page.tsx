@@ -12,6 +12,7 @@ import type { Mission } from "@/app/lib/mission/schema";
 import type { Gap } from "@/app/lib/gap/schema";
 import type { Value } from "@/app/lib/value/schema";
 import type { Capability } from "@/app/lib/capability/schema";
+import type { ValueCapabilityRelation } from "@/app/lib/value-capability-relation/schema";
 
 export const metadata = { title: "PUDM Explorer — Philos" };
 
@@ -92,15 +93,26 @@ function ValueChip({ id }: { id: string }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PudmPage() {
-  const missions     = readJsonStore<Mission>    (path.join(DATA, "missions.json"));
-  const gaps         = readJsonStore<Gap>        (path.join(DATA, "gaps.json"));
-  const values       = readJsonStore<Value>      (path.join(DATA, "values.json"));
-  const capabilities = readJsonStore<Capability> (path.join(DATA, "capabilities.json"));
+  const missions     = readJsonStore<Mission>                  (path.join(DATA, "missions.json"));
+  const gaps         = readJsonStore<Gap>                      (path.join(DATA, "gaps.json"));
+  const values       = readJsonStore<Value>                    (path.join(DATA, "values.json"));
+  const capabilities = readJsonStore<Capability>               (path.join(DATA, "capabilities.json"));
+  const relations    = readJsonStore<ValueCapabilityRelation>  (path.join(DATA, "value-capability-relations.json"));
 
   // Lookup maps
   const gapById        = new Map(gaps.map        (g => [g.id, g]));
   const valueById      = new Map(values.map      (v => [v.id, v]));
   const capabilityById = new Map(capabilities.map(c => [c.id, c]));
+
+  // Build Map<valueId, Capability[]> from the Relation store
+  const capsByValueId = new Map<string, Capability[]>();
+  for (const rel of relations) {
+    const cap = capabilityById.get(rel.capabilityId);
+    if (!cap) continue;
+    const arr = capsByValueId.get(rel.valueId) ?? [];
+    arr.push(cap);
+    capsByValueId.set(rel.valueId, arr);
+  }
 
   // Cross-reference: which gaps need each value?
   const gapsByValueId = new Map<string, Gap[]>();
@@ -259,9 +271,7 @@ export default function PudmPage() {
                     <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                       {mValues.map(v => {
                         const c    = VALUE_COLOR[v.id] ?? "#94A3B8";
-                        const vCaps = (v.capabilities ?? [])
-                          .map(ref => capabilityById.get(ref.capabilityId))
-                          .filter((cap): cap is Capability => !!cap);
+                        const vCaps = capsByValueId.get(v.id) ?? [];
                         return (
                           <div key={v.id} style={{
                             background: c + "10", border: `1px solid ${c}30`,
@@ -353,7 +363,7 @@ export default function PudmPage() {
           background: "var(--surface-2)", borderRadius: 6,
           fontSize: 11, color: "var(--muted)", fontFamily: "monospace",
         }}>
-          Live · data/missions.json · data/gaps.json · data/values.json · data/capabilities.json
+          Live · data/missions.json · data/gaps.json · data/values.json · data/capabilities.json · data/value-capability-relations.json
           &nbsp;·&nbsp;Provider nodes pending
         </div>
 

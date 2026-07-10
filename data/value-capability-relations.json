@@ -1,0 +1,221 @@
+[
+  {
+    "id": "vcr_capital_seed_funding_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "capital",
+    "capabilityId": "cap_seed_funding_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-10T00:00:00.000Z",
+        "note": "Taxonomic: Seed Funding capability addresses the Capital value in general. Not yet validated against a specific mission or gap closure."
+      }
+    ]
+  },
+
+  {
+    "id": "vcr_trust_seed_funding_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "trust",
+    "capabilityId": "cap_seed_funding_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-10T00:00:00.000Z",
+        "note": "Taxonomic: Seed Funding requires investor trust and builds actor credibility. Addresses the Trust value in general."
+      }
+    ]
+  },
+
+  {
+    "id": "vcr_capital_supply_chain_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "capital",
+    "capabilityId": "cap_supply_chain_sourcing_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-10T00:00:00.000Z",
+        "note": "Taxonomic: Supply Chain Sourcing converts available capital into contracted production. Addresses the Capital value in general."
+      }
+    ]
+  },
+
+  {
+    "id": "vcr_knowledge_supply_chain_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "knowledge",
+    "capabilityId": "cap_supply_chain_sourcing_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-10T00:00:00.000Z",
+        "note": "Taxonomic: Supply Chain Sourcing requires domain knowledge of supplier markets, quality standards, and logistics. Addresses the Knowledge value in general."
+      }
+    ]
+  },
+
+  {
+    "id": "vcr_execution_supply_chain_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "execution",
+    "capabilityId": "cap_supply_chain_sourcing_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-10T00:00:00.000Z",
+        "note": "Taxonomic: Supply Chain Sourcing is a direct operational execution capability — converting plans into delivered product. Addresses the Execution value in general."
+      }
+    ]
+  },
+
+  {
+    "id": "vcr_community_growth_ops_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "community",
+    "capabilityId": "cap_community_growth_ops_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-10T00:00:00.000Z",
+        "note": "Taxonomic: Community Growth Operations directly builds and stewards a community around a Mission. Addresses the Community value in general."
+      }
+    ]
+  },
+
+  {
+    "id": "vcr_trust_growth_ops_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "trust",
+    "capabilityId": "cap_community_growth_ops_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-10T00:00:00.000Z",
+        "note": "Taxonomic: Community Growth Operations converts shared identity into sustained trust between actors and the Mission. Addresses the Trust value in general."
+      }
+    ]
+  },
+
+  {
+    "id": "vcr_growth_growth_ops_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "growth",
+    "capabilityId": "cap_community_growth_ops_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-10T00:00:00.000Z",
+        "note": "Taxonomic: Community Growth Operations produces measurable audience and reach growth. Addresses the Growth value in general."
+      }
+    ]
+  },
+
+  {
+    "id": "vcr_creativity_brand_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "creativity",
+    "capabilityId": "cap_brand_creative_direction_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-10T00:00:00.000Z",
+        "note": "Taxonomic: Brand & Creative Direction is the primary execution surface for the Creativity value — converting creative vision into consistent identity output."
+      }
+    ]
+  },
+
+  {
+    "id": "vcr_knowledge_brand_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "knowledge",
+    "capabilityId": "cap_brand_creative_direction_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-10T00:00:00.000Z",
+        "note": "Taxonomic: Brand & Creative Direction requires domain knowledge of the market, audience, and competitive landscape to produce differentiated positioning."
+      }
+    ]
+  },
+
+  {
+    "id": "vcr_community_brand_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "community",
+    "capabilityId": "cap_brand_creative_direction_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-10T00:00:00.000Z",
+        "note": "Taxonomic: Brand & Creative Direction builds shared identity signals that anchor community belonging around a Mission."
+      }
+    ]
+  }
+]

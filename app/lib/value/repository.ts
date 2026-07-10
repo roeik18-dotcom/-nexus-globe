@@ -15,9 +15,9 @@ import type { EvidenceGrade } from "../types";
 export interface ValueQuery {
   domain?: string;
   evidenceGrade?: EvidenceGrade;
-  capabilityId?: string;
   limit?: number;
   offset?: number;
+  // To find values for a specific capability, query ValueCapabilityRelationRepository.
 }
 
 export interface ValueRepository {

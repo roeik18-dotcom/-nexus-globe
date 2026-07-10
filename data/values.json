@@ -10,10 +10,6 @@
       "description": "The resources — financial, material, and infrastructural — that enable Missions to act. Capital is the fuel that converts intent into execution. Without it, all other values remain potential.",
       "domain": "Finance"
     },
-    "capabilities": [
-      { "capabilityId": "cap_seed_funding_001" },
-      { "capabilityId": "cap_supply_chain_sourcing_001" }
-    ],
     "evidence": [
       {
         "signal": "Intent",
@@ -35,10 +31,6 @@
       "description": "The earned confidence between actors — individuals, organizations, markets, communities — that makes coordination and exchange possible. Trust is the social substrate without which transactions, partnerships, and communities fail to form.",
       "domain": "Social"
     },
-    "capabilities": [
-      { "capabilityId": "cap_seed_funding_001" },
-      { "capabilityId": "cap_community_growth_ops_001" }
-    ],
     "evidence": [
       {
         "signal": "Intent",
@@ -60,10 +52,6 @@
       "description": "Structured understanding of a domain — what works, what doesn't, and why. Knowledge reduces the cost of decisions and is the primary input to Capability development. Distinct from information: knowledge requires that patterns have been tested and integrated.",
       "domain": "Epistemic"
     },
-    "capabilities": [
-      { "capabilityId": "cap_supply_chain_sourcing_001" },
-      { "capabilityId": "cap_brand_creative_direction_001" }
-    ],
     "evidence": [
       {
         "signal": "Intent",
@@ -85,9 +73,6 @@
       "description": "The capacity to generate novel configurations of meaning, form, or function — combinations that did not previously exist. Creativity is what converts constraints into solutions and commodities into identities. It is not decoration; it is a primary competitive input.",
       "domain": "Design"
     },
-    "capabilities": [
-      { "capabilityId": "cap_brand_creative_direction_001" }
-    ],
     "evidence": [
       {
         "signal": "Intent",
@@ -109,10 +94,6 @@
       "description": "A shared context of identity, belonging, and mutual obligation among a defined group. Community is both a resource (access to people who care) and a product (something actors build and steward). It amplifies the value of every other node in the chain.",
       "domain": "Social"
     },
-    "capabilities": [
-      { "capabilityId": "cap_community_growth_ops_001" },
-      { "capabilityId": "cap_brand_creative_direction_001" }
-    ],
     "evidence": [
       {
         "signal": "Intent",
@@ -134,9 +115,6 @@
       "description": "The expansion of capacity, reach, or impact over time. Growth is the compound mechanism — the force that converts early wins into durable scale. Includes audience growth, capability growth, and impact growth. Requires capital and community to sustain.",
       "domain": "Strategy"
     },
-    "capabilities": [
-      { "capabilityId": "cap_community_growth_ops_001" }
-    ],
     "evidence": [
       {
         "signal": "Intent",
@@ -158,7 +136,6 @@
       "description": "The physical, psychological, and systemic wellbeing of actors and the systems they inhabit. Health is a precondition for sustained Mission execution — its absence constrains or terminates all other values. Includes individual actor health and organizational health.",
       "domain": "Wellbeing"
     },
-    "capabilities": [],
     "evidence": [
       {
         "signal": "Intent",
@@ -180,7 +157,6 @@
       "description": "The fair allocation of opportunity, recognition, and consequence. Justice governs the distribution of access to every other Value. Missions that ignore justice produce systemic exclusion as a byproduct — even when that is not their intent.",
       "domain": "Ethics"
     },
-    "capabilities": [],
     "evidence": [
       {
         "signal": "Intent",
@@ -202,7 +178,6 @@
       "description": "The active process of acquiring and integrating new knowledge from experience. Learning is the mechanism by which Knowledge upgrades itself. Without learning loops, Missions repeat early mistakes and Capabilities stagnate. Distinct from Knowledge: Knowledge is the state; Learning is the dynamic.",
       "domain": "Epistemic"
     },
-    "capabilities": [],
     "evidence": [
       {
         "signal": "Intent",
@@ -224,7 +199,6 @@
       "description": "The protection of actors, assets, and systems from disruption, loss, or attack. Security is the defensive layer that allows other values to operate without existential risk. Its absence triggers survival behavior that crowds out all higher-order Mission pursuit.",
       "domain": "Infrastructure"
     },
-    "capabilities": [],
     "evidence": [
       {
         "signal": "Intent",
@@ -246,9 +220,6 @@
       "description": "The operational capacity to convert plans into delivered outcomes — on time, on scope, with quality. Execution is the bridge between strategy and result. Missions with superior strategy but weak execution are defeated by inferior strategies delivered reliably.",
       "domain": "Operations"
     },
-    "capabilities": [
-      { "capabilityId": "cap_supply_chain_sourcing_001" }
-    ],
     "evidence": [
       {
         "signal": "Intent",
@@ -270,7 +241,6 @@
       "description": "The active attention to the needs of others — individuals, communities, and ecosystems. Care is the relational substrate of Trust. It manifests in product design (inclusive by default), in service (responsive to context), and in governance (accountable to affected parties). Without Care, systems optimize for extraction.",
       "domain": "Social"
     },
-    "capabilities": [],
     "evidence": [
       {
         "signal": "Intent",

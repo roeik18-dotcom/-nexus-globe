@@ -11,10 +11,6 @@
       "domain": "Finance",
       "maturity": "established"
     },
-    "addressesValues": [
-      { "valueId": "capital" },
-      { "valueId": "trust" }
-    ],
     "providers": [],
     "evidence": [
       {
@@ -38,11 +34,6 @@
       "domain": "Operations",
       "maturity": "established"
     },
-    "addressesValues": [
-      { "valueId": "capital" },
-      { "valueId": "knowledge" },
-      { "valueId": "execution" }
-    ],
     "providers": [],
     "evidence": [
       {
@@ -66,11 +57,6 @@
       "domain": "Marketing",
       "maturity": "established"
     },
-    "addressesValues": [
-      { "valueId": "community" },
-      { "valueId": "trust" },
-      { "valueId": "growth" }
-    ],
     "providers": [],
     "evidence": [
       {
@@ -94,11 +80,6 @@
       "domain": "Design",
       "maturity": "established"
     },
-    "addressesValues": [
-      { "valueId": "creativity" },
-      { "valueId": "knowledge" },
-      { "valueId": "community" }
-    ],
     "providers": [],
     "evidence": [
       {
