@@ -103,7 +103,14 @@ const INSPECTOR_W = 360;
 export default function MarketplaceView({
   mission, missionGaps, values, capabilities, providers, vcRelations, pcRelations,
 }: MarketplaceViewProps) {
-  const [inspected, setInspected] = useState<InspectedItem | null>(null);
+  const [inspected,       setInspected]       = useState<InspectedItem | null>(null);
+  const [filterGapId,     setFilterGapId]     = useState<string>("");
+  const [filterValueId,   setFilterValueId]   = useState<string>("");
+  const [filterCapDomain, setFilterCapDomain] = useState<string>("");
+  const [filterProviderId,setFilterProviderId]= useState<string>("");
+  const [filterCoverage,  setFilterCoverage]  = useState<"all"|"covered"|"uncovered">("all");
+  const [filterRelType,   setFilterRelType]   = useState<string>("");
+  const [filterGrade,     setFilterGrade]     = useState<string>("");
 
   // ── Lookup maps ────────────────────────────────────────────────────────────
   const valueById      = new Map(values.map     (v => [v.id, v]));
@@ -152,6 +159,25 @@ export default function MarketplaceView({
   const selectedForCount = pcRelations.filter(r => r.relationType === "selected_for").length;
   const coveredCapIds    = new Set(pcRelations.map(r => r.capabilityId));
 
+  // ── Filter option sets ─────────────────────────────────────────────────────
+  const allCapDomains = [...new Set(capabilities.map(c => c.context.domain).filter(Boolean) as string[])].sort();
+  const allRelTypes   = [...new Set([...vcRelations.map(r => r.relationType), ...pcRelations.map(r => r.relationType)])].sort();
+  const allGrades     = ["Frozen", "Candidate", "Placeholder", "Not established"].filter(g =>
+    capabilities.some(c => c.evidenceGrade === g) ||
+    vcRelations.some(r => r.evidenceGrade === g)   ||
+    pcRelations.some(r => r.evidenceGrade === g)
+  );
+
+  const anyFilterActive = !!(filterGapId || filterValueId || filterCapDomain || filterProviderId
+    || filterCoverage !== "all" || filterRelType || filterGrade);
+
+  const visibleGaps = filterGapId ? missionGaps.filter(g => g.id === filterGapId) : missionGaps;
+
+  function clearFilters() {
+    setFilterGapId(""); setFilterValueId(""); setFilterCapDomain("");
+    setFilterProviderId(""); setFilterCoverage("all"); setFilterRelType(""); setFilterGrade("");
+  }
+
   // ── Gap coverage computation ───────────────────────────────────────────────
   function gapCoverage(gap: Gap) {
     const reqValueIds = gap.requiredValues.map(r => r.valueId);
@@ -188,6 +214,29 @@ export default function MarketplaceView({
         });
       }
     }
+    return items;
+  }
+
+  // ── Filtered items per gap ────────────────────────────────────────────────
+  function filteredItems(gap: Gap) {
+    let items = gapCoverage(gap);
+    if (filterValueId)
+      items = items.filter(i => i.coveredByValues.some(v => v.id === filterValueId));
+    if (filterCapDomain)
+      items = items.filter(i => i.capability.context.domain === filterCapDomain);
+    if (filterProviderId)
+      items = items.filter(i => i.providers.some(p => p.id === filterProviderId));
+    if (filterCoverage === "covered")
+      items = items.filter(i => i.providers.length > 0);
+    if (filterCoverage === "uncovered")
+      items = items.filter(i => i.providers.length === 0);
+    if (filterRelType)
+      items = items.filter(i =>
+        i.vcrIds.some(id => vcrById.get(id)?.relationType === filterRelType) ||
+        (pcrsByCapId.get(i.capability.id) ?? []).some(r => r.relationType === filterRelType)
+      );
+    if (filterGrade)
+      items = items.filter(i => i.capability.evidenceGrade === filterGrade);
     return items;
   }
 
@@ -648,7 +697,18 @@ export default function MarketplaceView({
         }
         *, *::before, *::after { box-sizing: border-box; }
         button { font-family: inherit; }
+        .filter-select {
+          font-size: 10px; font-family: monospace;
+          padding: 3px 20px 3px 7px; border-radius: 3px;
+          border: 1px solid var(--border); background: var(--surface-2);
+          color: var(--text); cursor: pointer; outline: none;
+          appearance: none; -webkit-appearance: none;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%237D8590'/%3E%3C/svg%3E");
+          background-repeat: no-repeat; background-position: right 6px center;
+        }
+        .filter-select:focus { border-color: #58A6FF80; }
         @media (max-width: 700px) {
+          .filter-select { font-size: 11px; padding: 5px 20px 5px 8px; }
           .inspector-panel {
             width: 100vw !important;
             height: 56vh !important;
@@ -686,11 +746,23 @@ export default function MarketplaceView({
 
           {/* ── Header ── */}
           <header style={{ marginBottom: 24 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 4 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6, flexWrap: "wrap" }}>
               <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.4px", margin: 0 }}>Marketplace</h1>
               <span style={{ fontSize: 11, fontFamily: "monospace", color: "var(--muted)" }}>
                 taxonomic coverage · read-only · no write-path
               </span>
+              <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+                <a href="/world" style={{
+                  fontSize: 10, fontFamily: "monospace", color: "#58A6FF",
+                  textDecoration: "none", padding: "2px 8px", borderRadius: 3,
+                  background: "#58A6FF12", border: "1px solid #58A6FF28",
+                }}>→ world</a>
+                <a href="/pudm" style={{
+                  fontSize: 10, fontFamily: "monospace", color: "#9E6EE6",
+                  textDecoration: "none", padding: "2px 8px", borderRadius: 3,
+                  background: "#9E6EE612", border: "1px solid #9E6EE628",
+                }}>→ pudm</a>
+              </div>
             </div>
             <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>
               What the PUDM knows about provider coverage for each Gap. No provider has been selected, contacted, or engaged.
@@ -740,13 +812,81 @@ export default function MarketplaceView({
             </span>
           </div>
 
+          {/* ── Filter bar ── */}
+          <div style={{
+            marginBottom: 14, padding: "10px 14px",
+            background: "var(--surface)", border: "1px solid var(--border)",
+            borderRadius: 6, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center",
+          }}>
+            <span style={{ fontSize: 9, fontFamily: "monospace", color: "var(--muted)", textTransform: "uppercase" as const, letterSpacing: "0.08em", flexShrink: 0 }}>
+              Filter
+            </span>
+
+            <select value={filterGapId} onChange={e => setFilterGapId(e.target.value)} className="filter-select" title="Gap">
+              <option value="">All gaps</option>
+              {missionGaps.map(g => (
+                <option key={g.id} value={g.id}>
+                  {g.id.replace(/^gap_/, "").replace(/_\d+$/, "").replace(/_/g, " ")}
+                </option>
+              ))}
+            </select>
+
+            <select value={filterValueId} onChange={e => setFilterValueId(e.target.value)} className="filter-select" title="Value">
+              <option value="">All values</option>
+              {values.map(v => <option key={v.id} value={v.id}>{v.context.label}</option>)}
+            </select>
+
+            <select value={filterCapDomain} onChange={e => setFilterCapDomain(e.target.value)} className="filter-select" title="Capability domain">
+              <option value="">All domains</option>
+              {allCapDomains.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+
+            <select value={filterCoverage} onChange={e => setFilterCoverage(e.target.value as "all"|"covered"|"uncovered")} className="filter-select" title="Coverage">
+              <option value="all">All coverage</option>
+              <option value="covered">Covered</option>
+              <option value="uncovered">Uncovered</option>
+            </select>
+
+            <select value={filterRelType} onChange={e => setFilterRelType(e.target.value)} className="filter-select" title="Relation type">
+              <option value="">All types</option>
+              {allRelTypes.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+
+            <select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} className="filter-select" title="Evidence grade">
+              <option value="">All grades</option>
+              {allGrades.map(g => <option key={g} value={g}>{g}</option>)}
+            </select>
+
+            <select value={filterProviderId} onChange={e => setFilterProviderId(e.target.value)} className="filter-select" title="Provider">
+              <option value="">All providers</option>
+              {providers.map(p => <option key={p.id} value={p.id}>{p.context.label}</option>)}
+            </select>
+
+            {anyFilterActive && (
+              <button onClick={clearFilters} style={{
+                fontSize: 9, padding: "2px 8px", borderRadius: 3, cursor: "pointer",
+                background: "#DA363318", color: "#F85149", border: "1px solid #DA363330",
+                fontFamily: "monospace", marginLeft: "auto",
+              }}>clear ✕</button>
+            )}
+          </div>
+
+          {/* ── Visible gap count ── */}
+          {anyFilterActive && (
+            <div style={{ marginBottom: 8, fontSize: 11, color: "var(--muted)", fontFamily: "monospace" }}>
+              {visibleGaps.length} / {missionGaps.length} gaps · {
+                visibleGaps.reduce((n, g) => n + filteredItems(g).length, 0)
+              } capability rows
+            </div>
+          )}
+
           {/* ── Gap sections ── */}
           <div style={{ display: "grid", gap: 12 }}>
-            {missionGaps.map(gap => {
+            {visibleGaps.map(gap => {
               const sev    = (gap.state as { severity?: string }).severity ?? "moderate";
               const sevCfg = SEVERITY[sev] ?? SEVERITY.moderate;
               const domCol = DOMAIN_COLOR[(gap.context as { domain?: string }).domain ?? ""] ?? "#7D8590";
-              const items  = gapCoverage(gap);
+              const items  = filteredItems(gap);
 
               return (
                 <section key={gap.id} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
