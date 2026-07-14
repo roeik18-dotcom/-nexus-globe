@@ -5,23 +5,23 @@
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-09T00:00:00.000Z",
     "updatedAt": "2026-07-09T00:00:00.000Z",
-
     "state": {
       "status": "open",
       "severity": "critical"
     },
-
     "context": {
       "missionId": "mission_1751000000000_f3a9k2b",
       "description": "No seed capital secured. The brand cannot source materials, produce samples, or run any paid marketing without initial funding. Blocks all downstream operational gaps.",
       "domain": "Finance"
     },
-
     "requiredValues": [
-      { "valueId": "capital" },
-      { "valueId": "trust" }
+      {
+        "valueId": "capital"
+      },
+      {
+        "valueId": "trust"
+      }
     ],
-
     "evidence": [
       {
         "signal": "Intent",
@@ -30,38 +30,38 @@
         "note": "Actor identified 'No seed funding secured yet' as an explicit constraint. Intent-grade only — gap existence inferred from stated constraint, not verified by financial records."
       }
     ],
-
     "timeline": {
       "openedAt": "2026-07-09T00:00:00.000Z",
       "closedAt": null,
       "deferredUntil": null
     }
   },
-
   {
     "id": "gap_supply_chain_001",
     "type": "Gap",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-09T00:00:00.000Z",
     "updatedAt": "2026-07-09T00:00:00.000Z",
-
     "state": {
       "status": "open",
       "severity": "critical"
     },
-
     "context": {
       "missionId": "mission_1751000000000_f3a9k2b",
       "description": "No manufacturing partner identified. The brand's inclusive sizing mandate (broad size range, multiple gender cuts) requires a production partner who can handle extended size grading and small initial runs without prohibitive minimums.",
       "domain": "Operations"
     },
-
     "requiredValues": [
-      { "valueId": "capital" },
-      { "valueId": "knowledge" },
-      { "valueId": "trust" }
+      {
+        "valueId": "capital"
+      },
+      {
+        "valueId": "knowledge"
+      },
+      {
+        "valueId": "trust"
+      }
     ],
-
     "evidence": [
       {
         "signal": "Intent",
@@ -70,38 +70,38 @@
         "note": "Actor identified 'No manufacturing partner identified' as an explicit constraint. Intent-grade only — gap existence inferred from stated constraint."
       }
     ],
-
     "timeline": {
       "openedAt": "2026-07-09T00:00:00.000Z",
       "closedAt": null,
       "deferredUntil": null
     }
   },
-
   {
     "id": "gap_community_launch_001",
     "type": "Gap",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-09T00:00:00.000Z",
     "updatedAt": "2026-07-09T00:00:00.000Z",
-
     "state": {
       "status": "open",
       "severity": "significant"
     },
-
     "context": {
       "missionId": "mission_1751000000000_f3a9k2b",
       "description": "No existing distribution channel or community base. The mission assumes a community-first launch model can substitute for paid acquisition, but no community has been built yet. Without an audience, the launch hypothesis cannot be tested.",
       "domain": "Marketing"
     },
-
     "requiredValues": [
-      { "valueId": "community" },
-      { "valueId": "trust" },
-      { "valueId": "growth" }
+      {
+        "valueId": "community"
+      },
+      {
+        "valueId": "trust"
+      },
+      {
+        "valueId": "growth"
+      }
     ],
-
     "evidence": [
       {
         "signal": "Intent",
@@ -110,38 +110,38 @@
         "note": "Actor identified 'No existing distribution channel' as a constraint and stated a community-first assumption. Gap derived from the distance between the assumption and current state. Intent-grade only."
       }
     ],
-
     "timeline": {
       "openedAt": "2026-07-09T00:00:00.000Z",
       "closedAt": null,
       "deferredUntil": null
     }
   },
-
   {
     "id": "gap_brand_creative_001",
     "type": "Gap",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-09T00:00:00.000Z",
     "updatedAt": "2026-07-09T00:00:00.000Z",
-
     "state": {
       "status": "open",
       "severity": "significant"
     },
-
     "context": {
       "missionId": "mission_1751000000000_f3a9k2b",
       "description": "No brand identity, visual language, or creative direction established. Inclusive premium positioning requires a coherent aesthetic that signals quality and belonging to underrepresented groups without alienating or appropriating. This creative foundation must exist before product or community work can be grounded.",
       "domain": "Design"
     },
-
     "requiredValues": [
-      { "valueId": "creativity" },
-      { "valueId": "knowledge" },
-      { "valueId": "community" }
+      {
+        "valueId": "creativity"
+      },
+      {
+        "valueId": "knowledge"
+      },
+      {
+        "valueId": "community"
+      }
     ],
-
     "evidence": [
       {
         "signal": "Intent",
@@ -150,9 +150,399 @@
         "note": "Gap inferred from mission statement: inclusive brand requires a defined creative identity that does not yet exist. Intent-grade only — no design work observed."
       }
     ],
-
     "timeline": {
       "openedAt": "2026-07-09T00:00:00.000Z",
+      "closedAt": null,
+      "deferredUntil": null
+    }
+  },
+  {
+    "id": "gap_therapist_access_001",
+    "type": "Gap",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "open",
+      "severity": "significant"
+    },
+    "context": {
+      "missionId": "mission_couples_therapy_001",
+      "description": "The couple cannot identify a qualified couples therapist who specialises in their specific challenges, is accepting new clients, and is reachable within a reasonable distance or via telehealth.",
+      "domain": "Health"
+    },
+    "requiredValues": [
+      {
+        "valueId": "health"
+      },
+      {
+        "valueId": "trust"
+      },
+      {
+        "valueId": "care"
+      }
+    ],
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Therapist access is the primary barrier before any intervention can begin."
+      }
+    ],
+    "timeline": {
+      "openedAt": "2026-07-14T00:00:00.000Z",
+      "closedAt": null,
+      "deferredUntil": null
+    }
+  },
+  {
+    "id": "gap_therapy_affordability_001",
+    "type": "Gap",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "open",
+      "severity": "significant"
+    },
+    "context": {
+      "missionId": "mission_couples_therapy_001",
+      "description": "The cost of ongoing couples therapy sessions (typically $150–$300/hr) is not covered by insurance and is financially out of reach without financial assistance or sliding-scale access.",
+      "domain": "Health"
+    },
+    "requiredValues": [
+      {
+        "valueId": "capital"
+      },
+      {
+        "valueId": "health"
+      },
+      {
+        "valueId": "justice"
+      }
+    ],
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Cost is a documented dropout factor even after therapy begins."
+      }
+    ],
+    "timeline": {
+      "openedAt": "2026-07-14T00:00:00.000Z",
+      "closedAt": null,
+      "deferredUntil": null
+    }
+  },
+  {
+    "id": "gap_scholarship_discovery_001",
+    "type": "Gap",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "open",
+      "severity": "moderate"
+    },
+    "context": {
+      "missionId": "mission_student_scholarship_001",
+      "description": "The student is unaware of which scholarships they are eligible for and has no structured way to search across programs that match their academic background, field of study, and financial situation.",
+      "domain": "Education"
+    },
+    "requiredValues": [
+      {
+        "valueId": "knowledge"
+      },
+      {
+        "valueId": "learning"
+      },
+      {
+        "valueId": "capital"
+      }
+    ],
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Discovery gap is the primary reason eligible students miss funding opportunities."
+      }
+    ],
+    "timeline": {
+      "openedAt": "2026-07-14T00:00:00.000Z",
+      "closedAt": null,
+      "deferredUntil": null
+    }
+  },
+  {
+    "id": "gap_application_quality_001",
+    "type": "Gap",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "open",
+      "severity": "moderate"
+    },
+    "context": {
+      "missionId": "mission_student_scholarship_001",
+      "description": "The student lacks guidance on writing competitive scholarship essays and structuring their application, reducing their selection rate even when they meet eligibility criteria.",
+      "domain": "Education"
+    },
+    "requiredValues": [
+      {
+        "valueId": "knowledge"
+      },
+      {
+        "valueId": "learning"
+      }
+    ],
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Application quality differentiates candidates with similar academic profiles."
+      }
+    ],
+    "timeline": {
+      "openedAt": "2026-07-14T00:00:00.000Z",
+      "closedAt": null,
+      "deferredUntil": null
+    }
+  },
+  {
+    "id": "gap_business_credit_access_001",
+    "type": "Gap",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "open",
+      "severity": "critical"
+    },
+    "context": {
+      "missionId": "mission_small_business_funding_001",
+      "description": "The business has no established credit profile, making it ineligible for most bank loans and preferred SBA programs, despite 18 months of revenue history.",
+      "domain": "Finance"
+    },
+    "requiredValues": [
+      {
+        "valueId": "capital"
+      },
+      {
+        "valueId": "execution"
+      },
+      {
+        "valueId": "trust"
+      }
+    ],
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Absent credit profile is a hard barrier to most formal lending."
+      }
+    ],
+    "timeline": {
+      "openedAt": "2026-07-14T00:00:00.000Z",
+      "closedAt": null,
+      "deferredUntil": null
+    }
+  },
+  {
+    "id": "gap_grant_identification_001",
+    "type": "Gap",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "open",
+      "severity": "significant"
+    },
+    "context": {
+      "missionId": "mission_small_business_funding_001",
+      "description": "The owner is unaware of federal, state, and foundation grant programs available for their sector and business stage, missing non-dilutive funding alternatives to loans.",
+      "domain": "Finance"
+    },
+    "requiredValues": [
+      {
+        "valueId": "capital"
+      },
+      {
+        "valueId": "knowledge"
+      }
+    ],
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Grant programs are heavily underutilised due to low awareness among small business owners."
+      }
+    ],
+    "timeline": {
+      "openedAt": "2026-07-14T00:00:00.000Z",
+      "closedAt": null,
+      "deferredUntil": null
+    }
+  },
+  {
+    "id": "gap_accident_data_gap_001",
+    "type": "Gap",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "open",
+      "severity": "significant"
+    },
+    "context": {
+      "missionId": "mission_municipality_safety_001",
+      "description": "The municipality lacks structured analysis of where and why accidents cluster — incident reports exist but are not aggregated into actionable risk maps or corridor-level patterns.",
+      "domain": "Infrastructure"
+    },
+    "requiredValues": [
+      {
+        "valueId": "knowledge"
+      },
+      {
+        "valueId": "security"
+      },
+      {
+        "valueId": "justice"
+      }
+    ],
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Interventions without data are not evidence-based and cannot be evaluated."
+      }
+    ],
+    "timeline": {
+      "openedAt": "2026-07-14T00:00:00.000Z",
+      "closedAt": null,
+      "deferredUntil": null
+    }
+  },
+  {
+    "id": "gap_intervention_design_001",
+    "type": "Gap",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "open",
+      "severity": "significant"
+    },
+    "context": {
+      "missionId": "mission_municipality_safety_001",
+      "description": "Even where risk corridors are identified, the city lacks capacity to design evidence-based physical interventions that meet Vision Zero standards and can be approved within the budget cycle.",
+      "domain": "Infrastructure"
+    },
+    "requiredValues": [
+      {
+        "valueId": "knowledge"
+      },
+      {
+        "valueId": "security"
+      },
+      {
+        "valueId": "community"
+      }
+    ],
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Design capacity is the bottleneck between data insight and physical change."
+      }
+    ],
+    "timeline": {
+      "openedAt": "2026-07-14T00:00:00.000Z",
+      "closedAt": null,
+      "deferredUntil": null
+    }
+  },
+  {
+    "id": "gap_volunteer_recruitment_001",
+    "type": "Gap",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "open",
+      "severity": "moderate"
+    },
+    "context": {
+      "missionId": "mission_ngo_volunteers_001",
+      "description": "The NGO has defined roles for 40 volunteers but receives applications from fewer than 10 per month, and many applicants are not matched to the right roles, increasing onboarding cost and dropout.",
+      "domain": "Social"
+    },
+    "requiredValues": [
+      {
+        "valueId": "community"
+      },
+      {
+        "valueId": "care"
+      },
+      {
+        "valueId": "trust"
+      }
+    ],
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Recruitment volume and quality are the primary constraint on programme delivery."
+      }
+    ],
+    "timeline": {
+      "openedAt": "2026-07-14T00:00:00.000Z",
+      "closedAt": null,
+      "deferredUntil": null
+    }
+  },
+  {
+    "id": "gap_volunteer_coordination_001",
+    "type": "Gap",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "open",
+      "severity": "moderate"
+    },
+    "context": {
+      "missionId": "mission_ngo_volunteers_001",
+      "description": "Active volunteers are managed by spreadsheet and group chat. Scheduling conflicts, missed shifts, and lack of recognition are causing a 45% annual attrition rate.",
+      "domain": "Social"
+    },
+    "requiredValues": [
+      {
+        "valueId": "community"
+      },
+      {
+        "valueId": "execution"
+      }
+    ],
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Coordination failure is the leading cause of volunteer attrition after the first 3 months."
+      }
+    ],
+    "timeline": {
+      "openedAt": "2026-07-14T00:00:00.000Z",
       "closedAt": null,
       "deferredUntil": null
     }

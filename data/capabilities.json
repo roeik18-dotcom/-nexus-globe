@@ -20,7 +20,6 @@
       }
     ]
   },
-
   {
     "id": "cap_supply_chain_sourcing_001",
     "type": "Capability",
@@ -42,7 +41,6 @@
       }
     ]
   },
-
   {
     "id": "cap_community_growth_ops_001",
     "type": "Capability",
@@ -64,7 +62,6 @@
       }
     ]
   },
-
   {
     "id": "cap_brand_creative_direction_001",
     "type": "Capability",
@@ -85,5 +82,165 @@
         "note": "Candidate definition. Defined as a required capability for gap_brand_creative_001. Not yet mapped to real providers."
       }
     ]
+  },
+  {
+    "id": "cap_therapist_matching_001",
+    "type": "Capability",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "Couples Therapist Matching",
+      "domain": "Health",
+      "description": "Matching couples with qualified therapists specialising in relationship and communication issues.",
+      "maturity": "Established"
+    }
+  },
+  {
+    "id": "cap_therapy_affordability_001",
+    "type": "Capability",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "Affordable Therapy Access",
+      "domain": "Health",
+      "description": "Reducing financial barriers to ongoing therapy through sliding-scale fees, subsidies, or insurance navigation.",
+      "maturity": "Established"
+    }
+  },
+  {
+    "id": "cap_scholarship_search_001",
+    "type": "Capability",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "Scholarship Search & Matching",
+      "domain": "Education",
+      "description": "Discovering relevant scholarships and grants for a student's specific profile, field, and circumstances.",
+      "maturity": "Established"
+    }
+  },
+  {
+    "id": "cap_application_coaching_001",
+    "type": "Capability",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "Scholarship Application Coaching",
+      "domain": "Education",
+      "description": "Improving application quality through essay guidance, review, and strategy coaching.",
+      "maturity": "Established"
+    }
+  },
+  {
+    "id": "cap_business_credit_001",
+    "type": "Capability",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "Business Credit Assessment & Building",
+      "domain": "Finance",
+      "description": "Evaluating business creditworthiness, identifying gaps, and building a credit profile that qualifies for loans.",
+      "maturity": "Established"
+    }
+  },
+  {
+    "id": "cap_grant_search_001",
+    "type": "Capability",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "Small Business Grant Search",
+      "domain": "Finance",
+      "description": "Identifying government, foundation, and corporate grant programs available to small businesses.",
+      "maturity": "Established"
+    }
+  },
+  {
+    "id": "cap_traffic_safety_analysis_001",
+    "type": "Capability",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "Traffic Safety Data Analysis",
+      "domain": "Infrastructure",
+      "description": "Analysing accident patterns, high-risk corridors, and contributing factors using sensor, GPS, and incident data.",
+      "maturity": "Established"
+    }
+  },
+  {
+    "id": "cap_urban_intervention_design_001",
+    "type": "Capability",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "Urban Safety Intervention Design",
+      "domain": "Infrastructure",
+      "description": "Designing physical and behavioural interventions — road geometry, signage, speed measures — to reduce accident frequency.",
+      "maturity": "Established"
+    }
+  },
+  {
+    "id": "cap_volunteer_recruitment_001",
+    "type": "Capability",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "Volunteer Recruitment Platform",
+      "domain": "Social",
+      "description": "Attracting and onboarding committed volunteers matched to an NGO's specific roles and schedule.",
+      "maturity": "Established"
+    }
+  },
+  {
+    "id": "cap_volunteer_management_001",
+    "type": "Capability",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "Volunteer Coordination & Retention",
+      "domain": "Social",
+      "description": "Managing volunteer schedules, communication, and engagement to improve long-term retention.",
+      "maturity": "Established"
+    }
   }
 ]
