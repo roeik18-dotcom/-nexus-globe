@@ -163,9 +163,7 @@ export default function MarketplaceView({
   const allCapDomains = [...new Set(capabilities.map(c => c.context.domain).filter(Boolean) as string[])].sort();
   const allRelTypes   = [...new Set([...vcRelations.map(r => r.relationType), ...pcRelations.map(r => r.relationType)])].sort();
   const allGrades     = ["Frozen", "Candidate", "Placeholder", "Not established"].filter(g =>
-    capabilities.some(c => c.evidenceGrade === g) ||
-    vcRelations.some(r => r.evidenceGrade === g)   ||
-    pcRelations.some(r => r.evidenceGrade === g)
+    capabilities.some(c => c.evidenceGrade === g)
   );
 
   const anyFilterActive = !!(filterGapId || filterValueId || filterCapDomain || filterProviderId
@@ -852,8 +850,8 @@ export default function MarketplaceView({
               {allRelTypes.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
 
-            <select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} className="filter-select" title="Evidence grade">
-              <option value="">All grades</option>
+            <select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} className="filter-select" title="Capability grade">
+              <option value="">All cap. grades</option>
               {allGrades.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
 
