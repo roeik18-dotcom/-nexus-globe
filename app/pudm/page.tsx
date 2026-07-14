@@ -199,6 +199,22 @@ export default function PudmPage() {
               </div>
             ))}
           </div>
+
+          {/* Marketplace link */}
+          <div style={{ marginTop: 16 }}>
+            <a href="/marketplace" style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              fontSize: 12, fontFamily: "monospace",
+              color: "#FB923C", textDecoration: "none",
+              padding: "5px 12px", borderRadius: 4,
+              background: "#FB923C0D", border: "1px solid #FB923C28",
+            }}>
+              Open Marketplace Coverage View
+              <span style={{ fontSize: 10, color: "var(--muted)" }}>
+                · Taxonomic coverage only — no provider selected.
+              </span>
+            </a>
+          </div>
         </header>
 
         <hr style={{ border: "none", borderTop: "1px solid var(--border)", marginBottom: 36 }} />
