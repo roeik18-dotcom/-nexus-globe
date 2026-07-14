@@ -56,8 +56,8 @@ a City and a Community.
 | 7 | **Mission** | 🎯 | Candidate (Marketplace path) |
 | 8 | **Gap** | 🧩 | Candidate (Marketplace path) |
 | 9 | **Value** | 💎 | Candidate (12 defined, not validated) |
-| 10 | **Capability Domain** | 📦 | Candidate |
-| 11 | **Provider** | ⚡ | Placeholder |
+| 10 | **Capability** | 📦 | Candidate |
+| 11 | **Provider** | ⚡ | Candidate |
 | 12 | **Document** | 📄 | Placeholder |
 | 13 | **Idea** | 💡 | Placeholder |
 | 14 | **Research** | 🔬 | Placeholder |
@@ -68,6 +68,11 @@ a City and a Community.
 
 Zoom levels 0–5 (geographic/organizational hierarchy): **Not established.**
 No data collection protocol exists. Listed for structural completeness only.
+
+**Relation Entities (not zoom-level nodes):** `ValueCapabilityRelation` (VCR) and
+`ProviderCapabilityRelation` (PCR) are first-class PUDM entities that own the
+cross-links between Value → Capability and Capability → Provider. They are not
+assigned a zoom level because they are edges, not containers. See §3.1.
 
 ### §2.2  Node Properties per Type
 
@@ -112,8 +117,32 @@ severity:     number | null        — Placeholder; no measurement protocol
 ```
 label:        string               — one of the 12 Candidate values
 grade:        "Candidate"          — fixed at this version
-capabilityDomains: CapabilityDomainId[]
 ```
+Value does NOT store capability references. Cross-links are owned by
+ValueCapabilityRelation (§3.1). God Object rule: Nodes do not carry
+foreign-key arrays; Relations own all cross-references.
+
+**Capability (additional):**
+```
+label:        string               — capability name
+domain:       string               — primary domain (Finance, Operations, etc.)
+description:  string               — what this capability delivers
+grade:        "Candidate"
+```
+Capability does NOT store value or provider references. Cross-links are owned
+by ValueCapabilityRelation and ProviderCapabilityRelation. See §3.1.
+
+**Provider (additional):**
+```
+label:        string               — provider name
+description:  string               — what the provider offers
+domain:       string               — primary domain
+providerType: "program" | "platform" | "organization" | "individual"
+website:      string | null
+grade:        "Candidate"
+```
+Provider does NOT store capability references. Links are owned by
+ProviderCapabilityRelation. See §3.1. (God Object rule.)
 
 **Agent (additional):**
 ```
@@ -133,8 +162,6 @@ carries an `evidenceGrade` independently of the nodes it connects.
 |---|---|---|---|
 | `requires` | Mission → Gap | This mission has this unresolved gap | Candidate |
 | `needs` | Gap → Value | Closing this gap requires this value | Candidate |
-| `provides` | Provider → Capability | This entity can deliver this capability | Placeholder |
-| `covers` | Capability → Value | This capability addresses this value | Candidate |
 | `contains` | Geographic/Org → sub-node | Spatial or membership containment | Placeholder |
 | `connects` | Node ↔ Node | Undirected peer relationship | Placeholder |
 | `produces` | Person/Org/Agent → Document/Research/Idea | Creation relation | Placeholder |
@@ -143,12 +170,76 @@ carries an `evidenceGrade` independently of the nodes it connects.
 | `executes` | Agent → Task | Agent takes ownership of task | Candidate |
 | `delegates` | Person/Agent → Agent | Work handoff via Tool Gateway | Candidate |
 
+Note: `covers` (Capability → Value) and `provides` (Provider → Capability) from v0.1
+are superseded by the Relation Entities in §3.1 (VCR and PCR), which express the same
+cross-links with richer relationType semantics and first-class identity.
+
+### §3.1  Relation Entities (VCR and PCR)
+
+Relation Entities are first-class PUDM entities. They are not simple directed edges —
+they carry their own identity, evidence grade, and relationType semantics. They own all
+cross-references between Nodes; Nodes do not store foreign-key arrays (God Object rule).
+
+**ValueCapabilityRelation (VCR)**
+
+A VCR asserts that a Capability can address, is required for, or has been selected to
+close a Value — with scope that depends on relationType.
+
+```
+id:           string
+type:         "ValueCapabilityRelation"
+evidenceGrade: Grade
+valueId:      string               — source Value
+capabilityId: string               — target Capability
+relationType: "can_address" | "required_for" | "selected_for"
+missionId:    string | null        — required for required_for and selected_for
+gapId:        string | null        — required for required_for and selected_for
+evidence:     EvidenceObject[]
+```
+
+| relationType | Scope | missionId/gapId | Semantics |
+|---|---|---|---|
+| `can_address` | Taxonomic | Must be null | Capability can address this Value in general — no mission context required |
+| `required_for` | Contextual | Required | Capability is required to close this specific Gap in this Mission |
+| `selected_for` | Execution | Required | Capability has been selected for this Mission/Gap **(DEFERRED — no write path yet)** |
+
+**ProviderCapabilityRelation (PCR)**
+
+A PCR asserts that a Provider can deliver, or has been selected to deliver, a Capability.
+
+```
+id:           string
+type:         "ProviderCapabilityRelation"
+evidenceGrade: Grade
+capabilityId: string               — source Capability
+providerId:   string               — target Provider
+relationType: "can_deliver" | "selected_for"
+missionId:    string | null        — required only for selected_for
+gapId:        string | null        — required only for selected_for
+evidence:     EvidenceObject[]
+```
+
+| relationType | Scope | missionId/gapId | Semantics |
+|---|---|---|---|
+| `can_deliver` | Taxonomic | Must be null | Provider can deliver this Capability in general |
+| `selected_for` | Execution | Required | Provider is engaged for this specific Mission/Gap **(DEFERRED — no write path yet)** |
+
 **Invariant R1:** `needs` relations may only be created when a Gap node exists.
 A Mission may not connect directly to a Value without a Gap intermediary.
-This enforces the Marketplace architecture invariant: Mission → Gap → Value → Capability → Provider.
+This enforces the core chain: Mission → Gap → Value → [VCR] → Capability → [PCR] → Provider.
 
 **Invariant R2:** `trusts` relations require at least one Behavior-grade evidence signal
 before the score is written. Intent-only trust is disallowed (§7 Marketplace Core v0).
+
+**Invariant G-1:** VCR `can_address` relations must not carry missionId or gapId.
+PCR `can_deliver` relations must not carry missionId or gapId. Taxonomic relations are
+context-free; adding mission/gap context contaminates the taxonomy.
+
+**Invariant G-2 (DEFERRED):** `selected_for` relationType on VCR and PCR requires
+Behavior-grade or Outcomes-grade evidence on the relation instance before it is written.
+Intent-only evidence is insufficient for `selected_for`. *Not yet enforced at the write
+layer because no write API exists for PCR or VCR. Activates the moment any `selected_for`
+write path or `POST /provider-capability-relations` endpoint appears.*
 
 ---
 
@@ -203,7 +294,7 @@ This is distinct from Properties (what a node has at a point in time).
 |---|---|---|
 | **State transition** | Person, Mission, Task | OPM dimension shift; Mission status change |
 | **Relation formation** | All | New `trusts`, `connects`, `requires` edge created |
-| **Relation decay** | All | Trust score declining; `covers` weakened by counter-evidence |
+| **Relation decay** | All | Trust score declining; VCR/PCR relationType weakened by counter-evidence |
 | **Production** | Person, Org, Agent | New Document, Idea, or Research node emitted |
 | **Containment shift** | Person, Org | Person moves to a different City or Community |
 | **Value activation** | Gap, Mission | A Gap closes as a Value becomes available |
@@ -256,9 +347,10 @@ the underlying model. Every current and planned screen in Philos is a View.
 
 | View | Primary nodes | Primary relations | Current route | Grade |
 |---|---|---|---|---|
-| **Globe** | Country, City, Organization | `contains`, `connects` | `/globe` | Placeholder |
+| **Globe** | Country, City, Organization | `contains`, `connects` | Not built | Placeholder |
 | **OPM** | Person, Gap, Dimension | `requires`, state transitions | `/nexus` | Candidate |
-| **Marketplace** | Mission, Gap, Value, Capability, Provider | `requires`, `needs`, `covers`, `provides` | `/nexus` (panels) | Candidate |
+| **PUDM** | All node and relation entity types | All | `/pudm` | Candidate |
+| **Marketplace / Graph Explorer** | Mission, Gap, Value, Capability, Provider, VCR, PCR | `requires`, `needs`, VCR relationType, PCR relationType | `/marketplace` | Candidate |
 | **World (Potential Map)** | All node types | All relation types (dashed = potential) | `/world` | Candidate |
 | **Lab** | Document, Research, Simulation | `produces` | `/lab` | Candidate |
 | **Network** | Person, Community, Organization | `trusts`, `connects` | Not built | Placeholder |
@@ -287,16 +379,25 @@ The containment hierarchy in §2.1 defines the legal zoom path:
                                 └─ 🎯 Mission
                                      └─ 🧩 Gap
                                           └─ 💎 Value
-                                               └─ 📦 Capability Domain
-                                                    └─ 📄 Document / 💡 Idea / 🔬 Research / 🤖 Agent
+                                               └─[VCR]─ 📦 Capability
+                                                            └─[PCR]─ ⚡ Provider
+                                                                         └─ 📄 Document / 💡 Idea / 🔬 Research / 🤖 Agent
 ```
 
 A View may enter the hierarchy at any level and zoom in or out. The Digital Reality
 Graph (V2) is the only planned View that spans all levels simultaneously.
 
+**Relation Entities in the zoom tree:** VCR and PCR are not zoom-level nodes — they are
+the edges between Value–Capability and Capability–Provider. `[VCR]` and `[PCR]` in the
+tree above indicate that these cross-links are owned by Relation Entities, not stored
+as arrays on the source nodes.
+
 **Current implementation:** `/world` enters at the Value level (zoom 9) and renders
-upward to Mission actors and downward to Capability Domains. Geographic levels (0–5)
-are not rendered in V1.
+upward to Mission actors and downward to Capabilities (via VCR) and Providers (via PCR).
+Geographic levels (0–5) are not rendered in V1. `/marketplace` is the Graph Explorer:
+full read-only traversal of Mission → Gap → Value → [VCR] → Capability → [PCR] →
+Provider, with Node Inspector (Value, Capability, Provider) and Relation Inspector
+(VCR, PCR) panels.
 
 ---
 
@@ -307,7 +408,7 @@ These must be resolved before any Placeholder-grade node type is implemented.
 | # | Question | Blocks |
 |---|---|---|
 | Q1 | What is the minimum schema for a Country node? | Geographic zoom levels |
-| Q2 | How is a Provider node created — by self-declaration or by evidence? | `provides` relation, Marketplace path |
+| Q2 | How is a Provider node created — by self-declaration or by evidence? | PCR `can_deliver` write path, Marketplace chain |
 | Q3 | What constitutes a Behavior-grade signal for the `trusts` relation? | Trust dynamics, Invariant R2 |
 | Q4 | How does a Gap close — threshold on Value availability, or explicit actor action? | Value activation dynamics |
 | Q5 | What is the identity scheme for Agents — local per-session or persistent global? | Agent node lifecycle |
@@ -320,8 +421,8 @@ These must be resolved before any Placeholder-grade node type is implemented.
 | Spec | PUDM Mapping |
 |---|---|
 | `philos-opm-spec.md` | Person node Dynamics layer; Gap and Dimension as OPM projections |
-| `marketplace-core-v0.md` | Mission → Gap → Value → Capability → Provider chain; Invariants I1–I5 |
-| `marketplace-dynamics-v0.md` | `needs` and `covers` relation dynamics; matching engine |
+| `marketplace-core-v0.md` | Mission → Gap → Value → [VCR] → Capability → [PCR] → Provider chain; Invariants I1–I5 |
+| `marketplace-dynamics-v0.md` | `needs` relation dynamics; `covers` superseded by VCR Relation Entity (§3.1); matching engine |
 | `transition-engine-v0.md` | State transition Dynamics for Person and Mission nodes |
 | `dimension-reading-proposal.md` | OPM → Marketplace interface; Entity 11 proposal |
 | `research-charter.md` | §4 Evidence Model (imported without modification) |
@@ -331,11 +432,38 @@ These must be resolved before any Placeholder-grade node type is implemented.
 
 ---
 
-## §10  Version Notes
+## §10  Architecture Contracts
+
+Eight contracts must hold at any valid PUDM system state. All are satisfied as of v0.2.
+Contract G-2 is deferred because no write API exists for PCR or VCR.
+
+| # | Contract | Status |
+|---|---|---|
+| C-1 | Mission → Gap → Value chain: a Value may not be linked to a Mission without a Gap intermediary (Invariant R1) | **Satisfied** |
+| C-2 | God Object rule: Nodes do not store foreign-key arrays to other Node types | **Satisfied** |
+| C-3 | Relations own cross-references: VCR owns Value → Capability links; PCR owns Capability → Provider links | **Satisfied** |
+| C-4 | VCR `can_address` carries no missionId or gapId (Invariant G-1) | **Satisfied** — all current VCRs are `can_address` with null context |
+| C-5 | PCR `can_deliver` carries no missionId or gapId (Invariant G-1) | **Satisfied** — all current PCRs are `can_deliver` with null context |
+| C-6 | No `selected_for` VCR entries exist in the data store | **Satisfied** — zero `selected_for` VCR entries |
+| C-7 | No `selected_for` PCR entries exist in the data store | **Satisfied** — zero `selected_for` PCR entries |
+| G-2 | PCR `selected_for` write path must enforce Behavior/Outcomes evidence requirement before accepting a write (Invariant G-2) | **DEFERRED** — no write API exists; activates on `POST /provider-capability-relations` or any `selected_for` write path |
+
+---
+
+## §11  Version Notes
 
 v0.1 — Initial draft. Node types enumerated. 4-layer model defined. Data Physics
 specified as Candidate constraints. Evidence model imported from Research Charter.
 Geographic and Provider node types remain Placeholder pending open questions in §8.
 
-Next version target (v0.2): resolve Q1–Q3; specify Trust dynamics with at least one
-falsifiable constraint; promote Provider node to Candidate grade.
+v0.2 — Added Relation Entities (§3.1): ValueCapabilityRelation (VCR) and
+ProviderCapabilityRelation (PCR) as first-class PUDM entities with full schemas and
+relationType semantics. Updated §2.1 taxonomy: Capability promoted from "Capability
+Domain" (Placeholder) to "Capability" (Candidate); Provider promoted to Candidate.
+Removed `covers` and `provides` simple-edge relations (superseded by VCR and PCR).
+Added God Object rule: Nodes do not store cross-reference arrays. Added Invariants G-1
+and G-2. Updated §2.2: Value, Capability, and Provider node schemas now explicit;
+`capabilityDomains[]` removed from Value. Updated §6 View Types: Marketplace / Graph
+Explorer at `/marketplace`; PUDM view at `/pudm`; Globe route corrected to Not built.
+Added §10 Architecture Contracts (8 total; G-2 deferred). Updated zoom tree (§7) to
+show [VCR] and [PCR] edges. Updated §9 spec mapping to reflect new chain notation.
