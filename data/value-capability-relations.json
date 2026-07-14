@@ -18,7 +18,6 @@
       }
     ]
   },
-
   {
     "id": "vcr_trust_seed_funding_001",
     "type": "ValueCapabilityRelation",
@@ -38,7 +37,6 @@
       }
     ]
   },
-
   {
     "id": "vcr_knowledge_supply_chain_001",
     "type": "ValueCapabilityRelation",
@@ -58,7 +56,6 @@
       }
     ]
   },
-
   {
     "id": "vcr_execution_supply_chain_001",
     "type": "ValueCapabilityRelation",
@@ -78,7 +75,6 @@
       }
     ]
   },
-
   {
     "id": "vcr_community_growth_ops_001",
     "type": "ValueCapabilityRelation",
@@ -98,7 +94,6 @@
       }
     ]
   },
-
   {
     "id": "vcr_trust_growth_ops_001",
     "type": "ValueCapabilityRelation",
@@ -118,7 +113,6 @@
       }
     ]
   },
-
   {
     "id": "vcr_growth_growth_ops_001",
     "type": "ValueCapabilityRelation",
@@ -138,7 +132,6 @@
       }
     ]
   },
-
   {
     "id": "vcr_creativity_brand_001",
     "type": "ValueCapabilityRelation",
@@ -158,7 +151,6 @@
       }
     ]
   },
-
   {
     "id": "vcr_knowledge_brand_001",
     "type": "ValueCapabilityRelation",
@@ -178,7 +170,6 @@
       }
     ]
   },
-
   {
     "id": "vcr_community_brand_001",
     "type": "ValueCapabilityRelation",
@@ -195,6 +186,519 @@
         "source": "philos-program",
         "observedAt": "2026-07-14T00:00:00.000Z",
         "note": "Taxonomic: Brand & Creative Direction builds shared identity signals that anchor community belonging around a Mission — Community is the VALUE being addressed."
+      }
+    ]
+  },
+  {
+    "id": "vcr_health_therapist_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "health",
+    "capabilityId": "cap_therapist_matching_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Couples Therapist Matching addresses Health — it directly addresses physical and mental health restoration through professional therapeutic support. No missionId required; valid in all contexts where Health is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_trust_therapist_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "trust",
+    "capabilityId": "cap_therapist_matching_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Couples Therapist Matching addresses Trust — therapist matching is premised on finding a practitioner the couple can trust to hold a safe space. No missionId required; valid in all contexts where Trust is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_care_therapist_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "care",
+    "capabilityId": "cap_therapist_matching_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Couples Therapist Matching addresses Care — the therapeutic relationship is the primary delivery vehicle for care in a couples context. No missionId required; valid in all contexts where Care is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_capital_therapy_afford_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "capital",
+    "capabilityId": "cap_therapy_affordability_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Affordable Therapy Access addresses Capital — affordability mechanisms directly convert financial resources into sustained access to care. No missionId required; valid in all contexts where Capital is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_health_therapy_afford_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "health",
+    "capabilityId": "cap_therapy_affordability_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Affordable Therapy Access addresses Health — removing cost barriers is necessary for health outcomes — dropout due to cost is a known failure mode. No missionId required; valid in all contexts where Health is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_justice_therapy_afford_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "justice",
+    "capabilityId": "cap_therapy_affordability_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Affordable Therapy Access addresses Justice — sliding-scale and subsidised access redistributes therapeutic resources toward those with financial constraints. No missionId required; valid in all contexts where Justice is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_knowledge_scholarship_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "knowledge",
+    "capabilityId": "cap_scholarship_search_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Scholarship Search & Matching addresses Knowledge — finding scholarships is an information problem — knowledge of what exists and who is eligible is the bottleneck. No missionId required; valid in all contexts where Knowledge is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_learning_scholarship_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "learning",
+    "capabilityId": "cap_scholarship_search_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Scholarship Search & Matching addresses Learning — scholarships directly fund learning continuity. No missionId required; valid in all contexts where Learning is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_capital_scholarship_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "capital",
+    "capabilityId": "cap_scholarship_search_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Scholarship Search & Matching addresses Capital — scholarships convert institutional capital into student access to education. No missionId required; valid in all contexts where Capital is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_knowledge_app_coach_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "knowledge",
+    "capabilityId": "cap_application_coaching_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Scholarship Application Coaching addresses Knowledge — coaching improves the quality and accuracy of knowledge conveyed in applications. No missionId required; valid in all contexts where Knowledge is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_learning_app_coach_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "learning",
+    "capabilityId": "cap_application_coaching_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Scholarship Application Coaching addresses Learning — application quality coaching is itself a learning process that builds transferable skills. No missionId required; valid in all contexts where Learning is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_capital_biz_credit_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "capital",
+    "capabilityId": "cap_business_credit_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Business Credit Assessment & Building addresses Capital — credit access is the primary mechanism through which capital becomes available to small businesses. No missionId required; valid in all contexts where Capital is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_execution_biz_credit_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "execution",
+    "capabilityId": "cap_business_credit_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Business Credit Assessment & Building addresses Execution — a strong credit profile signals execution reliability to lenders. No missionId required; valid in all contexts where Execution is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_trust_biz_credit_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "trust",
+    "capabilityId": "cap_business_credit_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Business Credit Assessment & Building addresses Trust — creditworthiness is an institutional trust score — it measures lender confidence in the business actor. No missionId required; valid in all contexts where Trust is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_capital_grant_search_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "capital",
+    "capabilityId": "cap_grant_search_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Small Business Grant Search addresses Capital — grants convert public and foundation capital into small business access without dilution or debt. No missionId required; valid in all contexts where Capital is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_knowledge_grant_search_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "knowledge",
+    "capabilityId": "cap_grant_search_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Small Business Grant Search addresses Knowledge — grant search is an information problem — most owners are unaware of applicable programs. No missionId required; valid in all contexts where Knowledge is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_knowledge_traffic_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "knowledge",
+    "capabilityId": "cap_traffic_safety_analysis_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Traffic Safety Data Analysis addresses Knowledge — accident analysis converts raw incident data into actionable knowledge about risk patterns. No missionId required; valid in all contexts where Knowledge is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_security_traffic_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "security",
+    "capabilityId": "cap_traffic_safety_analysis_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Traffic Safety Data Analysis addresses Security — identifying high-risk corridors is a prerequisite for physical safety improvements. No missionId required; valid in all contexts where Security is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_justice_traffic_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "justice",
+    "capabilityId": "cap_traffic_safety_analysis_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Traffic Safety Data Analysis addresses Justice — data analysis often reveals that accidents disproportionately affect lower-income and pedestrian-heavy neighbourhoods. No missionId required; valid in all contexts where Justice is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_knowledge_urban_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "knowledge",
+    "capabilityId": "cap_urban_intervention_design_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Urban Safety Intervention Design addresses Knowledge — intervention design applies accumulated urban safety knowledge to specific road geometries. No missionId required; valid in all contexts where Knowledge is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_security_urban_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "security",
+    "capabilityId": "cap_urban_intervention_design_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Urban Safety Intervention Design addresses Security — physical interventions are the primary mechanism through which road security is improved. No missionId required; valid in all contexts where Security is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_community_urban_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "community",
+    "capabilityId": "cap_urban_intervention_design_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Urban Safety Intervention Design addresses Community — co-designed interventions increase community trust and compliance with safety measures. No missionId required; valid in all contexts where Community is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_community_volrec_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "community",
+    "capabilityId": "cap_volunteer_recruitment_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Volunteer Recruitment Platform addresses Community — volunteer recruitment is the mechanism through which community members connect to collective action. No missionId required; valid in all contexts where Community is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_care_volrec_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "care",
+    "capabilityId": "cap_volunteer_recruitment_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Volunteer Recruitment Platform addresses Care — volunteers are the primary delivery vehicle for care in NGO programme contexts. No missionId required; valid in all contexts where Care is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_trust_volrec_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "trust",
+    "capabilityId": "cap_volunteer_recruitment_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Volunteer Recruitment Platform addresses Trust — matching quality determines whether volunteers trust the NGO with their time. No missionId required; valid in all contexts where Trust is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_community_volmgmt_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "community",
+    "capabilityId": "cap_volunteer_management_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Volunteer Coordination & Retention addresses Community — coordination sustains community cohesion by keeping volunteers informed and valued. No missionId required; valid in all contexts where Community is the required value."
+      }
+    ]
+  },
+  {
+    "id": "vcr_execution_volmgmt_001",
+    "type": "ValueCapabilityRelation",
+    "valueId": "execution",
+    "capabilityId": "cap_volunteer_management_001",
+    "relationType": "can_address",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Volunteer Coordination & Retention addresses Execution — management systems convert community willingness into reliable, measurable programme delivery. No missionId required; valid in all contexts where Execution is the required value."
       }
     ]
   }

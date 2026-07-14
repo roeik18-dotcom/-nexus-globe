@@ -5,12 +5,10 @@
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-09T00:00:00.000Z",
     "updatedAt": "2026-07-09T00:00:00.000Z",
-
     "state": {
       "status": "active",
       "horizon": "medium"
     },
-
     "context": {
       "actor": {
         "id": "person_fashion_entrepreneur_001",
@@ -19,7 +17,6 @@
       "statement": "Launch an inclusive fashion brand that serves underrepresented body types and identities — making premium design accessible across sizes, genders, and budgets.",
       "domain": "Fashion"
     },
-
     "constraints": {
       "constraints": [
         "No seed funding secured yet",
@@ -32,23 +29,40 @@
         "A community-first launch model can substitute for paid acquisition in early stages"
       ]
     },
-
     "gaps": [
-      { "gapId": "gap_capital_seed_001" },
-      { "gapId": "gap_supply_chain_001" },
-      { "gapId": "gap_community_launch_001" },
-      { "gapId": "gap_brand_creative_001" }
+      {
+        "gapId": "gap_capital_seed_001"
+      },
+      {
+        "gapId": "gap_supply_chain_001"
+      },
+      {
+        "gapId": "gap_community_launch_001"
+      },
+      {
+        "gapId": "gap_brand_creative_001"
+      }
     ],
-
     "requiredValues": [
-      { "valueId": "capital" },
-      { "valueId": "creativity" },
-      { "valueId": "community" },
-      { "valueId": "knowledge" },
-      { "valueId": "trust" },
-      { "valueId": "growth" }
+      {
+        "valueId": "capital"
+      },
+      {
+        "valueId": "creativity"
+      },
+      {
+        "valueId": "community"
+      },
+      {
+        "valueId": "knowledge"
+      },
+      {
+        "valueId": "trust"
+      },
+      {
+        "valueId": "growth"
+      }
     ],
-
     "evidence": [
       {
         "signal": "Intent",
@@ -57,15 +71,208 @@
         "note": "Actor stated the mission. Intent-grade only — no behavioral or outcome signal yet. Statement accuracy is unverified."
       }
     ],
-
     "timeline": {
       "startedAt": "2026-07-09T00:00:00.000Z",
       "targetAt": null,
       "completedAt": null
     },
-
     "relations": {
       "relatedMissions": []
     }
+  },
+  {
+    "id": "mission_couples_therapy_001",
+    "type": "Mission",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active",
+      "horizon": "short"
+    },
+    "context": {
+      "actor": {
+        "id": "person_couple_001",
+        "type": "Person"
+      },
+      "statement": "Rebuild communication and trust as a couple after a period of conflict and emotional disconnection — by finding qualified therapy and sustaining it financially.",
+      "domain": "Health"
+    },
+    "constraints": {
+      "constraints": [
+        "Therapy not covered by insurance",
+        "Limited availability of therapists accepting new clients",
+        "Budget constraint: max $80/session"
+      ],
+      "assumptions": [
+        "Both partners are willing to engage",
+        "Remote / telehealth is acceptable",
+        "Weekly sessions for 6+ months are feasible"
+      ]
+    },
+    "gaps": [
+      {
+        "gapId": "gap_therapist_access_001"
+      },
+      {
+        "gapId": "gap_therapy_affordability_001"
+      }
+    ]
+  },
+  {
+    "id": "mission_student_scholarship_001",
+    "type": "Mission",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active",
+      "horizon": "short"
+    },
+    "context": {
+      "actor": {
+        "id": "person_student_001",
+        "type": "Person"
+      },
+      "statement": "Fund the final two years of an undergraduate degree in environmental science without taking on additional debt — through scholarships and grants matched to my profile.",
+      "domain": "Education"
+    },
+    "constraints": {
+      "constraints": [
+        "GPA 3.4 — strong but not top 5%",
+        "First-generation college student",
+        "No existing guidance counselor support"
+      ],
+      "assumptions": [
+        "Multiple scholarships are stackable",
+        "Application quality can be significantly improved with coaching",
+        "Early application cycle (Aug–Oct) is the primary window"
+      ]
+    },
+    "gaps": [
+      {
+        "gapId": "gap_scholarship_discovery_001"
+      },
+      {
+        "gapId": "gap_application_quality_001"
+      }
+    ]
+  },
+  {
+    "id": "mission_small_business_funding_001",
+    "type": "Mission",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active",
+      "horizon": "medium"
+    },
+    "context": {
+      "actor": {
+        "id": "org_small_biz_001",
+        "type": "Organization"
+      },
+      "statement": "Secure $150,000 in non-dilutive financing within 6 months to open a second location of an independent bakery with 18 months of profitable operation.",
+      "domain": "Finance"
+    },
+    "constraints": {
+      "constraints": [
+        "No established business credit profile",
+        "Sole proprietor — personal and business finances mixed",
+        "No prior experience with grant applications"
+      ],
+      "assumptions": [
+        "Revenue history is sufficient to qualify for some SBA programs",
+        "Grant programs exist for food businesses in this county",
+        "Credit profile can be built within 3–4 months with guidance"
+      ]
+    },
+    "gaps": [
+      {
+        "gapId": "gap_business_credit_access_001"
+      },
+      {
+        "gapId": "gap_grant_identification_001"
+      }
+    ]
+  },
+  {
+    "id": "mission_municipality_safety_001",
+    "type": "Mission",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active",
+      "horizon": "long"
+    },
+    "context": {
+      "actor": {
+        "id": "org_municipality_001",
+        "type": "Organization"
+      },
+      "statement": "Reduce pedestrian and cyclist fatalities by 40% in the city's three highest-risk corridors within 3 years, using a data-driven Vision Zero approach.",
+      "domain": "Infrastructure"
+    },
+    "constraints": {
+      "constraints": [
+        "Annual capital budget capped at $2M for safety improvements",
+        "Internal engineering capacity is limited — 2 FTEs",
+        "Council approval required for any road geometry change"
+      ],
+      "assumptions": [
+        "Accident data exists but is unstructured",
+        "Physical interventions are more effective than enforcement alone",
+        "Community co-design improves adoption and compliance"
+      ]
+    },
+    "gaps": [
+      {
+        "gapId": "gap_accident_data_gap_001"
+      },
+      {
+        "gapId": "gap_intervention_design_001"
+      }
+    ]
+  },
+  {
+    "id": "mission_ngo_volunteers_001",
+    "type": "Mission",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active",
+      "horizon": "medium"
+    },
+    "context": {
+      "actor": {
+        "id": "org_ngo_001",
+        "type": "Organization"
+      },
+      "statement": "Build a stable corps of 80 active volunteers who are matched to the right roles, supported through structured coordination, and retained for 12+ months — enabling the NGO to double its programme delivery.",
+      "domain": "Social"
+    },
+    "constraints": {
+      "constraints": [
+        "No budget for paid coordination staff",
+        "Current tools are spreadsheet and WhatsApp group",
+        "Organisation has no experience with volunteer management software"
+      ],
+      "assumptions": [
+        "Free-tier volunteer platforms are sufficient for the first 6 months",
+        "Role clarity increases volunteer commitment",
+        "Recognition and communication are the highest-leverage retention levers"
+      ]
+    },
+    "gaps": [
+      {
+        "gapId": "gap_volunteer_recruitment_001"
+      },
+      {
+        "gapId": "gap_volunteer_coordination_001"
+      }
+    ]
   }
 ]

@@ -111,7 +111,7 @@ These validations are required before any Candidate claim can advance to confirm
 
 1. **Trust/Confidence update equations** — must be formally defined before Layer 3c convergence harness is meaningful
 2. **Mode B validation** — a real case where a person used Philos mapping during an actual decision; required for I5 §7 claim
-3. **Matching Engine doc** (`docs/marketplace-matching-engine-v0.md`) — required before Matching Engine can formally implement §7 constraints
+3. **Matching Engine doc** (`docs/marketplace-matching-engine-v0.md`) — ~~required before Matching Engine can formally implement §7 constraints~~ **WRITTEN** v0.1 Candidate Specification; invariants not yet reviewed
 4. **M9 G9 test** — must specify at least one state the model forbids, and demonstrate that it is actually absent
 
 ---
@@ -120,7 +120,7 @@ These validations are required before any Candidate claim can advance to confirm
 
 ```
 1. Write Trust/Confidence update equations        → unblocks Layer 3c harness
-2. Write marketplace-matching-engine-v0.md        → unblocks §7 implementation
+2. ~~Write marketplace-matching-engine-v0.md~~    → DONE (v0.1 Candidate); review invariants → unblocks write-path
 3. Define DimensionReading formally               → unblocks OPM→Marketplace interface
 4. Run testClassifier.ts (needs ANTHROPIC_API_KEY) → validates situation classifier
 5. Mode B: real case validation                   → first empirical data point on I5

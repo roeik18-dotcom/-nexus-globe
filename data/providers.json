@@ -21,7 +21,6 @@
       }
     ]
   },
-
   {
     "id": "prov_antler_001",
     "type": "Provider",
@@ -44,7 +43,6 @@
       }
     ]
   },
-
   {
     "id": "prov_flexport_001",
     "type": "Provider",
@@ -67,7 +65,6 @@
       }
     ]
   },
-
   {
     "id": "prov_beehiiv_001",
     "type": "Provider",
@@ -90,7 +87,6 @@
       }
     ]
   },
-
   {
     "id": "prov_pentagram_001",
     "type": "Provider",
@@ -112,5 +108,165 @@
         "note": "Candidate definition. Pentagram is a globally recognized provider of brand and creative direction. Not yet validated against specific Philos mission outcomes. Example provider — no affiliation, participation, availability, or selection implied."
       }
     ]
+  },
+  {
+    "id": "prov_psychology_today_001",
+    "type": "Provider",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "Psychology Today",
+      "domain": "Health",
+      "providerType": "Platform",
+      "description": "Therapist directory with 180,000+ verified mental health professionals including licensed couples therapists."
+    }
+  },
+  {
+    "id": "prov_open_path_001",
+    "type": "Provider",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "Open Path Collective",
+      "domain": "Health",
+      "providerType": "Network",
+      "description": "Nonprofit network of therapists offering sessions at $30–$80 for individuals and couples with financial need."
+    }
+  },
+  {
+    "id": "prov_fastweb_001",
+    "type": "Provider",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "Fastweb",
+      "domain": "Education",
+      "providerType": "Platform",
+      "description": "Scholarship matching platform with 1.5M+ scholarships; matches students based on academic profile and circumstances."
+    }
+  },
+  {
+    "id": "prov_going_merry_001",
+    "type": "Provider",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "Going Merry",
+      "domain": "Education",
+      "providerType": "Platform",
+      "description": "Scholarship discovery and application platform with essay tools and counselor support for high school and college students."
+    }
+  },
+  {
+    "id": "prov_score_001",
+    "type": "Provider",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "SCORE",
+      "domain": "Finance",
+      "providerType": "Non-profit",
+      "description": "Nationwide nonprofit with 10,000+ volunteer mentors providing free guidance on business credit, funding, and planning."
+    }
+  },
+  {
+    "id": "prov_sba_001",
+    "type": "Provider",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "U.S. Small Business Administration",
+      "domain": "Finance",
+      "providerType": "Government",
+      "description": "Federal agency providing loan programs (7(a), 504), grants, and technical assistance to small businesses."
+    }
+  },
+  {
+    "id": "prov_mobileye_001",
+    "type": "Provider",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "Mobileye",
+      "domain": "Infrastructure",
+      "providerType": "Technology",
+      "description": "Road safety analytics using camera and sensor data from vehicles to map high-risk locations and accident patterns for municipalities."
+    }
+  },
+  {
+    "id": "prov_nacto_001",
+    "type": "Provider",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "NACTO",
+      "domain": "Infrastructure",
+      "providerType": "Association",
+      "description": "National Association of City Transportation Officials — provides urban street design guides and technical assistance for cities implementing safety improvements."
+    }
+  },
+  {
+    "id": "prov_volunteermatch_001",
+    "type": "Provider",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "VolunteerMatch",
+      "domain": "Social",
+      "providerType": "Platform",
+      "description": "Volunteer recruitment platform connecting NGOs with 13M+ registered volunteers; includes role-matching and skills-based volunteering."
+    }
+  },
+  {
+    "id": "prov_galaxy_digital_001",
+    "type": "Provider",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "state": {
+      "status": "active"
+    },
+    "context": {
+      "label": "Galaxy Digital",
+      "domain": "Social",
+      "providerType": "Software",
+      "description": "Volunteer management software for scheduling, communication, hours tracking, and retention analytics."
+    }
   }
 ]
