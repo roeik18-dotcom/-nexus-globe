@@ -34,3 +34,21 @@ export type SignalType = "Intent" | "Behavior" | "Outcomes";
 export interface ValueRef {
   valueId: string;
 }
+
+/**
+ * Pure pointer to a Capability node.
+ * Capability label and evidence are owned by the Capability node.
+ * Resolve from CapabilityRepository when display data is needed.
+ */
+export interface CapabilityRef {
+  capabilityId: string;
+}
+
+/**
+ * Pure pointer to a Provider node.
+ * Provider details are owned by the Provider node.
+ * Resolve from ProviderRepository when display data is needed.
+ */
+export interface ProviderRef {
+  providerId: string;
+}

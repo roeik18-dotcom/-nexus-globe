@@ -47,10 +47,7 @@ for (const r of records) {
   check(`${p} — context.label`,         typeof r.context?.label === "string" && r.context.label.length > 0);
   check(`${p} — context.description`,   typeof r.context?.description === "string" && r.context.description.length > 0);
 
-  check(`${p} — capabilities is array`, Array.isArray(r.capabilities));
-  check(`${p} — capabilities ids only`, r.capabilities.every(
-    c => Object.keys(c).length === 1 && typeof c.capabilityId === "string"
-  ));
+  check(`${p} — no capabilities`, r.capabilities === undefined);
 
   check(`${p} — evidence signal valid`, Array.isArray(r.evidence) &&
     r.evidence.every(e => VALID_SIGNALS.includes(e.signal)));

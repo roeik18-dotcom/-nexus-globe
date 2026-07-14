@@ -18,6 +18,9 @@
  * It does NOT own Gap data, Mission data, Capability data, or Provider data.
  * Back-pointers to Missions and Gaps are resolved by querying their
  * repositories — they are never stored on the Value node.
+ *
+ * Value → Capability links are owned by ValueCapabilityRelation, not by Value.
+ * Query ValueCapabilityRelationRepository to find capabilities for a value.
  */
 
 import type { EvidenceGrade, SignalType } from "../types";
@@ -49,15 +52,6 @@ export interface ValueContext {
 }
 
 /**
- * Pure pointer to a Capability node that can help fulfill this Value.
- * Capability label and evidence are owned by the Capability node.
- * Resolve from CapabilityRepository when display data is needed.
- */
-export interface CapabilityRef {
-  capabilityId: string;
-}
-
-/**
  * Single evidence signal scoped to the Value definition itself.
  *
  * TEMPORARY — v0.1 only.
@@ -78,19 +72,17 @@ export interface ValueEvidenceRecord {
 /**
  * Value owns:
  *   - Its own label, description, domain, and evidenceGrade.
- *   - Pure reference pointers to Capability nodes that fulfill it.
  *   - Temporary self-scoped evidence (see ValueEvidenceRecord above).
  *
  * Value does NOT own:
  *   - Gap descriptions or lifecycle (owned by Gap node).
  *   - Mission statements or actor (owned by Mission node).
- *   - Capability details (owned by Capability node).
+ *   - Capability links (owned by ValueCapabilityRelation — query that repository).
  *   - Provider data (resolved by traversing the chain).
  *   - Back-pointers to Missions or Gaps (resolved via their repositories).
  */
 export interface Value extends ValueIdentity {
   context: ValueContext;
-  capabilities: CapabilityRef[];
   evidence: ValueEvidenceRecord[];
 }
 
@@ -108,3 +100,4 @@ export type CreateValueInput = Omit<
 /** Partial update — only supply the fields that change.
  *  id, type, and createdAt are immutable after creation. */
 export type UpdateValueInput = Partial<Omit<Value, "id" | "type" | "createdAt">>;
+

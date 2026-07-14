@@ -1,7 +1,7 @@
 /**
  * PUDM Explorer — /pudm
  *
- * Server Component. Reads live data from data/{missions,gaps,values}.json
+ * Server Component. Reads live data from data/{missions,gaps,values,capabilities}.json
  * and renders the PUDM chain as an inspectable tree.
  * Updates automatically as new node types are added to the chain.
  */
@@ -11,6 +11,8 @@ import { readJsonStore } from "@/app/lib/json-store";
 import type { Mission } from "@/app/lib/mission/schema";
 import type { Gap } from "@/app/lib/gap/schema";
 import type { Value } from "@/app/lib/value/schema";
+import type { Capability } from "@/app/lib/capability/schema";
+import type { ValueCapabilityRelation } from "@/app/lib/value-capability-relation/schema";
 
 export const metadata = { title: "PUDM Explorer — Philos" };
 
@@ -91,13 +93,26 @@ function ValueChip({ id }: { id: string }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PudmPage() {
-  const missions = readJsonStore<Mission>(path.join(DATA, "missions.json"));
-  const gaps     = readJsonStore<Gap>    (path.join(DATA, "gaps.json"));
-  const values   = readJsonStore<Value>  (path.join(DATA, "values.json"));
+  const missions     = readJsonStore<Mission>                  (path.join(DATA, "missions.json"));
+  const gaps         = readJsonStore<Gap>                      (path.join(DATA, "gaps.json"));
+  const values       = readJsonStore<Value>                    (path.join(DATA, "values.json"));
+  const capabilities = readJsonStore<Capability>               (path.join(DATA, "capabilities.json"));
+  const relations    = readJsonStore<ValueCapabilityRelation>  (path.join(DATA, "value-capability-relations.json"));
 
   // Lookup maps
-  const gapById   = new Map(gaps.map  (g => [g.id, g]));
-  const valueById = new Map(values.map(v => [v.id, v]));
+  const gapById        = new Map(gaps.map        (g => [g.id, g]));
+  const valueById      = new Map(values.map      (v => [v.id, v]));
+  const capabilityById = new Map(capabilities.map(c => [c.id, c]));
+
+  // Build Map<valueId, Capability[]> from the Relation store
+  const capsByValueId = new Map<string, Capability[]>();
+  for (const rel of relations) {
+    const cap = capabilityById.get(rel.capabilityId);
+    if (!cap) continue;
+    const arr = capsByValueId.get(rel.valueId) ?? [];
+    arr.push(cap);
+    capsByValueId.set(rel.valueId, arr);
+  }
 
   // Cross-reference: which gaps need each value?
   const gapsByValueId = new Map<string, Gap[]>();
@@ -150,7 +165,7 @@ export default function PudmPage() {
             </h1>
             <span style={{ fontFamily: "monospace", fontSize: 12, color: "var(--muted)" }}>
               Mission&nbsp;→&nbsp;Gap&nbsp;→&nbsp;Value&nbsp;→&nbsp;
-              <span style={{ opacity: 0.35 }}>Capability&nbsp;→&nbsp;Provider</span>
+              Capability&nbsp;→&nbsp;<span style={{ opacity: 0.35 }}>Provider</span>
             </span>
           </div>
 
@@ -160,8 +175,8 @@ export default function PudmPage() {
               { label: "Missions",    n: missions.length, color: "#58A6FF" },
               { label: "Gaps",        n: gaps.length,     color: "#D29922" },
               { label: "Values",      n: values.length,   color: "#3FB950" },
-              { label: "Capabilities",n: 0,               color: "var(--muted)", dim: true },
-              { label: "Providers",   n: 0,               color: "var(--muted)", dim: true },
+              { label: "Capabilities",n: capabilities.length, color: "#F472B6" },
+              { label: "Providers",   n: 0,                  color: "var(--muted)", dim: true },
             ] as const).map(s => (
               <div key={s.label} style={{ display: "flex", alignItems: "baseline", gap: 5, opacity: (s as {dim?: boolean}).dim ? 0.3 : 1 }}>
                 <span style={{ fontSize: 22, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.n}</span>
@@ -247,24 +262,40 @@ export default function PudmPage() {
                     </div>
                   </details>
 
-                  {/* Required values */}
+                  {/* Required values → Capabilities */}
                   <details>
                     <summary style={{ fontSize: 13, fontWeight: 600, color: "#3FB950", padding: "4px 0" }}>
                       <span className="arrow" style={{ marginRight: 6, fontSize: 10 }}>▶</span>
                       Required Values ({mValues.length})
                     </summary>
-                    <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                       {mValues.map(v => {
-                        const c = VALUE_COLOR[v.id] ?? "#94A3B8";
+                        const c    = VALUE_COLOR[v.id] ?? "#94A3B8";
+                        const vCaps = capsByValueId.get(v.id) ?? [];
                         return (
-                          <span key={v.id} style={{
-                            display: "inline-flex", flexDirection: "column", gap: 2,
-                            padding: "8px 12px", borderRadius: 6,
-                            background: c + "18", border: `1px solid ${c}40`,
+                          <div key={v.id} style={{
+                            background: c + "10", border: `1px solid ${c}30`,
+                            borderRadius: 6, padding: "10px 14px",
                           }}>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: c }}>{v.context.label}</span>
-                            {v.context.domain && <span style={{ fontSize: 11, color: "var(--muted)" }}>{v.context.domain}</span>}
-                          </span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: vCaps.length > 0 ? 8 : 0 }}>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: c }}>{v.context.label}</span>
+                              {v.context.domain && <span style={{ fontSize: 11, color: "var(--muted)" }}>{v.context.domain}</span>}
+                            </div>
+                            {vCaps.length > 0 && (
+                              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                                <span style={{ fontSize: 10, color: "var(--muted)", marginRight: 2, fontFamily: "monospace" }}>capability →</span>
+                                {vCaps.map(cap => (
+                                  <span key={cap.id} style={{
+                                    display: "inline-block", padding: "2px 8px", borderRadius: 4,
+                                    fontSize: 11, fontWeight: 500,
+                                    background: "#F472B618", color: "#F472B6", border: "1px solid #F472B630",
+                                  }}>
+                                    {cap.context.label}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
@@ -332,8 +363,8 @@ export default function PudmPage() {
           background: "var(--surface-2)", borderRadius: 6,
           fontSize: 11, color: "var(--muted)", fontFamily: "monospace",
         }}>
-          Live · data/missions.json · data/gaps.json · data/values.json
-          &nbsp;·&nbsp;Capability → Provider nodes pending
+          Live · data/missions.json · data/gaps.json · data/values.json · data/capabilities.json · data/value-capability-relations.json
+          &nbsp;·&nbsp;Provider nodes pending
         </div>
 
       </main>
