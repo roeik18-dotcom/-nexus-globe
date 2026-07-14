@@ -18,8 +18,9 @@ They govern write-path correctness only.*
 
 **In scope:**
 - Rules and invariants for evaluating Candidate Providers against a Mission Gap
+- The SelectionDecision entity and its write conditions
 - Write conditions for `selected_for` PCR (ProviderCapabilityRelation)
-- G-2 invariants that govern any `selected_for` write
+- G-2 invariants that govern SelectionDecision creation and PCR writes
 - Actor model and audit requirements for selection actions
 
 **Out of scope:**
@@ -28,6 +29,28 @@ They govern write-path correctness only.*
 - Execution, delivery, or outcome measurement
 - VCR write paths (Value ↔ Capability relations)
 - Read-only queries of any kind
+
+### Phase Model
+
+```
+Mission → Gap → Matching Engine → Candidate Evaluation → SelectionDecision → selected_for PCR → Execution → Outcome
+```
+
+The Matching Engine operates in two structurally separate phases:
+
+**Phase 1 — Candidate Evaluation:** The Engine computes eligibility and ranks
+candidates. This phase is deterministic, produces no PCR writes, and may be driven
+by an AI Agent. Output: one evaluation record per candidate (`candidate` or `rejected`).
+
+**Phase 2 — SelectionDecision:** An authorized human actor reviews Phase 1 output and
+creates a SelectionDecision entity. If the decision is approved, it causes a
+`selected_for` PCR to be written. The PCR is the graph-layer artifact; the
+SelectionDecision is the decision record with full context.
+
+Separating the phases ensures:
+- The Engine remains deterministic and independently auditable.
+- Governance (G-2) gates only Phase 2 — not the computation.
+- Decision history is preserved in SelectionDecision without overloading the PCR schema.
 
 ---
 
@@ -55,62 +78,104 @@ performance.
 
 ## §3 Outputs
 
-A Matching Engine invocation produces exactly one output state per candidate:
+### §3.1 Phase 1 — Candidate Evaluation
 
-| Output | Condition | PCR write? |
+The Matching Engine produces one evaluation record per candidate. **No PCR is written
+in Phase 1.**
+
+| Result | Condition | PCR write? |
 |---|---|---|
-| `candidate` | Provider passed eligibility checks; awaiting human approval | No |
+| `candidate` | Provider passed all eligibility checks | No |
 | `rejected` | Provider failed a hard constraint | No |
-| `selected_for` | Provider approved and written as execution relation | Yes |
 
-Every output object carries:
+Each evaluation record carries:
 
 | Field | Type | Description |
 |---|---|---|
 | providerId | string | The evaluated provider |
 | capabilityId | string | The capability being covered |
-| missionId | string | The mission context |
-| gapId | string | The gap context |
-| decision | `"candidate"` \| `"rejected"` \| `"selected_for"` | Result |
-| rationale | string | Human-readable reason for this decision |
-| evidenceIds | string[] | IDs of evidence records considered |
-| auditEvent | AuditEvent | See §6 |
+| result | `"candidate"` \| `"rejected"` | Eligibility outcome |
+| score | number \| null | Relative rank among candidates (null if rejected) |
+| rationale | string | Human-readable reason |
+| evidenceIds | string[] | Evidence records considered in evaluation |
+
+### §3.2 Phase 2 — SelectionDecision
+
+A `SelectionDecision` is a first-class entity created when an authorized human actor
+approves one of the Phase 1 candidates. It is the source of truth for why a
+`selected_for` PCR was written.
+
+```
+SelectionDecision
+    └── creates
+            ↓
+ProviderCapabilityRelation (relationType = "selected_for")
+```
+
+The PCR receives `missionId` and `gapId` from the SelectionDecision.
+The PCR is the graph-layer artifact; the SelectionDecision holds the decision context
+and is the object that Governance and Audit operate against.
+
+**SelectionDecision schema:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| id | UUID | Yes | Unique decision identifier |
+| missionId | string | Yes | Mission context |
+| gapId | string | Yes | Gap context |
+| capabilityId | string | Yes | The capability being covered |
+| candidateProviders | CandidateResult[] | Yes | Phase 1 evaluation records for all candidates |
+| selectedProviderId | string | Yes | The approved provider |
+| decisionActorId | string | Yes | Human actor who made the selection |
+| decisionReason | string | Yes | Rationale for this provider over others |
+| evidenceIds | string[] | Yes | Evidence records that grounded the decision |
+| createdAt | ISO 8601 | Yes | Timestamp of the decision |
+| auditEvent | AuditEvent | Yes | See §6 |
+
+A SelectionDecision is append-only once created. A revised selection creates a new
+SelectionDecision; it does not overwrite the prior one (see G-2-6 and §8).
 
 ---
 
 ## §4 G-2 Invariants
 
-These are **hard constraints**. No implementation may override them.
-Each violation is a hard rejection with an explicit reason code (see §7).
+These are **hard constraints** that gate SelectionDecision creation (Phase 2).
+A SelectionDecision that violates any invariant is rejected before the PCR is written.
+No implementation may override them. Each violation produces a hard rejection with
+an explicit reason code (see §7).
 
 **G-2-1 — `can_deliver` excludes missionId / gapId**
 A PCR with `relationType: "can_deliver"` must have `missionId = null` and `gapId = null`.
 Writing a `can_deliver` PCR with a non-null mission or gap context is rejected.
 
-**G-2-2 — `selected_for` requires missionId**
-A PCR with `relationType: "selected_for"` must carry a non-null `missionId` matching
-the Mission in §2 Inputs. A `selected_for` without missionId is rejected.
+**G-2-2 — SelectionDecision requires missionId**
+A SelectionDecision must carry a non-null `missionId` matching the Mission in §2 Inputs.
+The resulting `selected_for` PCR inherits this `missionId`. A SelectionDecision without
+missionId is rejected.
 
-**G-2-3 — `selected_for` requires gapId when a Gap is in context**
-When a Gap is provided as input, the resulting `selected_for` PCR must carry the
-`gapId` of that gap. A `selected_for` written without gapId when a Gap exists is rejected.
+**G-2-3 — SelectionDecision requires gapId when a Gap is in context**
+When a Gap is provided as input, the SelectionDecision must carry the `gapId` of that gap.
+The resulting `selected_for` PCR inherits this `gapId`. A SelectionDecision without gapId
+when a Gap exists is rejected.
 
-**G-2-4 — `selected_for` requires Behavior or Outcome evidence**
-A `selected_for` PCR may not be written unless the provider's evidence set includes
-at least one record with `signal = "behavior"` or `signal = "outcome"`.
+**G-2-4 — SelectionDecision requires Behavior or Outcome evidence**
+A SelectionDecision may not be created unless the selected provider's `evidenceIds`
+include at least one record with `signal = "behavior"` or `signal = "outcome"`.
 Intent-only evidence does not satisfy this invariant (I5).
 
 **G-2-5 — Intent alone is insufficient**
-No variable update, trust increment, or selection write may result solely from a
-declared intent record. An intent record registers a prior only.
+No variable update, trust increment, or selection may result solely from a declared
+intent record. An intent record registers a prior only.
 
 **G-2-6 — No silent overwrite**
 If a `selected_for` PCR already exists for the tuple
-(`providerId`, `capabilityId`, `missionId`, `gapId`), the write must either:
+(`providerId`, `capabilityId`, `missionId`, `gapId`), a new SelectionDecision for
+the same tuple must either:
 
-a) fail with `CONFLICTING_SELECTION`, or
-b) succeed only when an authorized actor explicitly sets `replace: true`, which
-   produces a new audit event recording the previous state.
+a) be rejected with `CONFLICTING_SELECTION`, or
+b) succeed only when an authorized actor explicitly sets `replace: true`, which creates
+   a new SelectionDecision recording `previousDecisionId` and a new AuditEvent recording
+   the previous PCR state.
 
 Silently overwriting an existing `selected_for` relation is rejected.
 
@@ -118,25 +183,26 @@ Silently overwriting an existing `selected_for` relation is rejected.
 
 ## §5 Actor Model
 
-| Role | Can propose (`candidate`) | Can approve (`selected_for`) | Notes |
+| Role | Phase 1: Can evaluate | Phase 2: Can create SelectionDecision | Notes |
 |---|---|---|---|
 | Mission Owner | Yes | Yes | The actor who created the Mission |
-| Value Office Governor | No | Yes (or veto) | May block any selection that violates a Value constraint; veto overrides consensus |
-| Expert | Yes | No | Domain authority; proposes, does not finalize |
+| Value Office Governor | No | Yes (or veto) | May block any SelectionDecision that violates a Value constraint; veto overrides consensus |
+| Expert | Yes | No | Domain authority; evaluates, does not finalize |
 | Auditor | No | No | Read-only; verifies post-selection |
-| AI Agent | Yes | No | May recommend candidates and attach evidence; may not write `selected_for` directly |
+| AI Agent | Yes | No | May run Phase 1 and attach evidence; may not create a SelectionDecision |
 | Observer | No | No | Read-only |
 
-**Agent autonomy constraint:** An AI Agent may produce a `candidate` output and attach
-supporting evidence, but the final write of `selected_for` requires a human actor with
-Mission Owner or Governor role.
+**Agent autonomy constraint:** An AI Agent may run Phase 1 (Candidate Evaluation) and
+attach supporting evidence, but creating a SelectionDecision — and the resulting
+`selected_for` PCR — requires a human actor with Mission Owner or Governor role.
 
-**Human approval requirement:** Every `selected_for` write must carry a non-null
-`humanActorId` in its audit event. A selection approved solely by an agent is rejected.
+**Human approval requirement:** Every SelectionDecision must carry a non-null
+`decisionActorId` that resolves to a human actor. A SelectionDecision with only an
+agent as actor is rejected.
 
-**Governor veto:** A Value Office Governor block rejects a `selected_for` write
-regardless of consensus or evidence score. This implements Invariant I2: Value constraints
-are exclusion filters, not items in a utility sum.
+**Governor veto:** A Value Office Governor block rejects a SelectionDecision regardless
+of consensus or evidence score. This implements Invariant I2: Value constraints are
+exclusion filters, not items in a utility sum.
 
 ---
 
@@ -145,15 +211,21 @@ are exclusion filters, not items in a utility sum.
 Every Matching Engine action that produces a write or a rejection must generate an
 AuditEvent. AuditEvents are append-only and may not be modified after creation.
 
+Phase 1 rejections (eligibility failures) produce AuditEvents.
+Phase 2 actions (SelectionDecision creation, approval, rejection, overwrite) produce
+AuditEvents that reference the SelectionDecision by ID.
+
 | Field | Type | Required | Description |
 |---|---|---|---|
 | id | UUID | Yes | Unique event identifier |
-| actionType | enum | Yes | `"proposed"` \| `"approved"` \| `"rejected"` \| `"overwritten"` |
+| actionType | enum | Yes | `"evaluated"` \| `"approved"` \| `"rejected"` \| `"overwritten"` |
+| phase | `1` \| `2` | Yes | Which phase produced this event |
 | actorId | string | Yes | Actor who triggered this action |
-| humanActorId | string | Yes (for `approved`, `overwritten`) | Human actor who confirmed the write |
+| humanActorId | string | Yes (Phase 2 `approved`, `overwritten`) | Human actor who confirmed the write |
+| selectionDecisionId | UUID \| null | Yes (Phase 2 only) | The SelectionDecision that caused this event |
 | timestamp | ISO 8601 | Yes | Wall-clock time at write |
-| previousState | PCR \| null | Yes | Relation state before this action; null if new |
-| newState | PCR \| null | Yes | Relation state after this action; null if rejected |
+| previousState | PCR \| SelectionDecision \| null | Yes | State before this action; null if new |
+| newState | PCR \| SelectionDecision \| null | Yes | State after this action; null if rejected |
 | evidenceIds | string[] | Yes | All evidence records considered |
 | reason | string | Yes | Human-readable rationale |
 | sourceTool | string | Yes | Identifier of the system or agent that initiated the action |
@@ -167,34 +239,42 @@ AuditEvent. AuditEvents are append-only and may not be modified after creation.
 A hard rejection produces an AuditEvent with `actionType: "rejected"` and a specific
 reason code. Processing stops; no partial writes occur.
 
-| Failure condition | Reason code |
-|---|---|
-| Provider has no `can_deliver` PCR for this Capability | `NO_CAN_DELIVER_RELATION` |
-| No Behavior or Outcome evidence for this provider | `INSUFFICIENT_EVIDENCE` |
-| Actor does not hold the required role for this action | `UNAUTHORIZED_ACTOR` |
-| `selected_for` already exists for this tuple and `replace` not set | `CONFLICTING_SELECTION` |
-| Version token does not match current relation state | `STALE_RELATION` |
-| Provider state is marked unavailable | `PROVIDER_UNAVAILABLE` |
-| Value Office consent required but not obtained | `MISSING_CONSENT` |
-| `missionId` is null on a `selected_for` write | `MISSING_MISSION_CONTEXT` |
-| `gapId` is null when Gap is in input context | `MISSING_GAP_CONTEXT` |
-| A required input field is missing or invalid (§2) | `INVALID_INPUT` |
+Phase 1 rejections halt evaluation of that candidate only; other candidates continue.
+Phase 2 rejections halt the entire SelectionDecision; no PCR is written.
+
+| Failure condition | Phase | Reason code |
+|---|---|---|
+| Provider has no `can_deliver` PCR for this Capability | 1 | `NO_CAN_DELIVER_RELATION` |
+| No Behavior or Outcome evidence for this provider | 1 | `INSUFFICIENT_EVIDENCE` |
+| Actor does not hold the required role for this action | 2 | `UNAUTHORIZED_ACTOR` |
+| SelectionDecision actor is not a human actor | 2 | `AGENT_CANNOT_APPROVE` |
+| `selected_for` already exists for this tuple and `replace` not set | 2 | `CONFLICTING_SELECTION` |
+| Version token does not match current relation state | 2 | `STALE_RELATION` |
+| Provider state is marked unavailable | 1 or 2 | `PROVIDER_UNAVAILABLE` |
+| Value Office consent required but not obtained | 2 | `MISSING_CONSENT` |
+| `missionId` is null on the SelectionDecision | 2 | `MISSING_MISSION_CONTEXT` |
+| `gapId` is null when Gap is in input context | 2 | `MISSING_GAP_CONTEXT` |
+| A required input field is missing or invalid (§2) | 1 | `INVALID_INPUT` |
 
 ---
 
 ## §8 Idempotency and Concurrency
 
-**Idempotency:** A duplicate request for the same
-(`providerId`, `capabilityId`, `missionId`, `gapId`, `relationType`) with
-identical evidence and actor returns the existing state without creating a new audit event.
-A request that differs in any field is not idempotent and follows the normal write rules.
+**Idempotency — Phase 1:** A duplicate Phase 1 evaluation for the same
+(`providerId`, `capabilityId`, `missionId`, `gapId`) with identical evidence returns
+the cached evaluation result without re-running or generating a new AuditEvent.
 
-**Version check:** Every write request for an existing relation must include a version
-token (ETag or `updatedAt`). If the token does not match the persisted state, the
-request is rejected with `STALE_RELATION`.
+**Idempotency — Phase 2:** A duplicate SelectionDecision for the same tuple with
+identical `selectedProviderId`, `decisionActorId`, and `evidenceIds` returns the
+existing SelectionDecision without creating a new one or a new AuditEvent.
 
-**Concurrent writes:** Two concurrent requests for the same tuple are serialized at the
-repository layer. The second write observes the first as an existing relation and either:
+**Version check:** Every Phase 2 request that targets an existing `selected_for` PCR
+must include a version token (ETag or `updatedAt`). If the token does not match the
+persisted PCR state, the SelectionDecision is rejected with `STALE_RELATION`.
+
+**Concurrent writes:** Two concurrent SelectionDecisions for the same tuple are
+serialized at the repository layer. The second observes the first as an existing
+relation and either:
 
 - succeeds as idempotent (if identical in all fields), or
 - fails with `CONFLICTING_SELECTION` (if any field differs).
