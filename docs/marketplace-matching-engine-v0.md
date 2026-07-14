@@ -129,11 +129,14 @@ and is the object that Governance and Audit operate against.
 | decisionActorId | string | Yes | Human actor who made the selection |
 | decisionReason | string | Yes | Rationale for this provider over others |
 | evidenceIds | string[] | Yes | Evidence records that grounded the decision |
+| previousDecisionId | UUID \| null | Yes | The SelectionDecision this one supersedes; null if first decision for this tuple |
 | createdAt | ISO 8601 | Yes | Timestamp of the decision |
 | auditEvent | AuditEvent | Yes | See §6 |
 
-A SelectionDecision is append-only once created. A revised selection creates a new
-SelectionDecision; it does not overwrite the prior one (see G-2-6 and §8).
+**SelectionDecision records are immutable.** Replacing a provider creates a new
+SelectionDecision (with `previousDecisionId` pointing to the prior record) and a
+corresponding AuditEvent. The prior SelectionDecision and its PCR state are preserved
+as part of the audit history. No existing SelectionDecision may be modified after creation.
 
 ---
 
@@ -214,6 +217,11 @@ AuditEvent. AuditEvents are append-only and may not be modified after creation.
 Phase 1 rejections (eligibility failures) produce AuditEvents.
 Phase 2 actions (SelectionDecision creation, approval, rejection, overwrite) produce
 AuditEvents that reference the SelectionDecision by ID.
+
+**Immutability enforcement:** AuditEvents and SelectionDecision records may not be
+modified after creation. This is a storage-layer constraint, not a business-logic
+constraint. A system that allows post-hoc modification of either record violates
+the audit chain and invalidates G-2 enforcement.
 
 | Field | Type | Required | Description |
 |---|---|---|---|
