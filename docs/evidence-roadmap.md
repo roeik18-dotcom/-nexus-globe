@@ -45,6 +45,8 @@ when tests are defined or run. See `docs/research-charter.md` for grade definiti
 | DimensionReading is the correct OPM→Marketplace interface | **Candidate** | Proposal | See dimension-reading-proposal.md; not implemented |
 | Value Fusion produces emergent capabilities from provider combinations | **Candidate** | §10.3 of dynamics | Discriminating criterion not yet specified |
 | capacity measurement is feasible from observable data | **Placeholder** | DimensionReading | No measurement protocol defined |
+| PUDM Relation Entities (VCR + PCR) as first-class entities with relationType semantics | **Candidate** | Architecture | Schema specified in PUDM v0.2 §3.1; not empirically validated |
+| G-2 Deferred Contract: PCR `selected_for` write-layer enforcement | **Placeholder** | Architecture | Deferred — no write API exists; activates on any `selected_for` write path |
 
 ---
 
@@ -98,6 +100,8 @@ Whether the ordering improves matching quality is **Candidate** (requires contro
 | Case Pattern Engine | **Candidate** | Schema locked; classifier not validated |
 | Situation classifier (Claude-based) | **Candidate** | Implemented; requires ANTHROPIC_API_KEY to run |
 | Transition Engine | **Candidate** | Simulator built; stability test passed for 5 cases |
+| PUDM view (`/pudm`) | **Candidate** | Built; data model summary and coverage statistics |
+| Marketplace / Graph Explorer (`/marketplace`) | **Candidate** | Built; read-only traversal of full PUDM chain (Mission → Gap → Value → [VCR] → Capability → [PCR] → Provider); Node Inspector + Relation Inspector, 5 inspector kinds; no user studies |
 
 ---
 
