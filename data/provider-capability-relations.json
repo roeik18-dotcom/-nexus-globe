@@ -1,0 +1,101 @@
+[
+  {
+    "id": "pcr_yc_seed_funding_001",
+    "type": "ProviderCapabilityRelation",
+    "providerId": "prov_yc_001",
+    "capabilityId": "cap_seed_funding_001",
+    "relationType": "can_deliver",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Y Combinator delivers Seed Funding & Investment — it provides capital and investor access directly to early-stage founders. This is the primary output of the YC program. No missionId required; valid in all contexts where Seed Funding is the required capability."
+      }
+    ]
+  },
+
+  {
+    "id": "pcr_antler_seed_funding_001",
+    "type": "ProviderCapabilityRelation",
+    "providerId": "prov_antler_001",
+    "capabilityId": "cap_seed_funding_001",
+    "relationType": "can_deliver",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Antler delivers Seed Funding & Investment — it co-founds companies from day zero and provides pre-seed capital as its primary offering. No missionId required."
+      }
+    ]
+  },
+
+  {
+    "id": "pcr_flexport_supply_chain_001",
+    "type": "ProviderCapabilityRelation",
+    "providerId": "prov_flexport_001",
+    "capabilityId": "cap_supply_chain_sourcing_001",
+    "relationType": "can_deliver",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Flexport delivers Supply Chain Sourcing — it provides end-to-end logistics execution and supplier coordination. The capability output (contracted, visible supply chain) is the primary deliverable of the Flexport platform. No missionId required."
+      }
+    ]
+  },
+
+  {
+    "id": "pcr_beehiiv_community_growth_001",
+    "type": "ProviderCapabilityRelation",
+    "providerId": "prov_beehiiv_001",
+    "capabilityId": "cap_community_growth_ops_001",
+    "relationType": "can_deliver",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Beehiiv delivers Community Growth Operations — it provides the infrastructure for audience acquisition, engagement, and retention. The platform output (subscribed, active community) is the primary deliverable. No missionId required."
+      }
+    ]
+  },
+
+  {
+    "id": "pcr_pentagram_brand_creative_001",
+    "type": "ProviderCapabilityRelation",
+    "providerId": "prov_pentagram_001",
+    "capabilityId": "cap_brand_creative_direction_001",
+    "relationType": "can_deliver",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Pentagram delivers Brand & Creative Direction — it provides end-to-end brand strategy and visual identity systems. The creative output (brand system, positioning) is the primary deliverable of the consultancy. No missionId required."
+      }
+    ]
+  }
+]

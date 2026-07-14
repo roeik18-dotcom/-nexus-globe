@@ -15,10 +15,10 @@ import type { EvidenceGrade } from "../types";
 export interface CapabilityQuery {
   domain?: string;
   evidenceGrade?: EvidenceGrade;
-  providerId?: string;    // find capabilities held by a specific provider
   limit?: number;
   offset?: number;
   // To find capabilities for a specific value, query ValueCapabilityRelationRepository.
+  // To find capabilities for a specific provider, query ProviderCapabilityRelationRepository.
 }
 
 export interface CapabilityRepository {
