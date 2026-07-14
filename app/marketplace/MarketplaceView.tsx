@@ -648,9 +648,22 @@ export default function MarketplaceView({
         }
         *, *::before, *::after { box-sizing: border-box; }
         button { font-family: inherit; }
+        @media (max-width: 700px) {
+          .inspector-panel {
+            width: 100vw !important;
+            height: 56vh !important;
+            top: auto !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            border-left: none !important;
+            border-top: 1px solid var(--border);
+          }
+          .inspector-push { margin-right: 0 !important; }
+        }
       `}</style>
 
-      <div style={{ marginRight: inspected ? INSPECTOR_W : 0, transition: "margin-right 0.15s ease" }}>
+      <div className="inspector-push" style={{ marginRight: inspected ? INSPECTOR_W : 0, transition: "margin-right 0.15s ease" }}>
         <main style={{
           maxWidth: 1040, margin: "0 auto",
           padding: "32px 24px 96px",
@@ -840,7 +853,7 @@ export default function MarketplaceView({
 
       {/* ── Inspector panel ── */}
       {inspected && (
-        <aside style={{
+        <aside className="inspector-panel" style={{
           position: "fixed", top: 0, right: 0,
           width: INSPECTOR_W, height: "100vh",
           background: "var(--surface)", borderLeft: "1px solid var(--border)",
