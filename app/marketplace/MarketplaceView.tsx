@@ -19,8 +19,8 @@ type InspectedItem =
   | { kind: "pcr";        id: string };
 
 export interface MarketplaceViewProps {
-  mission:      Mission;
-  missionGaps:  Gap[];
+  missions:     Mission[];
+  gaps:         Gap[];
   values:       Value[];
   capabilities: Capability[];
   providers:    Provider[];
@@ -101,8 +101,9 @@ function EvidenceBlock({ signal, note, source, accentColor }: {
 const INSPECTOR_W = 360;
 
 export default function MarketplaceView({
-  mission, missionGaps, values, capabilities, providers, vcRelations, pcRelations,
+  missions, gaps, values, capabilities, providers, vcRelations, pcRelations,
 }: MarketplaceViewProps) {
+  const [selectedMissionId, setSelectedMissionId] = useState<string>(missions[0]?.id ?? "");
   const [inspected,       setInspected]       = useState<InspectedItem | null>(null);
   const [filterGapId,     setFilterGapId]     = useState<string>("");
   const [filterValueId,   setFilterValueId]   = useState<string>("");
@@ -111,6 +112,17 @@ export default function MarketplaceView({
   const [filterCoverage,  setFilterCoverage]  = useState<"all"|"covered"|"uncovered">("all");
   const [filterRelType,   setFilterRelType]   = useState<string>("");
   const [filterGrade,     setFilterGrade]     = useState<string>("");
+
+  const mission    = missions.find(m => m.id === selectedMissionId) ?? missions[0];
+  const gapById    = new Map(gaps.map(g => [g.id, g]));
+  const missionGaps = mission
+    ? (mission.gaps ?? []).map(ref => gapById.get(ref.gapId)).filter((g): g is Gap => g !== undefined)
+    : [];
+
+  function selectMission(id: string) {
+    setSelectedMissionId(id);
+    setFilterGapId("");
+  }
 
   // ── Lookup maps ────────────────────────────────────────────────────────────
   const valueById      = new Map(values.map     (v => [v.id, v]));
@@ -157,7 +169,6 @@ export default function MarketplaceView({
   }
 
   const selectedForCount = pcRelations.filter(r => r.relationType === "selected_for").length;
-  const coveredCapIds    = new Set(pcRelations.map(r => r.capabilityId));
 
   // ── Filter option sets ─────────────────────────────────────────────────────
   const allCapDomains = [...new Set(capabilities.map(c => c.context.domain).filter(Boolean) as string[])].sort();
@@ -237,6 +248,16 @@ export default function MarketplaceView({
       items = items.filter(i => i.capability.evidenceGrade === filterGrade);
     return items;
   }
+
+  // ── Mission-scoped stats ───────────────────────────────────────────────────
+  const allMissionItems      = missionGaps.flatMap(g => gapCoverage(g));
+  const missionCapCount      = new Set(allMissionItems.map(i => i.capability.id)).size;
+  const missionCoveredCapCount = new Set(
+    allMissionItems.filter(i => i.providers.length > 0).map(i => i.capability.id)
+  ).size;
+  const missionProviderCount = new Set(
+    allMissionItems.flatMap(i => i.providers.map(p => p.id))
+  ).size;
 
   // ── Inspection state helpers ───────────────────────────────────────────────
   function inspect(item: InspectedItem) {
@@ -767,6 +788,25 @@ export default function MarketplaceView({
             </p>
           </header>
 
+          {/* ── Mission selector ── */}
+          <div style={{ marginBottom: 16, display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {missions.map(m => {
+              const on = m.id === (mission?.id ?? "");
+              return (
+                <button key={m.id} onClick={() => selectMission(m.id)} style={{
+                  fontSize: 11, padding: "5px 12px", borderRadius: 4, cursor: "pointer",
+                  fontWeight: on ? 700 : 400,
+                  background: on ? "#F472B6" : "var(--surface)",
+                  color: on ? "#0D1117" : "var(--muted)",
+                  border: `1px solid ${on ? "#F472B6" : "var(--border)"}`,
+                  fontFamily: "system-ui, -apple-system, sans-serif",
+                }}>
+                  {m.context.domain ?? m.id.replace(/^mission_/, "").replace(/_\d+$/, "").replace(/_/g, " ")}
+                </button>
+              );
+            })}
+          </div>
+
           {/* ── Mission card ── */}
           <div style={{
             marginBottom: 28, padding: "16px 20px",
@@ -784,10 +824,10 @@ export default function MarketplaceView({
             </p>
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
               {[
-                { n: missionGaps.length,    label: "Gaps",              color: "#D29922"       },
-                { n: coveredCapIds.size,    label: `/ ${capabilities.length} Capabilities`, color: "#F472B6" },
-                { n: providers.length,      label: "Example Providers", color: "#FB923C"       },
-                { n: selectedForCount,      label: "selected_for",      color: "var(--muted)"  },
+                { n: missionGaps.length,       label: "Gaps",                                  color: "#D29922"      },
+                { n: missionCoveredCapCount,   label: `/ ${missionCapCount} Capabilities`,     color: "#F472B6"      },
+                { n: missionProviderCount,     label: "Example Providers",                     color: "#FB923C"      },
+                { n: selectedForCount,         label: "selected_for",                          color: "var(--muted)" },
               ].map(s => (
                 <div key={s.label} style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
                   <span style={{ fontSize: 22, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.n}</span>

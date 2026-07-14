@@ -22,20 +22,14 @@ export default function MarketplacePage() {
   const providers    = readJsonStore<Provider>                   (path.join(DATA, "providers.json"));
   const pcRelations  = readJsonStore<ProviderCapabilityRelation>(path.join(DATA, "provider-capability-relations.json"));
 
-  const mission = missions[0];
-  if (!mission) {
+  if (missions.length === 0) {
     return <div style={{ padding: 40, fontFamily: "system-ui" }}>No mission data.</div>;
   }
 
-  const gapById = new Map(gaps.map(g => [g.id, g]));
-  const missionGaps = mission.gaps
-    .map(ref => gapById.get(ref.gapId))
-    .filter((g): g is Gap => g !== undefined);
-
   return (
     <MarketplaceView
-      mission={mission}
-      missionGaps={missionGaps}
+      missions={missions}
+      gaps={gaps}
       values={values}
       capabilities={capabilities}
       providers={providers}
