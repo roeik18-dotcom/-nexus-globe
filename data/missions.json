@@ -118,13 +118,6 @@
         "gapId": "gap_therapy_affordability_001"
       }
     ],
-    "requiredValues": [
-      { "valueId": "health" },
-      { "valueId": "trust" },
-      { "valueId": "care" },
-      { "valueId": "capital" },
-      { "valueId": "knowledge" }
-    ],
     "evidence": [],
     "timeline": { "startedAt": "2026-07-14T00:00:00.000Z", "targetAt": null, "completedAt": null },
     "relations": { "relatedMissions": [] }
@@ -166,13 +159,6 @@
       {
         "gapId": "gap_application_quality_001"
       }
-    ],
-    "requiredValues": [
-      { "valueId": "knowledge" },
-      { "valueId": "learning" },
-      { "valueId": "creativity" },
-      { "valueId": "capital" },
-      { "valueId": "growth" }
     ],
     "evidence": [],
     "timeline": { "startedAt": "2026-07-14T00:00:00.000Z", "targetAt": null, "completedAt": null },
@@ -216,13 +202,6 @@
         "gapId": "gap_grant_identification_001"
       }
     ],
-    "requiredValues": [
-      { "valueId": "capital" },
-      { "valueId": "knowledge" },
-      { "valueId": "trust" },
-      { "valueId": "execution" },
-      { "valueId": "growth" }
-    ],
     "evidence": [],
     "timeline": { "startedAt": "2026-07-14T00:00:00.000Z", "targetAt": null, "completedAt": null },
     "relations": { "relatedMissions": [] }
@@ -265,13 +244,6 @@
         "gapId": "gap_intervention_design_001"
       }
     ],
-    "requiredValues": [
-      { "valueId": "knowledge" },
-      { "valueId": "security" },
-      { "valueId": "execution" },
-      { "valueId": "community" },
-      { "valueId": "justice" }
-    ],
     "evidence": [],
     "timeline": { "startedAt": "2026-07-14T00:00:00.000Z", "targetAt": null, "completedAt": null },
     "relations": { "relatedMissions": [] }
@@ -313,13 +285,6 @@
       {
         "gapId": "gap_volunteer_coordination_001"
       }
-    ],
-    "requiredValues": [
-      { "valueId": "community" },
-      { "valueId": "trust" },
-      { "valueId": "execution" },
-      { "valueId": "growth" },
-      { "valueId": "care" }
     ],
     "evidence": [],
     "timeline": { "startedAt": "2026-07-14T00:00:00.000Z", "targetAt": null, "completedAt": null },

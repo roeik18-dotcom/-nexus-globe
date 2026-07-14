@@ -69,16 +69,6 @@ const USERS = [
   { label: "Scientist",       values: ["knowledge", "learning", "health"]     },
 ];
 
-const DATA_LAYERS = [
-  { label: "Mission",    desc: "What each actor is trying to achieve"         },
-  { label: "Gap",        desc: "Distance between current state and mission"   },
-  { label: "Value",      desc: "Which values are required to close the gap"   },
-  { label: "Capability", desc: "Domains that can address the required values" },
-  { label: "Provider",   desc: "Entities with relevant capabilities"          },
-  { label: "Evidence",   desc: "Intent → Behavior → Outcomes signal grades"  },
-  { label: "Network",    desc: "Trust and connection graph between entities"  },
-  { label: "System",     desc: "OPM pressure, deficit, capacity readings"     },
-];
 
 const CX = 500;
 const CY = 480;
@@ -115,7 +105,6 @@ function polar(r: number, angleDeg: number): { x: number; y: number } {
 
 type CascadeStep = 0 | 1 | 2 | 3 | 4;
 
-const LIVE_LAYERS = new Set(["Mission", "Gap", "Value", "Capability", "Provider"]);
 
 interface Props {
   missions: Mission[];
@@ -240,8 +229,13 @@ export default function WorldView({
 
   const selectedMission = missions.find(m => m.id === selectedMissionId) ?? missions[0];
 
+  // Correct PUDM chain: Mission.gaps → Gap.requiredValues → Value
+  // Gap is the authoritative source of required values — Mission holds only GapRef pointers
+  const gapById = new Map(gaps.map(g => [g.id, g]));
   const activeValueIds = new Set<string>(
-    (selectedMission?.requiredValues ?? []).map(r => r.valueId)
+    (selectedMission?.gaps ?? [])
+      .flatMap(ref => gapById.get(ref.gapId)?.requiredValues ?? [])
+      .map(r => r.valueId)
   );
   const activeCapIds = new Set<string>(
     vcRelations.filter(r => activeValueIds.has(r.valueId)).map(r => r.capabilityId)
@@ -250,9 +244,12 @@ export default function WorldView({
     pcRelations.filter(r => activeCapIds.has(r.capabilityId)).map(r => r.providerId)
   );
 
-  // All-missions live value set — preserved base layer
+  // All-missions live value set — preserved base layer, also via Gap chain
   const allLiveValueIds = new Set<string>(
-    missions.flatMap(m => (m.requiredValues ?? []).map(r => r.valueId))
+    missions
+      .flatMap(m => (m.gaps ?? []))
+      .flatMap(ref => gapById.get(ref.gapId)?.requiredValues ?? [])
+      .map(r => r.valueId)
   );
 
   // Active cascade edges
@@ -303,6 +300,38 @@ export default function WorldView({
     `── CAPABILITIES: ${activeCapIds.size} reachable ──`,
     `── PROVIDERS: ${activeProvIds.size} reachable ──`,
   ][cascadeStep];
+
+  // ─── Live Decision Engine — Insights ────────────────────────────────────────
+
+  const STAGE_NAMES = ["Idle", "Core Activated", "Values Lit", "Capabilities Lit", "Providers Reached"];
+
+  // Dominant value: which value appears across the most gaps for this mission
+  const valGapCount = new Map<string, number>();
+  (selectedMission?.gaps ?? []).forEach(ref => {
+    const gap = gapById.get(ref.gapId);
+    (gap?.requiredValues ?? []).forEach(rv => {
+      valGapCount.set(rv.valueId, (valGapCount.get(rv.valueId) ?? 0) + 1);
+    });
+  });
+  const dominantValId = [...valGapCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  const dominantVal   = VALUES.find(v => v.id === dominantValId) ?? null;
+
+  // Most connected active value: highest number of VCR edges
+  const valVcrCount = new Map<string, number>();
+  for (const vcr of vcRelations) {
+    if (activeValueIds.has(vcr.valueId)) {
+      valVcrCount.set(vcr.valueId, (valVcrCount.get(vcr.valueId) ?? 0) + 1);
+    }
+  }
+  const topConnectedValId    = [...valVcrCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  const topConnectedVal      = VALUES.find(v => v.id === topConnectedValId) ?? null;
+  const topConnectedVcrCount = topConnectedValId ? (valVcrCount.get(topConnectedValId) ?? 0) : 0;
+
+  // Coverage: active capabilities with at least one provider in PCR
+  const capsWithProvider  = new Set(pcRelations.map(r => r.capabilityId));
+  const coveredCapCount   = [...activeCapIds].filter(id => capsWithProvider.has(id)).length;
+  const uncoveredCapCount = activeCapIds.size - coveredCapCount;
+  const coveragePct       = activeCapIds.size > 0 ? Math.round((coveredCapCount / activeCapIds.size) * 100) : 0;
 
   // ─── Render ───────────────────────────────────────────────────────────────────
 
@@ -776,212 +805,239 @@ export default function WorldView({
             </svg>
           </div>
 
-          {/* Sidebar */}
-          <div style={{ flex: "0 0 240px", minWidth: 200, display: "flex", flexDirection: "column" as const, gap: 20 }}>
+          {/* Sidebar — Live Decision Engine */}
+          <div style={{ flex: "0 0 240px", minWidth: 200, display: "flex", flexDirection: "column" as const, gap: 14 }}>
 
-            {/* Cascade state panel */}
-            {selectedMission && (
-              <div>
-                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 8 }}>
-                  Cascade State
-                </div>
+            {/* 1. MISSION */}
+            <div style={{
+              background: "rgba(164,113,247,0.07)",
+              border: "1px solid rgba(164,113,247,0.2)",
+              borderRadius: 6, padding: "12px 14px",
+            }}>
+              <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#5a3a90", marginBottom: 8 }}>
+                Mission
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#c0a0ff", lineHeight: 1.4, marginBottom: 7 }}>
+                {selectedMission ? missionLabel(selectedMission) : "—"}
+              </div>
+              <div style={{ fontSize: 9.5, color: "#7a5aaa", marginBottom: 8 }}>
+                Step {cascadeStep}/4 · {STAGE_NAMES[cascadeStep]}
+              </div>
+              <div style={{ background: "rgba(164,113,247,0.12)", borderRadius: 2, height: 3, overflow: "hidden" as const }}>
                 <div style={{
-                  background: "rgba(164,113,247,0.06)",
-                  border: "1px solid rgba(164,113,247,0.18)",
-                  borderRadius: 5, padding: "10px 12px",
-                }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "#A371F7", marginBottom: 8, lineHeight: 1.4 }}>
-                    {missionLabel(selectedMission)}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column" as const, gap: 5 }}>
-                    {[
-                      { label: "Values",       count: activeValueIds.size, total: VALUES.length,         step: 2, color: "#5B8CFF" },
-                      { label: "Capabilities", count: activeCapIds.size,   total: capabilities.length,   step: 3, color: "#FFB84D" },
-                      { label: "Providers",    count: activeProvIds.size,   total: providers.length,      step: 4, color: "#34D399" },
-                    ].map(row => (
-                      <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  height: "100%", borderRadius: 2,
+                  background: "linear-gradient(90deg, #A371F7, #7a50c0)",
+                  width: `${(cascadeStep / 4) * 100}%`,
+                  transition: "width 0.4s ease",
+                }} />
+              </div>
+            </div>
+
+            {/* 2. LIVE FLOW */}
+            <div style={{
+              background: "#030c18",
+              border: "1px solid #0a1e30",
+              borderRadius: 6, padding: "12px 14px",
+            }}>
+              <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
+                Live Flow
+              </div>
+              <div style={{ display: "flex", flexDirection: "column" as const }}>
+                {([
+                  { label: "Mission",      activeFrom: 1, color: "#A371F7", count: null },
+                  { label: "Gap",          activeFrom: 1, color: "#8a60d0", count: selectedMission?.gaps.length ?? 0 },
+                  { label: "Values",       activeFrom: 2, color: "#5B8CFF", count: activeValueIds.size },
+                  { label: "Capabilities", activeFrom: 3, color: "#FFB84D", count: activeCapIds.size },
+                  { label: "Providers",    activeFrom: 4, color: "#34D399", count: activeProvIds.size },
+                ] as { label: string; activeFrom: number; color: string; count: number | null }[]).map((node, idx, arr) => {
+                  const isActive  = cascadeStep >= node.activeFrom;
+                  const isGlowing = cascadeStep === node.activeFrom;
+                  return (
+                    <div key={node.label}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                        <div style={{
+                          width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+                          background: isActive ? node.color : "transparent",
+                          border: `1.5px solid ${isActive ? node.color : "#0a2040"}`,
+                          boxShadow: isGlowing ? `0 0 7px ${node.color}` : "none",
+                          transition: "background 0.3s ease, box-shadow 0.3s ease",
+                        }} />
                         <span style={{
-                          fontSize: 10,
-                          color: cascadeStep >= row.step ? row.color : "#1a3550",
-                          transition: "color 0.35s ease",
+                          fontSize: 10.5, flex: 1,
+                          color: isActive ? node.color : "#1a3550",
+                          fontWeight: isActive ? 600 : 400,
+                          transition: "color 0.3s ease",
                         }}>
-                          {row.label}
+                          {node.label}
                         </span>
-                        <span style={{
-                          fontSize: 10, fontWeight: 600,
-                          color: cascadeStep >= row.step ? row.color : "#0a1e30",
-                          fontVariantNumeric: "tabular-nums",
-                          transition: "color 0.35s ease",
-                        }}>
-                          {cascadeStep >= row.step ? `${row.count} / ${row.total}` : "—"}
-                        </span>
+                        {node.count !== null && (
+                          <span style={{
+                            fontSize: 9.5, fontWeight: 600, fontVariantNumeric: "tabular-nums",
+                            color: isActive ? node.color : "#0a1e30",
+                          }}>
+                            {isActive ? node.count : "—"}
+                          </span>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                  {!reducedMotion && (
-                    <div style={{ marginTop: 8, fontSize: 9, color: "#3a2060" }}>
-                      Click any mission to replay
+                      {idx < arr.length - 1 && (
+                        <div style={{
+                          marginLeft: 3.5, width: 1, height: 8,
+                          background: cascadeStep > node.activeFrom ? node.color : "#0a2040",
+                          opacity: cascadeStep > node.activeFrom ? 0.45 : 0.2,
+                          transition: "background 0.3s ease, opacity 0.3s ease",
+                        }} />
+                      )}
                     </div>
-                  )}
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3. SYSTEM STATUS */}
+            <div style={{
+              background: "#030c18",
+              border: "1px solid #081828",
+              borderRadius: 6, padding: "12px 14px",
+            }}>
+              <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
+                System Status
+              </div>
+              <div style={{ display: "flex", flexDirection: "column" as const, gap: 5 }}>
+                {([
+                  { label: "Missions",     value: String(missions.length),                                         color: "#A371F7" },
+                  { label: "Gaps",         value: String(gaps.length),                                             color: "#8a60d0" },
+                  { label: "Values",       value: String(values.length),                                           color: "#5B8CFF" },
+                  { label: "Capabilities", value: String(capabilities.length),                                     color: "#FFB84D" },
+                  { label: "Providers",    value: String(providers.length),                                        color: "#34D399" },
+                  { label: "Coverage",     value: cascadeStep >= 3 ? `${coveragePct}%` : "—",                      color: "#22D3EE" },
+                ] as { label: string; value: string; color: string }[]).map(row => (
+                  <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 10, color: "#1a3550" }}>{row.label}</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: row.color, fontVariantNumeric: "tabular-nums" }}>
+                      {row.value}
+                    </span>
+                  </div>
+                ))}
+                <div style={{ marginTop: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 10, color: "#1a3550" }}>Mode</span>
+                  <span style={{
+                    fontSize: 8, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const,
+                    background: "rgba(255,184,77,0.1)", border: "1px solid rgba(255,184,77,0.2)",
+                    borderRadius: 3, padding: "2px 6px", color: "#FFB84D",
+                  }}>
+                    Taxonomic
+                  </span>
                 </div>
               </div>
-            )}
-
-            {/* Values legend */}
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
-                Values — Candidate Grade
-              </div>
-              <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
-                {VALUES.map(v => {
-                  const isActive = activeValueIds.has(v.id);
-                  return (
-                    <div
-                      key={v.id}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 7,
-                        opacity: cascadeStep >= 2 ? (isActive ? 1 : 0.28) : 1,
-                        transition: "opacity 0.35s ease",
-                      }}
-                    >
-                      <div style={{ width: 7, height: 7, borderRadius: "50%", background: VALUE_COLOR[v.id], opacity: 0.7, flexShrink: 0 }} />
-                      <span style={{ fontSize: 11, color: isActive && cascadeStep >= 2 ? VALUE_COLOR[v.id] : "#2a4a62" }}>
-                        {v.label}
-                        {isActive && cascadeStep >= 2 && (
-                          <span style={{ fontSize: 8, marginLeft: 4, opacity: 0.7 }}>●</span>
-                        )}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
 
-            {/* Data layers */}
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
-                Data Layers
+            {/* 4. TOP INSIGHTS */}
+            <div style={{
+              background: "#030c18",
+              border: "1px solid #081828",
+              borderRadius: 6, padding: "12px 14px",
+            }}>
+              <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
+                Top Insights
               </div>
-              <div style={{ display: "flex", flexDirection: "column" as const, gap: 6 }}>
-                {DATA_LAYERS.map((layer, i) => {
-                  const isLive = LIVE_LAYERS.has(layer.label);
-                  return (
-                    <div
-                      key={layer.label}
-                      style={{
-                        background: isLive ? "rgba(52,211,153,0.05)" : "#040d18",
-                        border: `1px solid ${isLive ? "rgba(52,211,153,0.2)" : "#0a1c2e"}`,
-                        borderRadius: 4, padding: "6px 9px",
-                      }}
-                    >
-                      <div style={{ fontSize: 10, fontWeight: 600, color: isLive ? "#34D399" : "#1a3a52", marginBottom: 2, display: "flex", justifyContent: "space-between" }}>
-                        <span>{String(i + 1).padStart(2, "0")} {layer.label}</span>
-                        {isLive && <span style={{ fontSize: 9, opacity: 0.75 }}>LIVE</span>}
-                      </div>
-                      <div style={{ fontSize: 9.5, color: isLive ? "#1a4a3a" : "#0d1f2e", lineHeight: 1.45 }}>
-                        {layer.desc}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Legend */}
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
-                Legend
-              </div>
-              <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
-                {[
-                  { type: "solid-thick", color: "#A371F7", label: "Active cascade line"              },
-                  { type: "solid",       color: "#34D399", label: "Live value references (all missions)" },
-                  { type: "dashed",      color: "#5B8CFF", label: "Potential relationships"          },
-                  { type: "diamond",     color: "#FFB84D", label: "Capability node"                  },
-                  { type: "dot-prov",    color: "#34D399", label: "Provider node"                    },
-                  { type: "circle-lg",   color: "#5B8CFF", label: "Value node"                       },
-                  { type: "dot-dom",     color: "#1a3a5a", label: "Capability domain"                },
-                ].map(item => (
-                  <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <svg width={24} height={12} viewBox="0 0 24 12">
-                      {item.type === "solid-thick" && (
-                        <line x1={0} y1={6} x2={24} y2={6} stroke={item.color} strokeWidth={2.5} strokeOpacity={0.8} />
-                      )}
-                      {item.type === "solid" && (
-                        <line x1={0} y1={6} x2={24} y2={6} stroke={item.color} strokeWidth={1.8} strokeOpacity={0.8} />
-                      )}
-                      {item.type === "dashed" && (
-                        <line x1={0} y1={6} x2={24} y2={6} stroke={item.color} strokeWidth={1.2} strokeDasharray="3 3" strokeOpacity={0.7} />
-                      )}
-                      {item.type === "diamond" && (
-                        <rect x={9} y={3} width={6} height={6} transform="rotate(45 12 6)" fill={item.color} fillOpacity={0.2} stroke={item.color} strokeWidth={1.5} />
-                      )}
-                      {item.type === "dot-prov" && (
-                        <circle cx={12} cy={6} r={3.5} fill={item.color} fillOpacity={0.25} stroke={item.color} strokeWidth={1.2} />
-                      )}
-                      {item.type === "circle-lg" && (
-                        <circle cx={12} cy={6} r={5} fill="#060f1c" stroke={item.color} strokeWidth={1.2} strokeOpacity={0.7} />
-                      )}
-                      {item.type === "dot-dom" && (
-                        <circle cx={12} cy={6} r={3} fill={item.color} fillOpacity={0.35} />
-                      )}
-                    </svg>
-                    <span style={{ fontSize: 10.5, color: "#1a3550" }}>{item.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Layer semantics */}
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
-                Layer Semantics
-              </div>
-              <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
-                {[
-                  { name: "Potential Layer",    line: "dashed", color: "#5B8CFF", desc: "Architecturally possible relationships." },
-                  { name: "Live Reference Layer", line: "solid", color: "#34D399", desc: "Relationships present in loaded repositories." },
-                  { name: "Live PUDM Cascade",  line: "solid",  color: "#A371F7", desc: "Mission-driven chain: Value → Capability → Provider. Taxonomic, not contextual." },
-                  { name: "Observed Flow",      line: "none",   color: "#6E7681", desc: "Reserved — requires Capability + execution evidence." },
-                ].map(s => (
-                  <div key={s.name} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-                    <svg width={18} height={18} viewBox="0 0 18 18" style={{ flexShrink: 0, marginTop: 1 }}>
-                      {s.line === "dashed" && (
-                        <line x1={1} y1={9} x2={17} y2={9} stroke={s.color} strokeWidth={1.2} strokeDasharray="3 3" strokeOpacity={0.7} />
-                      )}
-                      {s.line === "solid" && (
-                        <line x1={1} y1={9} x2={17} y2={9} stroke={s.color} strokeWidth={1.8} strokeOpacity={0.8} />
-                      )}
-                      {s.line === "none" && (
-                        <line x1={1} y1={9} x2={17} y2={9} stroke={s.color} strokeWidth={1} strokeOpacity={0.3} strokeDasharray="1 4" />
-                      )}
-                    </svg>
+              <div style={{ display: "flex", flexDirection: "column" as const, gap: 10 }}>
+                {dominantVal && (
+                  <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: VALUE_COLOR[dominantVal.id], marginTop: 3, flexShrink: 0 }} />
                     <div>
-                      <div style={{ fontSize: 9.5, fontWeight: 600, color: s.color, opacity: s.line === "none" ? 0.4 : 1, marginBottom: 1 }}>
-                        {s.name}
+                      <div style={{ fontSize: 9.5, fontWeight: 600, color: VALUE_COLOR[dominantVal.id], marginBottom: 1 }}>
+                        Dominant value
                       </div>
-                      <div style={{ fontSize: 9, color: "#0f2030", lineHeight: 1.5 }}>{s.desc}</div>
+                      <div style={{ fontSize: 9, color: "#1a4a6a", lineHeight: 1.45 }}>
+                        <strong style={{ color: "#3a6a9a" }}>{dominantVal.label}</strong>
+                        {" "}in {valGapCount.get(dominantVal.id)}/{selectedMission?.gaps.length ?? 0} gaps
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {topConnectedVal && (
+                  <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: VALUE_COLOR[topConnectedVal.id], marginTop: 3, flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontSize: 9.5, fontWeight: 600, color: VALUE_COLOR[topConnectedVal.id], marginBottom: 1 }}>
+                        Most connected
+                      </div>
+                      <div style={{ fontSize: 9, color: "#1a4a6a", lineHeight: 1.45 }}>
+                        <strong style={{ color: "#3a6a9a" }}>{topConnectedVal.label}</strong>
+                        {" "}→ {topConnectedVcrCount} capabilities
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {cascadeStep >= 3 && uncoveredCapCount > 0 && (
+                  <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#F87171", marginTop: 3, flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontSize: 9.5, fontWeight: 600, color: "#F87171", marginBottom: 1 }}>
+                        Coverage gap
+                      </div>
+                      <div style={{ fontSize: 9, color: "#3a2020", lineHeight: 1.45 }}>
+                        {uncoveredCapCount} {uncoveredCapCount !== 1 ? "capabilities" : "capability"} with no provider
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {cascadeStep >= 3 && uncoveredCapCount === 0 && activeCapIds.size > 0 && (
+                  <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#34D399", marginTop: 3, flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontSize: 9.5, fontWeight: 600, color: "#34D399", marginBottom: 1 }}>
+                        Full coverage
+                      </div>
+                      <div style={{ fontSize: 9, color: "#1a4a3a", lineHeight: 1.45 }}>
+                        All {activeCapIds.size} capabilities have providers
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {cascadeStep < 3 && (
+                  <div style={{ fontSize: 9, color: "#0f2030", lineHeight: 1.45 }}>
+                    Waiting for cascade to reach Capabilities…
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 5. NEXT ACTION */}
+            <div style={{
+              background: "#030c18",
+              border: "1px solid #081828",
+              borderRadius: 6, padding: "12px 14px",
+            }}>
+              <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
+                Next Action
+              </div>
+              <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
+                {([
+                  { label: "required_for", status: "Not implemented", color: "#6E7681", note: "Contextual matching deferred (G-2)" },
+                  { label: "selected_for", status: "Disabled",        color: "#6E7681", note: "Requires execution evidence"        },
+                  { label: "Evidence",     status: "Waiting",         color: "#FFB84D", note: "Intent-grade only"                  },
+                ] as { label: string; status: string; color: string; note: string }[]).map(action => (
+                  <div key={action.label} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                    <div style={{ width: 1, alignSelf: "stretch", background: action.color, opacity: 0.3, marginTop: 2, flexShrink: 0 }} />
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
+                        <code style={{
+                          fontSize: 8.5, color: action.color,
+                          background: "rgba(110,118,129,0.08)",
+                          padding: "1px 4px", borderRadius: 2,
+                        }}>
+                          {action.label}
+                        </code>
+                        <span style={{ fontSize: 8.5, color: action.color, opacity: 0.65 }}>{action.status}</span>
+                      </div>
+                      <div style={{ fontSize: 9, color: "#0f2030", lineHeight: 1.45 }}>{action.note}</div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Architecture links */}
-            <div style={{ borderTop: "1px solid #0a1e30", paddingTop: 14, display: "flex", flexDirection: "column" as const, gap: 6 }}>
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 4 }}>
-                Architecture Docs
-              </div>
-              {[
-                { label: "OPM Specification",   href: "/lab" },
-                { label: "Marketplace Core v0", href: "/lab" },
-                { label: "Research Charter",    href: "/lab" },
-              ].map(link => (
-                <a key={link.label} href={link.href} style={{ fontSize: 10.5, color: "#1a3a52", textDecoration: "none", lineHeight: 1.4 }}>
-                  {link.label} →
-                </a>
-              ))}
-            </div>
           </div>
         </div>
 
