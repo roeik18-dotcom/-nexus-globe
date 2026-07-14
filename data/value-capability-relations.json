@@ -8,13 +8,13 @@
     "status": "candidate",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-10T00:00:00.000Z",
-    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
     "evidence": [
       {
         "signal": "Intent",
         "source": "philos-program",
-        "observedAt": "2026-07-10T00:00:00.000Z",
-        "note": "Taxonomic: Seed Funding capability addresses the Capital value in general. Not yet validated against a specific mission or gap closure."
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Seed Funding provides Capital — it delivers financial resources directly to a mission actor. This is the primary output of the capability. No missionId required; valid in all contexts where Capital is the required value."
       }
     ]
   },
@@ -28,33 +28,13 @@
     "status": "candidate",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-10T00:00:00.000Z",
-    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
     "evidence": [
       {
         "signal": "Intent",
         "source": "philos-program",
-        "observedAt": "2026-07-10T00:00:00.000Z",
-        "note": "Taxonomic: Seed Funding requires investor trust and builds actor credibility. Addresses the Trust value in general."
-      }
-    ]
-  },
-
-  {
-    "id": "vcr_capital_supply_chain_001",
-    "type": "ValueCapabilityRelation",
-    "valueId": "capital",
-    "capabilityId": "cap_supply_chain_sourcing_001",
-    "relationType": "can_address",
-    "status": "candidate",
-    "evidenceGrade": "Candidate",
-    "createdAt": "2026-07-10T00:00:00.000Z",
-    "updatedAt": "2026-07-10T00:00:00.000Z",
-    "evidence": [
-      {
-        "signal": "Intent",
-        "source": "philos-program",
-        "observedAt": "2026-07-10T00:00:00.000Z",
-        "note": "Taxonomic: Supply Chain Sourcing converts available capital into contracted production. Addresses the Capital value in general."
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Seed Funding provides a Trust signal — investor commitment is an external validation of actor credibility. The capability OUTPUT is the credibility signal, not the capital alone. Note: Trust is the VALUE being addressed (provided), not an input the capability requires to operate."
       }
     ]
   },
@@ -68,13 +48,13 @@
     "status": "candidate",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-10T00:00:00.000Z",
-    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
     "evidence": [
       {
         "signal": "Intent",
         "source": "philos-program",
-        "observedAt": "2026-07-10T00:00:00.000Z",
-        "note": "Taxonomic: Supply Chain Sourcing requires domain knowledge of supplier markets, quality standards, and logistics. Addresses the Knowledge value in general."
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Supply Chain Sourcing provides operational knowledge — the expertise about supplier markets, quality standards, and logistics is the deliverable of this capability. When a mission has a Knowledge gap in procurement, Supply Chain Sourcing addresses it. Note: Knowledge is the VALUE being addressed (provided), not an input the capability requires."
       }
     ]
   },
@@ -88,13 +68,13 @@
     "status": "candidate",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-10T00:00:00.000Z",
-    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
     "evidence": [
       {
         "signal": "Intent",
         "source": "philos-program",
-        "observedAt": "2026-07-10T00:00:00.000Z",
-        "note": "Taxonomic: Supply Chain Sourcing is a direct operational execution capability — converting plans into delivered product. Addresses the Execution value in general."
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Supply Chain Sourcing is a direct operational execution capability — converting plans into contracted production and delivered product. Execution is the VALUE being addressed."
       }
     ]
   },
@@ -108,13 +88,13 @@
     "status": "candidate",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-10T00:00:00.000Z",
-    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
     "evidence": [
       {
         "signal": "Intent",
         "source": "philos-program",
-        "observedAt": "2026-07-10T00:00:00.000Z",
-        "note": "Taxonomic: Community Growth Operations directly builds and stewards a community around a Mission. Addresses the Community value in general."
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Community Growth Operations directly builds and stewards a community around a Mission — Community is the VALUE being provided."
       }
     ]
   },
@@ -128,13 +108,13 @@
     "status": "candidate",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-10T00:00:00.000Z",
-    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
     "evidence": [
       {
         "signal": "Intent",
         "source": "philos-program",
-        "observedAt": "2026-07-10T00:00:00.000Z",
-        "note": "Taxonomic: Community Growth Operations converts shared identity into sustained trust between actors and the Mission. Addresses the Trust value in general."
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Community Growth Operations provides sustained Trust — converting shared identity and repeated interaction into actor-to-mission trust. Trust is the VALUE being addressed."
       }
     ]
   },
@@ -148,13 +128,13 @@
     "status": "candidate",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-10T00:00:00.000Z",
-    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
     "evidence": [
       {
         "signal": "Intent",
         "source": "philos-program",
-        "observedAt": "2026-07-10T00:00:00.000Z",
-        "note": "Taxonomic: Community Growth Operations produces measurable audience and reach growth. Addresses the Growth value in general."
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Community Growth Operations produces measurable audience and reach growth — Growth is the VALUE being addressed."
       }
     ]
   },
@@ -168,13 +148,13 @@
     "status": "candidate",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-10T00:00:00.000Z",
-    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
     "evidence": [
       {
         "signal": "Intent",
         "source": "philos-program",
-        "observedAt": "2026-07-10T00:00:00.000Z",
-        "note": "Taxonomic: Brand & Creative Direction is the primary execution surface for the Creativity value — converting creative vision into consistent identity output."
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Brand & Creative Direction is the primary execution surface for the Creativity value — converting creative vision into consistent identity output. Creativity is the VALUE being addressed."
       }
     ]
   },
@@ -188,13 +168,13 @@
     "status": "candidate",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-10T00:00:00.000Z",
-    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
     "evidence": [
       {
         "signal": "Intent",
         "source": "philos-program",
-        "observedAt": "2026-07-10T00:00:00.000Z",
-        "note": "Taxonomic: Brand & Creative Direction requires domain knowledge of the market, audience, and competitive landscape to produce differentiated positioning."
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Brand & Creative Direction produces market and audience knowledge — the deliverable includes a positioning map, competitive landscape, and audience insight. When a mission has a Knowledge gap about its market, Brand Creative addresses it. Note: Knowledge is the VALUE being provided, not an input the capability requires."
       }
     ]
   },
@@ -208,13 +188,13 @@
     "status": "candidate",
     "evidenceGrade": "Candidate",
     "createdAt": "2026-07-10T00:00:00.000Z",
-    "updatedAt": "2026-07-10T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
     "evidence": [
       {
         "signal": "Intent",
         "source": "philos-program",
-        "observedAt": "2026-07-10T00:00:00.000Z",
-        "note": "Taxonomic: Brand & Creative Direction builds shared identity signals that anchor community belonging around a Mission."
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Taxonomic: Brand & Creative Direction builds shared identity signals that anchor community belonging around a Mission — Community is the VALUE being addressed."
       }
     ]
   }
