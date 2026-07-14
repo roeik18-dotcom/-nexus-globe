@@ -294,7 +294,7 @@ This is distinct from Properties (what a node has at a point in time).
 |---|---|---|
 | **State transition** | Person, Mission, Task | OPM dimension shift; Mission status change |
 | **Relation formation** | All | New `trusts`, `connects`, `requires` edge created |
-| **Relation decay** | All | Trust score declining; `covers` weakened by counter-evidence |
+| **Relation decay** | All | Trust score declining; VCR/PCR relationType weakened by counter-evidence |
 | **Production** | Person, Org, Agent | New Document, Idea, or Research node emitted |
 | **Containment shift** | Person, Org | Person moves to a different City or Community |
 | **Value activation** | Gap, Mission | A Gap closes as a Value becomes available |
@@ -408,7 +408,7 @@ These must be resolved before any Placeholder-grade node type is implemented.
 | # | Question | Blocks |
 |---|---|---|
 | Q1 | What is the minimum schema for a Country node? | Geographic zoom levels |
-| Q2 | How is a Provider node created — by self-declaration or by evidence? | `provides` relation, Marketplace path |
+| Q2 | How is a Provider node created — by self-declaration or by evidence? | PCR `can_deliver` write path, Marketplace chain |
 | Q3 | What constitutes a Behavior-grade signal for the `trusts` relation? | Trust dynamics, Invariant R2 |
 | Q4 | How does a Gap close — threshold on Value availability, or explicit actor action? | Value activation dynamics |
 | Q5 | What is the identity scheme for Agents — local per-session or persistent global? | Agent node lifecycle |
