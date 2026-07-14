@@ -14,15 +14,16 @@
  * It is the bridge between what a Gap requires (Values) and who can deliver
  * it (Providers). Capability owns its domain label and maturity rating.
  *
- * Design rule: Capability owns its context and provider pointers.
- * It does NOT own Value links, Gap data, Mission data, or Provider data.
+ * Design rule: Capability owns its context only.
+ * It does NOT own Value links, Provider links, Gap data, or Mission data.
  * Value → Capability links are owned by ValueCapabilityRelation.
+ * Capability → Provider links are owned by ProviderCapabilityRelation.
  * Back-pointers to Missions and Gaps are resolved by querying their
  * repositories — they are never stored on the Capability node.
  */
 
-import type { EvidenceGrade, SignalType, ProviderRef } from "../types";
-export type { EvidenceGrade, SignalType, ProviderRef };
+import type { EvidenceGrade, SignalType } from "../types";
+export type { EvidenceGrade, SignalType };
 
 // ─── Sub-structures (4-layer PUDM node model) ────────────────────────────────
 
@@ -79,23 +80,21 @@ export interface CapabilityEvidenceRecord {
 /**
  * Capability owns:
  *   - Its own label, description, domain, maturity, and evidenceGrade.
- *   - Pure reference pointers to Provider nodes (empty until Provider built).
  *   - Temporary self-scoped evidence (see CapabilityEvidenceRecord above).
  *
  * Capability does NOT own:
  *   - Value links (owned by ValueCapabilityRelation — query that repository).
+ *   - Provider links (owned by ProviderCapabilityRelation — query that repository).
  *   - Gap descriptions or lifecycle (owned by Gap node).
  *   - Mission statements or actor (owned by Mission node).
- *   - Provider details (owned by Provider node).
  *   - Back-pointers to Missions or Gaps (resolved via their repositories).
  */
 export interface Capability extends CapabilityIdentity {
   context: CapabilityContext;
-  providers: ProviderRef[];       // empty until Provider entity is built
   evidence: CapabilityEvidenceRecord[];
 }
 
-// ─── Convenience re-exports ───────────────────────────────────────────────────
+// ─── Convenience re-export ────────────────────────────────────────────────────
 
 export type { CapabilityRef } from "../types";
 

@@ -46,16 +46,12 @@ for (const r of records) {
   check(`${p} — context.description`,        typeof r.context?.description === "string" && r.context.description.length > 0);
   check(`${p} — context.maturity valid`,     r.context?.maturity === null || VALID_MATURITY.includes(r.context?.maturity));
 
-  check(`${p} — providers is array`,         Array.isArray(r.providers));
-  check(`${p} — providers ids only`,         r.providers.every(
-    p => Object.keys(p).length === 1 && typeof p.providerId === "string"
-  ));
-
   check(`${p} — evidence signal valid`,      Array.isArray(r.evidence) &&
     r.evidence.every(e => VALID_SIGNALS.includes(e.signal)));
 
-  // Capability must NOT contain addressesValues, Gap, Mission, or Provider-owned data
+  // Capability must NOT contain cross-node references (God Object check)
   check(`${p} — no addressesValues`, r.addressesValues === undefined);
+  check(`${p} — no providers`,       r.providers === undefined);
   check(`${p} — no gaps`,            r.gaps === undefined);
   check(`${p} — no missions`,        r.missions === undefined);
   check(`${p} — no actor`,           r.actor === undefined);

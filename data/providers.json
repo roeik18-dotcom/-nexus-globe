@@ -1,0 +1,116 @@
+[
+  {
+    "id": "prov_yc_001",
+    "type": "Provider",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "context": {
+      "label": "Y Combinator",
+      "description": "The world's most prominent startup accelerator. Provides seed funding ($500K standard deal), an intensive 3-month program, and access to a global alumni network of founders and investors. Primary delivery mechanism for Seed Funding & Investment capability at the pre-seed and seed stage.",
+      "domain": "Finance",
+      "providerType": "program",
+      "website": "https://www.ycombinator.com"
+    },
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Candidate definition. YC is globally recognized as a primary seed-funding provider. Not yet validated against specific Philos mission outcomes. Example provider — no affiliation, participation, availability, or selection implied."
+      }
+    ]
+  },
+
+  {
+    "id": "prov_antler_001",
+    "type": "Provider",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "context": {
+      "label": "Antler",
+      "description": "Global early-stage VC and startup generator that invests from day zero. Runs programs across 30+ cities, co-founding companies with entrepreneurs and providing pre-seed capital, operational support, and a global investor network.",
+      "domain": "Finance",
+      "providerType": "program",
+      "website": "https://www.antler.co"
+    },
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Candidate definition. Antler operates a structured day-zero investment program relevant to early-stage capital gaps. Not yet validated against specific Philos mission outcomes. Example provider — no affiliation, participation, availability, or selection implied."
+      }
+    ]
+  },
+
+  {
+    "id": "prov_flexport_001",
+    "type": "Provider",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "context": {
+      "label": "Flexport",
+      "description": "A technology-driven freight forwarder and supply chain management platform. Provides end-to-end logistics — ocean, air, and customs — with real-time visibility, analytics, and supplier coordination. Primary delivery mechanism for Supply Chain Sourcing capability.",
+      "domain": "Operations",
+      "providerType": "platform",
+      "website": "https://www.flexport.com"
+    },
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Candidate definition. Flexport is a recognized platform for supply chain execution at scale. Not yet validated against specific Philos mission outcomes. Example provider — no affiliation, participation, availability, or selection implied."
+      }
+    ]
+  },
+
+  {
+    "id": "prov_beehiiv_001",
+    "type": "Provider",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "context": {
+      "label": "Beehiiv",
+      "description": "A newsletter and community platform built for growth. Provides audience acquisition tools, monetization infrastructure (subscriptions, boosts, ad network), and analytics. Enables missions to build, retain, and monetize an engaged community around their work.",
+      "domain": "Marketing",
+      "providerType": "platform",
+      "website": "https://www.beehiiv.com"
+    },
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Candidate definition. Beehiiv is a recognized growth platform for community-oriented missions. Not yet validated against specific Philos mission outcomes. Example provider — no affiliation, participation, availability, or selection implied."
+      }
+    ]
+  },
+
+  {
+    "id": "prov_pentagram_001",
+    "type": "Provider",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-14T00:00:00.000Z",
+    "updatedAt": "2026-07-14T00:00:00.000Z",
+    "context": {
+      "label": "Pentagram",
+      "description": "The world's largest independent design consultancy, structured as a partnership of 24 principals. Provides brand strategy, visual identity systems, and creative direction across all media. Delivery mechanism for Brand & Creative Direction capability at the highest level of craft.",
+      "domain": "Design",
+      "providerType": "organization",
+      "website": "https://www.pentagram.com"
+    },
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-14T00:00:00.000Z",
+        "note": "Candidate definition. Pentagram is a globally recognized provider of brand and creative direction. Not yet validated against specific Philos mission outcomes. Example provider — no affiliation, participation, availability, or selection implied."
+      }
+    ]
+  }
+]

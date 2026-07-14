@@ -68,12 +68,6 @@ export class JsonCapabilityRepository implements CapabilityRepository {
     if (query.evidenceGrade !== undefined) {
       results = results.filter((c) => c.evidenceGrade === query.evidenceGrade);
     }
-    if (query.providerId !== undefined) {
-      results = results.filter((c) =>
-        (c.providers ?? []).some((p) => p.providerId === query.providerId)
-      );
-    }
-
     return paginate(results, query.offset, query.limit);
   }
 }
