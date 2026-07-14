@@ -125,7 +125,7 @@ export default function PudmPage() {
     const prov = providerById.get(pcr.providerId);
     if (!prov) continue;
     const arr = provsByCapId.get(pcr.capabilityId) ?? [];
-    arr.push(prov);
+    if (!arr.some(p => p.id === prov.id)) arr.push(prov);
     provsByCapId.set(pcr.capabilityId, arr);
   }
 
@@ -313,17 +313,22 @@ export default function PudmPage() {
                                         </span>
                                       </div>
                                       {capProvs.length > 0 && (
-                                        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center", paddingLeft: 68, marginTop: 3 }}>
-                                          <span style={{ fontSize: 10, color: "var(--muted)", fontFamily: "monospace" }}>provider →</span>
-                                          {capProvs.map(prov => (
-                                            <span key={prov.id} style={{
-                                              display: "inline-block", padding: "1px 7px", borderRadius: 4,
-                                              fontSize: 10, fontWeight: 500,
-                                              background: "#FB923C18", color: "#FB923C", border: "1px solid #FB923C30",
-                                            }}>
-                                              {prov.context.label}
-                                            </span>
-                                          ))}
+                                        <div style={{ paddingLeft: 68, marginTop: 3 }}>
+                                          <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}>
+                                            <span style={{ fontSize: 10, color: "var(--muted)", fontFamily: "monospace" }}>provider →</span>
+                                            {capProvs.map(prov => (
+                                              <span key={prov.id} style={{
+                                                display: "inline-block", padding: "1px 7px", borderRadius: 4,
+                                                fontSize: 10, fontWeight: 500,
+                                                background: "#FB923C18", color: "#FB923C", border: "1px solid #FB923C30",
+                                              }}>
+                                                {prov.context.label}
+                                              </span>
+                                            ))}
+                                          </div>
+                                          <div style={{ fontSize: 9, color: "var(--muted)", fontStyle: "italic", marginTop: 2 }}>
+                                            Example provider — no affiliation, participation, availability, or selection implied.
+                                          </div>
                                         </div>
                                       )}
                                     </div>
