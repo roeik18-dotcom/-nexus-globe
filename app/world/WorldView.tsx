@@ -128,6 +128,7 @@ export default function WorldView({
   const [selectedMissionId, setSelectedMissionId] = useState<string>(missions[0]?.id ?? "");
   const [cascadeStep, setCascadeStep] = useState<CascadeStep>(0);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [viewMode, setViewMode] = useState<"contextual" | "taxonomic">("contextual");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const reducedMotionRef = useRef(false);
 
@@ -237,8 +238,16 @@ export default function WorldView({
       .flatMap(ref => gapById.get(ref.gapId)?.requiredValues ?? [])
       .map(r => r.valueId)
   );
+  // Mode-aware VCR source
+  const contextualVcrs = vcRelations.filter(
+    r => r.relationType === "required_for" && r.missionId === selectedMission?.id
+  );
+  const modeVcrs = viewMode === "contextual"
+    ? contextualVcrs
+    : vcRelations.filter(r => r.relationType === "can_address");
+
   const activeCapIds = new Set<string>(
-    vcRelations.filter(r => activeValueIds.has(r.valueId)).map(r => r.capabilityId)
+    modeVcrs.filter(r => activeValueIds.has(r.valueId)).map(r => r.capabilityId)
   );
   const activeProvIds = new Set<string>(
     pcRelations.filter(r => activeCapIds.has(r.capabilityId)).map(r => r.providerId)
@@ -253,7 +262,7 @@ export default function WorldView({
   );
 
   // Active cascade edges
-  const cascadeVcrs = vcRelations.filter(
+  const cascadeVcrs = modeVcrs.filter(
     r => activeValueIds.has(r.valueId) && activeCapIds.has(r.capabilityId)
   );
   const cascadePcrs = pcRelations.filter(
@@ -316,9 +325,9 @@ export default function WorldView({
   const dominantValId = [...valGapCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
   const dominantVal   = VALUES.find(v => v.id === dominantValId) ?? null;
 
-  // Most connected active value: highest number of VCR edges
+  // Most connected active value: highest number of VCR edges (mode-scoped)
   const valVcrCount = new Map<string, number>();
-  for (const vcr of vcRelations) {
+  for (const vcr of modeVcrs) {
     if (activeValueIds.has(vcr.valueId)) {
       valVcrCount.set(vcr.valueId, (valVcrCount.get(vcr.valueId) ?? 0) + 1);
     }
@@ -423,17 +432,34 @@ export default function WorldView({
         <div style={{
           background: "rgba(164,113,247,0.05)",
           border: "1px solid rgba(164,113,247,0.15)",
-          borderRadius: 5, padding: "9px 14px", marginBottom: 14,
+          borderRadius: 5, padding: "9px 14px", marginBottom: viewMode === "contextual" && activeCapIds.size === 0 ? 8 : 14,
           fontSize: 11, color: "#6a4a8a", lineHeight: 1.6,
         }}>
           <strong style={{ color: "#A371F7" }}>Live Reference Cascade</strong> — repository-backed, not observed flow.
           &nbsp;·&nbsp;
-          Since{" "}
-          <code style={{ fontSize: 10, color: "#7a5aaa", background: "rgba(164,113,247,0.1)", padding: "1px 4px", borderRadius: 2 }}>
-            required_for
-          </code>{" "}
-          relations don&apos;t exist yet, this animation shows taxonomic cascade (what can address these values in general), not contextual matching (what is required for this specific mission).
+          {viewMode === "contextual" ? (
+            <>Showing <strong style={{ color: "#A371F7" }}>Contextual</strong> chain via{" "}
+            <code style={{ fontSize: 10, color: "#7a5aaa", background: "rgba(164,113,247,0.1)", padding: "1px 4px", borderRadius: 2 }}>required_for</code>
+            {" "}— what is required for this specific mission.</>
+          ) : (
+            <>Showing <strong style={{ color: "#FFB84D" }}>Explore Taxonomy</strong> chain via{" "}
+            <code style={{ fontSize: 10, color: "#9a7030", background: "rgba(255,184,77,0.08)", padding: "1px 4px", borderRadius: 2 }}>can_address</code>
+            {" "}— what can address these values in general.</>
+          )}
         </div>
+
+        {/* Empty state — contextual mode with no required_for VCRs for this mission */}
+        {viewMode === "contextual" && activeCapIds.size === 0 && (
+          <div style={{
+            background: "rgba(248,113,113,0.05)",
+            border: "1px solid rgba(248,113,113,0.2)",
+            borderRadius: 5, padding: "9px 14px", marginBottom: 14,
+            fontSize: 11, color: "#7a3030", lineHeight: 1.6,
+          }}>
+            <strong style={{ color: "#F87171" }}>No contextual qualification exists for this mission</strong>
+            {" "}— switch to <strong>Explore Taxonomy</strong> to see general capability coverage.
+          </div>
+        )}
 
         {/* Caveat */}
         <div style={{
@@ -918,15 +944,32 @@ export default function WorldView({
                     </span>
                   </div>
                 ))}
-                <div style={{ marginTop: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 10, color: "#1a3550" }}>Mode</span>
-                  <span style={{
-                    fontSize: 8, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const,
-                    background: "rgba(255,184,77,0.1)", border: "1px solid rgba(255,184,77,0.2)",
-                    borderRadius: 3, padding: "2px 6px", color: "#FFB84D",
-                  }}>
-                    Taxonomic
-                  </span>
+                <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid #071420" }}>
+                  <div style={{ fontSize: 9, color: "#1a3550", marginBottom: 4, letterSpacing: "0.5px", textTransform: "uppercase" as const }}>Mode</div>
+                  <div style={{ display: "flex", gap: 3 }}>
+                    {(["contextual", "taxonomic"] as const).map(mode => {
+                      const on     = viewMode === mode;
+                      const accent = mode === "contextual" ? "#A371F7" : "#FFB84D";
+                      return (
+                        <button
+                          key={mode}
+                          onClick={() => setViewMode(mode)}
+                          style={{
+                            flex: 1, fontSize: 8, fontWeight: on ? 700 : 400,
+                            padding: "3px 4px", borderRadius: 3, cursor: "pointer",
+                            background: on ? `${accent}22` : "transparent",
+                            color: on ? accent : "#1a3550",
+                            border: `1px solid ${on ? `${accent}44` : "#071420"}`,
+                            fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+                            letterSpacing: "0.3px",
+                            transition: "background 0.12s ease, color 0.12s ease",
+                          }}
+                        >
+                          {mode === "contextual" ? "Contextual" : "Explore Taxonomy"}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
