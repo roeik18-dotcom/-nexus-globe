@@ -131,8 +131,17 @@ export default function WorldView({
   const [reducedMotion, setReducedMotion] = useState(false);
   const [viewMode, setViewMode] = useState<"contextual" | "taxonomic">("contextual");
   const [inspectedNode, setInspectedNode] = useState<GraphNode | null>(null);
+  const [inspectedEdge, setInspectedEdge] = useState<GraphEdge | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const reducedMotionRef = useRef(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 480);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -166,6 +175,7 @@ export default function WorldView({
     timers.current = [];
     setSelectedMissionId(missionId);
     setInspectedNode(null);
+    setInspectedEdge(null);
     if (reducedMotionRef.current) {
       setCascadeStep(4);
       return;
@@ -364,9 +374,12 @@ export default function WorldView({
 
   // ─── Force Graph data (Rendering Layer — no data layer changes) ───────────────
 
-  const valueById = useMemo(() => new Map(values.map(v => [v.id, v])), [values]);
-  const capById   = useMemo(() => new Map(capabilities.map(c => [c.id, c])), [capabilities]);
-  const provById  = useMemo(() => new Map(providers.map(p => [p.id, p])), [providers]);
+  const missionById = useMemo(() => new Map(missions.map(m => [m.id, m])), [missions]);
+  const valueById   = useMemo(() => new Map(values.map(v => [v.id, v])), [values]);
+  const capById     = useMemo(() => new Map(capabilities.map(c => [c.id, c])), [capabilities]);
+  const provById    = useMemo(() => new Map(providers.map(p => [p.id, p])), [providers]);
+  const vcrById     = useMemo(() => new Map(vcRelations.map(r => [r.id, r])), [vcRelations]);
+  const pcrById     = useMemo(() => new Map(pcRelations.map(r => [r.id, r])), [pcRelations]);
 
   function gapNodeLabel(gapId: string): string {
     return gapId
@@ -430,59 +443,307 @@ export default function WorldView({
 
   const handleNodeClick = useCallback((node: GraphNode | null) => {
     setInspectedNode(node);
+    setInspectedEdge(null);
   }, []);
 
-  // Inspector panel — pre-computed so the IIFE is outside JSX ─────────────────
+  const handleEdgeClick = useCallback((edge: GraphEdge | null) => {
+    setInspectedEdge(edge);
+    setInspectedNode(null);
+  }, []);
+
+  // ─── Rich Inspector — fixed overlay panel ────────────────────────────────────
+
   const INSP_C: Record<string, string> = {
     mission: "#A371F7", gap: "#5B8CFF", value: "#22D3EE",
     capability: "#FFB84D", provider: "#34D399",
+    mission_gap: "#5B8CFF", gap_value: "#22D3EE",
+    required_for: "#FFB84D", can_address: "#22D3EE", can_deliver: "#34D399",
   };
-  const inspPanel = inspectedNode ? (() => {
-    const c  = INSP_C[inspectedNode.type] ?? "#6E7681";
-    const tl = inspectedNode.type.charAt(0).toUpperCase() + inspectedNode.type.slice(1);
-    const connCount =
-      inspectedNode.type === "mission"    ? missionGapIds.size :
-      inspectedNode.type === "gap"        ? graphEdges.filter(e => e.source === inspectedNode.id && e.type === "gap_value").length :
-      inspectedNode.type === "value"      ? graphEdges.filter(e => e.source === inspectedNode.id).length :
-      inspectedNode.type === "capability" ? graphEdges.filter(e => e.source === inspectedNode.id && e.type === "can_deliver").length :
-      0;
-    const connLabel =
-      inspectedNode.type === "mission"    ? "gaps" :
-      inspectedNode.type === "gap"        ? "values" :
-      inspectedNode.type === "value"      ? "capabilities" :
-      inspectedNode.type === "capability" ? "providers" : "";
+  const STATUS_C: Record<string, string> = {
+    active: "#34D399", candidate: "#FFB84D", open: "#5B8CFF",
+    closed: "#6E7681", rejected: "#F87171", historical: "#6E7681",
+    deferred: "#FFB84D", completed: "#34D399", abandoned: "#F87171", paused: "#FFB84D",
+  };
+  const MATURITY_C: Record<string, string> = {
+    emerging: "#FFB84D", established: "#22D3EE", proven: "#34D399",
+  };
+  const SEVERITY_C: Record<string, string> = {
+    critical: "#F87171", significant: "#FFB84D", moderate: "#22D3EE", minor: "#6E7681",
+  };
+
+  function inlChip(label: string, color: string) {
     return (
-      <div style={{ background: `${c}0d`, border: `1px solid ${c}33`, borderRadius: 6, padding: "12px 14px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
-          <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: `${c}99` }}>
-            {tl}
-          </div>
-          <button
-            onClick={() => setInspectedNode(null)}
-            style={{ fontSize: 10, color: `${c}66`, background: "none", border: "none", cursor: "pointer", padding: "0 2px", lineHeight: 1 }}
-            aria-label="Close inspector"
-          >✕</button>
-        </div>
-        <div style={{ fontSize: 11, fontWeight: 700, color: c, lineHeight: 1.4, marginBottom: 5 }}>
-          {inspectedNode.label}
-        </div>
-        {inspectedNode.sublabel && (
-          <div style={{ fontSize: 9, color: `${c}88`, lineHeight: 1.55, marginBottom: 6 }}>{inspectedNode.sublabel}</div>
-        )}
-        <div style={{ borderTop: `1px solid ${c}22`, paddingTop: 6, marginTop: 4 }}>
-          <div style={{ fontSize: 9, color: "#1a3550", marginBottom: 3 }}>
-            <code style={{ fontSize: 8, color: `${c}77`, background: `${c}0a`, padding: "1px 4px", borderRadius: 2, fontFamily: "var(--font-geist-mono), monospace" }}>
-              {inspectedNode.type}
-            </code>
-            {connLabel && <span style={{ color: "#2a4a6a" }}> · {connCount} {connLabel}</span>}
-          </div>
-          <div style={{ fontSize: 8, color: "#0f2030", fontFamily: "var(--font-geist-mono), monospace", wordBreak: "break-all" as const }}>
-            {inspectedNode.id.length > 32 ? inspectedNode.id.slice(0, 30) + "…" : inspectedNode.id}
-          </div>
-        </div>
+      <span key={label} style={{
+        display: "inline-block", fontSize: 8, fontWeight: 600,
+        padding: "2px 6px", borderRadius: 3, marginRight: 4, marginBottom: 3,
+        background: `${color}18`, color, border: `1px solid ${color}30`,
+        letterSpacing: "0.4px", textTransform: "uppercase" as const,
+      }}>{label}</span>
+    );
+  }
+  function inlRow(label: string, value: string, color = "#2a5a8a") {
+    return (
+      <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 6, marginBottom: 4 }}>
+        <span style={{ fontSize: 9.5, color: "#1a3550", flexShrink: 0 }}>{label}</span>
+        <span style={{ fontSize: 9.5, color, textAlign: "right" as const, fontWeight: 500 }}>{value}</span>
       </div>
     );
-  })() : null;
+  }
+  function inlDesc(text: string, color: string) {
+    return (
+      <p style={{ fontSize: 10, color: `${color}bb`, lineHeight: 1.55, margin: "8px 0 10px", fontStyle: "italic" as const }}>
+        {text.length > 180 ? text.slice(0, 178) + "…" : text}
+      </p>
+    );
+  }
+
+  const inspectorOpen = inspectedNode !== null || inspectedEdge !== null;
+  const inspColor = inspectedNode
+    ? (INSP_C[inspectedNode.type] ?? "#6E7681")
+    : inspectedEdge
+      ? (INSP_C[inspectedEdge.type] ?? "#6E7681")
+      : "#6E7681";
+
+  let inspTypeLabel = "";
+  let inspTitle     = "";
+  let inspSubtitle  = "";
+  let inspContent: React.ReactNode = null;
+
+  if (inspectedNode) {
+    inspTypeLabel = inspectedNode.type;
+    inspTitle     = inspectedNode.label;
+
+    if (inspectedNode.type === "mission") {
+      const m = missionById.get(inspectedNode.id);
+      inspSubtitle = m?.context?.domain ?? "";
+      inspContent = m ? (
+        <div>
+          <div style={{ marginBottom: 8 }}>
+            {inlChip(m.state.status, STATUS_C[m.state.status] ?? "#6E7681")}
+            {inlChip(m.state.horizon, "#8B7DCC")}
+          </div>
+          {m.context.statement && inlDesc(m.context.statement, inspColor)}
+          <div style={{ borderTop: `1px solid ${inspColor}15`, paddingTop: 8 }}>
+            {inlRow("Gaps", String(m.gaps.length), "#5B8CFF")}
+            {inlRow("Required values", String(m.requiredValues.length), "#22D3EE")}
+            {inlRow("Evidence records", String(m.evidence.length), "#6E7681")}
+            {inlRow("Evidence grade", m.evidenceGrade, "#A371F7")}
+          </div>
+          {m.context.actor && (
+            <div style={{ marginTop: 8, fontSize: 9, color: "#1a3550" }}>
+              Actor · <span style={{ color: "#3a5a80" }}>{m.context.actor.type}</span>
+            </div>
+          )}
+        </div>
+      ) : null;
+
+    } else if (inspectedNode.type === "gap") {
+      const g = gapById.get(inspectedNode.id);
+      inspSubtitle = (g as unknown as { context?: { domain?: string } })?.context?.domain ?? "";
+      const gTyped = g as unknown as {
+        state?: { status?: string; severity?: string };
+        context?: { description?: string };
+        requiredValues?: Array<{ valueId: string }>;
+        evidence?: unknown[];
+        evidenceGrade?: string;
+      };
+      const gStatus   = gTyped?.state?.status ?? "";
+      const gSeverity = gTyped?.state?.severity ?? "";
+      const gDesc     = gTyped?.context?.description ?? "";
+      const gVals     = gTyped?.requiredValues ?? [];
+      inspContent = g ? (
+        <div>
+          <div style={{ marginBottom: 8 }}>
+            {gSeverity && inlChip(gSeverity, SEVERITY_C[gSeverity] ?? "#6E7681")}
+            {gStatus   && inlChip(gStatus,   STATUS_C[gStatus]     ?? "#6E7681")}
+          </div>
+          {gDesc && inlDesc(gDesc, inspColor)}
+          {gVals.length > 0 && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 9, color: "#1a3550", marginBottom: 4 }}>Required values</div>
+              <div>
+                {gVals.map(rv => {
+                  const v = valueById.get(rv.valueId) as unknown as { context?: { label?: string } } | undefined;
+                  const lbl = v?.context?.label ?? rv.valueId;
+                  return inlChip(lbl, "#22D3EE");
+                })}
+              </div>
+            </div>
+          )}
+          <div style={{ borderTop: `1px solid ${inspColor}15`, paddingTop: 8 }}>
+            {inlRow("Evidence grade", gTyped?.evidenceGrade ?? "—", "#A371F7")}
+            {inlRow("Evidence records", String(gTyped?.evidence?.length ?? 0), "#6E7681")}
+          </div>
+        </div>
+      ) : null;
+
+    } else if (inspectedNode.type === "value") {
+      const v = valueById.get(inspectedNode.id) as unknown as {
+        context?: { label?: string; description?: string; domain?: string };
+        evidenceGrade?: string;
+        evidence?: unknown[];
+      } | undefined;
+      inspSubtitle = v?.context?.domain ?? "";
+      const vDesc = v?.context?.description ?? "";
+      const gapRefs   = graphEdges.filter(e => e.target === inspectedNode.id && e.type === "gap_value").length;
+      const rfCount   = vcRelations.filter(r => r.valueId === inspectedNode.id && r.relationType === "required_for").length;
+      const caCount   = vcRelations.filter(r => r.valueId === inspectedNode.id && r.relationType === "can_address").length;
+      inspContent = (
+        <div>
+          {vDesc && inlDesc(vDesc, inspColor)}
+          <div style={{ borderTop: `1px solid ${inspColor}15`, paddingTop: 8 }}>
+            {inlRow("In graph (gaps)", String(gapRefs), "#5B8CFF")}
+            {inlRow("required_for", `${rfCount} capabilities`, "#FFB84D")}
+            {inlRow("can_address", `${caCount} capabilities`, "#22D3EE")}
+            {inlRow("Evidence grade", v?.evidenceGrade ?? "—", "#A371F7")}
+          </div>
+        </div>
+      );
+
+    } else if (inspectedNode.type === "capability") {
+      const c = capById.get(inspectedNode.id) as unknown as {
+        context?: { label?: string; description?: string; domain?: string; maturity?: string };
+        evidenceGrade?: string;
+        evidence?: unknown[];
+      } | undefined;
+      inspSubtitle = c?.context?.domain ?? "";
+      const cDesc     = c?.context?.description ?? "";
+      const cMaturity = c?.context?.maturity ?? "";
+      const valuesCap = vcRelations
+        .filter(r => r.capabilityId === inspectedNode.id)
+        .map(r => {
+          const v = valueById.get(r.valueId) as unknown as { context?: { label?: string } } | undefined;
+          return v?.context?.label ?? r.valueId;
+        });
+      const provsCap = pcRelations
+        .filter(r => r.capabilityId === inspectedNode.id)
+        .map(r => {
+          const p = provById.get(r.providerId) as unknown as { context?: { label?: string } } | undefined;
+          return p?.context?.label ?? r.providerId;
+        });
+      const covered = capsWithProvider.has(inspectedNode.id);
+      inspContent = (
+        <div>
+          <div style={{ marginBottom: 8 }}>
+            {cMaturity && inlChip(cMaturity, MATURITY_C[cMaturity] ?? "#6E7681")}
+          </div>
+          {cDesc && inlDesc(cDesc, inspColor)}
+          {valuesCap.length > 0 && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 9, color: "#1a3550", marginBottom: 4 }}>Addresses values</div>
+              <div>{valuesCap.map(l => inlChip(l, "#22D3EE"))}</div>
+            </div>
+          )}
+          {provsCap.length > 0 && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 9, color: "#1a3550", marginBottom: 4 }}>Providers</div>
+              <div>{provsCap.map(l => inlChip(l, "#34D399"))}</div>
+            </div>
+          )}
+          <div style={{ borderTop: `1px solid ${inspColor}15`, paddingTop: 8 }}>
+            {inlRow("Coverage", covered ? "✓ covered" : "✗ no provider", covered ? "#34D399" : "#F87171")}
+            {inlRow("Evidence grade", c?.evidenceGrade ?? "—", "#A371F7")}
+          </div>
+        </div>
+      );
+
+    } else if (inspectedNode.type === "provider") {
+      const p = provById.get(inspectedNode.id) as unknown as {
+        context?: { label?: string; description?: string; domain?: string; providerType?: string; website?: string | null };
+        evidenceGrade?: string;
+        evidence?: unknown[];
+      } | undefined;
+      inspSubtitle = p?.context?.domain ?? "";
+      const pDesc  = p?.context?.description ?? "";
+      const pType  = p?.context?.providerType ?? "";
+      const pWeb   = p?.context?.website ?? null;
+      const capsProv = pcRelations
+        .filter(r => r.providerId === inspectedNode.id)
+        .map(r => {
+          const cap = capById.get(r.capabilityId) as unknown as { context?: { label?: string } } | undefined;
+          return cap?.context?.label ?? r.capabilityId;
+        });
+      inspContent = (
+        <div>
+          <div style={{ marginBottom: 8 }}>
+            {pType && inlChip(pType, "#34D399")}
+          </div>
+          {pDesc && inlDesc(pDesc, inspColor)}
+          {pWeb && (
+            <div style={{ marginBottom: 10, fontSize: 9.5, color: "#22D3EE", wordBreak: "break-all" as const }}>
+              {pWeb.startsWith("http") ? (
+                <a href={pWeb} target="_blank" rel="noopener noreferrer" style={{ color: "#22D3EE" }}>{pWeb}</a>
+              ) : pWeb}
+            </div>
+          )}
+          {capsProv.length > 0 && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 9, color: "#1a3550", marginBottom: 4 }}>Capabilities delivered</div>
+              <div>{capsProv.map(l => inlChip(l, "#FFB84D"))}</div>
+            </div>
+          )}
+          <div style={{ borderTop: `1px solid ${inspColor}15`, paddingTop: 8 }}>
+            {inlRow("Evidence grade", p?.evidenceGrade ?? "—", "#A371F7")}
+          </div>
+        </div>
+      );
+    }
+
+  } else if (inspectedEdge) {
+    inspTypeLabel = inspectedEdge.type.replace(/_/g, " ");
+
+    if (inspectedEdge.type === "required_for" || inspectedEdge.type === "can_address") {
+      const vcr = vcrById.get(inspectedEdge.id);
+      const val = valueById.get(vcr?.valueId ?? "") as unknown as { context?: { label?: string } } | undefined;
+      const cap = capById.get(vcr?.capabilityId ?? "") as unknown as { context?: { label?: string } } | undefined;
+      const mLabel = vcr?.missionId ? (missionById.get(vcr.missionId)?.context?.domain ?? vcr.missionId) : null;
+      const gLabel = vcr?.gapId ? gapNodeLabel(vcr.gapId) : null;
+      inspTitle    = `${val?.context?.label ?? vcr?.valueId ?? "?"} → ${cap?.context?.label ?? vcr?.capabilityId ?? "?"}`;
+      inspContent = vcr ? (
+        <div>
+          <div style={{ marginBottom: 8 }}>
+            {inlChip(vcr.relationType, inspColor)}
+            {inlChip(vcr.status, STATUS_C[vcr.status] ?? "#6E7681")}
+          </div>
+          {mLabel && inlRow("Mission", mLabel, "#A371F7")}
+          {gLabel && inlRow("Gap", gLabel, "#5B8CFF")}
+          <div style={{ borderTop: `1px solid ${inspColor}15`, paddingTop: 8, marginTop: 4 }}>
+            {inlRow("Evidence grade", vcr.evidenceGrade, "#A371F7")}
+            {inlRow("Evidence records", String(vcr.evidence.length), "#6E7681")}
+          </div>
+        </div>
+      ) : null;
+
+    } else if (inspectedEdge.type === "can_deliver") {
+      const pcr = pcrById.get(inspectedEdge.id);
+      const prov = provById.get(pcr?.providerId ?? "") as unknown as { context?: { label?: string } } | undefined;
+      const cap  = capById.get(pcr?.capabilityId ?? "") as unknown as { context?: { label?: string } } | undefined;
+      inspTitle   = `${prov?.context?.label ?? pcr?.providerId ?? "?"} → ${cap?.context?.label ?? pcr?.capabilityId ?? "?"}`;
+      inspContent = pcr ? (
+        <div>
+          <div style={{ marginBottom: 8 }}>
+            {inlChip(pcr.relationType, inspColor)}
+            {inlChip(pcr.status, STATUS_C[pcr.status] ?? "#6E7681")}
+          </div>
+          <div style={{ borderTop: `1px solid ${inspColor}15`, paddingTop: 8, marginTop: 4 }}>
+            {inlRow("Evidence grade", pcr.evidenceGrade, "#A371F7")}
+            {inlRow("Evidence records", String(pcr.evidence.length), "#6E7681")}
+          </div>
+        </div>
+      ) : null;
+
+    } else {
+      // Synthetic structural edges (mission_gap, gap_value)
+      const srcNode = graphNodes.find(n => n.id === inspectedEdge.source);
+      const tgtNode = graphNodes.find(n => n.id === inspectedEdge.target);
+      inspTitle   = `${srcNode?.label ?? inspectedEdge.source} → ${tgtNode?.label ?? inspectedEdge.target}`;
+      inspContent = (
+        <div style={{ fontSize: 9.5, color: "#1a3550", lineHeight: 1.6 }}>
+          Structural edge — not a stored relation.
+        </div>
+      );
+    }
+  }
 
   // ─── Render ───────────────────────────────────────────────────────────────────
 
@@ -623,17 +884,16 @@ export default function WorldView({
               nodes={graphNodes}
               edges={graphEdges}
               selectedNodeId={inspectedNode?.id ?? null}
+              selectedEdgeId={inspectedEdge?.id ?? null}
               cascadeStep={cascadeStep}
               onNodeClick={handleNodeClick}
+              onEdgeClick={handleEdgeClick}
               reducedMotion={reducedMotion}
             />
           </div>
 
           {/* Sidebar — Live Decision Engine */}
           <div style={{ flex: "0 0 240px", minWidth: 200, display: "flex", flexDirection: "column" as const, gap: 14 }}>
-
-            {/* 0. INSPECTOR — shown when a node is selected */}
-            {inspPanel}
 
             {/* 1. MISSION */}
             <div style={{
@@ -989,6 +1249,89 @@ export default function WorldView({
           </span>
         </footer>
       </div>
+
+      {/* ── Fixed Inspector Panel ───────────────────────────────────────────── */}
+      {inspectorOpen && (
+        <aside style={isMobile ? {
+          position:     "fixed",
+          bottom:       0, left: 0, right: 0,
+          width:        "100%",
+          height:       "45vh",
+          overflow:     "auto",
+          background:   "#030e1c",
+          borderTop:    `1px solid ${inspColor}28`,
+          zIndex:       200,
+          display:      "flex",
+          flexDirection: "column" as const,
+          padding:      "14px 16px 32px",
+          boxSizing:    "border-box" as const,
+        } : {
+          position:      "fixed",
+          right:         0, top: 0,
+          width:         300,
+          height:        "100dvh",
+          overflow:      "auto",
+          background:    "#030e1c",
+          borderLeft:    `1px solid ${inspColor}28`,
+          zIndex:        200,
+          display:       "flex",
+          flexDirection: "column" as const,
+          padding:       "20px 16px 48px",
+          boxSizing:     "border-box" as const,
+        }}>
+          {/* Header row */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <span style={{
+              fontSize: 8, fontWeight: 700, letterSpacing: "2.5px",
+              textTransform: "uppercase" as const,
+              color: `${inspColor}cc`, background: `${inspColor}12`,
+              padding: "3px 8px", borderRadius: 3,
+              border: `1px solid ${inspColor}22`,
+            }}>
+              {inspTypeLabel}
+            </span>
+            <button
+              onClick={() => { setInspectedNode(null); setInspectedEdge(null); }}
+              aria-label="Close inspector"
+              style={{
+                fontSize: 13, lineHeight: 1,
+                color: `${inspColor}88`, background: "none",
+                border: "none", cursor: "pointer", padding: "2px 4px",
+              }}
+            >✕</button>
+          </div>
+
+          {/* Title */}
+          <div style={{ fontSize: 14, fontWeight: 700, color: inspColor, lineHeight: 1.35, marginBottom: 4 }}>
+            {inspTitle}
+          </div>
+
+          {/* Subtitle / domain */}
+          {inspSubtitle && (
+            <div style={{ fontSize: 10, color: `${inspColor}66`, marginBottom: 12 }}>
+              {inspSubtitle}
+            </div>
+          )}
+
+          {/* Divider */}
+          <div style={{ borderTop: `1px solid ${inspColor}15`, marginBottom: 12 }} />
+
+          {/* Entity-specific content */}
+          {inspContent}
+
+          {/* ID footer */}
+          <div style={{ marginTop: "auto", paddingTop: 16 }}>
+            <div style={{
+              fontSize: 8, fontFamily: "var(--font-geist-mono), monospace",
+              color: "#0f2030", wordBreak: "break-all" as const,
+            }}>
+              {inspectedNode
+                ? inspectedNode.id
+                : inspectedEdge?.id ?? ""}
+            </div>
+          </div>
+        </aside>
+      )}
     </div>
   );
 }
