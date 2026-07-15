@@ -132,8 +132,16 @@ export default function WorldView({
   const [viewMode, setViewMode] = useState<"contextual" | "taxonomic">("contextual");
   const [inspectedNode, setInspectedNode] = useState<GraphNode | null>(null);
   const [inspectedEdge, setInspectedEdge] = useState<GraphEdge | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const reducedMotionRef = useRef(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 480);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -1244,19 +1252,32 @@ export default function WorldView({
 
       {/* ── Fixed Inspector Panel ───────────────────────────────────────────── */}
       {inspectorOpen && (
-        <aside style={{
-          position:   "fixed",
-          right:      0, top: 0,
-          width:      300,
-          height:     "100dvh",
-          overflow:   "auto",
-          background: "#030e1c",
-          borderLeft: `1px solid ${inspColor}28`,
-          zIndex:     200,
-          display:    "flex",
+        <aside style={isMobile ? {
+          position:     "fixed",
+          bottom:       0, left: 0, right: 0,
+          width:        "100%",
+          height:       "45vh",
+          overflow:     "auto",
+          background:   "#030e1c",
+          borderTop:    `1px solid ${inspColor}28`,
+          zIndex:       200,
+          display:      "flex",
           flexDirection: "column" as const,
-          padding:    "20px 16px 48px",
-          boxSizing:  "border-box" as const,
+          padding:      "14px 16px 32px",
+          boxSizing:    "border-box" as const,
+        } : {
+          position:      "fixed",
+          right:         0, top: 0,
+          width:         300,
+          height:        "100dvh",
+          overflow:      "auto",
+          background:    "#030e1c",
+          borderLeft:    `1px solid ${inspColor}28`,
+          zIndex:        200,
+          display:       "flex",
+          flexDirection: "column" as const,
+          padding:       "20px 16px 48px",
+          boxSizing:     "border-box" as const,
         }}>
           {/* Header row */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
