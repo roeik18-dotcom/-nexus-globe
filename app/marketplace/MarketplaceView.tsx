@@ -106,6 +106,7 @@ export default function MarketplaceView({
   const [selectedMissionId, setSelectedMissionId] = useState<string>(missions[0]?.id ?? "");
   const [viewMode,        setViewMode]        = useState<"contextual" | "taxonomic">("contextual");
   const [inspected,       setInspected]       = useState<InspectedItem | null>(null);
+  const [filtersOpen,     setFiltersOpen]     = useState<boolean>(false);
   const [filterGapId,     setFilterGapId]     = useState<string>("");
   const [filterValueId,   setFilterValueId]   = useState<string>("");
   const [filterCapDomain, setFilterCapDomain] = useState<string>("");
@@ -870,18 +871,20 @@ export default function MarketplaceView({
             <p style={{ fontSize: 13, fontWeight: 500, margin: "0 0 14px", lineHeight: 1.6, maxWidth: 720 }}>
               {mission.context.statement}
             </p>
-            <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "center" }}>
               {[
-                { n: missionGaps.length,       label: "Gaps",                                  color: "#D29922"      },
-                { n: missionCoveredCapCount,   label: `/ ${missionCapCount} Capabilities`,     color: "#F472B6"      },
-                { n: missionProviderCount,     label: "Example Providers",                     color: "#FB923C"      },
-                { n: selectedForCount,         label: "selected_for",                          color: "var(--muted)" },
+                { n: missionGaps.length,     label: "gaps",                  color: "#D29922" },
+                { n: missionCapCount,        label: "capabilities",           color: "#F472B6" },
+                { n: missionProviderCount,   label: "example providers",      color: "#FB923C" },
               ].map(s => (
                 <div key={s.label} style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-                  <span style={{ fontSize: 22, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.n}</span>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.n}</span>
                   <span style={{ fontSize: 11, color: "var(--muted)" }}>{s.label}</span>
                 </div>
               ))}
+              <span style={{ fontSize: 10, color: "var(--muted)", fontFamily: "monospace", marginLeft: "auto" }}>
+                selected_for: 0
+              </span>
             </div>
           </div>
 
@@ -898,172 +901,141 @@ export default function MarketplaceView({
             </span>
           </div>
 
-          {/* ── Filter bar ── */}
-          <div style={{
-            marginBottom: 14, padding: "10px 14px",
-            background: "var(--surface)", border: "1px solid var(--border)",
-            borderRadius: 6, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center",
-          }}>
-            <span style={{ fontSize: 9, fontFamily: "monospace", color: "var(--muted)", textTransform: "uppercase" as const, letterSpacing: "0.08em", flexShrink: 0 }}>
-              Filter
-            </span>
-
-            <select value={filterGapId} onChange={e => setFilterGapId(e.target.value)} className="filter-select" title="Gap">
-              <option value="">All gaps</option>
-              {missionGaps.map(g => (
-                <option key={g.id} value={g.id}>
-                  {g.id.replace(/^gap_/, "").replace(/_\d+$/, "").replace(/_/g, " ")}
-                </option>
-              ))}
-            </select>
-
-            <select value={filterValueId} onChange={e => setFilterValueId(e.target.value)} className="filter-select" title="Value">
-              <option value="">All values</option>
-              {values.map(v => <option key={v.id} value={v.id}>{v.context.label}</option>)}
-            </select>
-
-            <select value={filterCapDomain} onChange={e => setFilterCapDomain(e.target.value)} className="filter-select" title="Capability domain">
-              <option value="">All domains</option>
-              {allCapDomains.map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-
-            <select value={filterCoverage} onChange={e => setFilterCoverage(e.target.value as "all"|"covered"|"uncovered")} className="filter-select" title="Coverage">
-              <option value="all">All coverage</option>
-              <option value="covered">Covered</option>
-              <option value="uncovered">Uncovered</option>
-            </select>
-
-            <select value={filterRelType} onChange={e => setFilterRelType(e.target.value)} className="filter-select" title="Relation type">
-              <option value="">All types</option>
-              {allRelTypes.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-
-            <select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} className="filter-select" title="Capability grade">
-              <option value="">All cap. grades</option>
-              {allGrades.map(g => <option key={g} value={g}>{g}</option>)}
-            </select>
-
-            <select value={filterProviderId} onChange={e => setFilterProviderId(e.target.value)} className="filter-select" title="Provider">
-              <option value="">All providers</option>
-              {providers.map(p => <option key={p.id} value={p.id}>{p.context.label}</option>)}
-            </select>
-
+          {/* ── Filter bar (collapsed by default) ── */}
+          <div style={{ marginBottom: 14 }}>
+            <button
+              onClick={() => setFiltersOpen(o => !o)}
+              style={{
+                fontSize: 11, padding: "4px 10px", borderRadius: 4, cursor: "pointer",
+                background: anyFilterActive ? "#388BFD18" : "var(--surface)",
+                color: anyFilterActive ? "#58A6FF" : "var(--muted)",
+                border: `1px solid ${anyFilterActive ? "#388BFD40" : "var(--border)"}`,
+                fontFamily: "monospace", display: "flex", alignItems: "center", gap: 5,
+              }}
+            >
+              {filtersOpen ? "▴" : "▾"} Filters{anyFilterActive ? ` (${[filterGapId,filterValueId,filterCapDomain,filterProviderId,filterRelType,filterGrade,filterCoverage !== "all" ? filterCoverage : ""].filter(Boolean).length} active)` : ""}
+            </button>
+            {filtersOpen && (
+              <div style={{
+                marginTop: 6, padding: "10px 14px",
+                background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6,
+                display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center",
+              }}>
+                <select value={filterGapId} onChange={e => setFilterGapId(e.target.value)} className="filter-select" title="Gap">
+                  <option value="">All gaps</option>
+                  {missionGaps.map(g => (
+                    <option key={g.id} value={g.id}>
+                      {g.id.replace(/^gap_/, "").replace(/_\d+$/, "").replace(/_/g, " ")}
+                    </option>
+                  ))}
+                </select>
+                <select value={filterValueId} onChange={e => setFilterValueId(e.target.value)} className="filter-select" title="Value">
+                  <option value="">All values</option>
+                  {values.map(v => <option key={v.id} value={v.id}>{v.context.label}</option>)}
+                </select>
+                <select value={filterCapDomain} onChange={e => setFilterCapDomain(e.target.value)} className="filter-select" title="Capability domain">
+                  <option value="">All domains</option>
+                  {allCapDomains.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <select value={filterCoverage} onChange={e => setFilterCoverage(e.target.value as "all"|"covered"|"uncovered")} className="filter-select" title="Coverage">
+                  <option value="all">All coverage</option>
+                  <option value="covered">Covered</option>
+                  <option value="uncovered">Uncovered</option>
+                </select>
+                <select value={filterRelType} onChange={e => setFilterRelType(e.target.value)} className="filter-select" title="Relation type">
+                  <option value="">All types</option>
+                  {allRelTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} className="filter-select" title="Capability grade">
+                  <option value="">All cap. grades</option>
+                  {allGrades.map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+                <select value={filterProviderId} onChange={e => setFilterProviderId(e.target.value)} className="filter-select" title="Provider">
+                  <option value="">All providers</option>
+                  {providers.map(p => <option key={p.id} value={p.id}>{p.context.label}</option>)}
+                </select>
+                {anyFilterActive && (
+                  <button onClick={clearFilters} style={{
+                    fontSize: 9, padding: "2px 8px", borderRadius: 3, cursor: "pointer",
+                    background: "#DA363318", color: "#F85149", border: "1px solid #DA363330",
+                    fontFamily: "monospace", marginLeft: "auto",
+                  }}>clear ✕</button>
+                )}
+              </div>
+            )}
             {anyFilterActive && (
-              <button onClick={clearFilters} style={{
-                fontSize: 9, padding: "2px 8px", borderRadius: 3, cursor: "pointer",
-                background: "#DA363318", color: "#F85149", border: "1px solid #DA363330",
-                fontFamily: "monospace", marginLeft: "auto",
-              }}>clear ✕</button>
+              <div style={{ marginTop: 6, fontSize: 11, color: "var(--muted)", fontFamily: "monospace" }}>
+                {visibleGaps.length} / {missionGaps.length} gaps · {
+                  visibleGaps.reduce((n, g) => n + filteredItems(g).length, 0)
+                } capability rows
+              </div>
             )}
           </div>
 
-          {/* ── Visible gap count ── */}
-          {anyFilterActive && (
-            <div style={{ marginBottom: 8, fontSize: 11, color: "var(--muted)", fontFamily: "monospace" }}>
-              {visibleGaps.length} / {missionGaps.length} gaps · {
-                visibleGaps.reduce((n, g) => n + filteredItems(g).length, 0)
-              } capability rows
-            </div>
-          )}
-
-          {/* ── Gap sections ── */}
-          <div style={{ display: "grid", gap: 12 }}>
+          {/* ── Gap cards (compact) ── */}
+          <div style={{ display: "grid", gap: 8 }}>
             {visibleGaps.map(gap => {
               const sev    = (gap.state as { severity?: string }).severity ?? "moderate";
               const sevCfg = SEVERITY[sev] ?? SEVERITY.moderate;
-              const domCol = DOMAIN_COLOR[(gap.context as { domain?: string }).domain ?? ""] ?? "#7D8590";
               const items  = filteredItems(gap);
+              const hasCtx = hasContextualQualification(gap);
+              const gapName = gap.id.replace(/^gap_/, "").replace(/_\d+$/, "").replace(/_/g, " ");
 
               return (
-                <section key={gap.id} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
-                  <div style={{ padding: "12px 18px 10px", borderBottom: "1px solid var(--border)", background: "var(--surface-2)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
-                      <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 3, fontFamily: "monospace", background: sevCfg.bg, color: sevCfg.text, border: `1px solid ${sevCfg.border}` }}>
-                        {sevCfg.label}
-                      </span>
-                      <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 3, background: `${domCol}15`, color: domCol, border: `1px solid ${domCol}28` }}>
-                        {(gap.context as { domain?: string }).domain}
-                      </span>
-                      <span style={{ fontSize: 12, fontWeight: 600 }}>
-                        {gap.id.replace(/^gap_/, "").replace(/_\d+$/, "").replace(/_/g, " ")}
-                      </span>
-                      <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--muted)", fontFamily: "monospace" }}>
-                        {gap.state.status}
-                      </span>
-                    </div>
-                    <p style={{ fontSize: 12, color: "var(--muted)", margin: 0, lineHeight: 1.55, maxWidth: 820 }}>
+                <div key={gap.id} style={{
+                  background: "var(--surface)", border: "1px solid var(--border)",
+                  borderRadius: 8, overflow: "hidden",
+                }}>
+                  {/* Gap header — single compact line */}
+                  <div style={{
+                    padding: "8px 16px", background: "var(--surface-2)",
+                    borderBottom: (items.length > 0 || (viewMode === "contextual" && !hasCtx)) ? "1px solid var(--border)" : "none",
+                    display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
+                  }}>
+                    <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, fontFamily: "monospace", background: sevCfg.bg, color: sevCfg.text, border: `1px solid ${sevCfg.border}`, flexShrink: 0 }}>
+                      {sevCfg.label}
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 600 }}>{gapName}</span>
+                    <span style={{ fontSize: 11, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
                       {gap.context.description}
-                    </p>
+                    </span>
                   </div>
 
-                  <div style={{ padding: "14px 18px", display: "grid", gap: 10 }}>
-                    {viewMode === "contextual" && !hasContextualQualification(gap)
-                      ? <span style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}>No contextual qualification exists for this gap.</span>
-                      : items.length === 0
-                        ? <span style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}>No capability coverage mapped.</span>
-                        : items.map(item => {
-                          const capPcrs = pcrsByCapId.get(item.capability.id) ?? [];
-                          return (
-                            <div key={item.capability.id} style={{
-                              display: "grid",
-                              gridTemplateColumns: "160px 24px minmax(140px,1fr) 24px minmax(160px,1fr)",
-                              gap: 0, alignItems: "start",
-                            }}>
-                              {/* Values */}
-                              <div style={{ paddingRight: 8 }}>
-                                <div style={{ fontSize: 9, color: "var(--muted)", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 5 }}>values</div>
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                                  {item.coveredByValues.map(v => chipValue(v))}
-                                </div>
-                                {item.vcrIds.length > 0 && (
-                                  <div style={{ display: "flex", gap: 3, marginTop: 4, flexWrap: "wrap" }}>
-                                    {item.vcrIds.map(id => badgeVcr(id))}
-                                  </div>
-                                )}
-                              </div>
-                              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 16, color: "var(--muted)", fontSize: 11 }}>→</div>
-                              {/* Capability */}
-                              <div style={{ paddingRight: 8 }}>
-                                <div style={{ fontSize: 9, color: "var(--muted)", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 5 }}>capability</div>
-                                {chipCap(item.capability)}
-                                <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>
-                                  {item.capability.context.domain}
-                                  {item.capability.context.maturity ? ` · ${item.capability.context.maturity}` : ""}
-                                </div>
-                              </div>
-                              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 16, color: "var(--muted)", fontSize: 11 }}>→</div>
-                              {/* Providers */}
-                              <div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
-                                  <span style={{ fontSize: 9, color: "var(--muted)", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.06em" }}>example providers</span>
-                                  <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 2, fontFamily: "monospace", background: "#30363D", color: "var(--muted)" }}>can_deliver</span>
-                                </div>
-                                {item.providers.length === 0
-                                  ? <span style={{ fontSize: 11, color: "var(--muted)", fontStyle: "italic" }}>—</span>
-                                  : <>
-                                      <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                                        {item.providers.map(prov => {
-                                          const pcr = capPcrs.find(r => r.providerId === prov.id);
-                                          return (
-                                            <div key={prov.id} style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                                              {chipProv(prov)}
-                                              {pcr && badgePcr(pcr.id)}
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                      <div style={{ fontSize: 9, color: "var(--muted)", fontStyle: "italic", marginTop: 4 }}>
-                                        No selection made · not engaged · not evaluated
-                                      </div>
-                                    </>
-                                }
-                              </div>
-                            </div>
-                          );
-                        })
-                    }
-                  </div>
-                </section>
+                  {/* Capability rows — compact horizontal */}
+                  {viewMode === "contextual" && !hasCtx ? (
+                    <div style={{ padding: "8px 16px", fontSize: 11, color: "var(--muted)", fontStyle: "italic" }}>
+                      — no contextual qualification for this mission
+                    </div>
+                  ) : items.length === 0 ? null : (
+                    <div>
+                      {items.map((item, idx) => (
+                        <div key={item.capability.id} style={{
+                          display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
+                          padding: "8px 16px",
+                          borderTop: idx > 0 ? "1px solid var(--border)" : "none",
+                        }}>
+                          {/* Values */}
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 3, minWidth: 80 }}>
+                            {item.coveredByValues.map(v => chipValue(v))}
+                          </div>
+                          <span style={{ color: "var(--muted)", fontSize: 11, flexShrink: 0 }}>→</span>
+                          {/* Capability */}
+                          <div style={{ flexShrink: 0 }}>
+                            {chipCap(item.capability)}
+                          </div>
+                          <span style={{ color: "var(--muted)", fontSize: 11, flexShrink: 0 }}>→</span>
+                          {/* Providers */}
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, flex: 1 }}>
+                            {item.providers.length === 0
+                              ? <span style={{ fontSize: 11, color: "var(--muted)" }}>—</span>
+                              : item.providers.map(p => chipProv(p))
+                            }
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
