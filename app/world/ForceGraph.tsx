@@ -132,8 +132,10 @@ export interface ForceGraphProps {
   nodes:          GraphNode[];
   edges:          GraphEdge[];
   selectedNodeId: string | null;
+  selectedEdgeId?: string | null;
   cascadeStep:    number;
   onNodeClick:    (node: GraphNode | null) => void;
+  onEdgeClick?:   (edge: GraphEdge | null) => void;
   reducedMotion?: boolean;
 }
 
@@ -141,21 +143,26 @@ export default function ForceGraph({
   nodes,
   edges,
   selectedNodeId,
+  selectedEdgeId = null,
   cascadeStep,
   onNodeClick,
+  onEdgeClick,
   reducedMotion = false,
 }: ForceGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Stable callback ref — D3 event handlers read from this, never stale
+  // Stable callback refs — D3 event handlers read from these, never stale
   const onClickRef = useRef(onNodeClick);
   onClickRef.current = onNodeClick;
+  const onEdgeClickRef = useRef(onEdgeClick);
+  onEdgeClickRef.current = onEdgeClick;
 
   // D3 object refs (not React state — no re-renders from these)
-  const simRef     = useRef<d3.Simulation<SimNode, SimLink> | undefined>(undefined);
-  const nodeSelRef = useRef<d3.Selection<SVGGElement, SimNode, SVGGElement, unknown> | undefined>(undefined);
-  const edgeSelRef = useRef<d3.Selection<SVGLineElement, SimLink, SVGGElement, unknown> | undefined>(undefined);
-  const edgesRef   = useRef(edges); // for connected-set lookup without rebuilding
+  const simRef        = useRef<d3.Simulation<SimNode, SimLink> | undefined>(undefined);
+  const nodeSelRef    = useRef<d3.Selection<SVGGElement, SimNode, SVGGElement, unknown> | undefined>(undefined);
+  const edgeSelRef    = useRef<d3.Selection<SVGLineElement, SimLink, SVGGElement, unknown> | undefined>(undefined);
+  const hitEdgeSelRef = useRef<d3.Selection<SVGLineElement, SimLink, SVGGElement, unknown> | undefined>(undefined);
+  const edgesRef      = useRef(edges); // for connected-set lookup without rebuilding
   edgesRef.current = edges;
 
   // ── Build simulation (only when node/edge data changes) ───────────────────
@@ -253,6 +260,29 @@ export default function ForceGraph({
 
     edgeSelRef.current = edgeSel;
 
+    // ── Hit-zone lines (transparent, wide — for edge clicking) ─────────────
+    const hitEdgeSel = edgeLayer
+      .selectAll<SVGLineElement, SimLink>("line.fg-hit")
+      .data(simLinks, d => d.id)
+      .enter().append("line")
+      .attr("class",          "fg-hit")
+      .attr("stroke",         "transparent")
+      .attr("stroke-width",   10)
+      .attr("stroke-linecap", "round")
+      .attr("pointer-events", "stroke")
+      .attr("cursor",         "pointer")
+      .attr("x1", d => (d.source as SimNode).x ?? 0)
+      .attr("y1", d => (d.source as SimNode).y ?? 0)
+      .attr("x2", d => (d.target as SimNode).x ?? 0)
+      .attr("y2", d => (d.target as SimNode).y ?? 0)
+      .on("click", (ev, d) => {
+        ev.stopPropagation();
+        const original = edgesRef.current.find(e => e.id === d.id);
+        if (original) onEdgeClickRef.current?.(original);
+      });
+
+    hitEdgeSelRef.current = hitEdgeSel;
+
     // ── Drag ────────────────────────────────────────────────────────────────
     const drag = d3.drag<SVGGElement, SimNode>()
       .on("start", (ev, d) => {
@@ -325,6 +355,11 @@ export default function ForceGraph({
         .attr("y1", d => (d.source as SimNode).y ?? 0)
         .attr("x2", d => (d.target as SimNode).x ?? 0)
         .attr("y2", d => (d.target as SimNode).y ?? 0);
+      hitEdgeSel
+        .attr("x1", d => (d.source as SimNode).x ?? 0)
+        .attr("y1", d => (d.source as SimNode).y ?? 0)
+        .attr("x2", d => (d.target as SimNode).x ?? 0)
+        .attr("y2", d => (d.target as SimNode).y ?? 0);
       nodeSel.attr("transform", d => `translate(${d.x ?? 0},${d.y ?? 0})`);
     });
 
@@ -373,9 +408,15 @@ export default function ForceGraph({
 
     edgeSel
       .transition().duration(dur)
-      .attr("stroke-opacity", d => edgeOp(d.type, cascadeStep, selectedNodeId));
+      .attr("stroke-opacity", d => {
+        if (d.id === selectedEdgeId) return 1;
+        return edgeOp(d.type, cascadeStep, selectedNodeId);
+      })
+      .attr("stroke-width", d =>
+        d.id === selectedEdgeId ? EDGE_W[d.type] * 2.5 : EDGE_W[d.type]
+      );
 
-  }, [cascadeStep, selectedNodeId, reducedMotion]);
+  }, [cascadeStep, selectedNodeId, selectedEdgeId, reducedMotion]);
 
   return (
     <div
