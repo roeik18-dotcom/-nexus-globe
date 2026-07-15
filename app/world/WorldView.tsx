@@ -342,6 +342,23 @@ export default function WorldView({
   const uncoveredCapCount = activeCapIds.size - coveredCapCount;
   const coveragePct       = activeCapIds.size > 0 ? Math.round((coveredCapCount / activeCapIds.size) * 100) : 0;
 
+  // Mission Health metrics
+  const missionGapIds       = new Set((selectedMission?.gaps ?? []).map(r => r.gapId));
+  const gapsWithRF          = new Set(contextualVcrs.map(r => r.gapId));
+  const graphIntegrityPct   = missionGapIds.size > 0
+    ? Math.round((gapsWithRF.size / missionGapIds.size) * 100)
+    : 0;
+  const validationPass      = graphIntegrityPct === 100 && contextualVcrs.length > 0;
+  const missionHealthPct    = Math.round(
+    graphIntegrityPct * 0.55 + (validationPass ? 40 : 0) + (activeProvIds.size > 0 ? 5 : 0)
+  );
+  const missionStage        = contextualVcrs.length > 0
+    ? "Contextual Qualification"
+    : "Initialization";
+  const evidenceCount       = contextualVcrs.reduce(
+    (n, r) => n + (r.evidence ?? []).filter(e => e.signal !== "Intent").length, 0
+  );
+
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
@@ -843,19 +860,30 @@ export default function WorldView({
               <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#5a3a90", marginBottom: 8 }}>
                 Mission
               </div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#c0a0ff", lineHeight: 1.4, marginBottom: 7 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#c0a0ff", lineHeight: 1.4, marginBottom: 4 }}>
                 {selectedMission ? missionLabel(selectedMission) : "—"}
               </div>
-              <div style={{ fontSize: 9.5, color: "#7a5aaa", marginBottom: 8 }}>
-                Step {cascadeStep}/4 · {STAGE_NAMES[cascadeStep]}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
+                <div style={{ fontSize: 9, color: "#7a5aaa", fontStyle: "italic" }}>
+                  {missionStage}
+                </div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#A371F7", fontVariantNumeric: "tabular-nums" }}>
+                  {cascadeStep >= 3 ? `${coveragePct}%` : "—"}
+                </div>
               </div>
               <div style={{ background: "rgba(164,113,247,0.12)", borderRadius: 2, height: 3, overflow: "hidden" as const }}>
                 <div style={{
                   height: "100%", borderRadius: 2,
                   background: "linear-gradient(90deg, #A371F7, #7a50c0)",
-                  width: `${(cascadeStep / 4) * 100}%`,
-                  transition: "width 0.4s ease",
+                  width: `${cascadeStep >= 3 ? coveragePct : (cascadeStep / 4) * 100}%`,
+                  transition: "width 0.5s ease",
                 }} />
+              </div>
+              <div style={{ fontSize: 8, color: "#4a2a7a", marginTop: 5, fontFamily: "var(--font-geist-mono), monospace" }}>
+                {cascadeStep < 4
+                  ? `Step ${cascadeStep}/4 · ${STAGE_NAMES[cascadeStep]}`
+                  : <span style={{ color: "#34D399" }}>Chain complete</span>
+                }
               </div>
             </div>
 
@@ -919,33 +947,19 @@ export default function WorldView({
               </div>
             </div>
 
-            {/* 3. SYSTEM STATUS */}
+            {/* 3. SYSTEM STATE */}
             <div style={{
               background: "#030c18",
               border: "1px solid #081828",
               borderRadius: 6, padding: "12px 14px",
             }}>
               <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
-                System Status
+                System State
               </div>
               <div style={{ display: "flex", flexDirection: "column" as const, gap: 5 }}>
-                {([
-                  { label: "Missions",     value: String(missions.length),                                         color: "#A371F7" },
-                  { label: "Gaps",         value: String(gaps.length),                                             color: "#8a60d0" },
-                  { label: "Values",       value: String(values.length),                                           color: "#5B8CFF" },
-                  { label: "Capabilities", value: String(capabilities.length),                                     color: "#FFB84D" },
-                  { label: "Providers",    value: String(providers.length),                                        color: "#34D399" },
-                  { label: "Coverage",     value: cascadeStep >= 3 ? `${coveragePct}%` : "—",                      color: "#22D3EE" },
-                ] as { label: string; value: string; color: string }[]).map(row => (
-                  <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 10, color: "#1a3550" }}>{row.label}</span>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: row.color, fontVariantNumeric: "tabular-nums" }}>
-                      {row.value}
-                    </span>
-                  </div>
-                ))}
-                <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid #071420" }}>
-                  <div style={{ fontSize: 9, color: "#1a3550", marginBottom: 4, letterSpacing: "0.5px", textTransform: "uppercase" as const }}>Mode</div>
+                {/* Mode toggle */}
+                <div style={{ marginBottom: 4 }}>
+                  <div style={{ fontSize: 9, color: "#1a3550", marginBottom: 3, letterSpacing: "0.5px", textTransform: "uppercase" as const }}>Mode</div>
                   <div style={{ display: "flex", gap: 3 }}>
                     {(["contextual", "taxonomic"] as const).map(mode => {
                       const on     = viewMode === mode;
@@ -970,6 +984,22 @@ export default function WorldView({
                       );
                     })}
                   </div>
+                </div>
+                <div style={{ borderTop: "1px solid #071420", paddingTop: 6, display: "flex", flexDirection: "column" as const, gap: 5 }}>
+                  {([
+                    { label: "Values",       value: cascadeStep >= 2 ? String(activeValueIds.size) : "—",         color: "#5B8CFF" },
+                    { label: "Capabilities", value: cascadeStep >= 3 ? String(activeCapIds.size)   : "—",         color: "#FFB84D" },
+                    { label: "Providers",    value: cascadeStep >= 4 ? String(activeProvIds.size)  : "—",         color: "#34D399" },
+                    { label: "Coverage",     value: cascadeStep >= 3 ? `${coveragePct}%`           : "—",         color: "#22D3EE" },
+                    { label: "Evidence",     value: String(evidenceCount),                                         color: "#6E7681" },
+                  ] as { label: string; value: string; color: string }[]).map(row => (
+                    <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 10, color: "#1a3550" }}>{row.label}</span>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: row.color, fontVariantNumeric: "tabular-nums" }}>
+                        {row.value}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -1057,9 +1087,16 @@ export default function WorldView({
               </div>
               <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
                 {([
-                  { label: "required_for", status: "Not implemented", color: "#6E7681", note: "Contextual matching deferred (G-2)" },
-                  { label: "selected_for", status: "Disabled",        color: "#6E7681", note: "Requires execution evidence"        },
-                  { label: "Evidence",     status: "Waiting",         color: "#FFB84D", note: "Intent-grade only"                  },
+                  {
+                    label:  "required_for",
+                    status: validationPass ? "✓ Complete" : "Partial",
+                    color:  validationPass ? "#34D399" : "#FFB84D",
+                    note:   validationPass
+                      ? `${contextualVcrs.length} contextual relations — all gaps covered`
+                      : `${gapsWithRF.size}/${missionGapIds.size} gaps qualified`,
+                  },
+                  { label: "selected_for", status: "Pending",  color: "#FFB84D", note: "Write-path not yet enabled (Phase 1)" },
+                  { label: "Evidence",     status: "Waiting",  color: "#6E7681", note: "Intent-grade only · real signals: 0"  },
                 ] as { label: string; status: string; color: string; note: string }[]).map(action => (
                   <div key={action.label} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                     <div style={{ width: 1, alignSelf: "stretch", background: action.color, opacity: 0.3, marginTop: 2, flexShrink: 0 }} />
@@ -1067,15 +1104,85 @@ export default function WorldView({
                       <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
                         <code style={{
                           fontSize: 8.5, color: action.color,
-                          background: "rgba(110,118,129,0.08)",
+                          background: `${action.color}0f`,
                           padding: "1px 4px", borderRadius: 2,
                         }}>
                           {action.label}
                         </code>
-                        <span style={{ fontSize: 8.5, color: action.color, opacity: 0.65 }}>{action.status}</span>
+                        <span style={{ fontSize: 8.5, color: action.color, opacity: 0.8 }}>{action.status}</span>
                       </div>
                       <div style={{ fontSize: 9, color: "#0f2030", lineHeight: 1.45 }}>{action.note}</div>
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 6. MISSION HEALTH */}
+            <div style={{
+              background: "#020a15",
+              border: "1px solid #071420",
+              borderRadius: 6, padding: "12px 14px",
+            }}>
+              <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
+                Mission Health
+              </div>
+
+              {/* Health score bar */}
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <span style={{ fontSize: 9, color: "#1a3550" }}>Health score</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: missionHealthPct >= 80 ? "#34D399" : missionHealthPct >= 50 ? "#FFB84D" : "#F87171", fontVariantNumeric: "tabular-nums" }}>
+                    {missionHealthPct}%
+                  </span>
+                </div>
+                <div style={{ background: "#071420", borderRadius: 2, height: 3, overflow: "hidden" as const }}>
+                  <div style={{
+                    height: "100%", borderRadius: 2,
+                    background: missionHealthPct >= 80
+                      ? "linear-gradient(90deg, #34D399, #22c07a)"
+                      : missionHealthPct >= 50
+                        ? "linear-gradient(90deg, #FFB84D, #e09030)"
+                        : "#F87171",
+                    width: `${missionHealthPct}%`,
+                    transition: "width 0.5s ease",
+                  }} />
+                </div>
+              </div>
+
+              {/* Health detail rows */}
+              <div style={{ display: "flex", flexDirection: "column" as const, gap: 5 }}>
+                {([
+                  {
+                    label: "Graph Integrity",
+                    value: `${graphIntegrityPct}%`,
+                    color: graphIntegrityPct === 100 ? "#34D399" : "#FFB84D",
+                  },
+                  {
+                    label: "Relation Validation",
+                    value: validationPass ? "PASS" : "PARTIAL",
+                    color: validationPass ? "#34D399" : "#FFB84D",
+                  },
+                  {
+                    label: "Read Layer",
+                    value: "LIVE",
+                    color: "#34D399",
+                  },
+                  {
+                    label: "Write Layer",
+                    value: "LOCKED",
+                    color: "#6E7681",
+                  },
+                ] as { label: string; value: string; color: string }[]).map(row => (
+                  <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 9.5, color: "#1a3550" }}>{row.label}</span>
+                    <span style={{
+                      fontSize: 8, fontWeight: 700, letterSpacing: "0.8px",
+                      color: row.color,
+                      fontFamily: "var(--font-geist-mono), monospace",
+                    }}>
+                      {row.value}
+                    </span>
                   </div>
                 ))}
               </div>
