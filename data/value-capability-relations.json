@@ -701,5 +701,816 @@
         "note": "Taxonomic: Volunteer Coordination & Retention addresses Execution — management systems convert community willingness into reliable, measurable programme delivery. No missionId required; valid in all contexts where Execution is the required value."
       }
     ]
+  },
+
+
+
+  {
+    "id": "vcr_rf_capital_seed_001_capital",
+    "type": "ValueCapabilityRelation",
+    "valueId": "capital",
+    "capabilityId": "cap_seed_funding_001",
+    "missionId": "mission_1751000000000_f3a9k2b",
+    "gapId": "gap_capital_seed_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Seed Funding is specifically required to address the capital gap blocking all downstream fashion startup operations. No capital = no materials, no sampling, no production run. References can_address VCR vcr_capital_seed_funding_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_capital_seed_001_trust",
+    "type": "ValueCapabilityRelation",
+    "valueId": "trust",
+    "capabilityId": "cap_seed_funding_001",
+    "missionId": "mission_1751000000000_f3a9k2b",
+    "gapId": "gap_capital_seed_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Seed Funding provides the investor trust signal specifically required by this fashion entrepreneur — external investment validates the concept and unlocks credibility with suppliers, distributors, and future partners. References can_address VCR vcr_trust_seed_funding_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_supply_chain_001_capital",
+    "type": "ValueCapabilityRelation",
+    "valueId": "capital",
+    "capabilityId": "cap_seed_funding_001",
+    "missionId": "mission_1751000000000_f3a9k2b",
+    "gapId": "gap_supply_chain_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Capital is required to contract a manufacturing partner at a viable minimum order quantity. Seed Funding is the mechanism that makes this capital available for the fashion startup's supply chain acquisition phase. References can_address VCR vcr_capital_seed_funding_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_supply_chain_001_knowledge",
+    "type": "ValueCapabilityRelation",
+    "valueId": "knowledge",
+    "capabilityId": "cap_supply_chain_sourcing_001",
+    "missionId": "mission_1751000000000_f3a9k2b",
+    "gapId": "gap_supply_chain_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Supply Chain Sourcing expertise is specifically required for this gap — the mission's inclusive sizing mandate requires a manufacturing partner experienced with extended size grading and small-run production, a specialist knowledge domain. References can_address VCR vcr_knowledge_supply_chain_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_supply_chain_001_trust",
+    "type": "ValueCapabilityRelation",
+    "valueId": "trust",
+    "capabilityId": "cap_seed_funding_001",
+    "missionId": "mission_1751000000000_f3a9k2b",
+    "gapId": "gap_supply_chain_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: For the supply chain gap, secured seed funding provides the credibility signal that establishes the startup as a viable manufacturing partner — funded startups have materially lower supplier dropout rates during initial production negotiations. References can_address VCR vcr_trust_seed_funding_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_community_launch_001_community",
+    "type": "ValueCapabilityRelation",
+    "valueId": "community",
+    "capabilityId": "cap_community_growth_ops_001",
+    "missionId": "mission_1751000000000_f3a9k2b",
+    "gapId": "gap_community_launch_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Community Growth Operations is specifically required to build the audience-first launch model that is central to this mission — the launch hypothesis cannot be tested without a prior community. References can_address VCR vcr_community_growth_ops_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_community_launch_001_trust",
+    "type": "ValueCapabilityRelation",
+    "valueId": "trust",
+    "capabilityId": "cap_community_growth_ops_001",
+    "missionId": "mission_1751000000000_f3a9k2b",
+    "gapId": "gap_community_launch_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Community Growth Operations provides the trust infrastructure specifically required for a community-first launch — converting shared identity and repeated interaction into actor-to-mission trust before the product exists. References can_address VCR vcr_trust_growth_ops_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_community_launch_001_growth",
+    "type": "ValueCapabilityRelation",
+    "valueId": "growth",
+    "capabilityId": "cap_community_growth_ops_001",
+    "missionId": "mission_1751000000000_f3a9k2b",
+    "gapId": "gap_community_launch_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Community Growth Operations directly addresses the growth gap — measurable audience and reach growth is the mission-critical output needed before the community-first launch can proceed. References can_address VCR vcr_growth_growth_ops_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_brand_creative_001_creativity",
+    "type": "ValueCapabilityRelation",
+    "valueId": "creativity",
+    "capabilityId": "cap_brand_creative_direction_001",
+    "missionId": "mission_1751000000000_f3a9k2b",
+    "gapId": "gap_brand_creative_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Brand & Creative Direction is the primary capability required for this gap — the inclusive premium positioning requires a coherent aesthetic that the creative direction deliverable provides. References can_address VCR vcr_creativity_brand_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_brand_creative_001_knowledge",
+    "type": "ValueCapabilityRelation",
+    "valueId": "knowledge",
+    "capabilityId": "cap_brand_creative_direction_001",
+    "missionId": "mission_1751000000000_f3a9k2b",
+    "gapId": "gap_brand_creative_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Brand creative direction provides market and audience knowledge specifically required for the fashion startup's inclusive positioning — who the audience is and how to reach them without appropriating target communities. References can_address VCR vcr_knowledge_brand_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_brand_creative_001_community",
+    "type": "ValueCapabilityRelation",
+    "valueId": "community",
+    "capabilityId": "cap_brand_creative_direction_001",
+    "missionId": "mission_1751000000000_f3a9k2b",
+    "gapId": "gap_brand_creative_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Brand & Creative Direction provides the shared identity signals specifically required to anchor the community this launch depends on — the visual language must signal belonging to the target groups. References can_address VCR vcr_community_brand_001."
+      }
+    ]
+  },
+
+
+  {
+    "id": "vcr_rf_therapist_access_001_health",
+    "type": "ValueCapabilityRelation",
+    "valueId": "health",
+    "capabilityId": "cap_therapist_matching_001",
+    "missionId": "mission_couples_therapy_001",
+    "gapId": "gap_therapist_access_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Couples Therapist Matching is specifically required for the access gap — it directly solves the discovery and qualification problem for a couple unable to identify a specialist who is accepting new clients and reachable via their location or telehealth. References can_address VCR vcr_health_therapist_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_therapist_access_001_trust",
+    "type": "ValueCapabilityRelation",
+    "valueId": "trust",
+    "capabilityId": "cap_therapist_matching_001",
+    "missionId": "mission_couples_therapy_001",
+    "gapId": "gap_therapist_access_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Trust is specifically required in this access gap — therapist matching must produce a practitioner the couple can trust to hold a safe space; matching without trust alignment fails the therapeutic mandate and raises dropout risk. References can_address VCR vcr_trust_therapist_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_therapist_access_001_care",
+    "type": "ValueCapabilityRelation",
+    "valueId": "care",
+    "capabilityId": "cap_therapist_matching_001",
+    "missionId": "mission_couples_therapy_001",
+    "gapId": "gap_therapist_access_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Therapist matching specifically delivers the care required by this gap — the therapeutic relationship is the primary vehicle for care in a couples context, and matching quality determines care quality and therapeutic duration. References can_address VCR vcr_care_therapist_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_therapy_affordability_001_capital",
+    "type": "ValueCapabilityRelation",
+    "valueId": "capital",
+    "capabilityId": "cap_therapy_affordability_001",
+    "missionId": "mission_couples_therapy_001",
+    "gapId": "gap_therapy_affordability_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Affordable Therapy Access is specifically required for the affordability gap — it converts financial resources into sustained access through sliding-scale and subsidized structures, addressing cost as the documented dropout factor ($150–$300/hr without coverage). References can_address VCR vcr_capital_therapy_afford_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_therapy_affordability_001_health",
+    "type": "ValueCapabilityRelation",
+    "valueId": "health",
+    "capabilityId": "cap_therapy_affordability_001",
+    "missionId": "mission_couples_therapy_001",
+    "gapId": "gap_therapy_affordability_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Affordable access is specifically required for health outcomes in this gap — removing cost barriers is a health-critical intervention, as cost-related dropout is a documented failure mode in couples therapy. References can_address VCR vcr_health_therapy_afford_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_therapy_affordability_001_justice",
+    "type": "ValueCapabilityRelation",
+    "valueId": "justice",
+    "capabilityId": "cap_therapy_affordability_001",
+    "missionId": "mission_couples_therapy_001",
+    "gapId": "gap_therapy_affordability_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Affordable Therapy Access addresses the justice dimension specifically required by this gap — sliding-scale access redistributes therapeutic resources toward couples with financial constraints who would otherwise be excluded. References can_address VCR vcr_justice_therapy_afford_001."
+      }
+    ]
+  },
+
+
+  {
+    "id": "vcr_rf_scholarship_discovery_001_knowledge",
+    "type": "ValueCapabilityRelation",
+    "valueId": "knowledge",
+    "capabilityId": "cap_scholarship_search_001",
+    "missionId": "mission_student_scholarship_001",
+    "gapId": "gap_scholarship_discovery_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Scholarship Search & Matching is specifically required for the discovery gap — the student's inability to find eligible scholarships is an information problem, and the matching system solves it by surfacing programs matched to their academic background, field, and financial situation. References can_address VCR vcr_knowledge_scholarship_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_scholarship_discovery_001_learning",
+    "type": "ValueCapabilityRelation",
+    "valueId": "learning",
+    "capabilityId": "cap_scholarship_search_001",
+    "missionId": "mission_student_scholarship_001",
+    "gapId": "gap_scholarship_discovery_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Scholarship discovery directly enables the learning continuity required by this gap — scholarship funding allows learning to continue without financial interruption at the exact point where cost becomes a barrier. References can_address VCR vcr_learning_scholarship_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_scholarship_discovery_001_capital",
+    "type": "ValueCapabilityRelation",
+    "valueId": "capital",
+    "capabilityId": "cap_scholarship_search_001",
+    "missionId": "mission_student_scholarship_001",
+    "gapId": "gap_scholarship_discovery_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Scholarship Search converts institutional capital into student access — the specific capital required by this gap is scholarship funding, and the search system is the mechanism that makes it discoverable and accessible. References can_address VCR vcr_capital_scholarship_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_application_quality_001_knowledge",
+    "type": "ValueCapabilityRelation",
+    "valueId": "knowledge",
+    "capabilityId": "cap_application_coaching_001",
+    "missionId": "mission_student_scholarship_001",
+    "gapId": "gap_application_quality_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Application coaching is specifically required for the quality gap — the student needs guidance on how to convey qualifications accurately and compellingly, a knowledge transfer problem coaching solves for students who meet eligibility criteria but are not selected. References can_address VCR vcr_knowledge_app_coach_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_application_quality_001_learning",
+    "type": "ValueCapabilityRelation",
+    "valueId": "learning",
+    "capabilityId": "cap_application_coaching_001",
+    "missionId": "mission_student_scholarship_001",
+    "gapId": "gap_application_quality_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Application coaching specifically addresses the learning dimension of the quality gap — the coaching process builds transferable skills that improve all future scholarship applications, not only the immediate one. References can_address VCR vcr_learning_app_coach_001."
+      }
+    ]
+  },
+
+
+  {
+    "id": "vcr_rf_business_credit_access_001_capital",
+    "type": "ValueCapabilityRelation",
+    "valueId": "capital",
+    "capabilityId": "cap_business_credit_001",
+    "missionId": "mission_small_business_funding_001",
+    "gapId": "gap_business_credit_access_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Business Credit Assessment & Building is specifically required for the credit access gap — it is the primary mechanism through which capital becomes accessible to a business with no credit profile, unlocking SBA programs and preferred lenders currently out of reach. References can_address VCR vcr_capital_biz_credit_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_business_credit_access_001_execution",
+    "type": "ValueCapabilityRelation",
+    "valueId": "execution",
+    "capabilityId": "cap_business_credit_001",
+    "missionId": "mission_small_business_funding_001",
+    "gapId": "gap_business_credit_access_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Credit building is specifically required to demonstrate the execution reliability this gap requires — a formal credit profile converts 18 months of revenue history into a lender-readable signal of operational execution. References can_address VCR vcr_execution_biz_credit_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_business_credit_access_001_trust",
+    "type": "ValueCapabilityRelation",
+    "valueId": "trust",
+    "capabilityId": "cap_business_credit_001",
+    "missionId": "mission_small_business_funding_001",
+    "gapId": "gap_business_credit_access_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Business Credit Assessment specifically addresses the trust gap — creditworthiness is an institutional trust score, and building it converts existing revenue history into a formal signal that lenders can trust when evaluating the business. References can_address VCR vcr_trust_biz_credit_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_grant_identification_001_capital",
+    "type": "ValueCapabilityRelation",
+    "valueId": "capital",
+    "capabilityId": "cap_grant_search_001",
+    "missionId": "mission_small_business_funding_001",
+    "gapId": "gap_grant_identification_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Small Business Grant Search is specifically required for the grant identification gap — it converts unawareness of applicable programs into non-dilutive capital access, addressing the specific barrier that the owner cannot identify federal, state, and foundation programs. References can_address VCR vcr_capital_grant_search_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_grant_identification_001_knowledge",
+    "type": "ValueCapabilityRelation",
+    "valueId": "knowledge",
+    "capabilityId": "cap_grant_search_001",
+    "missionId": "mission_small_business_funding_001",
+    "gapId": "gap_grant_identification_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Grant Search specifically addresses the knowledge gap — the owner's unawareness of applicable programs is an information problem that grant search solves directly, bridging the gap between available funding and the owner's knowledge of it. References can_address VCR vcr_knowledge_grant_search_001."
+      }
+    ]
+  },
+
+
+  {
+    "id": "vcr_rf_accident_data_gap_001_knowledge",
+    "type": "ValueCapabilityRelation",
+    "valueId": "knowledge",
+    "capabilityId": "cap_traffic_safety_analysis_001",
+    "missionId": "mission_municipality_safety_001",
+    "gapId": "gap_accident_data_gap_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Traffic Safety Data Analysis is specifically required for this gap — the municipality's lack of structured analysis of accident clustering is an information problem, and the analysis capability converts raw incident reports into actionable corridor-level risk maps. References can_address VCR vcr_knowledge_traffic_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_accident_data_gap_001_security",
+    "type": "ValueCapabilityRelation",
+    "valueId": "security",
+    "capabilityId": "cap_traffic_safety_analysis_001",
+    "missionId": "mission_municipality_safety_001",
+    "gapId": "gap_accident_data_gap_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Safety analysis is specifically required to address the security dimension of this gap — identifying high-risk corridors is a prerequisite for any physical security improvement, and no evidence-based intervention can precede it. References can_address VCR vcr_security_traffic_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_accident_data_gap_001_justice",
+    "type": "ValueCapabilityRelation",
+    "valueId": "justice",
+    "capabilityId": "cap_traffic_safety_analysis_001",
+    "missionId": "mission_municipality_safety_001",
+    "gapId": "gap_accident_data_gap_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Traffic safety analysis specifically addresses the justice dimension of this gap — data analysis reveals whether accidents disproportionately cluster in lower-income and pedestrian-heavy corridors, enabling equity-informed prioritisation of interventions. References can_address VCR vcr_justice_traffic_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_intervention_design_001_knowledge",
+    "type": "ValueCapabilityRelation",
+    "valueId": "knowledge",
+    "capabilityId": "cap_urban_intervention_design_001",
+    "missionId": "mission_municipality_safety_001",
+    "gapId": "gap_intervention_design_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Urban Safety Intervention Design is specifically required for this gap — the city's lack of design capacity for evidence-based interventions is addressed by applying accumulated urban safety knowledge to specific road geometries within the budget cycle. References can_address VCR vcr_knowledge_urban_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_intervention_design_001_security",
+    "type": "ValueCapabilityRelation",
+    "valueId": "security",
+    "capabilityId": "cap_urban_intervention_design_001",
+    "missionId": "mission_municipality_safety_001",
+    "gapId": "gap_intervention_design_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Urban intervention design specifically addresses the security dimension — physical interventions (raised crossings, protected lanes, signal timing adjustments) are the primary mechanism through which road security improves and Vision Zero standards can be met. References can_address VCR vcr_security_urban_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_intervention_design_001_community",
+    "type": "ValueCapabilityRelation",
+    "valueId": "community",
+    "capabilityId": "cap_urban_intervention_design_001",
+    "missionId": "mission_municipality_safety_001",
+    "gapId": "gap_intervention_design_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Intervention design specifically addresses the community dimension of this gap — co-designed interventions increase community trust and compliance with safety measures, which is required for lasting safety outcomes rather than interventions that are circumvented. References can_address VCR vcr_community_urban_001."
+      }
+    ]
+  },
+
+
+  {
+    "id": "vcr_rf_volunteer_recruitment_001_community",
+    "type": "ValueCapabilityRelation",
+    "valueId": "community",
+    "capabilityId": "cap_volunteer_recruitment_001",
+    "missionId": "mission_ngo_volunteers_001",
+    "gapId": "gap_volunteer_recruitment_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Volunteer Recruitment Platform is specifically required for the recruitment gap — it addresses the mechanism gap of connecting community members to collective action to fill the NGO's 40 defined roles, growing current intake from <10/month. References can_address VCR vcr_community_volrec_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_volunteer_recruitment_001_care",
+    "type": "ValueCapabilityRelation",
+    "valueId": "care",
+    "capabilityId": "cap_volunteer_recruitment_001",
+    "missionId": "mission_ngo_volunteers_001",
+    "gapId": "gap_volunteer_recruitment_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Volunteer recruitment specifically addresses the care delivery gap — volunteers are the primary delivery vehicle for care in this NGO's programme, and recruitment quality determines care quality and programme capacity. References can_address VCR vcr_care_volrec_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_volunteer_recruitment_001_trust",
+    "type": "ValueCapabilityRelation",
+    "valueId": "trust",
+    "capabilityId": "cap_volunteer_recruitment_001",
+    "missionId": "mission_ngo_volunteers_001",
+    "gapId": "gap_volunteer_recruitment_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Recruitment platform specifically addresses the trust dimension — matching quality determines whether volunteers trust the NGO with their time, which is the primary driver of sustained participation above the current <10/month intake rate. References can_address VCR vcr_trust_volrec_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_volunteer_coordination_001_community",
+    "type": "ValueCapabilityRelation",
+    "valueId": "community",
+    "capabilityId": "cap_volunteer_management_001",
+    "missionId": "mission_ngo_volunteers_001",
+    "gapId": "gap_volunteer_coordination_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Volunteer Coordination & Retention specifically addresses the community dimension of the coordination gap — systematic coordination sustains community cohesion by keeping volunteers informed and valued, addressing the root cause of the 45% annual attrition rate. References can_address VCR vcr_community_volmgmt_001."
+      }
+    ]
+  },
+  {
+    "id": "vcr_rf_volunteer_coordination_001_execution",
+    "type": "ValueCapabilityRelation",
+    "valueId": "execution",
+    "capabilityId": "cap_volunteer_management_001",
+    "missionId": "mission_ngo_volunteers_001",
+    "gapId": "gap_volunteer_coordination_001",
+    "relationType": "required_for",
+    "status": "candidate",
+    "evidenceGrade": "Candidate",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-15T00:00:00.000Z",
+    "evidence": [
+      {
+        "signal": "Intent",
+        "source": "philos-program",
+        "observedAt": "2026-07-15T00:00:00.000Z",
+        "note": "Contextual: Volunteer management specifically addresses the execution gap — management systems convert community willingness into reliable, measurable programme delivery, replacing the current spreadsheet-and-group-chat coordination failure that is driving attrition. References can_address VCR vcr_execution_volmgmt_001."
+      }
+    ]
   }
 ]

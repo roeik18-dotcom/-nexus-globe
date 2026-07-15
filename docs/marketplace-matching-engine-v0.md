@@ -1,4 +1,4 @@
-# Marketplace Matching Engine — v0.1
+# Marketplace Matching Engine — v0.2
 
 **Status: Candidate Specification — not validated, not implemented**
 
@@ -11,6 +11,64 @@ internally consistent.*
 
 *Independence note: These invariants do not confirm or refute D4 (sacred-value hysteresis).
 They govern write-path correctness only.*
+
+---
+
+## §0 Phase 0 — Contextual Qualification (`required_for`)
+
+*Added in v0.2. Specifies the read-only `required_for` VCR relation and its invariants.*
+
+### §0.1 Purpose
+
+`required_for` is a `ValueCapabilityRelation` (`relationType = "required_for"`) that
+contextually narrows a general `can_address` VCR to a specific (Mission, Gap) context.
+It records *which capability is required* to address a value in the context of a
+particular mission and gap — not which provider has been selected.
+
+### §0.2 Chain
+
+```
+Mission
+→ mission.gaps
+→ Gap.requiredValues
+→ required_for where:
+     missionId = selected mission
+     gapId ∈ selected mission gaps
+     valueId matches that Gap requirement
+→ Capability
+→ can_deliver PCR
+→ Provider (example only — no selection implied)
+```
+
+### §0.3 Invariants
+
+Every `required_for` record **must** satisfy all of the following:
+
+| # | Invariant |
+|---|-----------|
+| RF-1 | `missionId` is present and references a known Mission |
+| RF-2 | `gapId` is present and references a known Gap |
+| RF-3 | `valueId` is present and references a known Value |
+| RF-4 | `capabilityId` is present and references a known Capability |
+| RF-5 | The Gap identified by `gapId` belongs to the Mission identified by `missionId` |
+| RF-6 | The `valueId` appears in `Gap.requiredValues` for the identified Gap |
+| RF-7 | A `can_address` VCR exists for the same (`valueId`, `capabilityId`) pair |
+| RF-8 | No duplicate `(missionId, gapId, valueId, capabilityId)` tuple exists |
+
+### §0.4 What `required_for` does NOT imply
+
+- No provider has been selected, contacted, or evaluated.
+- No `selected_for` PCR exists or is implied.
+- No execution, delivery, or outcome is implied.
+- No claim of matching, eligibility, or ranking is made.
+- `required_for` is not a `selected_for` precursor — selection requires a
+  separate `SelectionDecision` entity (§2).
+
+### §0.5 Deferred
+
+`selected_for` VCR write-path is deferred to a future phase. No write-path
+for `required_for` records exists in Phase 0 — all records are authored
+offline and validated by `scripts/validate-required-for.js`.
 
 ---
 

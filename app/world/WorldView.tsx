@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import ForceGraph, { type GraphNode, type GraphEdge } from "@/app/world/ForceGraph";
 import type { Mission } from "@/app/lib/mission/schema";
 import type { Gap } from "@/app/lib/gap/schema";
 import type { Value } from "@/app/lib/value/schema";
@@ -128,6 +129,8 @@ export default function WorldView({
   const [selectedMissionId, setSelectedMissionId] = useState<string>(missions[0]?.id ?? "");
   const [cascadeStep, setCascadeStep] = useState<CascadeStep>(0);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [viewMode, setViewMode] = useState<"contextual" | "taxonomic">("contextual");
+  const [inspectedNode, setInspectedNode] = useState<GraphNode | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const reducedMotionRef = useRef(false);
 
@@ -162,6 +165,7 @@ export default function WorldView({
     timers.current.forEach(clearTimeout);
     timers.current = [];
     setSelectedMissionId(missionId);
+    setInspectedNode(null);
     if (reducedMotionRef.current) {
       setCascadeStep(4);
       return;
@@ -237,8 +241,16 @@ export default function WorldView({
       .flatMap(ref => gapById.get(ref.gapId)?.requiredValues ?? [])
       .map(r => r.valueId)
   );
+  // Mode-aware VCR source
+  const contextualVcrs = vcRelations.filter(
+    r => r.relationType === "required_for" && r.missionId === selectedMission?.id
+  );
+  const modeVcrs = viewMode === "contextual"
+    ? contextualVcrs
+    : vcRelations.filter(r => r.relationType === "can_address");
+
   const activeCapIds = new Set<string>(
-    vcRelations.filter(r => activeValueIds.has(r.valueId)).map(r => r.capabilityId)
+    modeVcrs.filter(r => activeValueIds.has(r.valueId)).map(r => r.capabilityId)
   );
   const activeProvIds = new Set<string>(
     pcRelations.filter(r => activeCapIds.has(r.capabilityId)).map(r => r.providerId)
@@ -253,7 +265,7 @@ export default function WorldView({
   );
 
   // Active cascade edges
-  const cascadeVcrs = vcRelations.filter(
+  const cascadeVcrs = modeVcrs.filter(
     r => activeValueIds.has(r.valueId) && activeCapIds.has(r.capabilityId)
   );
   const cascadePcrs = pcRelations.filter(
@@ -316,9 +328,9 @@ export default function WorldView({
   const dominantValId = [...valGapCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
   const dominantVal   = VALUES.find(v => v.id === dominantValId) ?? null;
 
-  // Most connected active value: highest number of VCR edges
+  // Most connected active value: highest number of VCR edges (mode-scoped)
   const valVcrCount = new Map<string, number>();
-  for (const vcr of vcRelations) {
+  for (const vcr of modeVcrs) {
     if (activeValueIds.has(vcr.valueId)) {
       valVcrCount.set(vcr.valueId, (valVcrCount.get(vcr.valueId) ?? 0) + 1);
     }
@@ -332,6 +344,145 @@ export default function WorldView({
   const coveredCapCount   = [...activeCapIds].filter(id => capsWithProvider.has(id)).length;
   const uncoveredCapCount = activeCapIds.size - coveredCapCount;
   const coveragePct       = activeCapIds.size > 0 ? Math.round((coveredCapCount / activeCapIds.size) * 100) : 0;
+
+  // Mission Health metrics
+  const missionGapIds       = new Set((selectedMission?.gaps ?? []).map(r => r.gapId));
+  const gapsWithRF          = new Set(contextualVcrs.map(r => r.gapId));
+  const graphIntegrityPct   = missionGapIds.size > 0
+    ? Math.round((gapsWithRF.size / missionGapIds.size) * 100)
+    : 0;
+  const validationPass      = graphIntegrityPct === 100 && contextualVcrs.length > 0;
+  const missionHealthPct    = Math.round(
+    graphIntegrityPct * 0.55 + (validationPass ? 40 : 0) + (activeProvIds.size > 0 ? 5 : 0)
+  );
+  const missionStage        = contextualVcrs.length > 0
+    ? "Contextual Qualification"
+    : "Initialization";
+  const evidenceCount       = contextualVcrs.reduce(
+    (n, r) => n + (r.evidence ?? []).filter(e => e.signal !== "Intent").length, 0
+  );
+
+  // ─── Force Graph data (Rendering Layer — no data layer changes) ───────────────
+
+  const valueById = useMemo(() => new Map(values.map(v => [v.id, v])), [values]);
+  const capById   = useMemo(() => new Map(capabilities.map(c => [c.id, c])), [capabilities]);
+  const provById  = useMemo(() => new Map(providers.map(p => [p.id, p])), [providers]);
+
+  function gapNodeLabel(gapId: string): string {
+    return gapId
+      .replace(/^gap_/, "")
+      .replace(/_\d+$/, "")
+      .split("_")
+      .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const { graphNodes, graphEdges } = useMemo(() => {
+    if (!selectedMission) return { graphNodes: [], graphEdges: [] };
+
+    const gnodes: GraphNode[] = [];
+    const gedges: GraphEdge[] = [];
+    const seen = new Set<string>();
+    const addN = (n: GraphNode) => { if (!seen.has(n.id)) { seen.add(n.id); gnodes.push(n); } };
+
+    addN({ id: selectedMission.id, type: "mission", label: missionLabel(selectedMission) });
+
+    for (const gapRef of selectedMission.gaps ?? []) {
+      const gap = gapById.get(gapRef.gapId);
+      if (!gap) continue;
+
+      const g = gap as unknown as { id: string; context?: { description?: string }; requiredValues?: Array<{ valueId: string }> };
+      addN({ id: g.id, type: "gap", label: gapNodeLabel(g.id), sublabel: g.context?.description?.slice(0, 70) });
+      gedges.push({ id: `m-g-${g.id}`, source: selectedMission.id, target: g.id, type: "mission_gap" });
+
+      for (const vRef of g.requiredValues ?? []) {
+        const val = valueById.get(vRef.valueId) as unknown as { id: string; context?: { label?: string; domain?: string } } | undefined;
+        if (!val) continue;
+
+        addN({ id: vRef.valueId, type: "value", label: val.context?.label ?? vRef.valueId, sublabel: val.context?.domain });
+        gedges.push({ id: `g-v-${g.id}-${vRef.valueId}`, source: g.id, target: vRef.valueId, type: "gap_value" });
+
+        const relevantVcrs = viewMode === "contextual"
+          ? contextualVcrs.filter(r => r.valueId === vRef.valueId)
+          : vcRelations.filter(r => r.relationType === "can_address" && r.valueId === vRef.valueId);
+
+        for (const vcr of relevantVcrs) {
+          const cap = capById.get(vcr.capabilityId) as unknown as { id: string; context?: { label?: string; domain?: string } } | undefined;
+          if (!cap) continue;
+
+          addN({ id: vcr.capabilityId, type: "capability", label: cap.context?.label ?? vcr.capabilityId, sublabel: cap.context?.domain });
+          gedges.push({ id: vcr.id, source: vRef.valueId, target: vcr.capabilityId, type: viewMode === "contextual" ? "required_for" : "can_address" });
+
+          for (const pcr of pcRelations.filter(r => r.capabilityId === vcr.capabilityId)) {
+            const prov = provById.get(pcr.providerId) as unknown as { id: string; context?: { label?: string; providerType?: string } } | undefined;
+            if (!prov) continue;
+
+            addN({ id: pcr.providerId, type: "provider", label: prov.context?.label ?? pcr.providerId, sublabel: prov.context?.providerType });
+            gedges.push({ id: pcr.id, source: vcr.capabilityId, target: pcr.providerId, type: "can_deliver" });
+          }
+        }
+      }
+    }
+
+    return { graphNodes: gnodes, graphEdges: gedges };
+  }, [selectedMission, viewMode, contextualVcrs, vcRelations, gapById, valueById, capById, provById, pcRelations]);
+
+  const handleNodeClick = useCallback((node: GraphNode | null) => {
+    setInspectedNode(node);
+  }, []);
+
+  // Inspector panel — pre-computed so the IIFE is outside JSX ─────────────────
+  const INSP_C: Record<string, string> = {
+    mission: "#A371F7", gap: "#5B8CFF", value: "#22D3EE",
+    capability: "#FFB84D", provider: "#34D399",
+  };
+  const inspPanel = inspectedNode ? (() => {
+    const c  = INSP_C[inspectedNode.type] ?? "#6E7681";
+    const tl = inspectedNode.type.charAt(0).toUpperCase() + inspectedNode.type.slice(1);
+    const connCount =
+      inspectedNode.type === "mission"    ? missionGapIds.size :
+      inspectedNode.type === "gap"        ? graphEdges.filter(e => e.source === inspectedNode.id && e.type === "gap_value").length :
+      inspectedNode.type === "value"      ? graphEdges.filter(e => e.source === inspectedNode.id).length :
+      inspectedNode.type === "capability" ? graphEdges.filter(e => e.source === inspectedNode.id && e.type === "can_deliver").length :
+      0;
+    const connLabel =
+      inspectedNode.type === "mission"    ? "gaps" :
+      inspectedNode.type === "gap"        ? "values" :
+      inspectedNode.type === "value"      ? "capabilities" :
+      inspectedNode.type === "capability" ? "providers" : "";
+    return (
+      <div style={{ background: `${c}0d`, border: `1px solid ${c}33`, borderRadius: 6, padding: "12px 14px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
+          <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: `${c}99` }}>
+            {tl}
+          </div>
+          <button
+            onClick={() => setInspectedNode(null)}
+            style={{ fontSize: 10, color: `${c}66`, background: "none", border: "none", cursor: "pointer", padding: "0 2px", lineHeight: 1 }}
+            aria-label="Close inspector"
+          >✕</button>
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: c, lineHeight: 1.4, marginBottom: 5 }}>
+          {inspectedNode.label}
+        </div>
+        {inspectedNode.sublabel && (
+          <div style={{ fontSize: 9, color: `${c}88`, lineHeight: 1.55, marginBottom: 6 }}>{inspectedNode.sublabel}</div>
+        )}
+        <div style={{ borderTop: `1px solid ${c}22`, paddingTop: 6, marginTop: 4 }}>
+          <div style={{ fontSize: 9, color: "#1a3550", marginBottom: 3 }}>
+            <code style={{ fontSize: 8, color: `${c}77`, background: `${c}0a`, padding: "1px 4px", borderRadius: 2, fontFamily: "var(--font-geist-mono), monospace" }}>
+              {inspectedNode.type}
+            </code>
+            {connLabel && <span style={{ color: "#2a4a6a" }}> · {connCount} {connLabel}</span>}
+          </div>
+          <div style={{ fontSize: 8, color: "#0f2030", fontFamily: "var(--font-geist-mono), monospace", wordBreak: "break-all" as const }}>
+            {inspectedNode.id.length > 32 ? inspectedNode.id.slice(0, 30) + "…" : inspectedNode.id}
+          </div>
+        </div>
+      </div>
+    );
+  })() : null;
 
   // ─── Render ───────────────────────────────────────────────────────────────────
 
@@ -423,17 +574,34 @@ export default function WorldView({
         <div style={{
           background: "rgba(164,113,247,0.05)",
           border: "1px solid rgba(164,113,247,0.15)",
-          borderRadius: 5, padding: "9px 14px", marginBottom: 14,
+          borderRadius: 5, padding: "9px 14px", marginBottom: viewMode === "contextual" && activeCapIds.size === 0 ? 8 : 14,
           fontSize: 11, color: "#6a4a8a", lineHeight: 1.6,
         }}>
           <strong style={{ color: "#A371F7" }}>Live Reference Cascade</strong> — repository-backed, not observed flow.
           &nbsp;·&nbsp;
-          Since{" "}
-          <code style={{ fontSize: 10, color: "#7a5aaa", background: "rgba(164,113,247,0.1)", padding: "1px 4px", borderRadius: 2 }}>
-            required_for
-          </code>{" "}
-          relations don&apos;t exist yet, this animation shows taxonomic cascade (what can address these values in general), not contextual matching (what is required for this specific mission).
+          {viewMode === "contextual" ? (
+            <>Showing <strong style={{ color: "#A371F7" }}>Contextual</strong> chain via{" "}
+            <code style={{ fontSize: 10, color: "#7a5aaa", background: "rgba(164,113,247,0.1)", padding: "1px 4px", borderRadius: 2 }}>required_for</code>
+            {" "}— what is required for this specific mission.</>
+          ) : (
+            <>Showing <strong style={{ color: "#FFB84D" }}>Explore Taxonomy</strong> chain via{" "}
+            <code style={{ fontSize: 10, color: "#9a7030", background: "rgba(255,184,77,0.08)", padding: "1px 4px", borderRadius: 2 }}>can_address</code>
+            {" "}— what can address these values in general.</>
+          )}
         </div>
+
+        {/* Empty state — contextual mode with no required_for VCRs for this mission */}
+        {viewMode === "contextual" && activeCapIds.size === 0 && (
+          <div style={{
+            background: "rgba(248,113,113,0.05)",
+            border: "1px solid rgba(248,113,113,0.2)",
+            borderRadius: 5, padding: "9px 14px", marginBottom: 14,
+            fontSize: 11, color: "#7a3030", lineHeight: 1.6,
+          }}>
+            <strong style={{ color: "#F87171" }}>No contextual qualification exists for this mission</strong>
+            {" "}— switch to <strong>Explore Taxonomy</strong> to see general capability coverage.
+          </div>
+        )}
 
         {/* Caveat */}
         <div style={{
@@ -449,364 +617,23 @@ export default function WorldView({
 
         <div style={{ display: "flex", gap: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
 
-          {/* SVG World */}
-          <div style={{ flex: "1 1 600px", minWidth: 320 }}>
-            <svg
-              viewBox="0 0 1000 960"
-              width="100%"
-              style={{ display: "block", overflow: "visible" }}
-              aria-label="Philos Living World — potential relationships, live value references, and PUDM cascade diagram"
-            >
-              <defs>
-                {VALUES.map(v => (
-                  <radialGradient key={v.id} id={`vg-${v.id}`} cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor={VALUE_COLOR[v.id]} stopOpacity={0.25} />
-                    <stop offset="100%" stopColor={VALUE_COLOR[v.id]} stopOpacity={0} />
-                  </radialGradient>
-                ))}
-                <radialGradient id="core-glow" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#5B8CFF" stopOpacity={0.18} />
-                  <stop offset="100%" stopColor="#5B8CFF" stopOpacity={0} />
-                </radialGradient>
-                <radialGradient id="core-pulse" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#A371F7" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="#A371F7" stopOpacity={0} />
-                </radialGradient>
-              </defs>
-
-              {/* Ring guides */}
-              <circle cx={CX} cy={CY} r={VALUE_R}  fill="none" stroke="#0a1e30" strokeWidth={1} strokeDasharray="3 6" />
-              <circle cx={CX} cy={CY} r={CAP_R}    fill="none" stroke="#0c2238" strokeWidth={1} strokeDasharray="2 8" />
-              <circle cx={CX} cy={CY} r={DOMAIN_R} fill="none" stroke="#081828" strokeWidth={1} strokeDasharray="3 8" />
-              <circle cx={CX} cy={CY} r={PROV_R}   fill="none" stroke="#0a1a2a" strokeWidth={1} strokeDasharray="2 10" />
-              <circle cx={CX} cy={CY} r={USER_R}   fill="none" stroke="#060f1e" strokeWidth={1} strokeDasharray="3 10" />
-
-              {/* ── POTENTIAL LAYER ────────────────────────────────────────── */}
-
-              {/* User → Value potential connections */}
-              {userNodes.map(u =>
-                u.values.map(vid => {
-                  const vn = valueMap.get(vid);
-                  if (!vn) return null;
-                  return (
-                    <line
-                      key={`u-${u.i}-${vid}`}
-                      x1={u.x} y1={u.y} x2={vn.x} y2={vn.y}
-                      stroke={VALUE_COLOR[vid]}
-                      strokeWidth={0.6} strokeDasharray="3 5" strokeOpacity={0.18}
-                    />
-                  );
-                })
-              )}
-
-              {/* Value → Domain potential connections */}
-              {domainNodes.map(d => {
-                const vn = valueMap.get(d.valueId);
-                if (!vn) return null;
-                return (
-                  <line
-                    key={`d-${d.i}`}
-                    x1={vn.x} y1={vn.y} x2={d.x} y2={d.y}
-                    stroke={VALUE_COLOR[d.valueId]}
-                    strokeWidth={0.8} strokeDasharray="3 4" strokeOpacity={0.28}
-                  />
-                );
-              })}
-
-              {/* Core → Value potential connections */}
-              {valueNodes.map(v => (
-                <line
-                  key={`cv-${v.id}`}
-                  x1={CX} y1={CY} x2={v.x} y2={v.y}
-                  stroke={VALUE_COLOR[v.id]}
-                  strokeWidth={0.9} strokeDasharray="4 5" strokeOpacity={0.32}
-                />
-              ))}
-
-              {/* Value glow halos */}
-              {valueNodes.map(v => (
-                <circle key={`vh-${v.id}`} cx={v.x} cy={v.y} r={28} fill={`url(#vg-${v.id})`} />
-              ))}
-
-              {/* ── ALL-MISSIONS LIVE REFERENCE LAYER ─────────────────────── */}
-
-              {valueNodes.filter(v => allLiveValueIds.has(v.id)).map(v => (
-                <line
-                  key={`live-cv-${v.id}`}
-                  x1={CX} y1={CY} x2={v.x} y2={v.y}
-                  stroke={VALUE_COLOR[v.id]} strokeWidth={1.8} strokeOpacity={0.7}
-                />
-              ))}
-              {valueNodes.filter(v => allLiveValueIds.has(v.id)).map(v => (
-                <circle
-                  key={`live-vring-${v.id}`}
-                  cx={v.x} cy={v.y} r={17}
-                  fill="none" stroke={VALUE_COLOR[v.id]} strokeWidth={1.5} strokeOpacity={0.55}
-                />
-              ))}
-
-              {/* ── LIVE PUDM CASCADE LAYER ───────────────────────────────── */}
-
-              {/* Step 2 — active core → value lines */}
-              {valueNodes.map(v => (
-                <line
-                  key={`casc-cv-${v.id}`}
-                  x1={CX} y1={CY} x2={v.x} y2={v.y}
-                  stroke={VALUE_COLOR[v.id]} strokeWidth={2.8}
-                  style={{
-                    opacity: cascadeStep >= 2 && activeValueIds.has(v.id) ? 1 : 0,
-                    transition: "opacity 0.35s ease",
-                  }}
-                />
-              ))}
-
-              {/* Step 2 — active value highlight rings */}
-              {valueNodes.map(v => (
-                <circle
-                  key={`casc-vring-${v.id}`}
-                  cx={v.x} cy={v.y} r={21}
-                  fill="none" stroke={VALUE_COLOR[v.id]} strokeWidth={2.2}
-                  style={{
-                    opacity: cascadeStep >= 2 && activeValueIds.has(v.id) ? 0.85 : 0,
-                    transition: "opacity 0.35s ease",
-                  }}
-                />
-              ))}
-
-              {/* Step 3 — VCR lines: active value → active capability */}
-              {cascadeVcrs.map(r => {
-                const vn = valueMap.get(r.valueId);
-                const cn = capMap.get(r.capabilityId);
-                if (!vn || !cn) return null;
-                return (
-                  <line
-                    key={`casc-vc-${r.id}`}
-                    x1={vn.x} y1={vn.y} x2={cn.x} y2={cn.y}
-                    stroke={VALUE_COLOR[r.valueId]} strokeWidth={1.4}
-                    style={{
-                      opacity: cascadeStep >= 3 ? 0.65 : 0,
-                      transition: "opacity 0.4s ease",
-                    }}
-                  />
-                );
-              })}
-
-              {/* Capability nodes — all visible, active ones lit at step 3 */}
-              {capNodes.map(cap => {
-                const color   = VALUE_COLOR[capPrimaryValId.get(cap.id) ?? "knowledge"];
-                const isActive = activeCapIds.has(cap.id);
-                return (
-                  <g
-                    key={`cap-${cap.id}`}
-                    style={{ opacity: capGroupOpacity(cap.id), transition: "opacity 0.4s ease" }}
-                  >
-                    <rect
-                      x={cap.x - 5.5} y={cap.y - 5.5}
-                      width={11} height={11}
-                      transform={`rotate(45 ${cap.x} ${cap.y})`}
-                      fill={color}
-                      fillOpacity={isActive && cascadeStep >= 3 ? 0.22 : 0.07}
-                      stroke={color}
-                      strokeWidth={isActive && cascadeStep >= 3 ? 1.8 : 0.8}
-                    />
-                    {isActive && cascadeStep >= 3 && (
-                      <text
-                        x={cap.x} y={cap.y + 17}
-                        textAnchor="middle" fontSize={6} fill={color} fillOpacity={0.8}
-                        style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace" }}
-                      >
-                        {cap.context.label.length > 13
-                          ? cap.context.label.slice(0, 12) + "…"
-                          : cap.context.label}
-                      </text>
-                    )}
-                  </g>
-                );
-              })}
-
-              {/* Step 4 — PCR lines: active capability → active provider */}
-              {cascadePcrs.map(r => {
-                const cn = capMap.get(r.capabilityId);
-                const pn = provMap.get(r.providerId);
-                if (!cn || !pn) return null;
-                const color = VALUE_COLOR[capPrimaryValId.get(r.capabilityId) ?? "knowledge"];
-                return (
-                  <line
-                    key={`casc-cp-${r.id}`}
-                    x1={cn.x} y1={cn.y} x2={pn.x} y2={pn.y}
-                    stroke={color} strokeWidth={1}
-                    style={{
-                      opacity: cascadeStep >= 4 ? 0.5 : 0,
-                      transition: "opacity 0.5s ease",
-                    }}
-                  />
-                );
-              })}
-
-              {/* Provider nodes — all visible, active ones lit at step 4 */}
-              {provNodes.map(prov => {
-                const color    = VALUE_COLOR[provPrimaryValId.get(prov.id) ?? "knowledge"];
-                const isActive  = activeProvIds.has(prov.id);
-                return (
-                  <g
-                    key={`prov-${prov.id}`}
-                    style={{ opacity: provGroupOpacity(prov.id), transition: "opacity 0.5s ease" }}
-                  >
-                    <circle
-                      cx={prov.x} cy={prov.y} r={5}
-                      fill={color}
-                      fillOpacity={isActive && cascadeStep >= 4 ? 0.28 : 0.06}
-                      stroke={color}
-                      strokeWidth={isActive && cascadeStep >= 4 ? 1.5 : 0.7}
-                      strokeDasharray={isActive && cascadeStep >= 4 ? undefined : "2 3"}
-                    />
-                    {isActive && cascadeStep >= 4 && (
-                      <text
-                        x={prov.x} y={prov.y + 13}
-                        textAnchor="middle" fontSize={5.5} fill={color} fillOpacity={0.75}
-                        style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace" }}
-                      >
-                        {prov.context.label.length > 11
-                          ? prov.context.label.slice(0, 10) + "…"
-                          : prov.context.label}
-                      </text>
-                    )}
-                  </g>
-                );
-              })}
-
-              {/* ── EXISTING STATIC NODES (potential layer) ──────────────── */}
-
-              {/* Domain nodes */}
-              {domainNodes.map(d => (
-                <g key={`dn-${d.i}`}>
-                  <circle
-                    cx={d.x} cy={d.y} r={5}
-                    fill={VALUE_COLOR[d.valueId]} fillOpacity={0.22}
-                    stroke={VALUE_COLOR[d.valueId]} strokeWidth={0.8} strokeOpacity={0.5}
-                  />
-                  <text
-                    x={d.x} y={d.y}
-                    textAnchor="middle" dominantBaseline="central"
-                    fontSize={7.5} fill={VALUE_COLOR[d.valueId]} fillOpacity={0.55}
-                    style={{ fontFamily: "var(--font-geist-sans), system-ui, sans-serif" }}
-                    transform={`translate(${d.x < CX ? -14 : 14}, ${d.y < CY ? -11 : 11})`}
-                  >
-                    {d.label}
-                  </text>
-                </g>
-              ))}
-
-              {/* User mission nodes */}
-              {userNodes.map(u => {
-                const isLeft  = u.x < CX - 20;
-                const isRight = u.x > CX + 20;
-                return (
-                  <g key={`un-${u.i}`}>
-                    <circle cx={u.x} cy={u.y} r={7} fill="#060f1c" stroke="#0c2040" strokeWidth={1} />
-                    <circle cx={u.x} cy={u.y} r={3} fill="#1a3a5a" />
-                    <text
-                      x={u.x + (isLeft ? -13 : isRight ? 13 : 0)} y={u.y}
-                      textAnchor={isLeft ? "end" : isRight ? "start" : "middle"}
-                      dominantBaseline="central" fontSize={8} fill="#2a5a80"
-                      style={{ fontFamily: "var(--font-geist-sans), system-ui, sans-serif" }}
-                    >
-                      {u.label}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* Value nodes — opacity reflects cascade state */}
-              {valueNodes.map(v => (
-                <g key={`vn-${v.id}`}>
-                  <circle
-                    cx={v.x} cy={v.y} r={13}
-                    fill="#060f1c" stroke={VALUE_COLOR[v.id]} strokeWidth={1.2}
-                    style={{
-                      strokeOpacity: valueStrokeOpacity(v.id),
-                      transition: "stroke-opacity 0.35s ease",
-                    }}
-                  />
-                  <text
-                    x={v.x} y={v.y - 1}
-                    textAnchor="middle" dominantBaseline="central"
-                    fontSize={8.5} fontWeight="600" fill={VALUE_COLOR[v.id]}
-                    style={{
-                      fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
-                      fillOpacity: valueLabelOpacity(v.id),
-                      transition: "fill-opacity 0.35s ease",
-                    }}
-                  >
-                    {v.label}
-                  </text>
-                </g>
-              ))}
-
-              {/* ── FUSION CORE ────────────────────────────────────────────── */}
-
-              {/* Core pulse glow (step 1) */}
-              <circle
-                cx={CX} cy={CY} r={CORE_R + 42} fill="url(#core-pulse)"
-                style={{ opacity: cascadeStep === 1 ? 1 : 0, transition: "opacity 0.25s ease" }}
-              />
-              <circle cx={CX} cy={CY} r={CORE_R + 20} fill="url(#core-glow)" />
-              <circle
-                cx={CX} cy={CY} r={CORE_R}
-                fill="#030e1a"
-                stroke={cascadeStep >= 1 ? "#7a50c0" : "#0e2a46"}
-                strokeWidth={cascadeStep >= 1 ? 2.5 : 1.5}
-                style={{ transition: "stroke 0.2s ease, stroke-width 0.2s ease" }}
-              />
-
-              {/* OPM ⇄ Marketplace axes */}
-              <line x1={CX - 40} y1={CY - 12} x2={CX + 40} y2={CY - 12} stroke="#1a3a5a" strokeWidth={1} strokeDasharray="2 4" />
-              <line x1={CX - 40} y1={CY + 12} x2={CX + 40} y2={CY + 12} stroke="#1a3a5a" strokeWidth={1} strokeDasharray="2 4" />
-              <text x={CX} y={CY - 23} textAnchor="middle" fontSize={7.5} fill="#1a4a6a"
-                style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace" }}>OPM</text>
-              <text x={CX} y={CY - 12} textAnchor="middle" fontSize={6} fill="#0e2a40"
-                style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace" }}>⇅</text>
-              <text x={CX} y={CY + 8} textAnchor="middle" fontSize={6} fill="#0e2a40"
-                style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace" }}>MARKETPLACE</text>
-              <text x={CX} y={CY + 20} textAnchor="middle" fontSize={7.5} fill="#1a3050" fontWeight="700"
-                style={{ fontFamily: "var(--font-geist-sans), system-ui, sans-serif" }}>PHILOS</text>
-              <text x={CX} y={CY + 32} textAnchor="middle" fontSize={6.5} fill="#0d2035"
-                style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace" }}>Fusion Core</text>
-
-              {/* Ring labels */}
-              <text x={CX + VALUE_R  + 6} y={CY} fontSize={7} fill="#0a2030"
-                style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace" }}>Values</text>
-              <text x={CX + CAP_R    + 6} y={CY} fontSize={7} fill="#0c2838"
-                style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace" }}>Capabilities</text>
-              <text x={CX + DOMAIN_R + 6} y={CY} fontSize={7} fill="#081828"
-                style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace" }}>Domains</text>
-              <text x={CX + PROV_R   + 6} y={CY} fontSize={7} fill="#0a1a28"
-                style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace" }}>Providers</text>
-              <text x={CX + USER_R   + 6} y={CY} fontSize={7} fill="#060f1a"
-                style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace" }}>Missions</text>
-
-              {/* Potential label */}
-              <text x={CX} y={CY + USER_R + 32} textAnchor="middle" fontSize={7.5} fill="#0d2030"
-                letterSpacing={2} style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace" }}>
-                ── ── POTENTIAL RELATIONSHIPS ── ──
-              </text>
-
-              {/* Live label */}
-              <text x={CX} y={CY + USER_R + 46} textAnchor="middle" fontSize={7.5} fill="#1a4a2a"
-                letterSpacing={2} style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace" }}>
-                ── LIVE: {missions.length}M · {gaps.length}G · {values.length}V · {capabilities.length}C · {providers.length}P ──
-              </text>
-
-              {/* Cascade step indicator */}
-              <text x={CX} y={CY + USER_R + 60} textAnchor="middle" fontSize={7} fill="#4a2a7a"
-                letterSpacing={1} style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace" }}>
-                {cascadeStatusText}
-              </text>
-            </svg>
+          {/* Force Graph */}
+          <div style={{ flex: "1 1 600px", minWidth: 320, height: 560, position: "relative" }}>
+            <ForceGraph
+              nodes={graphNodes}
+              edges={graphEdges}
+              selectedNodeId={inspectedNode?.id ?? null}
+              cascadeStep={cascadeStep}
+              onNodeClick={handleNodeClick}
+              reducedMotion={reducedMotion}
+            />
           </div>
 
           {/* Sidebar — Live Decision Engine */}
           <div style={{ flex: "0 0 240px", minWidth: 200, display: "flex", flexDirection: "column" as const, gap: 14 }}>
+
+            {/* 0. INSPECTOR — shown when a node is selected */}
+            {inspPanel}
 
             {/* 1. MISSION */}
             <div style={{
@@ -817,19 +644,30 @@ export default function WorldView({
               <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#5a3a90", marginBottom: 8 }}>
                 Mission
               </div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#c0a0ff", lineHeight: 1.4, marginBottom: 7 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#c0a0ff", lineHeight: 1.4, marginBottom: 4 }}>
                 {selectedMission ? missionLabel(selectedMission) : "—"}
               </div>
-              <div style={{ fontSize: 9.5, color: "#7a5aaa", marginBottom: 8 }}>
-                Step {cascadeStep}/4 · {STAGE_NAMES[cascadeStep]}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
+                <div style={{ fontSize: 9, color: "#7a5aaa", fontStyle: "italic" }}>
+                  {missionStage}
+                </div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#A371F7", fontVariantNumeric: "tabular-nums" }}>
+                  {cascadeStep >= 3 ? `${coveragePct}%` : "—"}
+                </div>
               </div>
               <div style={{ background: "rgba(164,113,247,0.12)", borderRadius: 2, height: 3, overflow: "hidden" as const }}>
                 <div style={{
                   height: "100%", borderRadius: 2,
                   background: "linear-gradient(90deg, #A371F7, #7a50c0)",
-                  width: `${(cascadeStep / 4) * 100}%`,
-                  transition: "width 0.4s ease",
+                  width: `${cascadeStep >= 3 ? coveragePct : (cascadeStep / 4) * 100}%`,
+                  transition: "width 0.5s ease",
                 }} />
+              </div>
+              <div style={{ fontSize: 8, color: "#4a2a7a", marginTop: 5, fontFamily: "var(--font-geist-mono), monospace" }}>
+                {cascadeStep < 4
+                  ? `Step ${cascadeStep}/4 · ${STAGE_NAMES[cascadeStep]}`
+                  : <span style={{ color: "#34D399" }}>Chain complete</span>
+                }
               </div>
             </div>
 
@@ -893,40 +731,59 @@ export default function WorldView({
               </div>
             </div>
 
-            {/* 3. SYSTEM STATUS */}
+            {/* 3. SYSTEM STATE */}
             <div style={{
               background: "#030c18",
               border: "1px solid #081828",
               borderRadius: 6, padding: "12px 14px",
             }}>
               <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
-                System Status
+                System State
               </div>
               <div style={{ display: "flex", flexDirection: "column" as const, gap: 5 }}>
-                {([
-                  { label: "Missions",     value: String(missions.length),                                         color: "#A371F7" },
-                  { label: "Gaps",         value: String(gaps.length),                                             color: "#8a60d0" },
-                  { label: "Values",       value: String(values.length),                                           color: "#5B8CFF" },
-                  { label: "Capabilities", value: String(capabilities.length),                                     color: "#FFB84D" },
-                  { label: "Providers",    value: String(providers.length),                                        color: "#34D399" },
-                  { label: "Coverage",     value: cascadeStep >= 3 ? `${coveragePct}%` : "—",                      color: "#22D3EE" },
-                ] as { label: string; value: string; color: string }[]).map(row => (
-                  <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 10, color: "#1a3550" }}>{row.label}</span>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: row.color, fontVariantNumeric: "tabular-nums" }}>
-                      {row.value}
-                    </span>
+                {/* Mode toggle */}
+                <div style={{ marginBottom: 4 }}>
+                  <div style={{ fontSize: 9, color: "#1a3550", marginBottom: 3, letterSpacing: "0.5px", textTransform: "uppercase" as const }}>Mode</div>
+                  <div style={{ display: "flex", gap: 3 }}>
+                    {(["contextual", "taxonomic"] as const).map(mode => {
+                      const on     = viewMode === mode;
+                      const accent = mode === "contextual" ? "#A371F7" : "#FFB84D";
+                      return (
+                        <button
+                          key={mode}
+                          onClick={() => setViewMode(mode)}
+                          style={{
+                            flex: 1, fontSize: 8, fontWeight: on ? 700 : 400,
+                            padding: "3px 4px", borderRadius: 3, cursor: "pointer",
+                            background: on ? `${accent}22` : "transparent",
+                            color: on ? accent : "#1a3550",
+                            border: `1px solid ${on ? `${accent}44` : "#071420"}`,
+                            fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+                            letterSpacing: "0.3px",
+                            transition: "background 0.12s ease, color 0.12s ease",
+                          }}
+                        >
+                          {mode === "contextual" ? "Contextual" : "Explore Taxonomy"}
+                        </button>
+                      );
+                    })}
                   </div>
-                ))}
-                <div style={{ marginTop: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 10, color: "#1a3550" }}>Mode</span>
-                  <span style={{
-                    fontSize: 8, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const,
-                    background: "rgba(255,184,77,0.1)", border: "1px solid rgba(255,184,77,0.2)",
-                    borderRadius: 3, padding: "2px 6px", color: "#FFB84D",
-                  }}>
-                    Taxonomic
-                  </span>
+                </div>
+                <div style={{ borderTop: "1px solid #071420", paddingTop: 6, display: "flex", flexDirection: "column" as const, gap: 5 }}>
+                  {([
+                    { label: "Values",       value: cascadeStep >= 2 ? String(activeValueIds.size) : "—",         color: "#5B8CFF" },
+                    { label: "Capabilities", value: cascadeStep >= 3 ? String(activeCapIds.size)   : "—",         color: "#FFB84D" },
+                    { label: "Providers",    value: cascadeStep >= 4 ? String(activeProvIds.size)  : "—",         color: "#34D399" },
+                    { label: "Coverage",     value: cascadeStep >= 3 ? `${coveragePct}%`           : "—",         color: "#22D3EE" },
+                    { label: "Evidence",     value: String(evidenceCount),                                         color: "#6E7681" },
+                  ] as { label: string; value: string; color: string }[]).map(row => (
+                    <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 10, color: "#1a3550" }}>{row.label}</span>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: row.color, fontVariantNumeric: "tabular-nums" }}>
+                        {row.value}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -1014,9 +871,16 @@ export default function WorldView({
               </div>
               <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
                 {([
-                  { label: "required_for", status: "Not implemented", color: "#6E7681", note: "Contextual matching deferred (G-2)" },
-                  { label: "selected_for", status: "Disabled",        color: "#6E7681", note: "Requires execution evidence"        },
-                  { label: "Evidence",     status: "Waiting",         color: "#FFB84D", note: "Intent-grade only"                  },
+                  {
+                    label:  "required_for",
+                    status: validationPass ? "✓ Complete" : "Partial",
+                    color:  validationPass ? "#34D399" : "#FFB84D",
+                    note:   validationPass
+                      ? `${contextualVcrs.length} contextual relations — all gaps covered`
+                      : `${gapsWithRF.size}/${missionGapIds.size} gaps qualified`,
+                  },
+                  { label: "selected_for", status: "Pending",  color: "#FFB84D", note: "Write-path not yet enabled (Phase 1)" },
+                  { label: "Evidence",     status: "Waiting",  color: "#6E7681", note: "Intent-grade only · real signals: 0"  },
                 ] as { label: string; status: string; color: string; note: string }[]).map(action => (
                   <div key={action.label} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                     <div style={{ width: 1, alignSelf: "stretch", background: action.color, opacity: 0.3, marginTop: 2, flexShrink: 0 }} />
@@ -1024,15 +888,85 @@ export default function WorldView({
                       <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
                         <code style={{
                           fontSize: 8.5, color: action.color,
-                          background: "rgba(110,118,129,0.08)",
+                          background: `${action.color}0f`,
                           padding: "1px 4px", borderRadius: 2,
                         }}>
                           {action.label}
                         </code>
-                        <span style={{ fontSize: 8.5, color: action.color, opacity: 0.65 }}>{action.status}</span>
+                        <span style={{ fontSize: 8.5, color: action.color, opacity: 0.8 }}>{action.status}</span>
                       </div>
                       <div style={{ fontSize: 9, color: "#0f2030", lineHeight: 1.45 }}>{action.note}</div>
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 6. MISSION HEALTH */}
+            <div style={{
+              background: "#020a15",
+              border: "1px solid #071420",
+              borderRadius: 6, padding: "12px 14px",
+            }}>
+              <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
+                Mission Health
+              </div>
+
+              {/* Health score bar */}
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <span style={{ fontSize: 9, color: "#1a3550" }}>Health score</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: missionHealthPct >= 80 ? "#34D399" : missionHealthPct >= 50 ? "#FFB84D" : "#F87171", fontVariantNumeric: "tabular-nums" }}>
+                    {missionHealthPct}%
+                  </span>
+                </div>
+                <div style={{ background: "#071420", borderRadius: 2, height: 3, overflow: "hidden" as const }}>
+                  <div style={{
+                    height: "100%", borderRadius: 2,
+                    background: missionHealthPct >= 80
+                      ? "linear-gradient(90deg, #34D399, #22c07a)"
+                      : missionHealthPct >= 50
+                        ? "linear-gradient(90deg, #FFB84D, #e09030)"
+                        : "#F87171",
+                    width: `${missionHealthPct}%`,
+                    transition: "width 0.5s ease",
+                  }} />
+                </div>
+              </div>
+
+              {/* Health detail rows */}
+              <div style={{ display: "flex", flexDirection: "column" as const, gap: 5 }}>
+                {([
+                  {
+                    label: "Graph Integrity",
+                    value: `${graphIntegrityPct}%`,
+                    color: graphIntegrityPct === 100 ? "#34D399" : "#FFB84D",
+                  },
+                  {
+                    label: "Relation Validation",
+                    value: validationPass ? "PASS" : "PARTIAL",
+                    color: validationPass ? "#34D399" : "#FFB84D",
+                  },
+                  {
+                    label: "Read Layer",
+                    value: "LIVE",
+                    color: "#34D399",
+                  },
+                  {
+                    label: "Write Layer",
+                    value: "LOCKED",
+                    color: "#6E7681",
+                  },
+                ] as { label: string; value: string; color: string }[]).map(row => (
+                  <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 9.5, color: "#1a3550" }}>{row.label}</span>
+                    <span style={{
+                      fontSize: 8, fontWeight: 700, letterSpacing: "0.8px",
+                      color: row.color,
+                      fontFamily: "var(--font-geist-mono), monospace",
+                    }}>
+                      {row.value}
+                    </span>
                   </div>
                 ))}
               </div>

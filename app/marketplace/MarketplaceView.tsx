@@ -104,6 +104,7 @@ export default function MarketplaceView({
   missions, gaps, values, capabilities, providers, vcRelations, pcRelations,
 }: MarketplaceViewProps) {
   const [selectedMissionId, setSelectedMissionId] = useState<string>(missions[0]?.id ?? "");
+  const [viewMode,        setViewMode]        = useState<"contextual" | "taxonomic">("contextual");
   const [inspected,       setInspected]       = useState<InspectedItem | null>(null);
   const [filterGapId,     setFilterGapId]     = useState<string>("");
   const [filterValueId,   setFilterValueId]   = useState<string>("");
@@ -187,10 +188,10 @@ export default function MarketplaceView({
     setFilterProviderId(""); setFilterCoverage("all"); setFilterRelType(""); setFilterGrade("");
   }
 
-  // ── Gap coverage computation ───────────────────────────────────────────────
+  // ── Gap coverage computation (mode-aware) ─────────────────────────────────
   function gapCoverage(gap: Gap) {
     const reqValueIds = gap.requiredValues.map(r => r.valueId);
-    const seen = new Set<string>();
+    const seen  = new Set<string>();
     const items: Array<{
       capability:      Capability;
       coveredByValues: Value[];
@@ -198,32 +199,49 @@ export default function MarketplaceView({
       providers:       Provider[];
     }> = [];
 
-    for (const vid of reqValueIds) {
-      for (const capId of capIdsByValueId.get(vid) ?? []) {
-        if (seen.has(capId)) {
-          const item = items.find(i => i.capability.id === capId);
-          const val  = valueById.get(vid);
-          if (item && val && !item.coveredByValues.some(v => v.id === vid)) {
-            item.coveredByValues.push(val);
-            const vcr = vcRelations.find(r => r.valueId === vid && r.capabilityId === capId);
-            if (vcr && !item.vcrIds.includes(vcr.id)) item.vcrIds.push(vcr.id);
-          }
-          continue;
+    const sourceVcrs = viewMode === "contextual"
+      ? vcRelations.filter(r =>
+          r.relationType === "required_for" &&
+          r.missionId === mission?.id &&
+          r.gapId === gap.id
+        )
+      : vcRelations.filter(r =>
+          r.relationType === "can_address" &&
+          reqValueIds.includes(r.valueId)
+        );
+
+    for (const vcr of sourceVcrs) {
+      const vid   = vcr.valueId;
+      const capId = vcr.capabilityId;
+      if (seen.has(capId)) {
+        const item = items.find(i => i.capability.id === capId);
+        const val  = valueById.get(vid);
+        if (item && val && !item.coveredByValues.some(v => v.id === vid)) {
+          item.coveredByValues.push(val);
+          if (!item.vcrIds.includes(vcr.id)) item.vcrIds.push(vcr.id);
         }
-        seen.add(capId);
-        const cap = capabilityById.get(capId);
-        if (!cap) continue;
-        const val = valueById.get(vid);
-        const vcr = vcRelations.find(r => r.valueId === vid && r.capabilityId === capId);
-        items.push({
-          capability:      cap,
-          coveredByValues: val ? [val] : [],
-          vcrIds:          vcr ? [vcr.id] : [],
-          providers:       provsByCapId.get(capId) ?? [],
-        });
+        continue;
       }
+      seen.add(capId);
+      const cap = capabilityById.get(capId);
+      if (!cap) continue;
+      const val = valueById.get(vid);
+      items.push({
+        capability:      cap,
+        coveredByValues: val ? [val] : [],
+        vcrIds:          [vcr.id],
+        providers:       provsByCapId.get(capId) ?? [],
+      });
     }
     return items;
+  }
+
+  function hasContextualQualification(gap: Gap): boolean {
+    return vcRelations.some(r =>
+      r.relationType === "required_for" &&
+      r.missionId === mission?.id &&
+      r.gapId === gap.id
+    );
   }
 
   // ── Filtered items per gap ────────────────────────────────────────────────
@@ -758,7 +776,6 @@ export default function MarketplaceView({
             fontFamily: "monospace", lineHeight: 1.6,
           }}>
             Example providers only — no affiliation, availability, recommendation, selection, or delivery implied.
-            &nbsp;·&nbsp;Taxonomic coverage view.
             &nbsp;·&nbsp;No <code>selected_for</code> relations exist.
             &nbsp;·&nbsp;<span style={{ color: "var(--muted)" }}>Click any chip to inspect.</span>
           </div>
@@ -768,7 +785,7 @@ export default function MarketplaceView({
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6, flexWrap: "wrap" }}>
               <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.4px", margin: 0 }}>Marketplace</h1>
               <span style={{ fontSize: 11, fontFamily: "monospace", color: "var(--muted)" }}>
-                taxonomic coverage · read-only · no write-path
+                read-only · no write-path
               </span>
               <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
                 <a href="/world" style={{
@@ -805,6 +822,37 @@ export default function MarketplaceView({
                 </button>
               );
             })}
+          </div>
+
+          {/* ── Mode toggle ── */}
+          <div style={{ marginBottom: 16, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ fontSize: 10, color: "var(--muted)", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.06em" }}>View</span>
+            {(["contextual", "taxonomic"] as const).map(mode => {
+              const on     = viewMode === mode;
+              const accent = mode === "contextual" ? "#A371F7" : "#FFB84D";
+              return (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  style={{
+                    fontSize: 11, padding: "4px 12px", borderRadius: 4, cursor: "pointer",
+                    fontWeight: on ? 700 : 400,
+                    background: on ? `${accent}18` : "var(--surface)",
+                    color: on ? accent : "var(--muted)",
+                    border: `1px solid ${on ? `${accent}40` : "var(--border)"}`,
+                    fontFamily: "system-ui, -apple-system, sans-serif",
+                    transition: "background 0.12s ease, color 0.12s ease",
+                  }}
+                >
+                  {mode === "contextual" ? "Contextual" : "Explore Taxonomy"}
+                </button>
+              );
+            })}
+            <span style={{ fontSize: 10, color: "var(--muted)", fontFamily: "monospace" }}>
+              {viewMode === "contextual"
+                ? "required_for · mission-scoped"
+                : "can_address · general"}
+            </span>
           </div>
 
           {/* ── Mission card ── */}
@@ -949,9 +997,11 @@ export default function MarketplaceView({
                   </div>
 
                   <div style={{ padding: "14px 18px", display: "grid", gap: 10 }}>
-                    {items.length === 0
-                      ? <span style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}>No capability coverage mapped.</span>
-                      : items.map(item => {
+                    {viewMode === "contextual" && !hasContextualQualification(gap)
+                      ? <span style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}>No contextual qualification exists for this gap.</span>
+                      : items.length === 0
+                        ? <span style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}>No capability coverage mapped.</span>
+                        : items.map(item => {
                           const capPcrs = pcrsByCapId.get(item.capability.id) ?? [];
                           return (
                             <div key={item.capability.id} style={{
