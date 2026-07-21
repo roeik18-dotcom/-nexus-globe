@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import ForceGraph, { type GraphNode, type GraphEdge } from "@/app/world/ForceGraph";
+import CoverageDeltaExplorer from "@/app/world/CoverageDeltaExplorer";
+import { computeCoverageMetrics } from "@/app/graph/computeCoverageMetrics";
 import type { Mission } from "@/app/lib/mission/schema";
 import type { Gap } from "@/app/lib/gap/schema";
 import type { Value } from "@/app/lib/value/schema";
@@ -163,6 +165,7 @@ export default function WorldView({
   const [inspectedEdge, setInspectedEdge] = useState<GraphEdge | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [semanticLevel, setSemanticLevel] = useState<SemanticLevel>(4);
+  const [explorerOpen, setExplorerOpen] = useState(false);
   const preserveZoomRef = useRef(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const reducedMotionRef = useRef(false);
@@ -278,25 +281,8 @@ export default function WorldView({
   // Correct PUDM chain: Mission.gaps → Gap.requiredValues → Value
   // Gap is the authoritative source of required values — Mission holds only GapRef pointers
   const gapById = new Map(gaps.map(g => [g.id, g]));
-  const activeValueIds = new Set<string>(
-    (selectedMission?.gaps ?? [])
-      .flatMap(ref => gapById.get(ref.gapId)?.requiredValues ?? [])
-      .map(r => r.valueId)
-  );
-  // Mode-aware VCR source
-  const contextualVcrs = vcRelations.filter(
-    r => r.relationType === "required_for" && r.missionId === selectedMission?.id
-  );
-  const modeVcrs = viewMode === "contextual"
-    ? contextualVcrs
-    : vcRelations.filter(r => r.relationType === "can_address");
-
-  const activeCapIds = new Set<string>(
-    modeVcrs.filter(r => activeValueIds.has(r.valueId)).map(r => r.capabilityId)
-  );
-  const activeProvIds = new Set<string>(
-    pcRelations.filter(r => activeCapIds.has(r.capabilityId)).map(r => r.providerId)
-  );
+  const metrics = computeCoverageMetrics(selectedMission, gapById, vcRelations, pcRelations, viewMode);
+  const { activeValueIds, contextualVcrs, modeVcrs, activeCapIds, activeProvIds } = metrics;
 
   // All-missions live value set — preserved base layer, also via Gap chain
   const allLiveValueIds = new Set<string>(
@@ -306,13 +292,8 @@ export default function WorldView({
       .map(r => r.valueId)
   );
 
-  // Active cascade edges
-  const cascadeVcrs = modeVcrs.filter(
-    r => activeValueIds.has(r.valueId) && activeCapIds.has(r.capabilityId)
-  );
-  const cascadePcrs = pcRelations.filter(
-    r => activeCapIds.has(r.capabilityId) && activeProvIds.has(r.providerId)
-  );
+  // Active cascade edges (destructured from metrics — no recomputation)
+  const { cascadeVcrs, cascadePcrs } = metrics;
 
   // ─── Opacity helpers ──────────────────────────────────────────────────────────
 
@@ -381,28 +362,12 @@ export default function WorldView({
   const topConnectedVal      = VALUES.find(v => v.id === topConnectedValId) ?? null;
   const topConnectedVcrCount = topConnectedValId ? (valVcrCount.get(topConnectedValId) ?? 0) : 0;
 
-  // Coverage: active capabilities with at least one provider in PCR
-  const capsWithProvider  = new Set(pcRelations.map(r => r.capabilityId));
-  const coveredCapCount   = [...activeCapIds].filter(id => capsWithProvider.has(id)).length;
-  const uncoveredCapCount = activeCapIds.size - coveredCapCount;
-  const coveragePct       = activeCapIds.size > 0 ? Math.round((coveredCapCount / activeCapIds.size) * 100) : 0;
-
-  // Mission Health metrics
-  const missionGapIds       = new Set((selectedMission?.gaps ?? []).map(r => r.gapId));
-  const gapsWithRF          = new Set(contextualVcrs.map(r => r.gapId));
-  const graphIntegrityPct   = missionGapIds.size > 0
-    ? Math.round((gapsWithRF.size / missionGapIds.size) * 100)
-    : 0;
-  const validationPass      = graphIntegrityPct === 100 && contextualVcrs.length > 0;
-  const missionHealthPct    = Math.round(
-    graphIntegrityPct * 0.55 + (validationPass ? 40 : 0) + (activeProvIds.size > 0 ? 5 : 0)
-  );
-  const missionStage        = contextualVcrs.length > 0
-    ? "Contextual Qualification"
-    : "Initialization";
-  const evidenceCount       = contextualVcrs.reduce(
-    (n, r) => n + (r.evidence ?? []).filter(e => e.signal !== "Intent").length, 0
-  );
+  // Coverage and health metrics (all from computeCoverageMetrics — no inline formulas)
+  const {
+    capsWithProvider, coveredCapCount, uncoveredCapCount, coveragePct,
+    missionGapIds, gapsWithRF, graphIntegrityPct, validationPass,
+    missionHealthPct, missionStage, evidenceCount,
+  } = metrics;
 
   // ─── Force Graph data (Rendering Layer — no data layer changes) ───────────────
 
@@ -1306,6 +1271,38 @@ export default function WorldView({
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Coverage Delta Explorer */}
+            <div style={{
+              background: "#030c18",
+              border: "1px solid #081828",
+              borderRadius: 6, padding: "12px 14px",
+            }}>
+              <button
+                onClick={() => setExplorerOpen(o => !o)}
+                style={{
+                  width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
+                  background: "none", border: "none", cursor: "pointer", padding: 0,
+                }}
+              >
+                <span style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550" }}>
+                  Coverage Delta Explorer
+                </span>
+                <span style={{ fontSize: 9, color: explorerOpen ? "#22D3EE" : "#1a3550" }}>
+                  {explorerOpen ? "▲" : "▼"}
+                </span>
+              </button>
+              {explorerOpen && selectedMission && (
+                <CoverageDeltaExplorer
+                  mission={selectedMission}
+                  gaps={gaps}
+                  capabilities={capabilities}
+                  vcRelations={vcRelations}
+                  pcRelations={pcRelations}
+                  contextualVcrs={contextualVcrs}
+                />
+              )}
             </div>
 
           </div>
