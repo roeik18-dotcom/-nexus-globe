@@ -8,6 +8,8 @@ import type { Capability } from "@/app/lib/capability/schema";
 import type { ValueCapabilityRelation } from "@/app/lib/value-capability-relation/schema";
 import type { Provider } from "@/app/lib/provider/schema";
 import type { ProviderCapabilityRelation } from "@/app/lib/provider-capability-relation/schema";
+import { computeExplainPaths } from "@/app/graph/computeExplainPaths";
+import type { ExplainStep } from "@/app/graph/computeExplainPaths";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -453,6 +455,10 @@ export default function MarketplaceView({
       const connPcrs = pcrsByCapId.get(cap.id) ?? [];
       const connValueIds = [...new Set(connVcrs.map(r => r.valueId))];
       const connProvIds  = [...new Set(connPcrs.map(r => r.providerId))];
+      const capExplainPaths = mission ? computeExplainPaths(
+        mission, cap.id, "capability",
+        gaps, values, capabilities, providers, vcRelations, pcRelations,
+      ) : [];
       return (
         <>
           <ISection title="Identity">
@@ -521,6 +527,41 @@ export default function MarketplaceView({
               ))}
             </ISection>
           )}
+          <ISection title="Provenance Paths">
+            <div style={{ marginBottom: 6, fontSize: 10, color: "var(--muted)", fontStyle: "italic", lineHeight: 1.5 }}>
+              These paths explain why this capability appears. They do not rank, recommend, or evaluate.
+            </div>
+            {capExplainPaths.length === 0 ? (
+              <div style={{ fontSize: 11, color: "var(--muted)", fontStyle: "italic" }}>
+                No chains from the selected mission.
+              </div>
+            ) : capExplainPaths.map((path, pi) => {
+              const mg = path[0] as Extract<ExplainStep, { kind: "mission_gap" }>;
+              const gv = path[1] as Extract<ExplainStep, { kind: "gap_value" }>;
+              const vc = path[2] as Extract<ExplainStep, { kind: "value_capability" }>;
+              const gapLabel = mg.gap.id.replace(/^gap_/, "").replace(/_\d+$/, "").replace(/_/g, " ");
+              return (
+                <details key={pi} style={{ marginBottom: 6 }}>
+                  <summary style={{
+                    cursor: "pointer", listStyle: "none", display: "flex",
+                    flexWrap: "wrap", alignItems: "center", gap: 4, fontSize: 10,
+                    padding: "4px 6px", borderRadius: 4,
+                    background: "var(--surface-2)", border: "1px solid var(--border)",
+                  }}>
+                    <code style={{ fontSize: 9, color: "#D29922" }}>{gapLabel}</code>
+                    <span style={{ color: "var(--muted)", fontSize: 9 }}>→</span>
+                    <code style={{ fontSize: 9, color: "#3FB950" }}>{gv.value.context.label}</code>
+                    {badgeVcr(vc.vcr.id)}
+                  </summary>
+                  <div style={{ paddingLeft: 8, marginTop: 4, borderLeft: "2px solid #58A6FF30" }}>
+                    {vc.vcr.evidence.map((ev, ei) => (
+                      <EvidenceBlock key={ei} signal={ev.signal} note={ev.note} source={ev.source} accentColor="#58A6FF" />
+                    ))}
+                  </div>
+                </details>
+              );
+            })}
+          </ISection>
         </>
       );
     }
@@ -530,6 +571,10 @@ export default function MarketplaceView({
       if (!prov) return <div style={{ color: "var(--muted)", padding: 4, fontSize: 12 }}>Not found.</div>;
       const connPcrs    = pcrsByProviderId.get(prov.id) ?? [];
       const connCapIds  = [...new Set(connPcrs.map(r => r.capabilityId))];
+      const provExplainPaths = mission ? computeExplainPaths(
+        mission, prov.id, "provider",
+        gaps, values, capabilities, providers, vcRelations, pcRelations,
+      ) : [];
       return (
         <>
           <ISection title="Identity">
@@ -583,6 +628,48 @@ export default function MarketplaceView({
               ))}
             </ISection>
           )}
+          <ISection title="Provenance Paths">
+            <div style={{ marginBottom: 6, fontSize: 10, color: "var(--muted)", fontStyle: "italic", lineHeight: 1.5 }}>
+              These paths explain why this provider appears. They do not rank, recommend, or evaluate.
+            </div>
+            {provExplainPaths.length === 0 ? (
+              <div style={{ fontSize: 11, color: "var(--muted)", fontStyle: "italic" }}>
+                No chains from the selected mission.
+              </div>
+            ) : provExplainPaths.map((path, pi) => {
+              const mg = path[0] as Extract<ExplainStep, { kind: "mission_gap" }>;
+              const gv = path[1] as Extract<ExplainStep, { kind: "gap_value" }>;
+              const vc = path[2] as Extract<ExplainStep, { kind: "value_capability" }>;
+              const cp = path[3] as Extract<ExplainStep, { kind: "capability_provider" }>;
+              const gapLabel = mg.gap.id.replace(/^gap_/, "").replace(/_\d+$/, "").replace(/_/g, " ");
+              return (
+                <details key={pi} style={{ marginBottom: 6 }}>
+                  <summary style={{
+                    cursor: "pointer", listStyle: "none", display: "flex",
+                    flexWrap: "wrap", alignItems: "center", gap: 4, fontSize: 10,
+                    padding: "4px 6px", borderRadius: 4,
+                    background: "var(--surface-2)", border: "1px solid var(--border)",
+                  }}>
+                    <code style={{ fontSize: 9, color: "#D29922" }}>{gapLabel}</code>
+                    <span style={{ color: "var(--muted)", fontSize: 9 }}>→</span>
+                    <code style={{ fontSize: 9, color: "#3FB950" }}>{gv.value.context.label}</code>
+                    {badgeVcr(vc.vcr.id)}
+                    <span style={{ color: "var(--muted)", fontSize: 9 }}>→</span>
+                    <code style={{ fontSize: 9, color: "#F472B6" }}>{vc.capability.context.label}</code>
+                    {badgePcr(cp.pcr.id)}
+                  </summary>
+                  <div style={{ paddingLeft: 8, marginTop: 4, borderLeft: "2px solid #9E6EE630" }}>
+                    {vc.vcr.evidence.map((ev, ei) => (
+                      <EvidenceBlock key={ei} signal={ev.signal} note={ev.note} source={ev.source} accentColor="#58A6FF" />
+                    ))}
+                    {cp.pcr.evidence.map((ev, ei) => (
+                      <EvidenceBlock key={`p${ei}`} signal={ev.signal} note={ev.note} source={ev.source} accentColor="#9E6EE6" />
+                    ))}
+                  </div>
+                </details>
+              );
+            })}
+          </ISection>
         </>
       );
     }

@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import ForceGraph, { type GraphNode, type GraphEdge } from "@/app/world/ForceGraph";
+import CoverageDeltaExplorer from "@/app/world/CoverageDeltaExplorer";
+import { computeCoverageMetrics } from "@/app/graph/computeCoverageMetrics";
 import type { Mission } from "@/app/lib/mission/schema";
 import type { Gap } from "@/app/lib/gap/schema";
 import type { Value } from "@/app/lib/value/schema";
@@ -25,6 +27,11 @@ const VALUES = [
   { id: "care",        label: "Care",        angle: 330 },
 ];
 
+// Visual taxonomy · not a Reality Graph entity.
+// Industry-sector labels are a display aid for the orbital ring only.
+// They are not repository-backed and must not be used in Mission state,
+// confidence, or Explain computations. Open a backlog issue only if a
+// future PR proves Domain is needed as a standalone business entity.
 const DOMAINS = [
   { label: "Education",      valueId: "knowledge"  },
   { label: "Media",          valueId: "knowledge"  },
@@ -52,6 +59,11 @@ const DOMAINS = [
   { label: "Support",        valueId: "care"       },
 ];
 
+// Illustrative archetypes · not repository actors.
+// These are visualization-layer constants, not Actor/Person entities.
+// They must not be connected to Trust, Evidence, GroupRelation, or
+// Mission ownership. They are hidden in canonical Reality Graph mode
+// and will be replaced only by repo-backed Actor records.
 const USERS = [
   { label: "Founder",         values: ["growth", "execution", "capital"]      },
   { label: "Researcher",      values: ["knowledge", "learning", "trust"]      },
@@ -105,7 +117,26 @@ function polar(r: number, angleDeg: number): { x: number; y: number } {
 }
 
 type CascadeStep = 0 | 1 | 2 | 3 | 4;
+type SemanticLevel = 0 | 1 | 2 | 3 | 4;
 
+// Semantic Zoom changes visibility only. It never changes identity, selection, provenance, or graph semantics.
+const LEVEL_VISIBLE_TYPES: Record<SemanticLevel, ReadonlySet<string>> = {
+  0: new Set(["mission"]),
+  1: new Set(["mission", "gap"]),
+  2: new Set(["mission", "gap", "value"]),
+  3: new Set(["mission", "gap", "value", "capability"]),
+  4: new Set(["mission", "gap", "value", "capability", "provider"]),
+};
+const LEVEL_VISIBLE_EDGES: Record<SemanticLevel, ReadonlySet<string>> = {
+  0: new Set<string>([]),
+  1: new Set(["mission_gap"]),
+  2: new Set(["mission_gap", "gap_value"]),
+  3: new Set(["mission_gap", "gap_value", "required_for", "can_address"]),
+  4: new Set(["mission_gap", "gap_value", "required_for", "can_address", "can_deliver"]),
+};
+const NODE_MIN_LEVEL: Record<string, SemanticLevel> = {
+  mission: 0, gap: 1, value: 2, capability: 3, provider: 4,
+};
 
 interface Props {
   missions: Mission[];
@@ -133,6 +164,9 @@ export default function WorldView({
   const [inspectedNode, setInspectedNode] = useState<GraphNode | null>(null);
   const [inspectedEdge, setInspectedEdge] = useState<GraphEdge | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [semanticLevel, setSemanticLevel] = useState<SemanticLevel>(4);
+  const [explorerOpen, setExplorerOpen] = useState(false);
+  const preserveZoomRef = useRef(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const reducedMotionRef = useRef(false);
 
@@ -171,6 +205,7 @@ export default function WorldView({
   }, []);
 
   function startCascade(missionId: string) {
+    preserveZoomRef.current = false;
     timers.current.forEach(clearTimeout);
     timers.current = [];
     setSelectedMissionId(missionId);
@@ -246,25 +281,8 @@ export default function WorldView({
   // Correct PUDM chain: Mission.gaps → Gap.requiredValues → Value
   // Gap is the authoritative source of required values — Mission holds only GapRef pointers
   const gapById = new Map(gaps.map(g => [g.id, g]));
-  const activeValueIds = new Set<string>(
-    (selectedMission?.gaps ?? [])
-      .flatMap(ref => gapById.get(ref.gapId)?.requiredValues ?? [])
-      .map(r => r.valueId)
-  );
-  // Mode-aware VCR source
-  const contextualVcrs = vcRelations.filter(
-    r => r.relationType === "required_for" && r.missionId === selectedMission?.id
-  );
-  const modeVcrs = viewMode === "contextual"
-    ? contextualVcrs
-    : vcRelations.filter(r => r.relationType === "can_address");
-
-  const activeCapIds = new Set<string>(
-    modeVcrs.filter(r => activeValueIds.has(r.valueId)).map(r => r.capabilityId)
-  );
-  const activeProvIds = new Set<string>(
-    pcRelations.filter(r => activeCapIds.has(r.capabilityId)).map(r => r.providerId)
-  );
+  const metrics = computeCoverageMetrics(selectedMission, gapById, vcRelations, pcRelations, viewMode);
+  const { activeValueIds, contextualVcrs, modeVcrs, activeCapIds, activeProvIds } = metrics;
 
   // All-missions live value set — preserved base layer, also via Gap chain
   const allLiveValueIds = new Set<string>(
@@ -274,13 +292,8 @@ export default function WorldView({
       .map(r => r.valueId)
   );
 
-  // Active cascade edges
-  const cascadeVcrs = modeVcrs.filter(
-    r => activeValueIds.has(r.valueId) && activeCapIds.has(r.capabilityId)
-  );
-  const cascadePcrs = pcRelations.filter(
-    r => activeCapIds.has(r.capabilityId) && activeProvIds.has(r.providerId)
-  );
+  // Active cascade edges (destructured from metrics — no recomputation)
+  const { cascadeVcrs, cascadePcrs } = metrics;
 
   // ─── Opacity helpers ──────────────────────────────────────────────────────────
 
@@ -349,28 +362,12 @@ export default function WorldView({
   const topConnectedVal      = VALUES.find(v => v.id === topConnectedValId) ?? null;
   const topConnectedVcrCount = topConnectedValId ? (valVcrCount.get(topConnectedValId) ?? 0) : 0;
 
-  // Coverage: active capabilities with at least one provider in PCR
-  const capsWithProvider  = new Set(pcRelations.map(r => r.capabilityId));
-  const coveredCapCount   = [...activeCapIds].filter(id => capsWithProvider.has(id)).length;
-  const uncoveredCapCount = activeCapIds.size - coveredCapCount;
-  const coveragePct       = activeCapIds.size > 0 ? Math.round((coveredCapCount / activeCapIds.size) * 100) : 0;
-
-  // Mission Health metrics
-  const missionGapIds       = new Set((selectedMission?.gaps ?? []).map(r => r.gapId));
-  const gapsWithRF          = new Set(contextualVcrs.map(r => r.gapId));
-  const graphIntegrityPct   = missionGapIds.size > 0
-    ? Math.round((gapsWithRF.size / missionGapIds.size) * 100)
-    : 0;
-  const validationPass      = graphIntegrityPct === 100 && contextualVcrs.length > 0;
-  const missionHealthPct    = Math.round(
-    graphIntegrityPct * 0.55 + (validationPass ? 40 : 0) + (activeProvIds.size > 0 ? 5 : 0)
-  );
-  const missionStage        = contextualVcrs.length > 0
-    ? "Contextual Qualification"
-    : "Initialization";
-  const evidenceCount       = contextualVcrs.reduce(
-    (n, r) => n + (r.evidence ?? []).filter(e => e.signal !== "Intent").length, 0
-  );
+  // Coverage and health metrics (all from computeCoverageMetrics — no inline formulas)
+  const {
+    capsWithProvider, coveredCapCount, uncoveredCapCount, coveragePct,
+    missionGapIds, gapsWithRF, graphIntegrityPct, validationPass,
+    missionHealthPct, missionStage, evidenceCount,
+  } = metrics;
 
   // ─── Force Graph data (Rendering Layer — no data layer changes) ───────────────
 
@@ -440,6 +437,15 @@ export default function WorldView({
 
     return { graphNodes: gnodes, graphEdges: gedges };
   }, [selectedMission, viewMode, contextualVcrs, vcRelations, gapById, valueById, capById, provById, pcRelations]);
+
+  const { visibleNodes, visibleEdges } = useMemo(() => {
+    const visTypes = LEVEL_VISIBLE_TYPES[semanticLevel];
+    const visEdgeTypes = LEVEL_VISIBLE_EDGES[semanticLevel];
+    return {
+      visibleNodes: graphNodes.filter(n => visTypes.has(n.type)),
+      visibleEdges: graphEdges.filter(e => visEdgeTypes.has(e.type)),
+    };
+  }, [graphNodes, graphEdges, semanticLevel]);
 
   const handleNodeClick = useCallback((node: GraphNode | null) => {
     setInspectedNode(node);
@@ -831,6 +837,40 @@ export default function WorldView({
           </div>
         </div>
 
+        {/* Semantic Level Selector */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 6 }}>
+            Semantic Level
+          </div>
+          <div style={{ display: "flex", gap: 4 }}>
+            {([0, 1, 2, 3, 4] as SemanticLevel[]).map(lvl => {
+              const labels = ["Mission", "+Gaps", "+Values", "+Caps", "+Providers"] as const;
+              const isActive = semanticLevel === lvl;
+              return (
+                <button
+                  key={lvl}
+                  onClick={() => { preserveZoomRef.current = true; setSemanticLevel(lvl); }}
+                  title={`L${lvl}: ${labels[lvl]}`}
+                  style={{
+                    flex: 1, fontSize: 8, padding: "4px 2px", borderRadius: 3, cursor: "pointer",
+                    fontWeight: isActive ? 700 : 400,
+                    background: isActive ? "rgba(34,211,238,0.18)" : "transparent",
+                    color: isActive ? "#22D3EE" : "#2a4a6a",
+                    border: `1px solid ${isActive ? "rgba(34,211,238,0.4)" : "#0c2040"}`,
+                    fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+                    transition: "background 0.12s ease, color 0.12s ease",
+                    lineHeight: 1.3,
+                  }}
+                >
+                  L{lvl}
+                  <br />
+                  <span style={{ fontSize: 7, opacity: 0.7 }}>{labels[lvl]}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Cascade disclaimer */}
         <div style={{
           background: "rgba(164,113,247,0.05)",
@@ -881,14 +921,15 @@ export default function WorldView({
           {/* Force Graph */}
           <div style={{ flex: "1 1 600px", minWidth: 320, height: 560, position: "relative" }}>
             <ForceGraph
-              nodes={graphNodes}
-              edges={graphEdges}
+              nodes={visibleNodes}
+              edges={visibleEdges}
               selectedNodeId={inspectedNode?.id ?? null}
               selectedEdgeId={inspectedEdge?.id ?? null}
               cascadeStep={cascadeStep}
               onNodeClick={handleNodeClick}
               onEdgeClick={handleEdgeClick}
               reducedMotion={reducedMotion}
+              preserveZoom={preserveZoomRef.current}
             />
           </div>
 
@@ -1011,7 +1052,7 @@ export default function WorldView({
                       return (
                         <button
                           key={mode}
-                          onClick={() => setViewMode(mode)}
+                          onClick={() => { preserveZoomRef.current = true; setViewMode(mode); }}
                           style={{
                             flex: 1, fontSize: 8, fontWeight: on ? 700 : 400,
                             padding: "3px 4px", borderRadius: 3, cursor: "pointer",
@@ -1232,6 +1273,38 @@ export default function WorldView({
               </div>
             </div>
 
+            {/* Coverage Delta Explorer */}
+            <div style={{
+              background: "#030c18",
+              border: "1px solid #081828",
+              borderRadius: 6, padding: "12px 14px",
+            }}>
+              <button
+                onClick={() => setExplorerOpen(o => !o)}
+                style={{
+                  width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
+                  background: "none", border: "none", cursor: "pointer", padding: 0,
+                }}
+              >
+                <span style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550" }}>
+                  Coverage Delta Explorer
+                </span>
+                <span style={{ fontSize: 9, color: explorerOpen ? "#22D3EE" : "#1a3550" }}>
+                  {explorerOpen ? "▲" : "▼"}
+                </span>
+              </button>
+              {explorerOpen && selectedMission && (
+                <CoverageDeltaExplorer
+                  mission={selectedMission}
+                  gaps={gaps}
+                  capabilities={capabilities}
+                  vcRelations={vcRelations}
+                  pcRelations={pcRelations}
+                  contextualVcrs={contextualVcrs}
+                />
+              )}
+            </div>
+
           </div>
         </div>
 
@@ -1315,6 +1388,29 @@ export default function WorldView({
 
           {/* Divider */}
           <div style={{ borderTop: `1px solid ${inspColor}15`, marginBottom: 12 }} />
+
+          {/* Hidden-node badge */}
+          {inspectedNode !== null && NODE_MIN_LEVEL[inspectedNode.type] > semanticLevel && (
+            <div style={{
+              background: "rgba(110,118,129,0.1)", border: "1px solid rgba(110,118,129,0.3)",
+              borderRadius: 5, padding: "8px 12px", marginBottom: 12,
+            }}>
+              <div style={{ fontSize: 10, color: "#6E7681", marginBottom: 6 }}>
+                Hidden at current semantic level (L{semanticLevel})
+              </div>
+              <button
+                onClick={() => { preserveZoomRef.current = true; setSemanticLevel(NODE_MIN_LEVEL[inspectedNode.type] as SemanticLevel); }}
+                style={{
+                  fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 3, cursor: "pointer",
+                  background: "rgba(34,211,238,0.12)", color: "#22D3EE",
+                  border: "1px solid rgba(34,211,238,0.3)",
+                  fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+                }}
+              >
+                Reveal at L{NODE_MIN_LEVEL[inspectedNode.type]}
+              </button>
+            </div>
+          )}
 
           {/* Entity-specific content */}
           {inspContent}

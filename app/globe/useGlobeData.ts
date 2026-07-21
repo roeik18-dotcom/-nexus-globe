@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { GraphData, GraphNode, GraphLink } from "./types";
+import type { GraphData, GraphNode, GraphLink } from "./graphTypes";
 
 const MOCK_NODES: GraphNode[] = [
   { id: "1", name: "Roei Kattan",     lat: 32.0853, lng: 34.7818,  value: 9, role: "Director"   },
@@ -27,11 +27,11 @@ const MOCK_LINKS: GraphLink[] = [
 ];
 
 /**
- * Returns the network graph.
+ * Returns the globe network graph (hardcoded mock data — globe visualization only).
  * If `/api/analyze` has written a `lastResult` into localStorage, merges its
  * action text into the first node's name so it surfaces in the UI.
  */
-export default function useGraphData(): GraphData {
+export default function useGlobeData(): GraphData {
   const [data, setData] = useState<GraphData>({ nodes: MOCK_NODES, links: MOCK_LINKS });
 
   useEffect(() => {
@@ -54,5 +54,5 @@ export default function useGraphData(): GraphData {
   return data;
 }
 
-// named export kept for any legacy imports
-export { useGraphData };
+// named export for any legacy imports
+export { useGlobeData };

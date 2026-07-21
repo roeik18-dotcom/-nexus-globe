@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
-import type { GraphData, GraphNode } from "../graph/types";
+import type { GraphData, GraphNode } from "./graphTypes";
 
 const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
 
