@@ -25,6 +25,11 @@ const VALUES = [
   { id: "care",        label: "Care",        angle: 330 },
 ];
 
+// Visual taxonomy · not a Reality Graph entity.
+// Industry-sector labels are a display aid for the orbital ring only.
+// They are not repository-backed and must not be used in Mission state,
+// confidence, or Explain computations. Open a backlog issue only if a
+// future PR proves Domain is needed as a standalone business entity.
 const DOMAINS = [
   { label: "Education",      valueId: "knowledge"  },
   { label: "Media",          valueId: "knowledge"  },
@@ -52,6 +57,11 @@ const DOMAINS = [
   { label: "Support",        valueId: "care"       },
 ];
 
+// Illustrative archetypes · not repository actors.
+// These are visualization-layer constants, not Actor/Person entities.
+// They must not be connected to Trust, Evidence, GroupRelation, or
+// Mission ownership. They are hidden in canonical Reality Graph mode
+// and will be replaced only by repo-backed Actor records.
 const USERS = [
   { label: "Founder",         values: ["growth", "execution", "capital"]      },
   { label: "Researcher",      values: ["knowledge", "learning", "trust"]      },

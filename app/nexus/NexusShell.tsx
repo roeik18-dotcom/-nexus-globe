@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import useGraphData from "../graph/useGraphData";
-import type { GraphNode, GraphLink } from "../graph/types";
+import useGlobeData from "../globe/useGlobeData";
+import type { GraphNode, GraphLink } from "../globe/graphTypes";
 import ProofLabPanel from "./ProofLabPanel";
 
 const GlobeView = dynamic(() => import("../globe/GlobeView"), { ssr:false });
@@ -17,7 +17,7 @@ const ROLE_ICON: Record<string,string> = {
 };
 
 export default function NexusShell() {
-  const data       = useGraphData();
+  const data       = useGlobeData();
   const [selected, setSelected] = useState<string|null>(null);
   const [tipIdx,   setTipIdx]   = useState(0);
   const [showLab,  setShowLab]  = useState(false);
