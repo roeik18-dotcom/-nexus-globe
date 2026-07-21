@@ -95,10 +95,11 @@ export default function HomePage() {
             Philos Research System
           </div>
           <h1 style={{
-            fontSize: 28, fontWeight: 600, color: "#e0f0ff",
-            letterSpacing: "-0.4px", marginBottom: 10,
+            fontSize: 22, fontWeight: 600, color: "#e0f0ff",
+            letterSpacing: "-0.3px", marginBottom: 10, lineHeight: 1.4,
+            maxWidth: 560,
           }}>
-            Choose a view
+            Understand what blocks a mission, why it is blocked, and what capabilities are missing.
           </h1>
           <p style={{ fontSize: 13, color: "#2a4a64", maxWidth: 480, lineHeight: 1.7 }}>
             Five lenses onto the same data model. Each route is independent —

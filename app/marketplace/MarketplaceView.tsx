@@ -1097,26 +1097,33 @@ export default function MarketplaceView({
                     <div>
                       {items.map((item, idx) => (
                         <div key={item.capability.id} style={{
-                          display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
+                          display: "flex", alignItems: "flex-end", gap: 8, flexWrap: "wrap",
                           padding: "8px 16px",
                           borderTop: idx > 0 ? "1px solid var(--border)" : "none",
                         }}>
                           {/* Values */}
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 3, minWidth: 80 }}>
-                            {item.coveredByValues.map(v => chipValue(v))}
+                          <div style={{ display: "flex", flexDirection: "column" as const, gap: 3, minWidth: 80 }}>
+                            <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase" as const, color: "var(--muted)", opacity: 0.55 }}>Value</span>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                              {item.coveredByValues.map(v => chipValue(v))}
+                            </div>
                           </div>
-                          <span style={{ color: "var(--muted)", fontSize: 11, flexShrink: 0 }}>→</span>
+                          <span style={{ color: "var(--muted)", fontSize: 11, flexShrink: 0, paddingBottom: 3 }}>→</span>
                           {/* Capability */}
-                          <div style={{ flexShrink: 0 }}>
+                          <div style={{ flexShrink: 0, display: "flex", flexDirection: "column" as const, gap: 3 }}>
+                            <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase" as const, color: "var(--muted)", opacity: 0.55 }}>Capability</span>
                             {chipCap(item.capability)}
                           </div>
-                          <span style={{ color: "var(--muted)", fontSize: 11, flexShrink: 0 }}>→</span>
+                          <span style={{ color: "var(--muted)", fontSize: 11, flexShrink: 0, paddingBottom: 3 }}>→</span>
                           {/* Providers */}
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, flex: 1 }}>
-                            {item.providers.length === 0
-                              ? <span style={{ fontSize: 11, color: "var(--muted)" }}>—</span>
-                              : item.providers.map(p => chipProv(p))
-                            }
+                          <div style={{ display: "flex", flexDirection: "column" as const, gap: 3, flex: 1 }}>
+                            <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase" as const, color: "var(--muted)", opacity: 0.55 }}>Provider</span>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                              {item.providers.length === 0
+                                ? <span style={{ fontSize: 11, color: "var(--muted)" }}>—</span>
+                                : item.providers.map(p => chipProv(p))
+                              }
+                            </div>
                           </div>
                         </div>
                       ))}

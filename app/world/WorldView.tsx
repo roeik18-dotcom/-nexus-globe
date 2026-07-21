@@ -784,7 +784,7 @@ export default function WorldView({
                 borderRadius: 4, padding: "2px 9px",
                 fontSize: 10, fontWeight: 700, letterSpacing: "1.5px",
                 textTransform: "uppercase" as const, color: "#34D399",
-              }}>Live · {missions.length}M {gaps.length}G {values.length}V {capabilities.length}C {providers.length}P</span>
+              }} title={`${missions.length} Missions · ${gaps.length} Gaps · ${values.length} Values · ${capabilities.length} Capabilities · ${providers.length} Providers`}>Live · {missions.length}M · {gaps.length}G · {values.length}V · {capabilities.length}C · {providers.length}P</span>
               <span style={{
                 display: "inline-block",
                 background: "rgba(164,113,247,0.10)",
@@ -972,131 +972,14 @@ export default function WorldView({
               </div>
             </div>
 
-            {/* 2. LIVE FLOW */}
-            <div style={{
-              background: "#030c18",
-              border: "1px solid #0a1e30",
-              borderRadius: 6, padding: "12px 14px",
-            }}>
-              <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
-                Live Flow
-              </div>
-              <div style={{ display: "flex", flexDirection: "column" as const }}>
-                {([
-                  { label: "Mission",      activeFrom: 1, color: "#A371F7", count: null },
-                  { label: "Gap",          activeFrom: 1, color: "#8a60d0", count: selectedMission?.gaps.length ?? 0 },
-                  { label: "Values",       activeFrom: 2, color: "#5B8CFF", count: activeValueIds.size },
-                  { label: "Capabilities", activeFrom: 3, color: "#FFB84D", count: activeCapIds.size },
-                  { label: "Providers",    activeFrom: 4, color: "#34D399", count: activeProvIds.size },
-                ] as { label: string; activeFrom: number; color: string; count: number | null }[]).map((node, idx, arr) => {
-                  const isActive  = cascadeStep >= node.activeFrom;
-                  const isGlowing = cascadeStep === node.activeFrom;
-                  return (
-                    <div key={node.label}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
-                        <div style={{
-                          width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
-                          background: isActive ? node.color : "transparent",
-                          border: `1.5px solid ${isActive ? node.color : "#0a2040"}`,
-                          boxShadow: isGlowing ? `0 0 7px ${node.color}` : "none",
-                          transition: "background 0.3s ease, box-shadow 0.3s ease",
-                        }} />
-                        <span style={{
-                          fontSize: 10.5, flex: 1,
-                          color: isActive ? node.color : "#1a3550",
-                          fontWeight: isActive ? 600 : 400,
-                          transition: "color 0.3s ease",
-                        }}>
-                          {node.label}
-                        </span>
-                        {node.count !== null && (
-                          <span style={{
-                            fontSize: 9.5, fontWeight: 600, fontVariantNumeric: "tabular-nums",
-                            color: isActive ? node.color : "#0a1e30",
-                          }}>
-                            {isActive ? node.count : "—"}
-                          </span>
-                        )}
-                      </div>
-                      {idx < arr.length - 1 && (
-                        <div style={{
-                          marginLeft: 3.5, width: 1, height: 8,
-                          background: cascadeStep > node.activeFrom ? node.color : "#0a2040",
-                          opacity: cascadeStep > node.activeFrom ? 0.45 : 0.2,
-                          transition: "background 0.3s ease, opacity 0.3s ease",
-                        }} />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 3. SYSTEM STATE */}
+            {/* 2. PRIMARY BLOCKER */}
             <div style={{
               background: "#030c18",
               border: "1px solid #081828",
               borderRadius: 6, padding: "12px 14px",
             }}>
               <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
-                System State
-              </div>
-              <div style={{ display: "flex", flexDirection: "column" as const, gap: 5 }}>
-                {/* Mode toggle */}
-                <div style={{ marginBottom: 4 }}>
-                  <div style={{ fontSize: 9, color: "#1a3550", marginBottom: 3, letterSpacing: "0.5px", textTransform: "uppercase" as const }}>Mode</div>
-                  <div style={{ display: "flex", gap: 3 }}>
-                    {(["contextual", "taxonomic"] as const).map(mode => {
-                      const on     = viewMode === mode;
-                      const accent = mode === "contextual" ? "#A371F7" : "#FFB84D";
-                      return (
-                        <button
-                          key={mode}
-                          onClick={() => { preserveZoomRef.current = true; setViewMode(mode); }}
-                          style={{
-                            flex: 1, fontSize: 8, fontWeight: on ? 700 : 400,
-                            padding: "3px 4px", borderRadius: 3, cursor: "pointer",
-                            background: on ? `${accent}22` : "transparent",
-                            color: on ? accent : "#1a3550",
-                            border: `1px solid ${on ? `${accent}44` : "#071420"}`,
-                            fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
-                            letterSpacing: "0.3px",
-                            transition: "background 0.12s ease, color 0.12s ease",
-                          }}
-                        >
-                          {mode === "contextual" ? "Contextual" : "Explore Taxonomy"}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div style={{ borderTop: "1px solid #071420", paddingTop: 6, display: "flex", flexDirection: "column" as const, gap: 5 }}>
-                  {([
-                    { label: "Values",       value: cascadeStep >= 2 ? String(activeValueIds.size) : "—",         color: "#5B8CFF" },
-                    { label: "Capabilities", value: cascadeStep >= 3 ? String(activeCapIds.size)   : "—",         color: "#FFB84D" },
-                    { label: "Providers",    value: cascadeStep >= 4 ? String(activeProvIds.size)  : "—",         color: "#34D399" },
-                    { label: "Coverage",     value: cascadeStep >= 3 ? `${coveragePct}%`           : "—",         color: "#22D3EE" },
-                    { label: "Evidence",     value: String(evidenceCount),                                         color: "#6E7681" },
-                  ] as { label: string; value: string; color: string }[]).map(row => (
-                    <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 10, color: "#1a3550" }}>{row.label}</span>
-                      <span style={{ fontSize: 10, fontWeight: 600, color: row.color, fontVariantNumeric: "tabular-nums" }}>
-                        {row.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* 4. TOP INSIGHTS */}
-            <div style={{
-              background: "#030c18",
-              border: "1px solid #081828",
-              borderRadius: 6, padding: "12px 14px",
-            }}>
-              <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
-                Top Insights
+                Primary Blocker
               </div>
               <div style={{ display: "flex", flexDirection: "column" as const, gap: 10 }}>
                 {dominantVal && (
@@ -1161,7 +1044,7 @@ export default function WorldView({
               </div>
             </div>
 
-            {/* 5. NEXT ACTION */}
+            {/* 3. NEXT ACTION */}
             <div style={{
               background: "#030c18",
               border: "1px solid #081828",
@@ -1200,6 +1083,123 @@ export default function WorldView({
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* 4. LIVE FLOW */}
+            <div style={{
+              background: "#030c18",
+              border: "1px solid #0a1e30",
+              borderRadius: 6, padding: "12px 14px",
+            }}>
+              <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
+                Live Flow
+              </div>
+              <div style={{ display: "flex", flexDirection: "column" as const }}>
+                {([
+                  { label: "Mission",      activeFrom: 1, color: "#A371F7", count: null },
+                  { label: "Gap",          activeFrom: 1, color: "#8a60d0", count: selectedMission?.gaps.length ?? 0 },
+                  { label: "Values",       activeFrom: 2, color: "#5B8CFF", count: activeValueIds.size },
+                  { label: "Capabilities", activeFrom: 3, color: "#FFB84D", count: activeCapIds.size },
+                  { label: "Providers",    activeFrom: 4, color: "#34D399", count: activeProvIds.size },
+                ] as { label: string; activeFrom: number; color: string; count: number | null }[]).map((node, idx, arr) => {
+                  const isActive  = cascadeStep >= node.activeFrom;
+                  const isGlowing = cascadeStep === node.activeFrom;
+                  return (
+                    <div key={node.label}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                        <div style={{
+                          width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+                          background: isActive ? node.color : "transparent",
+                          border: `1.5px solid ${isActive ? node.color : "#0a2040"}`,
+                          boxShadow: isGlowing ? `0 0 7px ${node.color}` : "none",
+                          transition: "background 0.3s ease, box-shadow 0.3s ease",
+                        }} />
+                        <span style={{
+                          fontSize: 10.5, flex: 1,
+                          color: isActive ? node.color : "#1a3550",
+                          fontWeight: isActive ? 600 : 400,
+                          transition: "color 0.3s ease",
+                        }}>
+                          {node.label}
+                        </span>
+                        {node.count !== null && (
+                          <span style={{
+                            fontSize: 9.5, fontWeight: 600, fontVariantNumeric: "tabular-nums",
+                            color: isActive ? node.color : "#0a1e30",
+                          }}>
+                            {isActive ? node.count : "—"}
+                          </span>
+                        )}
+                      </div>
+                      {idx < arr.length - 1 && (
+                        <div style={{
+                          marginLeft: 3.5, width: 1, height: 8,
+                          background: cascadeStep > node.activeFrom ? node.color : "#0a2040",
+                          opacity: cascadeStep > node.activeFrom ? 0.45 : 0.2,
+                          transition: "background 0.3s ease, opacity 0.3s ease",
+                        }} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 5. SYSTEM STATE */}
+            <div style={{
+              background: "#030c18",
+              border: "1px solid #081828",
+              borderRadius: 6, padding: "12px 14px",
+            }}>
+              <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
+                System State
+              </div>
+              <div style={{ display: "flex", flexDirection: "column" as const, gap: 5 }}>
+                {/* Mode toggle */}
+                <div style={{ marginBottom: 4 }}>
+                  <div style={{ fontSize: 9, color: "#1a3550", marginBottom: 3, letterSpacing: "0.5px", textTransform: "uppercase" as const }}>Mode</div>
+                  <div style={{ display: "flex", gap: 3 }}>
+                    {(["contextual", "taxonomic"] as const).map(mode => {
+                      const on     = viewMode === mode;
+                      const accent = mode === "contextual" ? "#A371F7" : "#FFB84D";
+                      return (
+                        <button
+                          key={mode}
+                          onClick={() => { preserveZoomRef.current = true; setViewMode(mode); }}
+                          style={{
+                            flex: 1, fontSize: 8, fontWeight: on ? 700 : 400,
+                            padding: "3px 4px", borderRadius: 3, cursor: "pointer",
+                            background: on ? `${accent}22` : "transparent",
+                            color: on ? accent : "#1a3550",
+                            border: `1px solid ${on ? `${accent}44` : "#071420"}`,
+                            fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+                            letterSpacing: "0.3px",
+                            transition: "background 0.12s ease, color 0.12s ease",
+                          }}
+                        >
+                          {mode === "contextual" ? "Contextual" : "Explore Taxonomy"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div style={{ borderTop: "1px solid #071420", paddingTop: 6, display: "flex", flexDirection: "column" as const, gap: 5 }}>
+                  {([
+                    { label: "Values",       value: cascadeStep >= 2 ? String(activeValueIds.size) : "—",         color: "#5B8CFF" },
+                    { label: "Capabilities", value: cascadeStep >= 3 ? String(activeCapIds.size)   : "—",         color: "#FFB84D" },
+                    { label: "Providers",    value: cascadeStep >= 4 ? String(activeProvIds.size)  : "—",         color: "#34D399" },
+                    { label: "Coverage",     value: cascadeStep >= 3 ? `${coveragePct}%`           : "—",         color: "#22D3EE" },
+                    { label: "Evidence",     value: String(evidenceCount),                                         color: "#6E7681" },
+                  ] as { label: string; value: string; color: string }[]).map(row => (
+                    <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 10, color: "#1a3550" }}>{row.label}</span>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: row.color, fontVariantNumeric: "tabular-nums" }}>
+                        {row.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 

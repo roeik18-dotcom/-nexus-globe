@@ -351,6 +351,9 @@ export default function LabPage() {
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const, color: "#1a3a5a" }}>
               Simulation PASS
             </div>
+            <div style={{ fontSize: 9, color: "#2a4a64", marginTop: 4, fontStyle: "italic" as const }}>
+              Model validation pending
+            </div>
           </div>
           {/* Empirical validation */}
           <div style={{ background: "#060f1c", border: "1px solid #0c1e35", borderRadius: 7, padding: "12px 16px" }}>
