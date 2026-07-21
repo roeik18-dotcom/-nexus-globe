@@ -137,6 +137,8 @@ export interface ForceGraphProps {
   onNodeClick:    (node: GraphNode | null) => void;
   onEdgeClick?:   (edge: GraphEdge | null) => void;
   reducedMotion?: boolean;
+  // Camera state is preserved across semantic level changes; reset on mission change.
+  preserveZoom?:  boolean;
 }
 
 export default function ForceGraph({
@@ -148,6 +150,7 @@ export default function ForceGraph({
   onNodeClick,
   onEdgeClick,
   reducedMotion = false,
+  preserveZoom = false,
 }: ForceGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -164,6 +167,7 @@ export default function ForceGraph({
   const hitEdgeSelRef = useRef<d3.Selection<SVGLineElement, SimLink, SVGGElement, unknown> | undefined>(undefined);
   const edgesRef      = useRef(edges); // for connected-set lookup without rebuilding
   edgesRef.current = edges;
+  const savedZoomRef  = useRef<d3.ZoomTransform | null>(null);
 
   // ── Build simulation (only when node/edge data changes) ───────────────────
   useEffect(() => {
@@ -196,9 +200,13 @@ export default function ForceGraph({
     const zoomG = svg.append("g");
     const zoomer = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.1, 6])
-      .on("zoom", ev => zoomG.attr("transform", ev.transform.toString()));
+      .on("zoom", ev => {
+        zoomG.attr("transform", ev.transform.toString());
+        savedZoomRef.current = ev.transform;
+      });
+    const defaultTransform = d3.zoomIdentity.translate(W / 2, H * 0.47).scale(0.9);
     svg.call(zoomer)
-       .call(zoomer.transform, d3.zoomIdentity.translate(W / 2, H * 0.47).scale(0.9));
+       .call(zoomer.transform, (preserveZoom && savedZoomRef.current) ? savedZoomRef.current : defaultTransform);
     svg.on("dblclick.zoom", null);
 
     const edgeLayer = zoomG.append("g");

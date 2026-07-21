@@ -115,7 +115,26 @@ function polar(r: number, angleDeg: number): { x: number; y: number } {
 }
 
 type CascadeStep = 0 | 1 | 2 | 3 | 4;
+type SemanticLevel = 0 | 1 | 2 | 3 | 4;
 
+// Semantic Zoom changes visibility only. It never changes identity, selection, provenance, or graph semantics.
+const LEVEL_VISIBLE_TYPES: Record<SemanticLevel, ReadonlySet<string>> = {
+  0: new Set(["mission"]),
+  1: new Set(["mission", "gap"]),
+  2: new Set(["mission", "gap", "value"]),
+  3: new Set(["mission", "gap", "value", "capability"]),
+  4: new Set(["mission", "gap", "value", "capability", "provider"]),
+};
+const LEVEL_VISIBLE_EDGES: Record<SemanticLevel, ReadonlySet<string>> = {
+  0: new Set<string>([]),
+  1: new Set(["mission_gap"]),
+  2: new Set(["mission_gap", "gap_value"]),
+  3: new Set(["mission_gap", "gap_value", "required_for", "can_address"]),
+  4: new Set(["mission_gap", "gap_value", "required_for", "can_address", "can_deliver"]),
+};
+const NODE_MIN_LEVEL: Record<string, SemanticLevel> = {
+  mission: 0, gap: 1, value: 2, capability: 3, provider: 4,
+};
 
 interface Props {
   missions: Mission[];
@@ -143,6 +162,8 @@ export default function WorldView({
   const [inspectedNode, setInspectedNode] = useState<GraphNode | null>(null);
   const [inspectedEdge, setInspectedEdge] = useState<GraphEdge | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [semanticLevel, setSemanticLevel] = useState<SemanticLevel>(4);
+  const preserveZoomRef = useRef(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const reducedMotionRef = useRef(false);
 
@@ -181,6 +202,7 @@ export default function WorldView({
   }, []);
 
   function startCascade(missionId: string) {
+    preserveZoomRef.current = false;
     timers.current.forEach(clearTimeout);
     timers.current = [];
     setSelectedMissionId(missionId);
@@ -450,6 +472,15 @@ export default function WorldView({
 
     return { graphNodes: gnodes, graphEdges: gedges };
   }, [selectedMission, viewMode, contextualVcrs, vcRelations, gapById, valueById, capById, provById, pcRelations]);
+
+  const { visibleNodes, visibleEdges } = useMemo(() => {
+    const visTypes = LEVEL_VISIBLE_TYPES[semanticLevel];
+    const visEdgeTypes = LEVEL_VISIBLE_EDGES[semanticLevel];
+    return {
+      visibleNodes: graphNodes.filter(n => visTypes.has(n.type)),
+      visibleEdges: graphEdges.filter(e => visEdgeTypes.has(e.type)),
+    };
+  }, [graphNodes, graphEdges, semanticLevel]);
 
   const handleNodeClick = useCallback((node: GraphNode | null) => {
     setInspectedNode(node);
@@ -841,6 +872,40 @@ export default function WorldView({
           </div>
         </div>
 
+        {/* Semantic Level Selector */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 6 }}>
+            Semantic Level
+          </div>
+          <div style={{ display: "flex", gap: 4 }}>
+            {([0, 1, 2, 3, 4] as SemanticLevel[]).map(lvl => {
+              const labels = ["Mission", "+Gaps", "+Values", "+Caps", "+Providers"] as const;
+              const isActive = semanticLevel === lvl;
+              return (
+                <button
+                  key={lvl}
+                  onClick={() => { preserveZoomRef.current = true; setSemanticLevel(lvl); }}
+                  title={`L${lvl}: ${labels[lvl]}`}
+                  style={{
+                    flex: 1, fontSize: 8, padding: "4px 2px", borderRadius: 3, cursor: "pointer",
+                    fontWeight: isActive ? 700 : 400,
+                    background: isActive ? "rgba(34,211,238,0.18)" : "transparent",
+                    color: isActive ? "#22D3EE" : "#2a4a6a",
+                    border: `1px solid ${isActive ? "rgba(34,211,238,0.4)" : "#0c2040"}`,
+                    fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+                    transition: "background 0.12s ease, color 0.12s ease",
+                    lineHeight: 1.3,
+                  }}
+                >
+                  L{lvl}
+                  <br />
+                  <span style={{ fontSize: 7, opacity: 0.7 }}>{labels[lvl]}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Cascade disclaimer */}
         <div style={{
           background: "rgba(164,113,247,0.05)",
@@ -891,14 +956,15 @@ export default function WorldView({
           {/* Force Graph */}
           <div style={{ flex: "1 1 600px", minWidth: 320, height: 560, position: "relative" }}>
             <ForceGraph
-              nodes={graphNodes}
-              edges={graphEdges}
+              nodes={visibleNodes}
+              edges={visibleEdges}
               selectedNodeId={inspectedNode?.id ?? null}
               selectedEdgeId={inspectedEdge?.id ?? null}
               cascadeStep={cascadeStep}
               onNodeClick={handleNodeClick}
               onEdgeClick={handleEdgeClick}
               reducedMotion={reducedMotion}
+              preserveZoom={preserveZoomRef.current}
             />
           </div>
 
@@ -1021,7 +1087,7 @@ export default function WorldView({
                       return (
                         <button
                           key={mode}
-                          onClick={() => setViewMode(mode)}
+                          onClick={() => { preserveZoomRef.current = true; setViewMode(mode); }}
                           style={{
                             flex: 1, fontSize: 8, fontWeight: on ? 700 : 400,
                             padding: "3px 4px", borderRadius: 3, cursor: "pointer",
@@ -1325,6 +1391,29 @@ export default function WorldView({
 
           {/* Divider */}
           <div style={{ borderTop: `1px solid ${inspColor}15`, marginBottom: 12 }} />
+
+          {/* Hidden-node badge */}
+          {inspectedNode !== null && NODE_MIN_LEVEL[inspectedNode.type] > semanticLevel && (
+            <div style={{
+              background: "rgba(110,118,129,0.1)", border: "1px solid rgba(110,118,129,0.3)",
+              borderRadius: 5, padding: "8px 12px", marginBottom: 12,
+            }}>
+              <div style={{ fontSize: 10, color: "#6E7681", marginBottom: 6 }}>
+                Hidden at current semantic level (L{semanticLevel})
+              </div>
+              <button
+                onClick={() => { preserveZoomRef.current = true; setSemanticLevel(NODE_MIN_LEVEL[inspectedNode.type] as SemanticLevel); }}
+                style={{
+                  fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 3, cursor: "pointer",
+                  background: "rgba(34,211,238,0.12)", color: "#22D3EE",
+                  border: "1px solid rgba(34,211,238,0.3)",
+                  fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+                }}
+              >
+                Reveal at L{NODE_MIN_LEVEL[inspectedNode.type]}
+              </button>
+            </div>
+          )}
 
           {/* Entity-specific content */}
           {inspContent}
