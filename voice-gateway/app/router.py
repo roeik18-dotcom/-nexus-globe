@@ -9,8 +9,12 @@ logger = logging.getLogger(__name__)
 
 
 def _missing_key(key: str | None) -> bool:
-    """True when a key is absent or still holds the placeholder value."""
-    return not key or "REPLACE" in key
+    """True when a key is absent, placeholder, or clearly invalid."""
+    return not key or "REPLACE" in key or len(key) < 20
+
+
+def _valid_anthropic_key(key: str | None) -> bool:
+    return bool(key and key.startswith("sk-ant-") and len(key) > 50)
 
 
 def build_adapter() -> VoiceAdapter:
@@ -19,8 +23,11 @@ def build_adapter() -> VoiceAdapter:
         from app.adapters.echo import EchoAdapter
         return EchoAdapter()
     if name == "claude":
-        if not settings.anthropic_api_key:
-            raise ValueError("ANTHROPIC_API_KEY required for ADAPTER=claude")
+        if not _valid_anthropic_key(settings.anthropic_api_key):
+            raise ValueError(
+                "ANTHROPIC_API_KEY is missing or invalid "
+                "(must start with 'sk-ant-' and be >50 chars)"
+            )
         from app.adapters.claude import ClaudeAdapter
         return ClaudeAdapter()
     raise ValueError(f"Unknown adapter: {name!r}")
