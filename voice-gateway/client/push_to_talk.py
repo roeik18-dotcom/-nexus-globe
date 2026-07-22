@@ -74,8 +74,9 @@ def record_until_release(stop_event: threading.Event) -> bytes:
 
 
 def play_audio(data: bytes) -> None:
-    """Play mp3/aiff bytes via afplay (macOS) or write to a temp file."""
-    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f:
+    """Play audio bytes via afplay (macOS). Detects AIFF vs MP3 by magic bytes."""
+    suffix = ".aiff" if data[:4] == b"FORM" else ".mp3"
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
         f.write(data)
         tmp = Path(f.name)
     try:
