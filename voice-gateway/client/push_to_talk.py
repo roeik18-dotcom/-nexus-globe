@@ -7,7 +7,7 @@ Usage:
     cd voice-gateway
     python client/push_to_talk.py [--host 127.0.0.1] [--port 8765]
 
-Requirements: sounddevice, numpy, keyboard, scipy, websockets
+Requirements: sounddevice, numpy, pynput, scipy, websockets
 """
 
 import argparse
@@ -24,12 +24,12 @@ from pathlib import Path
 try:
     import numpy as np
     import sounddevice as sd
-    import keyboard
     import websockets
+    from pynput import keyboard as pynput_kb
     from scipy.io import wavfile
 except ImportError as exc:
     print(f"Missing dependency: {exc}")
-    print("Run: pip install sounddevice numpy keyboard scipy websockets")
+    print("Run: pip install sounddevice numpy pynput scipy websockets")
     sys.exit(1)
 
 # Optional: play mp3 audio via pydub+simpleaudio, or fall back to `afplay`
@@ -105,9 +105,9 @@ async def run(host: str, port: int) -> None:
         recording = False
         audio_queue: asyncio.Queue = asyncio.Queue()
 
-        def on_space_press(event):
+        def on_press(key):
             nonlocal recording
-            if event.event_type == keyboard.KEY_DOWN and not recording:
+            if key == pynput_kb.Key.space and not recording:
                 recording = True
                 stop_recording.clear()
                 print("● Recording…", end="\r", flush=True)
@@ -118,12 +118,15 @@ async def run(host: str, port: int) -> None:
 
                 threading.Thread(target=_record, daemon=True).start()
 
-            elif event.event_type == keyboard.KEY_UP and recording:
+        def on_release(key):
+            nonlocal recording
+            if key == pynput_kb.Key.space and recording:
                 recording = False
                 stop_recording.set()
                 print("  Sending…  ", end="\r", flush=True)
 
-        keyboard.hook_key("space", on_space_press)
+        kb_listener = pynput_kb.Listener(on_press=on_press, on_release=on_release)
+        kb_listener.start()
 
         quit_event = asyncio.Event()
 
@@ -184,7 +187,7 @@ async def run(host: str, port: int) -> None:
         except (asyncio.CancelledError, KeyboardInterrupt):
             pass
         finally:
-            keyboard.unhook_all()
+            kb_listener.stop()
             print("\nGoodbye.")
 
 
