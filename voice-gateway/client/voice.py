@@ -102,9 +102,11 @@ async def run(host: str = "127.0.0.1", port: int = 8765) -> None:
                     )
                 elif t == "done":
                     if audio_chunks:
-                        threading.Thread(
+                        play_thread = threading.Thread(
                             target=play, args=(b"".join(audio_chunks),), daemon=True
-                        ).start()
+                        )
+                        play_thread.start()
+                        await loop.run_in_executor(None, play_thread.join)
                     print()
                     break
                 elif t == "error":
