@@ -1,21 +1,32 @@
+import json
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-_JARVIS_PROMPT = """You are Jarvis, a personal AI assistant. You are direct, efficient, and practical.
-Your focus is always: what do we do right now?
-You execute tasks, remember context, make quick decisions, and move things forward.
-Speak in short, clear sentences — natural and conversational, no markdown, no lists.
-When you don't know something, say so and suggest the next action."""
+_PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
+_MEMORY_DIR = Path(__file__).parent.parent / "memory" / "persistent"
 
-_PHILOS_PROMPT = """You are Philos, an orientation engine.
-You analyze situations, build mental models, identify forces and tensions, and turn information into direction.
-You are calm, systematic, and patient. Your focus is: why is this happening, and how should we understand it?
-When given a situation, you return structured insight — the core dynamic, the key tension, a clear principle.
-Speak deliberately and clearly. No markdown. One insight at a time."""
 
-PERSONA_PROMPTS: dict[str, str] = {
-    "jarvis": _JARVIS_PROMPT,
-    "philos": _PHILOS_PROMPT,
-}
+def _load_prompt_layer(name: str) -> str:
+    path = _PROMPTS_DIR / f"{name}.md"
+    return path.read_text(encoding="utf-8") if path.exists() else ""
+
+
+def _load_memory(persona: str) -> str:
+    path = _MEMORY_DIR / f"{persona}.json"
+    if not path.exists():
+        return ""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return f"## Persistent memory\n\n```json\n{json.dumps(data, ensure_ascii=False, indent=2)}\n```"
+
+
+def build_system_prompt(persona: str) -> str:
+    layers = [
+        _load_prompt_layer("base"),
+        _load_prompt_layer(persona),
+        _load_memory(persona),
+    ]
+    return "\n\n---\n\n".join(layer.strip() for layer in layers if layer.strip())
 
 
 class Settings(BaseSettings):
@@ -38,7 +49,7 @@ class Settings(BaseSettings):
 
     @property
     def claude_system_prompt(self) -> str:
-        return PERSONA_PROMPTS.get(self.persona, PERSONA_PROMPTS["jarvis"])
+        return build_system_prompt(self.persona)
 
     max_session_duration_seconds: int = 300
     max_audio_size_bytes: int = 26_214_400  # 25 MB

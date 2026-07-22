@@ -1,0 +1,37 @@
+{
+  "owner": "Roei",
+  "active_projects": [
+    {
+      "name": "nexus-globe",
+      "path": "~/nexus-globe",
+      "description": "The main repository. Voice Gateway, agents, and orchestration layer.",
+      "status": "active"
+    },
+    {
+      "name": "jarvis",
+      "path": "~/jarvis",
+      "description": "Personal AI assistant — tools, memory, and task execution.",
+      "status": "active"
+    },
+    {
+      "name": "philos-orchestrator",
+      "path": "~/philos-orchestrator",
+      "description": "Orientation engine — analysis, models, and insight generation.",
+      "status": "active"
+    }
+  ],
+  "architecture": {
+    "voice_gateway": "WebSocket server at ws://127.0.0.1:8765. STT → Adapter → TTS pipeline.",
+    "adapter": "Claude (claude-opus-4-8) via Anthropic API.",
+    "tts": "macOS say (SystemTTS) for development. OpenAI TTS for production.",
+    "stt": "MockSTT in development. Whisper (OpenAI) when OPENAI_API_KEY is set.",
+    "personas": ["jarvis", "philos"],
+    "session_memory": "In-process per WebSocket session. No cross-session persistence yet."
+  },
+  "preferences": {
+    "language": "Hebrew in conversation, English in code and commit messages.",
+    "response_style": "Short, direct, actionable.",
+    "tools_first": true
+  },
+  "notes": []
+}
