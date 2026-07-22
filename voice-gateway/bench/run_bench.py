@@ -1,1 +1,242 @@
-"""\nVoice Gateway latency benchmark.\n\nSends a fixed WAV file N times over WebSocket, collects per-stage timing\nfrom the server, and computes: avg / median / p95 / min / max.\nSaves raw results to JSON for multi-adapter comparison via report.py.\n\nUsage:\n    # 1. Generate a test audio file (once):\n    python3 bench/gen_audio.py\n\n    # 2. Start the server with your chosen adapter:\n    ADAPTER=echo  uvicorn app.main:app --host 127.0.0.1 --port 8765\n    ADAPTER=claude uvicorn app.main:app --host 127.0.0.1 --port 8765\n\n    # 3. Run the benchmark:\n    python3 bench/run_bench.py --audio bench/test.wav --n 25 --label echo\n    python3 bench/run_bench.py --audio bench/test.wav --n 25 --label claude\n\n    # 4. Compare results:\n    python3 bench/report.py bench/results/echo_*.json bench/results/claude_*.json\n"""\n\nimport argparse\nimport asyncio\nimport json\nimport statistics\nimport sys\nimport time\nfrom datetime import datetime\nfrom pathlib import Path\n\ntry:\n    import websockets\nexcept ImportError:\n    print("pip install websockets")\n    sys.exit(1)\n\n\nasync def _one_turn(ws, audio_bytes: bytes) -> dict:\n    """\n    Send one audio clip, return timing dict with:\n      stt_ms, adapter_ms, tts_ms, total_ms   (server-side, from timing frame)\n      rtt_ms                                  (client-side: end_of_speech → done)\n    """\n    audio_chunks: list[bytes] = []\n    timing: dict = {}\n    transcript: str = ""\n    error: str | None = None\n\n    t_send = time.perf_counter()\n    await ws.send(audio_bytes)\n    await ws.send(json.dumps({"type": "end_of_speech"}))\n\n    while True:\n        raw = await asyncio.wait_for(ws.recv(), timeout=30)\n\n        if isinstance(raw, bytes):\n            audio_chunks.append(raw)\n            continue\n\n        msg = json.loads(raw)\n        t = msg.get("type")\n\n        if t == "transcript":\n            transcript = msg.get("text", "")\n        elif t == "timing":\n            timing = msg["stages"]\n        elif t == "error":\n            error = msg.get("message")\n        elif t == "done":\n            break\n        elif t == "expired":\n            raise RuntimeError("session expired during benchmark")\n\n    rtt_ms = round((time.perf_counter() - t_send) * 1000)\n    return {\n        **timing,\n        "rtt_ms": rtt_ms,\n        "transcript": transcript,\n        "audio_out_bytes": sum(len(c) for c in audio_chunks),\n        "error": error,\n    }\n\n\nasync def run(audio_path: Path, n: int, label: str, host: str, port: int) -> list[dict]:\n    audio_bytes = audio_path.read_bytes()\n    uri = f"ws://{host}:{port}/ws/voice"\n\n    results: list[dict] = []\n    errors = 0\n\n    print(f"\\nBenchmark: {label}  |  {n} turns  |  {len(audio_bytes):,} bytes/turn")\n    print(f"Server:    {uri}")\n    print(f"Audio:     {audio_path}\\n")\n\n    async with websockets.connect(uri) as ws:\n        # consume session_start\n        raw = await ws.recv()\n        session = json.loads(raw)\n        print(f"Session:   {session.get('session_id', '?')}\\n")\n\n        for i in range(n):\n            try:\n                result = await _one_turn(ws, audio_bytes)\n                results.append(result)\n                e = "  ERR" if result["error"] else ""\n                print(\n                    f"  [{i+1:02d}/{n}]  "\n                    f"STT {result.get('stt_ms','?'):>4}ms  "\n                    f"adp {result.get('adapter_ms','?'):>4}ms  "\n                    f"TTS {result.get('tts_ms','?'):>4}ms  "\n                    f"total {result.get('total_ms','?'):>4}ms  "\n                    f"rtt {result['rtt_ms']:>4}ms"\n                    f"{e}"\n                )\n                if result["error"]:\n                    errors += 1\n            except Exception as exc:\n                print(f"  [{i+1:02d}/{n}]  ERROR: {exc}")\n                errors += 1\n\n            # brief pause between turns to avoid hammering the API\n            await asyncio.sleep(0.3)\n\n    print(f"\\n{n - errors}/{n} turns succeeded  ({errors} errors)")\n    return results\n\n\ndef _stats(values: list[float]) -> dict:\n    if not values:\n        return {}\n    s = sorted(values)\n    p95_idx = int(len(s) * 0.95)\n    return {\n        "avg":    round(statistics.mean(s)),\n        "median": round(statistics.median(s)),\n        "p95":    round(s[min(p95_idx, len(s) - 1)]),\n        "min":    round(s[0]),\n        "max":    round(s[-1]),\n        "n":      len(s),\n    }\n\n\n# Empirical baselines (Mac Studio, 2026-07-22, MockSTT+MockTTS):\n#   echo  — infrastructure floor:  avg 0ms,    median 0ms,    p95 1ms,    rtt 3ms\n#   claude — LLM-only latency:     avg 2691ms, median 2002ms, p95 4854ms\n# Jarvis targets real-time feel; Philos tolerates deeper latency.\n# STT/TTS targets apply when real providers are enabled.\nKPI_TARGETS = {\n    "echo":   {"total_ms": 800,   "stt_ms": 500, "tts_ms": 400},\n    "claude": {"total_ms": 3500,  "stt_ms": 500, "tts_ms": 400},\n    "jarvis": {"total_ms": 3500,  "stt_ms": 500, "tts_ms": 400},\n    "philos": {"total_ms": 5000,  "stt_ms": 500, "tts_ms": 400},\n}\n\n\ndef _kpi_mark(label: str, key: str, value: float) -> str:\n    target = KPI_TARGETS.get(label, {}).get(key)\n    if target is None:\n        return ""\n    return "PASS" if value <= target else "FAIL"\n\n\ndef print_summary(label: str, results: list[dict]) -> None:\n    ok = [r for r in results if not r.get("error")]\n    if not ok:\n        print("No successful results to summarize.")\n        return\n\n    stages = ["stt_ms", "adapter_ms", "tts_ms", "total_ms", "rtt_ms"]\n    stats = {k: _stats([r[k] for r in ok if k in r]) for k in stages}\n\n    print(f"\\n{'─'*72}")\n    print(f"  Results — {label}  ({len(ok)}/{len(results)} ok)")\n    print(f"{'─'*72}")\n    print(f"  {'Stage':<14} {'avg':>6} {'median':>7} {'p95':>6} {'min':>6} {'max':>6}  KPI")\n    print(f"  {'─'*14} {'─'*6} {'─'*7} {'─'*6} {'─'*6} {'─'*6}  {'─'*4}")\n\n    labels_display = {\n        "stt_ms":      "STT",\n        "adapter_ms":  "Adapter",\n        "tts_ms":      "TTS",\n        "total_ms":    "Total (server)",\n        "rtt_ms":      "RTT (client)",\n    }\n    for k in stages:\n        s = stats.get(k, {})\n        if not s:\n            continue\n        mark = _kpi_mark(label, k, s["avg"])\n        mark_str = f"{'✓' if mark == 'PASS' else '✗' if mark == 'FAIL' else ' ':>4}" if mark else ""\n        print(\n            f"  {labels_display[k]:<14} "\n            f"{s['avg']:>5}ms "\n            f"{s['median']:>6}ms "\n            f"{s['p95']:>5}ms "\n            f"{s['min']:>5}ms "\n            f"{s['max']:>5}ms"\n            f"  {mark_str}"\n        )\n\n    # STT accuracy (non-empty transcripts)\n    transcripts = [r["transcript"] for r in ok if r.get("transcript")]\n    print(f"\\n  STT non-empty: {len(transcripts)}/{len(ok)} ({100*len(transcripts)//len(ok) if ok else 0}%)")\n    if transcripts:\n        print(f"  Sample:  {transcripts[0][:80]!r}")\n    print(f"{'─'*72}\\n")\n\n\ndef save_results(label: str, results: list[dict], out_dir: Path) -> Path:\n    out_dir.mkdir(parents=True, exist_ok=True)\n    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")\n    path = out_dir / f"{label}_{stamp}.json"\n    path.write_text(json.dumps({"label": label, "results": results}, indent=2))\n    print(f"Saved: {path}")\n    return path\n\n\ndef main():\n    parser = argparse.ArgumentParser(description="Voice Gateway latency benchmark")\n    parser.add_argument("--audio",   default="bench/test.wav", help="WAV file to send each turn")\n    parser.add_argument("--n",       type=int, default=25,     help="Number of turns")\n    parser.add_argument("--label",   default="run",            help="Adapter label (echo, claude, …)")\n    parser.add_argument("--host",    default="127.0.0.1")\n    parser.add_argument("--port",    type=int, default=8765)\n    parser.add_argument("--out-dir", default="bench/results",  help="Directory for JSON results")\n    args = parser.parse_args()\n\n    audio_path = Path(args.audio)\n    if not audio_path.exists():\n        print(f"Audio file not found: {audio_path}")\n        print("Generate one first:  python3 bench/gen_audio.py")\n        sys.exit(1)\n\n    results = asyncio.run(run(audio_path, args.n, args.label, args.host, args.port))\n    print_summary(args.label, results)\n    save_results(args.label, results, Path(args.out_dir))\n\n\nif __name__ == "__main__":\n    main()\n
+"""
+Voice Gateway latency benchmark.
+
+Sends a fixed WAV file N times over WebSocket, collects per-stage timing
+from the server, and computes: avg / median / p95 / min / max.
+Saves raw results to JSON for multi-adapter comparison via report.py.
+
+Usage:
+    # 1. Generate a test audio file (once):
+    python3 bench/gen_audio.py
+
+    # 2. Start the server with your chosen adapter:
+    ADAPTER=echo  uvicorn app.main:app --host 127.0.0.1 --port 8765
+    ADAPTER=claude uvicorn app.main:app --host 127.0.0.1 --port 8765
+
+    # 3. Run the benchmark:
+    python3 bench/run_bench.py --audio bench/test.wav --n 25 --label echo
+    python3 bench/run_bench.py --audio bench/test.wav --n 25 --label claude
+
+    # 4. Compare results:
+    python3 bench/report.py bench/results/echo_*.json bench/results/claude_*.json
+"""
+
+import argparse
+import asyncio
+import json
+import statistics
+import sys
+import time
+from datetime import datetime
+from pathlib import Path
+
+try:
+    import websockets
+except ImportError:
+    print("pip install websockets")
+    sys.exit(1)
+
+
+async def _one_turn(ws, audio_bytes: bytes) -> dict:
+    """
+    Send one audio clip, return timing dict with:
+      stt_ms, adapter_ms, tts_ms, total_ms   (server-side, from timing frame)
+      rtt_ms                                  (client-side: end_of_speech → done)
+    """
+    audio_chunks: list[bytes] = []
+    timing: dict = {}
+    transcript: str = ""
+    error: str | None = None
+
+    t_send = time.perf_counter()
+    await ws.send(audio_bytes)
+    await ws.send(json.dumps({"type": "end_of_speech"}))
+
+    while True:
+        raw = await asyncio.wait_for(ws.recv(), timeout=30)
+
+        if isinstance(raw, bytes):
+            audio_chunks.append(raw)
+            continue
+
+        msg = json.loads(raw)
+        t = msg.get("type")
+
+        if t == "transcript":
+            transcript = msg.get("text", "")
+        elif t == "timing":
+            timing = msg["stages"]
+        elif t == "error":
+            error = msg.get("message")
+        elif t == "done":
+            break
+        elif t == "expired":
+            raise RuntimeError("session expired during benchmark")
+
+    rtt_ms = round((time.perf_counter() - t_send) * 1000)
+    return {
+        **timing,
+        "rtt_ms": rtt_ms,
+        "transcript": transcript,
+        "audio_out_bytes": sum(len(c) for c in audio_chunks),
+        "error": error,
+    }
+
+
+async def run(audio_path: Path, n: int, label: str, host: str, port: int) -> list[dict]:
+    audio_bytes = audio_path.read_bytes()
+    uri = f"ws://{host}:{port}/ws/voice"
+
+    results: list[dict] = []
+    errors = 0
+
+    print(f"\nBenchmark: {label}  |  {n} turns  |  {len(audio_bytes):,} bytes/turn")
+    print(f"Server:    {uri}")
+    print(f"Audio:     {audio_path}\n")
+
+    async with websockets.connect(uri) as ws:
+        # consume session_start
+        raw = await ws.recv()
+        session = json.loads(raw)
+        print(f"Session:   {session.get('session_id', '?')}\n")
+
+        for i in range(n):
+            try:
+                result = await _one_turn(ws, audio_bytes)
+                results.append(result)
+                e = "  ERR" if result["error"] else ""
+                print(
+                    f"  [{i+1:02d}/{n}]  "
+                    f"STT {result.get('stt_ms','?'):>4}ms  "
+                    f"adp {result.get('adapter_ms','?'):>4}ms  "
+                    f"TTS {result.get('tts_ms','?'):>4}ms  "
+                    f"total {result.get('total_ms','?'):>4}ms  "
+                    f"rtt {result['rtt_ms']:>4}ms"
+                    f"{e}"
+                )
+                if result["error"]:
+                    errors += 1
+            except Exception as exc:
+                print(f"  [{i+1:02d}/{n}]  ERROR: {exc}")
+                errors += 1
+
+            # brief pause between turns to avoid hammering the API
+            await asyncio.sleep(0.3)
+
+    print(f"\n{n - errors}/{n} turns succeeded  ({errors} errors)")
+    return results
+
+
+def _stats(values: list[float]) -> dict:
+    if not values:
+        return {}
+    s = sorted(values)
+    p95_idx = int(len(s) * 0.95)
+    return {
+        "avg":    round(statistics.mean(s)),
+        "median": round(statistics.median(s)),
+        "p95":    round(s[min(p95_idx, len(s) - 1)]),
+        "min":    round(s[0]),
+        "max":    round(s[-1]),
+        "n":      len(s),
+    }
+
+
+# Empirical baselines (Mac Studio, 2026-07-22, MockSTT+MockTTS):
+#   echo  — infrastructure floor:  avg 0ms,    median 0ms,    p95 1ms,    rtt 3ms
+#   claude — LLM-only latency:     avg 2691ms, median 2002ms, p95 4854ms
+# Jarvis targets real-time feel; Philos tolerates deeper latency.
+# STT/TTS targets apply when real providers are enabled.
+KPI_TARGETS = {
+    "echo":   {"total_ms": 800,   "stt_ms": 500, "tts_ms": 400},
+    "claude": {"total_ms": 3500,  "stt_ms": 500, "tts_ms": 400},
+    "jarvis": {"total_ms": 3500,  "stt_ms": 500, "tts_ms": 400},
+    "philos": {"total_ms": 5000,  "stt_ms": 500, "tts_ms": 400},
+}
+
+
+def _kpi_mark(label: str, key: str, value: float) -> str:
+    target = KPI_TARGETS.get(label, {}).get(key)
+    if target is None:
+        return ""
+    return "PASS" if value <= target else "FAIL"
+
+
+def print_summary(label: str, results: list[dict]) -> None:
+    ok = [r for r in results if not r.get("error")]
+    if not ok:
+        print("No successful results to summarize.")
+        return
+
+    stages = ["stt_ms", "adapter_ms", "tts_ms", "total_ms", "rtt_ms"]
+    stats = {k: _stats([r[k] for r in ok if k in r]) for k in stages}
+
+    print(f"\n{'─'*72}")
+    print(f"  Results — {label}  ({len(ok)}/{len(results)} ok)")
+    print(f"{'─'*72}")
+    print(f"  {'Stage':<14} {'avg':>6} {'median':>7} {'p95':>6} {'min':>6} {'max':>6}  KPI")
+    print(f"  {'─'*14} {'─'*6} {'─'*7} {'─'*6} {'─'*6} {'─'*6}  {'─'*4}")
+
+    labels_display = {
+        "stt_ms":      "STT",
+        "adapter_ms":  "Adapter",
+        "tts_ms":      "TTS",
+        "total_ms":    "Total (server)",
+        "rtt_ms":      "RTT (client)",
+    }
+    for k in stages:
+        s = stats.get(k, {})
+        if not s:
+            continue
+        mark = _kpi_mark(label, k, s["avg"])
+        mark_str = f"{'✓' if mark == 'PASS' else '✗' if mark == 'FAIL' else ' ':>4}" if mark else ""
+        print(
+            f"  {labels_display[k]:<14} "
+            f"{s['avg']:>5}ms "
+            f"{s['median']:>6}ms "
+            f"{s['p95']:>5}ms "
+            f"{s['min']:>5}ms "
+            f"{s['max']:>5}ms"
+            f"  {mark_str}"
+        )
+
+    # STT accuracy (non-empty transcripts)
+    transcripts = [r["transcript"] for r in ok if r.get("transcript")]
+    print(f"\n  STT non-empty: {len(transcripts)}/{len(ok)} ({100*len(transcripts)//len(ok) if ok else 0}%)")
+    if transcripts:
+        print(f"  Sample:  {transcripts[0][:80]!r}")
+    print(f"{'─'*72}\n")
+
+
+def save_results(label: str, results: list[dict], out_dir: Path) -> Path:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    path = out_dir / f"{label}_{stamp}.json"
+    path.write_text(json.dumps({"label": label, "results": results}, indent=2))
+    print(f"Saved: {path}")
+    return path
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Voice Gateway latency benchmark")
+    parser.add_argument("--audio",   default="bench/test.wav", help="WAV file to send each turn")
+    parser.add_argument("--n",       type=int, default=25,     help="Number of turns")
+    parser.add_argument("--label",   default="run",            help="Adapter label (echo, claude, …)")
+    parser.add_argument("--host",    default="127.0.0.1")
+    parser.add_argument("--port",    type=int, default=8765)
+    parser.add_argument("--out-dir", default="bench/results",  help="Directory for JSON results")
+    args = parser.parse_args()
+
+    audio_path = Path(args.audio)
+    if not audio_path.exists():
+        print(f"Audio file not found: {audio_path}")
+        print("Generate one first:  python3 bench/gen_audio.py")
+        sys.exit(1)
+
+    results = asyncio.run(run(audio_path, args.n, args.label, args.host, args.port))
+    print_summary(args.label, results)
+    save_results(args.label, results, Path(args.out_dir))
+
+
+if __name__ == "__main__":
+    main()
