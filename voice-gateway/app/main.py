@@ -5,9 +5,13 @@ WebSocket protocol (binary + JSON frames):
 
   Client → Server
     binary frame   : raw audio chunk (accumulated until end_of_speech)
-    {"type": "end_of_speech"}  : flush accumulated audio, run STT → adapter → TTS
-    {"type": "reset"}          : clear session history
-    {"type": "ping"}           : keepalive
+    {"type": "end_of_speech"}                         : flush audio, run STT → adapter → TTS
+    {"type": "reset"}                                 : clear session history
+    {"type": "ping"}                                  : keepalive
+    {"type": "set_task", "title": "...", "description": "..."}  : set current task (description optional)
+    {"type": "update_task", "title"?: "...", "description"?: "...", "status"?: "..."}
+    {"type": "complete_task"}                         : mark current task completed
+    {"type": "clear_task"}                            : remove current task
 
   Server → Client
     {"type": "transcript", "text": "..."}   : STT result
@@ -18,6 +22,7 @@ WebSocket protocol (binary + JSON frames):
     {"type": "error", "message": "..."}      : error (session continues)
     {"type": "expired"}                      : session time limit reached
     {"type": "pong"}                         : keepalive reply
+    {"type": "task_ok", "action": "..."}     : task operation acknowledged
 
 Timing stages (all in milliseconds, server-side only):
     stt_ms        — audio received → transcript ready
@@ -37,6 +42,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from app.config import settings
 from app.router import build_adapter, build_stt, build_tts
 from app.session import registry
+from app.task import task_registry
 
 logging.basicConfig(
     level=logging.INFO,
@@ -123,6 +129,37 @@ async def voice_ws(ws: WebSocket):
                     await ws.send_text(json.dumps({"type": "reset_ok"}))
                     continue
 
+                if msg_type == "set_task":
+                    title = msg.get("title", "").strip()
+                    if not title:
+                        await ws.send_text(
+                            json.dumps({"type": "error", "message": "set_task requires title"})
+                        )
+                        continue
+                    task_registry.set(session_id, title, msg.get("description", ""))
+                    await ws.send_text(json.dumps({"type": "task_ok", "action": "set"}))
+                    continue
+
+                if msg_type == "update_task":
+                    allowed = {"title", "description", "status"}
+                    kwargs = {
+                        k: v for k, v in msg.items()
+                        if k in allowed and isinstance(v, str)
+                    }
+                    task_registry.update(session_id, **kwargs)
+                    await ws.send_text(json.dumps({"type": "task_ok", "action": "update"}))
+                    continue
+
+                if msg_type == "complete_task":
+                    task_registry.complete(session_id)
+                    await ws.send_text(json.dumps({"type": "task_ok", "action": "complete"}))
+                    continue
+
+                if msg_type == "clear_task":
+                    task_registry.clear(session_id)
+                    await ws.send_text(json.dumps({"type": "task_ok", "action": "clear"}))
+                    continue
+
                 if msg_type == "end_of_speech":
                     if not audio_buffer:
                         await ws.send_text(
@@ -146,6 +183,7 @@ async def voice_ws(ws: WebSocket):
             pass
     finally:
         registry.remove(session_id)
+        task_registry.clear(session_id)
         await _adapter.reset(session_id)
 
 

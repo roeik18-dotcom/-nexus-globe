@@ -7,7 +7,8 @@ from typing import AsyncIterator
 import anthropic
 
 from app.adapters.base import VoiceAdapter
-from app.config import settings
+from app.config import build_system_prompt_with_task, settings
+from app.task import task_registry
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +27,15 @@ class ClaudeAdapter(VoiceAdapter):
         history = self._history[session_id]
         history.append({"role": "user", "content": text})
 
+        task = task_registry.get(session_id)
+        system_prompt = build_system_prompt_with_task(settings.persona, task)
+
         full_response: list[str] = []
 
         async with self._client.messages.stream(
             model=settings.claude_model,
             max_tokens=1024,
-            system=settings.claude_system_prompt,
+            system=system_prompt,
             messages=history,
         ) as stream:
             async for chunk in stream.text_stream:

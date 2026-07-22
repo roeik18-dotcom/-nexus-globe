@@ -29,6 +29,16 @@ def build_system_prompt(persona: str) -> str:
     return "\n\n---\n\n".join(layer.strip() for layer in layers if layer.strip())
 
 
+def build_system_prompt_with_task(persona: str, task=None) -> str:
+    base = build_system_prompt(persona)
+    if task is None:
+        return base
+    task_block = f"## Current Task\n\nTitle: {task.title}\nStatus: {task.status}"
+    if task.description:
+        task_block += f"\nContext: {task.description}"
+    return f"{base}\n\n---\n\n{task_block}"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
