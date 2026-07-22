@@ -1,0 +1,7 @@
+# Push-to-talk CLI client only (client/push_to_talk.py)
+# Install AFTER requirements.txt
+# macOS: brew install portaudio  (if sounddevice fails)
+sounddevice>=0.4.7
+numpy>=1.26.0
+keyboard>=0.13.5
+scipy>=1.13.0
