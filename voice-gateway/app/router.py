@@ -8,6 +8,11 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 
+def _missing_key(key: str | None) -> bool:
+    """True when a key is absent or still holds the placeholder value."""
+    return not key or "REPLACE" in key
+
+
 def build_adapter() -> VoiceAdapter:
     name = settings.adapter
     if name == "echo":
@@ -32,8 +37,10 @@ def build_adapter() -> VoiceAdapter:
 def build_stt():
     name = settings.stt_provider
     if name == "whisper":
-        if not settings.openai_api_key:
-            raise ValueError("OPENAI_API_KEY required for STT_PROVIDER=whisper")
+        if _missing_key(settings.openai_api_key):
+            logger.warning("OPENAI_API_KEY not set — falling back to MockSTT (latency only)")
+            from app.providers.stt.mock import MockSTT
+            return MockSTT()
         from app.providers.stt.whisper import WhisperSTT
         return WhisperSTT()
     if name == "mock":
@@ -45,8 +52,10 @@ def build_stt():
 def build_tts():
     name = settings.tts_provider
     if name == "openai":
-        if not settings.openai_api_key:
-            raise ValueError("OPENAI_API_KEY required for TTS_PROVIDER=openai")
+        if _missing_key(settings.openai_api_key):
+            logger.warning("OPENAI_API_KEY not set — falling back to MockTTS (latency only)")
+            from app.providers.tts.mock import MockTTS
+            return MockTTS()
         from app.providers.tts.openai_tts import OpenAITTS
         return OpenAITTS()
     if name == "system":
