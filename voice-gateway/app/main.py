@@ -92,6 +92,10 @@ async def voice_ws(ws: WebSocket):
 
             data = await ws.receive()
 
+            # Client closed connection cleanly
+            if data.get("type") == "websocket.disconnect":
+                break
+
             # Binary frame: audio chunk
             if "bytes" in data and data["bytes"]:
                 chunk = data["bytes"]
