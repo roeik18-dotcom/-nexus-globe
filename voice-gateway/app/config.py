@@ -9,8 +9,8 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    anthropic_api_key: str
-    openai_api_key: str
+    anthropic_api_key: str | None = None
+    openai_api_key: str | None = None
 
     stt_provider: str = "whisper"
     tts_provider: str = "openai"

@@ -14,6 +14,8 @@ def build_adapter() -> VoiceAdapter:
         from app.adapters.echo import EchoAdapter
         return EchoAdapter()
     if name == "claude":
+        if not settings.anthropic_api_key:
+            raise ValueError("ANTHROPIC_API_KEY required for ADAPTER=claude")
         from app.adapters.claude import ClaudeAdapter
         return ClaudeAdapter()
     # Phase 2: JARVIS adapter
@@ -30,17 +32,27 @@ def build_adapter() -> VoiceAdapter:
 def build_stt():
     name = settings.stt_provider
     if name == "whisper":
+        if not settings.openai_api_key:
+            raise ValueError("OPENAI_API_KEY required for STT_PROVIDER=whisper")
         from app.providers.stt.whisper import WhisperSTT
         return WhisperSTT()
+    if name == "mock":
+        from app.providers.stt.mock import MockSTT
+        return MockSTT()
     raise ValueError(f"Unknown STT provider: {name!r}")
 
 
 def build_tts():
     name = settings.tts_provider
     if name == "openai":
+        if not settings.openai_api_key:
+            raise ValueError("OPENAI_API_KEY required for TTS_PROVIDER=openai")
         from app.providers.tts.openai_tts import OpenAITTS
         return OpenAITTS()
     if name == "system":
         from app.providers.tts.system_tts import SystemTTS
         return SystemTTS()
+    if name == "mock":
+        from app.providers.tts.mock import MockTTS
+        return MockTTS()
     raise ValueError(f"Unknown TTS provider: {name!r}")
