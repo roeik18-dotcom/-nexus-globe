@@ -1,7 +1,7 @@
 """
 Push-to-talk CLI client for Voice Gateway.
 
-Hold SPACE to record. Release to send. Press Q to quit.
+Hold SPACE to record. Release to send. Press Ctrl+C to quit.
 
 Usage:
     cd voice-gateway
@@ -98,7 +98,7 @@ async def run(host: str, port: int) -> None:
         if msg.get("type") == "session_start":
             print(f"Session: {msg['session_id']}")
 
-        print("\nHold SPACE to speak. Release to send. Press Q to quit.\n")
+        print("\nHold SPACE to speak. Release to send. Press Ctrl+C to quit.\n")
 
         loop = asyncio.get_running_loop()
         stop_recording = threading.Event()
@@ -126,12 +126,6 @@ async def run(host: str, port: int) -> None:
         keyboard.hook_key("space", on_space_press)
 
         quit_event = asyncio.Event()
-
-        def on_q(event):
-            if event.event_type == keyboard.KEY_DOWN:
-                loop.call_soon_threadsafe(quit_event.set)
-
-        keyboard.hook_key("q", on_q)
 
         async def sender():
             while not quit_event.is_set():
@@ -185,9 +179,13 @@ async def run(host: str, port: int) -> None:
                     print("\nSession expired.")
                     quit_event.set()
 
-        await asyncio.gather(sender(), receiver())
-        keyboard.unhook_all()
-        print("Goodbye.")
+        try:
+            await asyncio.gather(sender(), receiver())
+        except (asyncio.CancelledError, KeyboardInterrupt):
+            pass
+        finally:
+            keyboard.unhook_all()
+            print("\nGoodbye.")
 
 
 def main() -> None:
@@ -196,7 +194,10 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8765)
     args = parser.parse_args()
 
-    asyncio.run(run(args.host, args.port))
+    try:
+        asyncio.run(run(args.host, args.port))
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":
