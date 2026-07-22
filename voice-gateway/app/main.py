@@ -167,8 +167,14 @@ async def _handle_turn(ws: WebSocket, session_id: str, audio_data: bytes) -> Non
 
     # Adapter (stream text, collect full response)
     full_text_parts: list[str] = []
-    async for chunk in _adapter.respond(transcript, session_id):
-        full_text_parts.append(chunk)
+    try:
+        async for chunk in _adapter.respond(transcript, session_id):
+            full_text_parts.append(chunk)
+    except Exception as exc:
+        logger.error("ws[%s] adapter error: %s", session_id, exc)
+        await ws.send_text(json.dumps({"type": "error", "message": f"adapter: {exc}"}))
+        await ws.send_text(json.dumps({"type": "done"}))
+        return
 
     t_adapter = time.perf_counter()
 
