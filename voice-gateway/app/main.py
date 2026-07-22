@@ -57,9 +57,9 @@ async def lifespan(app: FastAPI):
     _tts = build_tts()
     _adapter = build_adapter()
     logger.info(
-        "Voice Gateway ready  stt=%s  tts=%s  adapter=%s",
-        settings.stt_provider,
-        settings.tts_provider,
+        "Voice Gateway ready  stt=%s(%s)  tts=%s(%s)  adapter=%s",
+        settings.stt_provider, type(_stt).__name__,
+        settings.tts_provider, type(_tts).__name__,
         settings.adapter,
     )
     yield
@@ -150,8 +150,10 @@ async def _handle_turn(ws: WebSocket, session_id: str, audio_data: bytes) -> Non
     # STT
     try:
         transcript = await _stt.transcribe(audio_data)
-    except ValueError as exc:
-        await ws.send_text(json.dumps({"type": "error", "message": str(exc)}))
+    except Exception as exc:
+        logger.error("ws[%s] STT error: %s", session_id, exc)
+        await ws.send_text(json.dumps({"type": "error", "message": f"STT: {exc}"}))
+        await ws.send_text(json.dumps({"type": "done"}))
         return
 
     t_stt = time.perf_counter()
