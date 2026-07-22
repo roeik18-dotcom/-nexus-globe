@@ -5,11 +5,11 @@ Loads JSON result files produced by run_bench.py and prints a side-by-side
 table so you can see exactly where each adapter adds latency.
 
 Usage:
-    python bench/report.py bench/results/echo_*.json bench/results/claude_*.json
+    python3 bench/report.py bench/results/echo_*.json bench/results/claude_*.json
 
     # Or compare a specific pair:
-    python bench/report.py bench/results/echo_20240101_120000.json \\
-                           bench/results/claude_20240101_120100.json
+    python3 bench/report.py bench/results/echo_20240101_120000.json \\
+                            bench/results/claude_20240101_120100.json
 """
 
 import json
@@ -64,7 +64,7 @@ def kpi(label: str, key: str, avg: float) -> str:
 def main():
     paths = [Path(p) for p in sys.argv[1:]]
     if not paths:
-        print("Usage: python bench/report.py results/echo_*.json results/claude_*.json")
+        print("Usage: python3 bench/report.py bench/results/echo_*.json bench/results/claude_*.json")
         sys.exit(1)
 
     datasets: list[tuple[str, dict[str, dict]]] = []

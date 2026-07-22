@@ -59,20 +59,26 @@ def gen_with_say(phrase: str, out: Path) -> bool:
             return False
 
         # Try ffmpeg first (better quality resampling)
-        r = subprocess.run(
-            ["ffmpeg", "-y", "-i", str(aiff_path),
-             "-ar", "16000", "-ac", "1", "-sample_fmt", "s16", str(out)],
-            capture_output=True,
-        )
-        if r.returncode == 0:
-            return True
+        try:
+            r = subprocess.run(
+                ["ffmpeg", "-y", "-i", str(aiff_path),
+                 "-ar", "16000", "-ac", "1", "-sample_fmt", "s16", str(out)],
+                capture_output=True,
+            )
+            if r.returncode == 0:
+                return True
+        except FileNotFoundError:
+            pass  # ffmpeg not installed — fall through to afconvert
 
-        # Fallback: afconvert (macOS built-in)
-        r = subprocess.run(
-            ["afconvert", "-f", "WAVE", "-d", "LEI16@16000", str(aiff_path), str(out)],
-            capture_output=True,
-        )
-        return r.returncode == 0
+        # Fallback: afconvert (macOS built-in, always available on macOS)
+        try:
+            r = subprocess.run(
+                ["afconvert", "-f", "WAVE", "-d", "LEI16@16000", str(aiff_path), str(out)],
+                capture_output=True,
+            )
+            return r.returncode == 0
+        except FileNotFoundError:
+            return False
     finally:
         aiff_path.unlink(missing_ok=True)
 

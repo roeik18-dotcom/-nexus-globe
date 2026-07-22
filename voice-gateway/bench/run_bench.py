@@ -7,18 +7,18 @@ Saves raw results to JSON for multi-adapter comparison via report.py.
 
 Usage:
     # 1. Generate a test audio file (once):
-    python bench/gen_audio.py
+    python3 bench/gen_audio.py
 
     # 2. Start the server with your chosen adapter:
     ADAPTER=echo  uvicorn app.main:app --host 127.0.0.1 --port 8765
     ADAPTER=claude uvicorn app.main:app --host 127.0.0.1 --port 8765
 
     # 3. Run the benchmark:
-    python bench/run_bench.py --audio bench/test.wav --n 25 --label echo
-    python bench/run_bench.py --audio bench/test.wav --n 25 --label claude
+    python3 bench/run_bench.py --audio bench/test.wav --n 25 --label echo
+    python3 bench/run_bench.py --audio bench/test.wav --n 25 --label claude
 
     # 4. Compare results:
-    python bench/report.py bench/results/echo_*.json bench/results/claude_*.json
+    python3 bench/report.py bench/results/echo_*.json bench/results/claude_*.json
 """
 
 import argparse
@@ -223,7 +223,7 @@ def main():
     audio_path = Path(args.audio)
     if not audio_path.exists():
         print(f"Audio file not found: {audio_path}")
-        print("Generate one first:  python bench/gen_audio.py")
+        print("Generate one first:  python3 bench/gen_audio.py")
         sys.exit(1)
 
     results = asyncio.run(run(audio_path, args.n, args.label, args.host, args.port))
