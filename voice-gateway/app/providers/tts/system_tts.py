@@ -28,7 +28,7 @@ class SystemTTS:
 
         try:
             proc = await asyncio.create_subprocess_exec(
-                "say", "-o", str(out_path), "--data-format=LEF32@22050", text,
+                "say", "-o", str(out_path), text,
                 stdout=asyncio.subprocess.DEVNULL,
                 stderr=asyncio.subprocess.PIPE,
             )
