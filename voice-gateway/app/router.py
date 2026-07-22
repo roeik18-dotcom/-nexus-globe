@@ -23,14 +23,6 @@ def build_adapter() -> VoiceAdapter:
             raise ValueError("ANTHROPIC_API_KEY required for ADAPTER=claude")
         from app.adapters.claude import ClaudeAdapter
         return ClaudeAdapter()
-    # Phase 2: JARVIS adapter
-    # if name == "jarvis":
-    #     from app.adapters.jarvis import JarvisAdapter
-    #     return JarvisAdapter()
-    # Phase 3: Philos adapter
-    # if name == "philos":
-    #     from app.adapters.philos import PhilosAdapter
-    #     return PhilosAdapter()
     raise ValueError(f"Unknown adapter: {name!r}")
 
 
