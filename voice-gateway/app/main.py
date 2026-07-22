@@ -13,14 +13,22 @@ WebSocket protocol (binary + JSON frames):
     {"type": "transcript", "text": "..."}   : STT result
     {"type": "response_text", "text": "..."}: adapter text (full, after streaming)
     binary frame                             : TTS audio bytes (mp3 or aiff)
+    {"type": "timing", "stages": {...}}      : per-stage latency in ms (sent before "done")
     {"type": "done"}                         : turn complete
     {"type": "error", "message": "..."}      : error (session continues)
     {"type": "expired"}                      : session time limit reached
     {"type": "pong"}                         : keepalive reply
+
+Timing stages (all in milliseconds, server-side only):
+    stt_ms        — audio received → transcript ready
+    adapter_ms    — transcript ready → last text chunk
+    tts_ms        — text ready → audio bytes ready
+    total_ms      — end_of_speech received → audio sent
 """
 
 import json
 import logging
+import time
 import uuid
 from contextlib import asynccontextmanager
 
@@ -137,12 +145,16 @@ async def voice_ws(ws: WebSocket):
 
 
 async def _handle_turn(ws: WebSocket, session_id: str, audio_data: bytes) -> None:
+    t_start = time.perf_counter()
+
     # STT
     try:
         transcript = await _stt.transcribe(audio_data)
     except ValueError as exc:
         await ws.send_text(json.dumps({"type": "error", "message": str(exc)}))
         return
+
+    t_stt = time.perf_counter()
 
     if not transcript:
         await ws.send_text(json.dumps({"type": "error", "message": "empty transcript"}))
@@ -156,6 +168,8 @@ async def _handle_turn(ws: WebSocket, session_id: str, audio_data: bytes) -> Non
     async for chunk in _adapter.respond(transcript, session_id):
         full_text_parts.append(chunk)
 
+    t_adapter = time.perf_counter()
+
     full_text = "".join(full_text_parts)
     await ws.send_text(json.dumps({"type": "response_text", "text": full_text}))
 
@@ -168,8 +182,23 @@ async def _handle_turn(ws: WebSocket, session_id: str, audio_data: bytes) -> Non
         await ws.send_text(json.dumps({"type": "done"}))
         return
 
+    t_tts = time.perf_counter()
+
     if audio_out:
         await ws.send_bytes(audio_out)
 
+    timing = {
+        "stt_ms":     round((t_stt - t_start) * 1000),
+        "adapter_ms": round((t_adapter - t_stt) * 1000),
+        "tts_ms":     round((t_tts - t_adapter) * 1000),
+        "total_ms":   round((t_tts - t_start) * 1000),
+    }
+    await ws.send_text(json.dumps({"type": "timing", "stages": timing}))
     await ws.send_text(json.dumps({"type": "done"}))
-    logger.info("ws[%s] turn done (%d audio bytes)", session_id, len(audio_out))
+
+    logger.info(
+        "ws[%s] turn done — STT %dms · adapter %dms · TTS %dms · total %dms · audio %d bytes",
+        session_id,
+        timing["stt_ms"], timing["adapter_ms"], timing["tts_ms"], timing["total_ms"],
+        len(audio_out),
+    )

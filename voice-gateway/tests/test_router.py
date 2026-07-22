@@ -4,6 +4,14 @@ import pytest
 from unittest.mock import patch
 
 
+def test_build_adapter_echo(monkeypatch):
+    from app import router as r
+    monkeypatch.setattr(r.settings, "adapter", "echo")
+    from app.adapters.echo import EchoAdapter
+    adapter = r.build_adapter()
+    assert isinstance(adapter, EchoAdapter)
+
+
 def test_build_adapter_claude(monkeypatch):
     from app import router as r
     monkeypatch.setattr(r.settings, "adapter", "claude")

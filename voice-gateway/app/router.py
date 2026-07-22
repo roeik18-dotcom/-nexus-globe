@@ -10,6 +10,9 @@ logger = logging.getLogger(__name__)
 
 def build_adapter() -> VoiceAdapter:
     name = settings.adapter
+    if name == "echo":
+        from app.adapters.echo import EchoAdapter
+        return EchoAdapter()
     if name == "claude":
         from app.adapters.claude import ClaudeAdapter
         return ClaudeAdapter()

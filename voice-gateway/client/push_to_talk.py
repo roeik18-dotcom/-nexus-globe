@@ -164,13 +164,20 @@ async def run(host: str, port: int) -> None:
                     print(f"\nYou: {msg['text']}")
                 elif t == "response_text":
                     print(f"AI:  {msg['text']}")
+                elif t == "timing":
+                    s = msg["stages"]
+                    print(
+                        f"     ⏱  STT {s['stt_ms']}ms · "
+                        f"adapter {s['adapter_ms']}ms · "
+                        f"TTS {s['tts_ms']}ms · "
+                        f"total {s['total_ms']}ms"
+                    )
                 elif t == "done":
                     if audio_chunks:
                         audio = b"".join(audio_chunks)
                         audio_chunks.clear()
-                        # Play in a thread to avoid blocking the event loop
                         loop.run_in_executor(None, play_audio, audio)
-                    print()  # newline after turn
+                    print()
                 elif t == "error":
                     print(f"\n[error] {msg.get('message')}")
                 elif t == "expired":
