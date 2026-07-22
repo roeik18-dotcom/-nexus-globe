@@ -57,10 +57,11 @@ async def lifespan(app: FastAPI):
     _tts = build_tts()
     _adapter = build_adapter()
     logger.info(
-        "Voice Gateway ready  stt=%s(%s)  tts=%s(%s)  adapter=%s",
+        "Voice Gateway ready  stt=%s(%s)  tts=%s(%s)  adapter=%s  persona=%s",
         settings.stt_provider, type(_stt).__name__,
         settings.tts_provider, type(_tts).__name__,
         settings.adapter,
+        settings.persona,
     )
     yield
 

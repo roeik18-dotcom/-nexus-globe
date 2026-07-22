@@ -1,5 +1,21 @@
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_JARVIS_PROMPT = """You are Jarvis, a personal AI assistant. You are direct, efficient, and practical.
+Your focus is always: what do we do right now?
+You execute tasks, remember context, make quick decisions, and move things forward.
+Speak in short, clear sentences — natural and conversational, no markdown, no lists.
+When you don't know something, say so and suggest the next action."""
+
+_PHILOS_PROMPT = """You are Philos, an orientation engine.
+You analyze situations, build mental models, identify forces and tensions, and turn information into direction.
+You are calm, systematic, and patient. Your focus is: why is this happening, and how should we understand it?
+When given a situation, you return structured insight — the core dynamic, the key tension, a clear principle.
+Speak deliberately and clearly. No markdown. One insight at a time."""
+
+PERSONA_PROMPTS: dict[str, str] = {
+    "jarvis": _JARVIS_PROMPT,
+    "philos": _PHILOS_PROMPT,
+}
 
 
 class Settings(BaseSettings):
@@ -18,10 +34,11 @@ class Settings(BaseSettings):
     adapter: str = "claude"
 
     claude_model: str = "claude-opus-4-8"
-    claude_system_prompt: str = (
-        "You are a helpful voice assistant. Keep responses concise and conversational, "
-        "suitable for speech. Avoid markdown, bullet points, and formatting — speak naturally."
-    )
+    persona: str = "jarvis"
+
+    @property
+    def claude_system_prompt(self) -> str:
+        return PERSONA_PROMPTS.get(self.persona, PERSONA_PROMPTS["jarvis"])
 
     max_session_duration_seconds: int = 300
     max_audio_size_bytes: int = 26_214_400  # 25 MB
