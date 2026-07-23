@@ -1,7 +1,7 @@
 """Claude adapter — temporary backend for Phase 1 Voice MVP."""
 
 import logging
-from collections import defaultdict
+from collections import Counter, defaultdict
 from typing import AsyncIterator
 
 import anthropic
@@ -83,6 +83,15 @@ class ClaudeAdapter(VoiceAdapter):
         tool_mem = tool_memory_registry.get(session_id)
         memory = load_memory_dict(self._persona)
         recall_result = default_recall_policy.select(memory, self._persona, task, text)
+        reason_counts = Counter(item.reason for item in recall_result.items)
+        logger.info(
+            "recall persona=%s selected=%d candidates=%d truncated=%s | reasons %s",
+            self._persona,
+            len(recall_result.items),
+            recall_result.total_candidates,
+            recall_result.truncated,
+            " ".join(f"{r}={c}" for r, c in sorted(reason_counts.items())),
+        )
         system_prompt = build_system_prompt_with_task(
             self._persona, task, summary_state, tool_mem, recall_result=recall_result
         )

@@ -50,7 +50,7 @@ class PersistentMemoryLayer:
     the full memory file so that callers like build_system_prompt() still work.
     """
 
-    def __init__(self, recall_result=None, persona: str = "") -> None:
+    def __init__(self, persona: str = "", *, recall_result=None) -> None:
         self._recall_result = recall_result
         self._persona = persona
 
