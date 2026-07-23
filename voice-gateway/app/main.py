@@ -13,7 +13,10 @@ WebSocket protocol (binary + JSON frames):
     {"type": "complete_task"}                         : mark current task completed
     {"type": "clear_task"}                            : remove current task
     {"type": "record_tool_result", "tool": "...", "fact": "...", "source": "...", "key"?: "..."}
-    {"type": "promote_memory", "key": "...", "value": <any JSON>}  : write key into persistent memory
+    {"type": "propose_memory", "key": "...", "value": <any JSON>, "category"?: "...", "reason"?: "...", "source"?: "...", "confidence"?: 1.0}
+    {"type": "approve_memory", "candidate_id": "..."}  : write candidate to persistent memory
+    {"type": "reject_memory", "candidate_id": "..."}   : discard candidate
+    {"type": "list_memory_candidates"}                  : list pending candidates for this session
 
   Server → Client
     {"type": "transcript", "text": "..."}   : STT result
@@ -26,7 +29,10 @@ WebSocket protocol (binary + JSON frames):
     {"type": "pong"}                         : keepalive reply
     {"type": "task_ok", "action": "..."}     : task operation acknowledged
     {"type": "tool_memory_ok"}               : tool result recorded
-    {"type": "memory_ok", "key": "..."}      : memory promotion acknowledged
+    {"type": "candidate_proposed", "candidate_id": "...", "key": "..."}
+    {"type": "candidate_approved", "candidate_id": "...", "key": "..."}
+    {"type": "candidate_rejected", "candidate_id": "..."}
+    {"type": "candidates", "items": [...]}   : response to list_memory_candidates
 
 Timing stages (all in milliseconds, server-side only):
     stt_ms        — audio received → transcript ready
@@ -44,7 +50,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from app.config import settings
-from app.memory_promotion import promote as promote_memory
+from app.memory_candidates import candidate_registry
+from app.memory_promotion import promote as _promote_to_memory
 from app.router import build_adapter, build_stt, build_tts
 from app.session import registry
 from app.summary import summary_registry
@@ -193,26 +200,101 @@ async def voice_ws(ws: WebSocket):
                         await ws.send_text(json.dumps({"type": "error", "message": f"tool_memory: {exc}"}))
                     continue
 
-                if msg_type == "promote_memory":
+                if msg_type == "propose_memory":
                     key = msg.get("key", "")
                     if not isinstance(key, str) or not key.strip():
                         await ws.send_text(json.dumps({
                             "type": "error",
-                            "message": "promote_memory requires key",
+                            "message": "propose_memory requires key",
                         }))
                         continue
                     if "value" not in msg:
                         await ws.send_text(json.dumps({
                             "type": "error",
-                            "message": "promote_memory requires value",
+                            "message": "propose_memory requires value",
                         }))
                         continue
                     try:
-                        promote_memory(settings.persona, key.strip(), msg["value"])
-                        await ws.send_text(json.dumps({"type": "memory_ok", "key": key.strip()}))
+                        candidate = candidate_registry.propose(
+                            session_id=session_id,
+                            persona=settings.persona,
+                            key=key,
+                            value=msg["value"],
+                            category=msg.get("category", "general"),
+                            reason=msg.get("reason", ""),
+                            source=msg.get("source", "session"),
+                            confidence=float(msg.get("confidence", 1.0)),
+                        )
+                        await ws.send_text(json.dumps({
+                            "type": "candidate_proposed",
+                            "candidate_id": candidate.id,
+                            "key": candidate.key,
+                        }))
+                    except ValueError as exc:
+                        await ws.send_text(json.dumps({"type": "error", "message": str(exc)}))
                     except Exception as exc:
-                        logger.error("ws[%s] promote_memory error: %s", session_id, exc)
-                        await ws.send_text(json.dumps({"type": "error", "message": f"promote_memory: {exc}"}))
+                        logger.error("ws[%s] propose_memory error: %s", session_id, exc)
+                        await ws.send_text(json.dumps({"type": "error", "message": f"propose_memory: {exc}"}))
+                    continue
+
+                if msg_type == "approve_memory":
+                    candidate_id = msg.get("candidate_id", "")
+                    if not candidate_id:
+                        await ws.send_text(json.dumps({
+                            "type": "error",
+                            "message": "approve_memory requires candidate_id",
+                        }))
+                        continue
+                    candidate = candidate_registry.get(session_id, candidate_id)
+                    if candidate is None:
+                        await ws.send_text(json.dumps({
+                            "type": "error",
+                            "message": f"candidate {candidate_id!r} not found",
+                        }))
+                        continue
+                    try:
+                        _promote_to_memory(candidate.persona, candidate.key, candidate.value)
+                        candidate_registry.remove(session_id, candidate_id)
+                        await ws.send_text(json.dumps({
+                            "type": "candidate_approved",
+                            "candidate_id": candidate_id,
+                            "key": candidate.key,
+                        }))
+                    except Exception as exc:
+                        logger.error("ws[%s] approve_memory error: %s", session_id, exc)
+                        await ws.send_text(json.dumps({"type": "error", "message": f"approve_memory: {exc}"}))
+                    continue
+
+                if msg_type == "reject_memory":
+                    candidate_id = msg.get("candidate_id", "")
+                    if not candidate_id:
+                        await ws.send_text(json.dumps({
+                            "type": "error",
+                            "message": "reject_memory requires candidate_id",
+                        }))
+                        continue
+                    candidate_registry.remove(session_id, candidate_id)
+                    await ws.send_text(json.dumps({
+                        "type": "candidate_rejected",
+                        "candidate_id": candidate_id,
+                    }))
+                    continue
+
+                if msg_type == "list_memory_candidates":
+                    items = [
+                        {
+                            "id": c.id,
+                            "key": c.key,
+                            "value": c.value,
+                            "category": c.category,
+                            "reason": c.reason,
+                            "source": c.source,
+                            "confidence": c.confidence,
+                            "proposed_at": c.proposed_at,
+                        }
+                        for c in candidate_registry.list(session_id)
+                    ]
+                    await ws.send_text(json.dumps({"type": "candidates", "items": items}))
                     continue
 
                 if msg_type == "end_of_speech":
@@ -241,6 +323,7 @@ async def voice_ws(ws: WebSocket):
         task_registry.clear(session_id)
         summary_registry.clear(session_id)
         tool_memory_registry.clear(session_id)
+        candidate_registry.clear(session_id)
         await _adapter.reset(session_id)
 
 
