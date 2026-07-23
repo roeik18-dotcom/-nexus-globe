@@ -33,6 +33,47 @@ def build_adapter() -> VoiceAdapter:
     raise ValueError(f"Unknown adapter: {name!r}")
 
 
+def build_orchestrator() -> VoiceAdapter:
+    """Build a multi-agent orchestrator (claude) or single adapter (echo)."""
+    name = settings.adapter
+    if name == "echo":
+        from app.adapters.echo import EchoAdapter
+        return EchoAdapter()
+    if name == "claude":
+        if not _valid_anthropic_key(settings.anthropic_api_key):
+            raise ValueError(
+                "ANTHROPIC_API_KEY is missing or invalid "
+                "(must start with 'sk-ant-' and be >50 chars)"
+            )
+        from app.adapters.claude import ClaudeAdapter
+        from app.agents.definition import AgentDefinition
+        from app.agents.orchestrator import AgentOrchestrator
+        from app.agents.registry import AgentRegistry
+        from app.agents.router import RuleBasedRouter
+
+        registry = AgentRegistry()
+        registry.register(AgentDefinition(
+            name="jarvis",
+            persona="jarvis",
+            description="Personal AI assistant for tasks, scheduling, preferences, and daily life",
+            capabilities=["tasks", "preferences", "scheduling", "personal", "answers"],
+        ))
+        registry.register(AgentDefinition(
+            name="philos",
+            persona="philos",
+            description="Philosophical AI for deep analysis, abstract thinking, and reasoning",
+            capabilities=["analysis", "philosophy", "reasoning", "concepts", "ethics"],
+        ))
+
+        adapters: dict[str, VoiceAdapter] = {
+            "jarvis": ClaudeAdapter(persona="jarvis"),
+            "philos": ClaudeAdapter(persona="philos"),
+        }
+        router = RuleBasedRouter(default_agent=settings.persona)
+        return AgentOrchestrator(registry, router, adapters)
+    raise ValueError(f"Unknown adapter: {name!r}")
+
+
 def build_stt():
     name = settings.stt_provider
     if name == "whisper":

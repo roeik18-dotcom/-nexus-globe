@@ -52,7 +52,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from app.config import settings
 from app.memory_candidates import candidate_registry
 from app.memory_promotion import promote as _promote_to_memory
-from app.router import build_adapter, build_stt, build_tts
+from app.router import build_orchestrator, build_stt, build_tts
 from app.session import registry
 from app.summary import summary_registry
 from app.task import task_registry
@@ -75,13 +75,13 @@ async def lifespan(app: FastAPI):
     global _stt, _tts, _adapter
     _stt = build_stt()
     _tts = build_tts()
-    _adapter = build_adapter()
+    _adapter = build_orchestrator()
     logger.info(
-        "Voice Gateway ready  stt=%s(%s)  tts=%s(%s)  adapter=%s  persona=%s",
+        "Voice Gateway ready  stt=%s(%s)  tts=%s(%s)  adapter=%s  backend=%s",
         settings.stt_provider, type(_stt).__name__,
         settings.tts_provider, type(_tts).__name__,
         settings.adapter,
-        settings.persona,
+        type(_adapter).__name__,
     )
     yield
 

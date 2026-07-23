@@ -22,14 +22,15 @@ logger = logging.getLogger(__name__)
 
 
 class ClaudeAdapter(VoiceAdapter):
-    def __init__(self) -> None:
+    def __init__(self, persona: str | None = None) -> None:
         self._client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+        self._persona = persona if persona is not None else settings.persona
         # session_id → list of {"role": ..., "content": ...}
         self._history: dict[str, list[dict]] = defaultdict(list)
 
     @property
     def name(self) -> str:
-        return "claude"
+        return f"claude:{self._persona}"
 
     async def _maybe_summarize(self, session_id: str, history: list[dict]) -> None:
         state = summary_registry.get(session_id)
@@ -79,7 +80,7 @@ class ClaudeAdapter(VoiceAdapter):
         task = task_registry.get(session_id)
         tool_mem = tool_memory_registry.get(session_id)
         system_prompt = build_system_prompt_with_task(
-            settings.persona, task, summary_state, tool_mem
+            self._persona, task, summary_state, tool_mem
         )
 
         # Pass only recent messages; summary covers the rest
