@@ -1,50 +1,13 @@
-import json
-from pathlib import Path
-
+from app.context_builder import ContextBuilder
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-_PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
-_MEMORY_DIR = Path(__file__).parent.parent / "memory" / "persistent"
-
-
-def _load_prompt_layer(name: str) -> str:
-    path = _PROMPTS_DIR / f"{name}.md"
-    return path.read_text(encoding="utf-8") if path.exists() else ""
-
-
-def _load_memory(persona: str) -> str:
-    path = _MEMORY_DIR / f"{persona}.json"
-    if not path.exists():
-        return ""
-    data = json.loads(path.read_text(encoding="utf-8"))
-    return f"## Persistent memory\n\n```json\n{json.dumps(data, ensure_ascii=False, indent=2)}\n```"
 
 
 def build_system_prompt(persona: str) -> str:
-    layers = [
-        _load_prompt_layer("base"),
-        _load_prompt_layer(persona),
-        _load_memory(persona),
-    ]
-    return "\n\n---\n\n".join(layer.strip() for layer in layers if layer.strip())
+    return ContextBuilder.for_session(persona).build()
 
 
 def build_system_prompt_with_task(persona: str, task=None, summary=None, tool_memory=None) -> str:
-    from app.tool_memory import format_block as _fmt_tool_memory
-
-    sections = [build_system_prompt(persona)]
-    if summary and summary.text:
-        sections.append(f"## Session Summary\n\n{summary.text}")
-    if task is not None:
-        task_block = f"## Current Task\n\nTitle: {task.title}\nStatus: {task.status}"
-        if task.description:
-            task_block += f"\nContext: {task.description}"
-        sections.append(task_block)
-    if tool_memory:
-        block = _fmt_tool_memory(tool_memory)
-        if block:
-            sections.append(block)
-    return "\n\n---\n\n".join(sections)
+    return ContextBuilder.for_session(persona, task, summary, tool_memory).build()
 
 
 class Settings(BaseSettings):
