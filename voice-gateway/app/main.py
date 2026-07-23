@@ -13,6 +13,7 @@ WebSocket protocol (binary + JSON frames):
     {"type": "complete_task"}                         : mark current task completed
     {"type": "clear_task"}                            : remove current task
     {"type": "record_tool_result", "tool": "...", "fact": "...", "source": "...", "key"?: "..."}
+    {"type": "promote_memory", "key": "...", "value": <any JSON>}  : write key into persistent memory
 
   Server → Client
     {"type": "transcript", "text": "..."}   : STT result
@@ -25,6 +26,7 @@ WebSocket protocol (binary + JSON frames):
     {"type": "pong"}                         : keepalive reply
     {"type": "task_ok", "action": "..."}     : task operation acknowledged
     {"type": "tool_memory_ok"}               : tool result recorded
+    {"type": "memory_ok", "key": "..."}      : memory promotion acknowledged
 
 Timing stages (all in milliseconds, server-side only):
     stt_ms        — audio received → transcript ready
@@ -42,6 +44,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from app.config import settings
+from app.memory_promotion import promote as promote_memory
 from app.router import build_adapter, build_stt, build_tts
 from app.session import registry
 from app.summary import summary_registry
@@ -188,6 +191,28 @@ async def voice_ws(ws: WebSocket):
                     except Exception as exc:
                         logger.error("ws[%s] tool_memory record error: %s", session_id, exc)
                         await ws.send_text(json.dumps({"type": "error", "message": f"tool_memory: {exc}"}))
+                    continue
+
+                if msg_type == "promote_memory":
+                    key = msg.get("key", "")
+                    if not isinstance(key, str) or not key.strip():
+                        await ws.send_text(json.dumps({
+                            "type": "error",
+                            "message": "promote_memory requires key",
+                        }))
+                        continue
+                    if "value" not in msg:
+                        await ws.send_text(json.dumps({
+                            "type": "error",
+                            "message": "promote_memory requires value",
+                        }))
+                        continue
+                    try:
+                        promote_memory(settings.persona, key.strip(), msg["value"])
+                        await ws.send_text(json.dumps({"type": "memory_ok", "key": key.strip()}))
+                    except Exception as exc:
+                        logger.error("ws[%s] promote_memory error: %s", session_id, exc)
+                        await ws.send_text(json.dumps({"type": "error", "message": f"promote_memory: {exc}"}))
                     continue
 
                 if msg_type == "end_of_speech":
