@@ -29,14 +29,16 @@ def build_system_prompt(persona: str) -> str:
     return "\n\n---\n\n".join(layer.strip() for layer in layers if layer.strip())
 
 
-def build_system_prompt_with_task(persona: str, task=None) -> str:
-    base = build_system_prompt(persona)
-    if task is None:
-        return base
-    task_block = f"## Current Task\n\nTitle: {task.title}\nStatus: {task.status}"
-    if task.description:
-        task_block += f"\nContext: {task.description}"
-    return f"{base}\n\n---\n\n{task_block}"
+def build_system_prompt_with_task(persona: str, task=None, summary=None) -> str:
+    sections = [build_system_prompt(persona)]
+    if summary and summary.text:
+        sections.append(f"## Session Summary\n\n{summary.text}")
+    if task is not None:
+        task_block = f"## Current Task\n\nTitle: {task.title}\nStatus: {task.status}"
+        if task.description:
+            task_block += f"\nContext: {task.description}"
+        sections.append(task_block)
+    return "\n\n---\n\n".join(sections)
 
 
 class Settings(BaseSettings):
