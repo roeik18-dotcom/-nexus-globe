@@ -16,12 +16,11 @@ def _load_prompt_layer(name: str) -> str:
     return path.read_text(encoding="utf-8") if path.exists() else ""
 
 
-def _load_memory(persona: str) -> str:
+def _load_memory_dict(persona: str) -> dict:
     path = _MEMORY_DIR / f"{persona}.json"
     if not path.exists():
-        return ""
-    data = json.loads(path.read_text(encoding="utf-8"))
-    return f"## Persistent memory\n\n```json\n{json.dumps(data, ensure_ascii=False, indent=2)}\n```"
+        return {}
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 class ContextLayer(Protocol):
@@ -45,11 +44,22 @@ class PersonaLayer:
 
 
 class PersistentMemoryLayer:
-    def __init__(self, persona: str) -> None:
+    def __init__(self, persona: str, task=None, user_message: str = "", policy=None) -> None:
+        from app.recall import default_recall_policy
         self._persona = persona
+        self._task = task
+        self._user_message = user_message
+        self._policy = policy if policy is not None else default_recall_policy
 
     def render(self) -> str:
-        return _load_memory(self._persona)
+        memory = _load_memory_dict(self._persona)
+        if not memory:
+            return ""
+        items = self._policy.select(memory, self._persona, self._task, self._user_message)
+        if not items:
+            return ""
+        selected = {item.key: item.value for item in items}
+        return f"## Persistent memory\n\n```json\n{json.dumps(selected, ensure_ascii=False, indent=2)}\n```"
 
 
 class SessionSummaryLayer:
@@ -99,11 +109,12 @@ class ContextBuilder:
         task=None,
         summary=None,
         tool_memory=None,
+        user_message: str = "",
     ) -> "ContextBuilder":
         return cls([
             BaseIdentityLayer(persona),
             PersonaLayer(persona),
-            PersistentMemoryLayer(persona),
+            PersistentMemoryLayer(persona, task=task, user_message=user_message),
             SessionSummaryLayer(summary),
             CurrentTaskLayer(task),
             ToolMemoryLayer(tool_memory or []),

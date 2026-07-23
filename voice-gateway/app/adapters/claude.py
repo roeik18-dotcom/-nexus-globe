@@ -80,7 +80,7 @@ class ClaudeAdapter(VoiceAdapter):
         task = task_registry.get(session_id)
         tool_mem = tool_memory_registry.get(session_id)
         system_prompt = build_system_prompt_with_task(
-            self._persona, task, summary_state, tool_mem
+            self._persona, task, summary_state, tool_mem, user_message=text
         )
 
         # Pass only recent messages; summary covers the rest
