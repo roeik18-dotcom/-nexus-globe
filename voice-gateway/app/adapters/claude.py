@@ -16,6 +16,7 @@ from app.summary import (
     summary_registry,
 )
 from app.task import task_registry
+from app.tool_memory import tool_memory_registry
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +77,10 @@ class ClaudeAdapter(VoiceAdapter):
 
         summary_state = summary_registry.get(session_id)
         task = task_registry.get(session_id)
-        system_prompt = build_system_prompt_with_task(settings.persona, task, summary_state)
+        tool_mem = tool_memory_registry.get(session_id)
+        system_prompt = build_system_prompt_with_task(
+            settings.persona, task, summary_state, tool_mem
+        )
 
         # Pass only recent messages; summary covers the rest
         summarized_until = summary_state.summarized_until if summary_state else 0

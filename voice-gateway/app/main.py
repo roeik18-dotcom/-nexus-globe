@@ -12,6 +12,7 @@ WebSocket protocol (binary + JSON frames):
     {"type": "update_task", "title"?: "...", "description"?: "...", "status"?: "..."}
     {"type": "complete_task"}                         : mark current task completed
     {"type": "clear_task"}                            : remove current task
+    {"type": "record_tool_result", "tool": "...", "fact": "...", "source": "...", "key"?: "..."}
 
   Server → Client
     {"type": "transcript", "text": "..."}   : STT result
@@ -23,6 +24,7 @@ WebSocket protocol (binary + JSON frames):
     {"type": "expired"}                      : session time limit reached
     {"type": "pong"}                         : keepalive reply
     {"type": "task_ok", "action": "..."}     : task operation acknowledged
+    {"type": "tool_memory_ok"}               : tool result recorded
 
 Timing stages (all in milliseconds, server-side only):
     stt_ms        — audio received → transcript ready
@@ -44,6 +46,7 @@ from app.router import build_adapter, build_stt, build_tts
 from app.session import registry
 from app.summary import summary_registry
 from app.task import task_registry
+from app.tool_memory import ToolMemoryEntry, tool_memory_registry
 
 logging.basicConfig(
     level=logging.INFO,
@@ -161,6 +164,32 @@ async def voice_ws(ws: WebSocket):
                     await ws.send_text(json.dumps({"type": "task_ok", "action": "clear"}))
                     continue
 
+                if msg_type == "record_tool_result":
+                    tool = msg.get("tool", "").strip()
+                    fact = msg.get("fact", "").strip()
+                    source = msg.get("source", "").strip()
+                    if not tool or not fact or not source:
+                        await ws.send_text(json.dumps({
+                            "type": "error",
+                            "message": "record_tool_result requires tool, fact, source",
+                        }))
+                        continue
+                    try:
+                        tool_memory_registry.record(
+                            session_id,
+                            ToolMemoryEntry(
+                                tool=tool,
+                                fact=fact,
+                                source=source,
+                                key=msg.get("key", ""),
+                            ),
+                        )
+                        await ws.send_text(json.dumps({"type": "tool_memory_ok"}))
+                    except Exception as exc:
+                        logger.error("ws[%s] tool_memory record error: %s", session_id, exc)
+                        await ws.send_text(json.dumps({"type": "error", "message": f"tool_memory: {exc}"}))
+                    continue
+
                 if msg_type == "end_of_speech":
                     if not audio_buffer:
                         await ws.send_text(
@@ -186,6 +215,7 @@ async def voice_ws(ws: WebSocket):
         registry.remove(session_id)
         task_registry.clear(session_id)
         summary_registry.clear(session_id)
+        tool_memory_registry.clear(session_id)
         await _adapter.reset(session_id)
 
 

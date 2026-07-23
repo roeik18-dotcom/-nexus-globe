@@ -29,7 +29,9 @@ def build_system_prompt(persona: str) -> str:
     return "\n\n---\n\n".join(layer.strip() for layer in layers if layer.strip())
 
 
-def build_system_prompt_with_task(persona: str, task=None, summary=None) -> str:
+def build_system_prompt_with_task(persona: str, task=None, summary=None, tool_memory=None) -> str:
+    from app.tool_memory import format_block as _fmt_tool_memory
+
     sections = [build_system_prompt(persona)]
     if summary and summary.text:
         sections.append(f"## Session Summary\n\n{summary.text}")
@@ -38,6 +40,10 @@ def build_system_prompt_with_task(persona: str, task=None, summary=None) -> str:
         if task.description:
             task_block += f"\nContext: {task.description}"
         sections.append(task_block)
+    if tool_memory:
+        block = _fmt_tool_memory(tool_memory)
+        if block:
+            sections.append(block)
     return "\n\n---\n\n".join(sections)
 
 
