@@ -1,5 +1,5 @@
 """
-Generate a fixed test WAV file for repeatable benchmarks.
+Generate test WAV files for repeatable benchmarks.
 
 Uses macOS `say` (no API cost) by default.
 Falls back to a pure-Python sine-wave WAV if `say` is not available
@@ -7,11 +7,14 @@ Falls back to a pure-Python sine-wave WAV if `say` is not available
 measurement, not STT accuracy).
 
 Usage:
+    # Single file:
     python bench/gen_audio.py [--phrase "text to record"] [--out bench/test.wav]
+
+    # All canonical sentences → bench/audio/sentence_NN.wav:
+    python bench/gen_audio.py --all
 """
 
 import argparse
-import asyncio
 import io
 import math
 import struct
@@ -83,23 +86,38 @@ def gen_with_say(phrase: str, out: Path) -> bool:
         aiff_path.unlink(missing_ok=True)
 
 
+def _gen_one(phrase: str, out: Path) -> None:
+    if gen_with_say(phrase, out):
+        print(f"  ok   {out.name}  [{out.stat().st_size:,} bytes]  {phrase[:50]!r}")
+    else:
+        out.write_bytes(_sine_wav(phrase))
+        print(f"  sine {out.name}  (fallback — Whisper accuracy unreliable)  {phrase[:50]!r}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Generate test audio for benchmark")
     parser.add_argument("--phrase", default="מה מצב הפרויקט? תסביר בקצרה.")
     parser.add_argument("--out", default="bench/test.wav")
+    parser.add_argument("--all", action="store_true",
+                        help="Generate all sentences from bench/sentences.py into bench/audio/")
     args = parser.parse_args()
+
+    if args.all:
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+        from bench.sentences import SENTENCES
+        out_dir = Path("bench/audio")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        print(f"Generating {len(SENTENCES)} audio files → {out_dir}/\n")
+        for i, phrase in enumerate(SENTENCES):
+            _gen_one(phrase, out_dir / f"sentence_{i:02d}.wav")
+        print(f"\nDone. Run benchmark with:\n  python bench/direct_bench.py --mode all\n")
+        return
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-
-    if gen_with_say(args.phrase, out):
-        print(f"Generated (say): {out}  [{out.stat().st_size} bytes]")
-        print(f"Phrase: {args.phrase!r}")
-    else:
-        print("macOS `say` not available — generating sine-wave fallback (latency test only)")
-        out.write_bytes(_sine_wav(args.phrase))
-        print(f"Generated (sine): {out}  [{out.stat().st_size} bytes]")
-        print("WARNING: Whisper will not transcribe this correctly. STT accuracy test requires real speech.")
+    _gen_one(args.phrase, out)
+    if not out.exists() or out.stat().st_size == 0:
+        print("WARNING: Whisper will not transcribe sine-wave correctly. STT accuracy test requires real speech.")
 
 
 if __name__ == "__main__":

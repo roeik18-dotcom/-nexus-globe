@@ -40,7 +40,7 @@ def test_kpi_pass():
 
 def test_kpi_fail():
     assert kpi("echo", "total_ms", 900) == "!!"   # exceeds 800
-    assert kpi("claude", "total_ms", 2100) == "!!"
+    assert kpi("claude", "total_ms", 3600) == "!!"  # exceeds 3500
 
 
 def test_kpi_unknown_label():
