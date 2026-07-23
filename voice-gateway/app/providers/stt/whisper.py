@@ -6,13 +6,18 @@ from openai import AsyncOpenAI
 
 from app.audio.utils import audio_to_file_like, validate_audio
 from app.config import settings
+from app.providers.stt.base import STTProvider
 
 logger = logging.getLogger(__name__)
 
 
-class WhisperSTT:
+class WhisperSTT(STTProvider):
     def __init__(self) -> None:
         self._client = AsyncOpenAI(api_key=settings.openai_api_key)
+
+    @property
+    def name(self) -> str:
+        return "whisper"
 
     async def transcribe(self, audio_bytes: bytes) -> str:
         validate_audio(audio_bytes)
