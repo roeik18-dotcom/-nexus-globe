@@ -8,6 +8,8 @@ import anthropic
 
 from app.adapters.base import VoiceAdapter
 from app.config import build_system_prompt_with_task, settings
+from app.context_builder import load_memory_dict
+from app.recall import default_recall_policy
 from app.summary import (
     SUMMARIZE_PROMPT,
     SummaryState,
@@ -79,8 +81,10 @@ class ClaudeAdapter(VoiceAdapter):
         summary_state = summary_registry.get(session_id)
         task = task_registry.get(session_id)
         tool_mem = tool_memory_registry.get(session_id)
+        memory = load_memory_dict(self._persona)
+        recall_result = default_recall_policy.select(memory, self._persona, task, text)
         system_prompt = build_system_prompt_with_task(
-            self._persona, task, summary_state, tool_mem, user_message=text
+            self._persona, task, summary_state, tool_mem, recall_result=recall_result
         )
 
         # Pass only recent messages; summary covers the rest

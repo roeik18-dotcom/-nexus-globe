@@ -6,8 +6,8 @@ def build_system_prompt(persona: str) -> str:
     return ContextBuilder.for_session(persona).build()
 
 
-def build_system_prompt_with_task(persona: str, task=None, summary=None, tool_memory=None, user_message: str = "") -> str:
-    return ContextBuilder.for_session(persona, task, summary, tool_memory, user_message=user_message).build()
+def build_system_prompt_with_task(persona: str, task=None, summary=None, tool_memory=None, recall_result=None) -> str:
+    return ContextBuilder.for_session(persona, task, summary, tool_memory, recall_result=recall_result).build()
 
 
 class Settings(BaseSettings):

@@ -39,13 +39,25 @@ class RecallItem:
     reason: RecallReason
 
 
+@dataclass
+class RecallResult:
+    items: list[RecallItem]
+    truncated: bool
+    total_candidates: int
+
+
 def _words(text: str) -> frozenset[str]:
     """Lowercase alphabetic tokens of 3+ characters extracted from text."""
     return frozenset(w for w in re.findall(r"[a-z]+", text.lower()) if len(w) >= 3)
 
 
 class RecallPolicy:
-    """Deterministic memory selector — no LLM, no embeddings."""
+    """Deterministic memory selector — no LLM, no embeddings.
+
+    Two-phase architecture:
+      Phase 1 (_collect_candidates): gather all matching items, ordered by rule priority.
+      Phase 2 (_apply_budget):       enforce max_items and populate RecallResult metadata.
+    """
 
     def __init__(
         self,
@@ -55,23 +67,14 @@ class RecallPolicy:
         self._global_keys = global_keys
         self._max_items = max_items
 
-    def select(
+    def _collect_candidates(
         self,
         memory: dict,
         persona: str,
         current_task=None,
         user_message: str = "",
     ) -> list[RecallItem]:
-        if not memory:
-            return []
-
-        # No context → pass through everything up to limit
-        if current_task is None and not user_message.strip():
-            return [
-                RecallItem(key=k, value=v, reason="all")
-                for k, v in list(memory.items())[: self._max_items]
-            ]
-
+        """Phase 1: collect all matching items, ordered by rule priority."""
         selected: dict[str, RecallItem] = {}
 
         # Rule 1: Global keys
@@ -108,7 +111,37 @@ class RecallPolicy:
                         if msg_words & _words(key + " " + str(value)):
                             selected[key] = RecallItem(key=key, value=value, reason="keyword")
 
-        return list(selected.values())[: self._max_items]
+        return list(selected.values())
+
+    def _apply_budget(self, candidates: list[RecallItem]) -> RecallResult:
+        """Phase 2: enforce max_items and return result with metadata."""
+        truncated = len(candidates) > self._max_items
+        return RecallResult(
+            items=candidates[: self._max_items],
+            truncated=truncated,
+            total_candidates=len(candidates),
+        )
+
+    def select(
+        self,
+        memory: dict,
+        persona: str,
+        current_task=None,
+        user_message: str = "",
+    ) -> RecallResult:
+        if not memory:
+            return RecallResult(items=[], truncated=False, total_candidates=0)
+
+        # No context → pass through everything up to limit
+        if current_task is None and not user_message.strip():
+            candidates = [
+                RecallItem(key=k, value=v, reason="all")
+                for k, v in memory.items()
+            ]
+            return self._apply_budget(candidates)
+
+        candidates = self._collect_candidates(memory, persona, current_task, user_message)
+        return self._apply_budget(candidates)
 
 
 default_recall_policy = RecallPolicy()

@@ -16,7 +16,7 @@ def _load_prompt_layer(name: str) -> str:
     return path.read_text(encoding="utf-8") if path.exists() else ""
 
 
-def _load_memory_dict(persona: str) -> dict:
+def load_memory_dict(persona: str) -> dict:
     path = _MEMORY_DIR / f"{persona}.json"
     if not path.exists():
         return {}
@@ -44,18 +44,24 @@ class PersonaLayer:
 
 
 class PersistentMemoryLayer:
-    def __init__(self, persona: str, task=None, user_message: str = "", policy=None) -> None:
-        from app.recall import default_recall_policy
+    """Renders pre-selected recall items into the system prompt.
+
+    When recall_result is None (no turn context), falls back to rendering
+    the full memory file so that callers like build_system_prompt() still work.
+    """
+
+    def __init__(self, recall_result=None, persona: str = "") -> None:
+        self._recall_result = recall_result
         self._persona = persona
-        self._task = task
-        self._user_message = user_message
-        self._policy = policy if policy is not None else default_recall_policy
 
     def render(self) -> str:
-        memory = _load_memory_dict(self._persona)
-        if not memory:
-            return ""
-        items = self._policy.select(memory, self._persona, self._task, self._user_message)
+        if self._recall_result is not None:
+            items = self._recall_result.items
+        else:
+            from app.recall import RecallItem
+            memory = load_memory_dict(self._persona)
+            items = [RecallItem(key=k, value=v, reason="all") for k, v in memory.items()]
+
         if not items:
             return ""
         selected = {item.key: item.value for item in items}
@@ -109,12 +115,12 @@ class ContextBuilder:
         task=None,
         summary=None,
         tool_memory=None,
-        user_message: str = "",
+        recall_result=None,
     ) -> "ContextBuilder":
         return cls([
             BaseIdentityLayer(persona),
             PersonaLayer(persona),
-            PersistentMemoryLayer(persona, task=task, user_message=user_message),
+            PersistentMemoryLayer(recall_result=recall_result, persona=persona),
             SessionSummaryLayer(summary),
             CurrentTaskLayer(task),
             ToolMemoryLayer(tool_memory or []),
