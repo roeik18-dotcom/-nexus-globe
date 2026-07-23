@@ -42,6 +42,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from app.config import settings
 from app.router import build_adapter, build_stt, build_tts
 from app.session import registry
+from app.summary import summary_registry
 from app.task import task_registry
 
 logging.basicConfig(
@@ -184,6 +185,7 @@ async def voice_ws(ws: WebSocket):
     finally:
         registry.remove(session_id)
         task_registry.clear(session_id)
+        summary_registry.clear(session_id)
         await _adapter.reset(session_id)
 
 
