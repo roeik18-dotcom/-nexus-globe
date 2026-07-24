@@ -43,7 +43,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.router import build_stt, build_tts
-from bench.report import kpi, stats
+from bench.report import contributions, kpi, spikes, stats
 
 _MODES = ["echo", "jarvis", "philos"]
 
@@ -190,11 +190,11 @@ def _print_summary(label: str, results: list[dict]) -> None:
     stage_stats = {k: stats([r[k] for r in ok if k in r]) for k in stage_keys}
     labels_display = {"stt_ms": "STT", "adapter_ms": "Adapter", "tts_ms": "TTS", "total_ms": "Total"}
 
-    print(f"\n{'─'*70}")
+    print(f"\n{'─'*80}")
     print(f"  Results — {label}  ({len(ok)}/{len(results)} ok)")
-    print(f"{'─'*70}")
-    print(f"  {'Stage':<14} {'avg':>5} {'median':>7} {'p95':>6} {'min':>5} {'max':>5}  KPI")
-    print(f"  {'─'*14} {'─'*5} {'─'*7} {'─'*6} {'─'*5} {'─'*5}  {'─'*3}")
+    print(f"{'─'*80}")
+    print(f"  {'Stage':<14} {'avg':>5} {'median':>7} {'p95':>6} {'p99':>6} {'min':>5} {'max':>5} {'std':>5}  KPI")
+    print(f"  {'─'*14} {'─'*5} {'─'*7} {'─'*6} {'─'*6} {'─'*5} {'─'*5} {'─'*5}  {'─'*3}")
     for k in stage_keys:
         s = stage_stats.get(k)
         if not s:
@@ -206,16 +206,35 @@ def _print_summary(label: str, results: list[dict]) -> None:
             f"{s['avg']:>4}ms "
             f"{s['median']:>6}ms "
             f"{s['p95']:>5}ms "
+            f"{s['p99']:>5}ms "
             f"{s['min']:>4}ms "
-            f"{s['max']:>4}ms"
+            f"{s['max']:>4}ms "
+            f"{s['stddev']:>4}ms"
             f"  {sym}"
         )
+
+    # Contribution %
+    c = contributions(stage_stats)
+    if c:
+        cname = {"stt_ms": "STT", "adapter_ms": "Adapter", "tts_ms": "TTS"}
+        parts = "  ".join(f"{cname.get(k, k)} {v}%" for k, v in c.items())
+        print(f"\n  Contribution: {parts}")
+
+    # Spike detection
+    spike_lines = []
+    for k in stage_keys:
+        vals = [r[k] for r in ok if k in r]
+        s = spikes(vals)
+        if s:
+            spike_lines.append(f"{labels_display[k]} {len(s)}× (max {max(s):.0f}ms)")
+    if spike_lines:
+        print(f"  Spikes:       {', '.join(spike_lines)}")
 
     transcripts = [r["transcript"] for r in ok if r.get("transcript")]
     print(f"\n  STT non-empty: {len(transcripts)}/{len(ok)}")
     if transcripts:
         print(f"  Sample:  {transcripts[0][:80]!r}")
-    print(f"{'─'*70}\n")
+    print(f"{'─'*80}\n")
 
 
 def _save(label: str, results: list[dict], out_dir: Path) -> Path:
