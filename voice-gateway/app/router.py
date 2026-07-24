@@ -74,6 +74,25 @@ def build_orchestrator() -> VoiceAdapter:
     raise ValueError(f"Unknown adapter: {name!r}")
 
 
+def build_jarvis_with_delegation() -> VoiceAdapter:
+    """Jarvis adapter with Philos wired as a synchronous delegation target.
+
+    Jarvis handles every turn; when the rule engine detects a deep-analysis
+    request it calls Philos in-process, then synthesizes a unified response.
+    No routing — the user always talks to Jarvis.
+    """
+    if not _valid_anthropic_key(settings.anthropic_api_key):
+        raise ValueError(
+            "ANTHROPIC_API_KEY is missing or invalid — required for delegation"
+        )
+    from app.adapters.claude import ClaudeAdapter
+    from app.delegation.bus import DelegationBus
+
+    bus = DelegationBus()
+    bus.register("philos", ClaudeAdapter(persona="philos"))
+    return ClaudeAdapter(persona="jarvis", bus=bus)
+
+
 def build_stt():
     name = settings.stt_provider
     if name == "whisper":
