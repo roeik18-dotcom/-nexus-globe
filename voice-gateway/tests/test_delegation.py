@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.delegation.bus import DelegationBus, DelegationRequest, DelegationResult
 from app.delegation.rules import should_delegate
+from app.adapters.claude import _format_delegation_block
 
 
 # ---------------------------------------------------------------------------
@@ -192,3 +193,66 @@ def test_should_delegate_simple_returns_none():
 def test_should_delegate_case_insensitive():
     assert should_delegate("ANALYZE this please") == "philos"
     assert should_delegate("PHILOSOPHY of science") == "philos"
+
+
+# ---------------------------------------------------------------------------
+# DelegationResult — structured fields
+# ---------------------------------------------------------------------------
+
+def test_delegation_result_default_structured_fields():
+    r = DelegationResult(agent="philos", content="raw text")
+    assert r.summary == ""
+    assert r.findings == []
+    assert r.confidence == 1.0
+
+
+def test_delegation_result_with_findings():
+    r = DelegationResult(
+        agent="philos",
+        content="raw",
+        summary="short",
+        findings=["finding A", "finding B"],
+        confidence=0.85,
+    )
+    assert r.summary == "short"
+    assert len(r.findings) == 2
+    assert r.confidence == 0.85
+
+
+# ---------------------------------------------------------------------------
+# _format_delegation_block
+# ---------------------------------------------------------------------------
+
+def test_format_block_content_only():
+    r = DelegationResult(agent="philos", content="deep insight")
+    block = _format_delegation_block(r)
+    assert "## Delegated Analysis — philos" in block
+    assert "deep insight" in block
+    assert "(Internal context" in block
+
+
+def test_format_block_with_summary_and_findings():
+    r = DelegationResult(
+        agent="philos",
+        content="full text",
+        summary="short summary",
+        findings=["point one", "point two"],
+    )
+    block = _format_delegation_block(r)
+    assert "Summary: short summary" in block
+    assert "• point one" in block
+    assert "• point two" in block
+    # content should not appear when summary/findings are set
+    assert "full text" not in block
+
+
+def test_format_block_low_confidence():
+    r = DelegationResult(agent="philos", content="maybe", confidence=0.6)
+    block = _format_delegation_block(r)
+    assert "60%" in block
+
+
+def test_format_block_full_confidence_omits_confidence_line():
+    r = DelegationResult(agent="philos", content="sure", confidence=1.0)
+    block = _format_delegation_block(r)
+    assert "Confidence:" not in block

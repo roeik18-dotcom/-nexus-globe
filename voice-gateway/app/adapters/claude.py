@@ -9,7 +9,7 @@ import anthropic
 from app.adapters.base import VoiceAdapter
 from app.config import build_system_prompt_with_task, settings
 from app.context_builder import load_memory_dict
-from app.delegation.bus import DelegationRequest
+from app.delegation.bus import DelegationRequest, DelegationResult
 from app.delegation.rules import should_delegate
 from app.recall import default_recall_policy
 from app.summary import (
@@ -26,6 +26,24 @@ if TYPE_CHECKING:
     from app.delegation.bus import DelegationBus
 
 logger = logging.getLogger(__name__)
+
+
+def _format_delegation_block(result: DelegationResult) -> str:
+    """Render a DelegationResult as a system-prompt context block."""
+    lines = [f"## Delegated Analysis — {result.agent}"]
+    if result.summary:
+        lines.append(f"Summary: {result.summary}")
+    if result.findings:
+        lines.append("Findings:")
+        lines.extend(f"  • {f}" for f in result.findings)
+    if result.content and not result.summary and not result.findings:
+        lines.append(result.content)
+    if result.confidence < 1.0:
+        lines.append(f"Confidence: {result.confidence:.0%}")
+    lines.append(
+        "(Internal context — synthesize naturally, do not quote directly)"
+    )
+    return "\n".join(lines)
 
 
 class ClaudeAdapter(VoiceAdapter):
@@ -125,25 +143,16 @@ class ClaudeAdapter(VoiceAdapter):
             self._persona, task, summary_state, tool_mem, recall_result=recall_result
         )
 
-        # Build API messages: inject delegation result into the current user turn.
-        # History always stores the original text; the enriched content is API-only.
+        # Inject delegation result as a dedicated block in the system prompt.
+        # Keeping it in the system layer (not the user message) signals to Claude
+        # that this is internal context, not part of the user's utterance.
+        if delegation_result and not delegation_result.error and delegation_result.content:
+            system_prompt = system_prompt + "\n\n" + _format_delegation_block(delegation_result)
+
+        # Pass only recent messages; summary covers the rest.
+        # History is never modified — enrichment lives in system_prompt only.
         summarized_until = summary_state.summarized_until if summary_state else 0
-        recent_base = history[summarized_until:-1]  # recent turns except current user turn
-
-        user_content = text
-        if (
-            delegation_result
-            and not delegation_result.error
-            and delegation_result.content
-        ):
-            user_content = (
-                f"{text}\n\n"
-                f"[Background analysis from {delegation_result.agent} — "
-                f"synthesize naturally, do not quote directly]:\n"
-                f"{delegation_result.content}"
-            )
-
-        api_messages = [*recent_base, {"role": "user", "content": user_content}]
+        recent_messages = history[summarized_until:]
 
         full_response: list[str] = []
 
@@ -151,7 +160,7 @@ class ClaudeAdapter(VoiceAdapter):
             model=settings.claude_model,
             max_tokens=1024,
             system=system_prompt,
-            messages=api_messages,
+            messages=recent_messages,
         ) as stream:
             async for chunk in stream.text_stream:
                 full_response.append(chunk)

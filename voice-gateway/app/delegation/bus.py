@@ -28,7 +28,10 @@ class DelegationRequest:
 @dataclass
 class DelegationResult:
     agent: str
-    content: str
+    content: str                          # raw full text from the sub-agent
+    summary: str = ""                     # short distillation (populated when sub-agent returns structured output)
+    findings: list[str] = field(default_factory=list)  # key conclusions as discrete items
+    confidence: float = 1.0              # sub-agent's self-reported confidence (0–1)
     metadata: dict = field(default_factory=dict)
     error: str | None = None
 
