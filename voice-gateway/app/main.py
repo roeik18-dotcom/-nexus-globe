@@ -49,14 +49,18 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
+from app import turn_context
 from app.config import settings
 from app.memory_candidates import candidate_registry
 from app.memory_promotion import promote as _promote_to_memory
+from app.observability.json_log import json_log_subscriber
 from app.router import build_orchestrator, build_stt, build_tts
 from app.session import registry
 from app.summary import summary_registry
 from app.task import task_registry
 from app.tool_memory import ToolMemoryEntry, tool_memory_registry
+from app.trace import TraceStep, TurnTrace
+from app.trace_bus import trace_bus
 
 logging.basicConfig(
     level=logging.INFO,
@@ -76,6 +80,7 @@ async def lifespan(app: FastAPI):
     _stt = build_stt()
     _tts = build_tts()
     _adapter = build_orchestrator()
+    trace_bus.subscribe(json_log_subscriber)
     logger.info(
         "Voice Gateway ready  stt=%s(%s)  tts=%s(%s)  adapter=%s  backend=%s",
         settings.stt_provider, type(_stt).__name__,
@@ -330,69 +335,107 @@ async def voice_ws(ws: WebSocket):
 async def _handle_turn(ws: WebSocket, session_id: str, audio_data: bytes) -> None:
     t_start = time.perf_counter()
 
-    # STT
-    try:
-        transcript = await _stt.transcribe(audio_data)
-    except Exception as exc:
-        logger.error("ws[%s] STT error: %s", session_id, exc)
-        await ws.send_text(json.dumps({"type": "error", "message": f"STT: {exc}"}))
-        await ws.send_text(json.dumps({"type": "done"}))
-        return
-
-    t_stt = time.perf_counter()
-
-    if not transcript:
-        await ws.send_text(json.dumps({"type": "error", "message": "empty transcript"}))
-        return
-
-    await ws.send_text(json.dumps({"type": "transcript", "text": transcript}))
-    logger.info("ws[%s] transcript: %r", session_id, transcript[:80])
-
-    # Adapter (stream text, collect full response)
-    full_text_parts: list[str] = []
-    try:
-        async for chunk in _adapter.respond(transcript, session_id):
-            full_text_parts.append(chunk)
-    except Exception as exc:
-        logger.error("ws[%s] adapter error: %s", session_id, exc)
-        await ws.send_text(json.dumps({"type": "error", "message": f"adapter: {exc}"}))
-        await ws.send_text(json.dumps({"type": "done"}))
-        return
-
-    t_adapter = time.perf_counter()
-
-    full_text = "".join(full_text_parts)
-    await ws.send_text(json.dumps({"type": "response_text", "text": full_text}))
-
-    # TTS
-    try:
-        audio_out = await _tts.synthesize(full_text)
-    except Exception as exc:
-        logger.error("ws[%s] TTS error: %s", session_id, exc)
-        await ws.send_text(json.dumps({"type": "error", "message": f"TTS failed: {exc}"}))
-        await ws.send_text(json.dumps({"type": "done"}))
-        return
-
-    t_tts = time.perf_counter()
-
-    if audio_out:
-        await ws.send_bytes(audio_out)
-
-    timing = {
-        "stt_ms":     round((t_stt - t_start) * 1000),
-        "adapter_ms": round((t_adapter - t_stt) * 1000),
-        "tts_ms":     round((t_tts - t_adapter) * 1000),
-        "total_ms":   round((t_tts - t_start) * 1000),
-    }
-    await ws.send_text(json.dumps({"type": "timing", "stages": timing}))
-    await ws.send_text(json.dumps({"type": "done"}))
-
-    logger.info(
-        "ws[%s] turn done — STT %dms · adapter %dms · TTS %dms · total %dms · audio %d bytes",
-        session_id,
-        timing["stt_ms"], timing["adapter_ms"], timing["tts_ms"], timing["total_ms"],
-        len(audio_out),
+    _trace = TurnTrace(
+        session_id=session_id,
+        turn_id=str(uuid.uuid4()),
+        user_text="",
     )
+    turn_context.set_trace(_trace)
+
+    try:
+        # STT
+        turn_context.emit(TraceStep(
+            from_node="gateway", to_node="stt",
+            type="voice.stt.start",
+            payload_size=len(audio_data),
+        ))
+        try:
+            transcript = await _stt.transcribe(audio_data)
+        except Exception as exc:
+            logger.error("ws[%s] STT error: %s", session_id, exc)
+            _trace.error = f"STT: {exc}"
+            await ws.send_text(json.dumps({"type": "error", "message": f"STT: {exc}"}))
+            await ws.send_text(json.dumps({"type": "done"}))
+            return
+
+        t_stt = time.perf_counter()
+        turn_context.emit(TraceStep(
+            from_node="stt", to_node="gateway",
+            type="voice.stt.complete",
+            latency_ms=round((t_stt - t_start) * 1000),
+            payload_size=len(transcript or ""),
+        ))
+
+        if not transcript:
+            _trace.error = "empty transcript"
+            await ws.send_text(json.dumps({"type": "error", "message": "empty transcript"}))
+            return
+
+        _trace.user_text = transcript
+        await ws.send_text(json.dumps({"type": "transcript", "text": transcript}))
+        logger.info("ws[%s] transcript: %r", session_id, transcript[:80])
+
+        # Adapter (stream text, collect full response; sub-steps emitted inside adapter)
+        full_text_parts: list[str] = []
+        try:
+            async for chunk in _adapter.respond(transcript, session_id):
+                full_text_parts.append(chunk)
+        except Exception as exc:
+            logger.error("ws[%s] adapter error: %s", session_id, exc)
+            _trace.error = f"adapter: {exc}"
+            await ws.send_text(json.dumps({"type": "error", "message": f"adapter: {exc}"}))
+            await ws.send_text(json.dumps({"type": "done"}))
+            return
+
+        t_adapter = time.perf_counter()
+
+        full_text = "".join(full_text_parts)
+        await ws.send_text(json.dumps({"type": "response_text", "text": full_text}))
+
+        # TTS
+        turn_context.emit(TraceStep(
+            from_node="gateway", to_node="tts",
+            type="voice.tts.start",
+            payload_size=len(full_text),
+        ))
+        try:
+            audio_out = await _tts.synthesize(full_text)
+        except Exception as exc:
+            logger.error("ws[%s] TTS error: %s", session_id, exc)
+            _trace.error = f"TTS: {exc}"
+            await ws.send_text(json.dumps({"type": "error", "message": f"TTS failed: {exc}"}))
+            await ws.send_text(json.dumps({"type": "done"}))
+            return
+
+        t_tts = time.perf_counter()
+        turn_context.emit(TraceStep(
+            from_node="tts", to_node="gateway",
+            type="voice.tts.complete",
+            latency_ms=round((t_tts - t_adapter) * 1000),
+            payload_size=len(audio_out or b""),
+        ))
+
+        if audio_out:
+            await ws.send_bytes(audio_out)
+
+        timing = {
+            "stt_ms":     round((t_stt - t_start) * 1000),
+            "adapter_ms": round((t_adapter - t_stt) * 1000),
+            "tts_ms":     round((t_tts - t_adapter) * 1000),
+            "total_ms":   round((t_tts - t_start) * 1000),
+        }
+        await ws.send_text(json.dumps({"type": "timing", "stages": timing}))
+        await ws.send_text(json.dumps({"type": "done"}))
+
+        logger.info(
+            "ws[%s] turn done — STT %dms · adapter %dms · TTS %dms · total %dms · audio %d bytes",
+            session_id,
+            timing["stt_ms"], timing["adapter_ms"], timing["tts_ms"], timing["total_ms"],
+            len(audio_out or b""),
+        )
+    finally:
+        _trace.total_ms = round((time.perf_counter() - t_start) * 1000)
+        trace_bus.publish(_trace)
 
 
 if __name__ == "__main__":

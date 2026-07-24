@@ -6,12 +6,15 @@ ClaudeAdapter in main.py.
 """
 
 import logging
+import time
 from typing import AsyncIterator
 
+from app import turn_context
 from app.adapters.base import VoiceAdapter
 from app.agents.definition import AgentDefinition
 from app.agents.registry import AgentRegistry
 from app.agents.router import AgentRouter
+from app.trace import TraceStep
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +49,20 @@ class AgentOrchestrator(VoiceAdapter):
         return first
 
     async def respond(self, text: str, session_id: str) -> AsyncIterator[str]:
+        t0 = time.perf_counter()
         agents: list[AgentDefinition] = self._registry.list()
+        turn_context.emit(TraceStep(
+            from_node="gateway", to_node="router",
+            type="routing.start",
+            payload_size=len(text),
+        ))
         agent_name = await self._router.route(text, agents)
+        turn_context.emit(TraceStep(
+            from_node="router", to_node=agent_name,
+            type="routing.complete",
+            latency_ms=round((time.perf_counter() - t0) * 1000),
+            description=agent_name,
+        ))
         adapter = self._resolve(agent_name)
         logger.info("orchestrator[%s] → %s", session_id, agent_name)
         async for chunk in adapter.respond(text, session_id):
