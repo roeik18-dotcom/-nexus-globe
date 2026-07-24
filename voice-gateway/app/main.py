@@ -393,3 +393,8 @@ async def _handle_turn(ws: WebSocket, session_id: str, audio_data: bytes) -> Non
         timing["stt_ms"], timing["adapter_ms"], timing["tts_ms"], timing["total_ms"],
         len(audio_out),
     )
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8765, reload=False)
