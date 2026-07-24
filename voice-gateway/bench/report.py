@@ -18,25 +18,36 @@ import sys
 from pathlib import Path
 
 
-STAGES = ["stt_ms", "adapter_ms", "tts_ms", "total_ms", "rtt_ms"]
+STAGES = [
+    "stt_ms",
+    "adapter_first_token_ms",
+    "time_to_first_audio_ms",
+    "adapter_ms",
+    "tts_ms",
+    "total_ms",
+    "rtt_ms",
+]
 STAGE_LABELS = {
-    "stt_ms":      "STT",
-    "adapter_ms":  "Adapter",
-    "tts_ms":      "TTS",
-    "total_ms":    "Total (server)",
-    "rtt_ms":      "RTT (client)",
+    "stt_ms":                   "STT",
+    "adapter_first_token_ms":   "TTFT (first token)",
+    "time_to_first_audio_ms":   "TTFA (first audio)",
+    "adapter_ms":               "Adapter (full)",
+    "tts_ms":                   "TTS (cumul.)",
+    "total_ms":                 "Total (server)",
+    "rtt_ms":                   "RTT (client)",
 }
 
-# Empirical baselines (Mac Studio, 2026-07-22, MockSTT+MockTTS):
-#   echo  — infrastructure floor:  avg 0ms,    median 0ms,    p95 1ms,    rtt 3ms
-#   claude — LLM-only latency:     avg 2691ms, median 2002ms, p95 4854ms
-# Jarvis targets real-time feel; Philos tolerates deeper latency.
-# STT/TTS targets apply when real providers are enabled.
+# Empirical baselines (Mac Studio, MockSTT+MockTTS):
+#   2026-07-22 — echo: avg 0ms, p95 1ms, rtt 3ms
+#                claude: avg 2691ms, median 2002ms, p95 4854ms
+#   2026-07-24 — claude: avg 5478ms, median 5826ms, p95 8237ms (10 turns, history growth)
+#
+# With streaming pipeline the key metrics shift to TTFT / TTFA.
 KPI_TARGETS = {
-    "echo":   {"total_ms": 800,   "stt_ms": 500, "tts_ms": 400},
-    "claude": {"total_ms": 3500,  "stt_ms": 500, "tts_ms": 400},
-    "jarvis": {"total_ms": 3500,  "stt_ms": 500, "tts_ms": 400},
-    "philos": {"total_ms": 5000,  "stt_ms": 500, "tts_ms": 400},
+    "echo":   {"total_ms": 10,   "time_to_first_audio_ms": 10},
+    "claude": {"adapter_first_token_ms": 1200, "time_to_first_audio_ms": 1800, "total_ms": 9000},
+    "jarvis": {"adapter_first_token_ms": 1200, "time_to_first_audio_ms": 1800, "total_ms": 9000},
+    "philos": {"adapter_first_token_ms": 1500, "time_to_first_audio_ms": 2500, "total_ms": 12000},
 }
 
 
@@ -114,22 +125,23 @@ def main():
         for (label, _, _), p in zip(datasets, paths)
     ]
 
-    print(f"\n{'Voice Gateway — Latency Comparison':^{10 + col_w * len(datasets)}}")
-    print("═" * (10 + col_w * len(datasets)))
-    print(f"  {'Stage':<12}", end="")
+    lbl_w = 20  # stage label column width — fits "TTFT (first token)" (18 chars)
+    print(f"\n{'Voice Gateway — Latency Comparison':^{lbl_w + 2 + col_w * len(datasets)}}")
+    print("═" * (lbl_w + 2 + col_w * len(datasets)))
+    print(f"  {'Stage':<{lbl_w}}", end="")
     for name in adapter_names:
         print(f"  {name:<{col_w - 2}}", end="")
     print()
 
     subheader = "  avg   med   p95   p99"
-    print(f"  {'':12}", end="")
+    print(f"  {'':<{lbl_w}}", end="")
     for _ in datasets:
         print(f"  {subheader:<{col_w - 2}}", end="")
     print()
-    print("─" * (12 + col_w * len(datasets)))
+    print("─" * (lbl_w + 2 + col_w * len(datasets)))
 
     for stage in STAGES:
-        print(f"  {STAGE_LABELS[stage]:<12}", end="")
+        print(f"  {STAGE_LABELS[stage]:<{lbl_w}}", end="")
         for label, stage_stats, _ in datasets:
             s = stage_stats.get(stage, {})
             if not s:
@@ -140,7 +152,7 @@ def main():
             print(f"  {cell:<{col_w - 2}}", end="")
         print()
 
-    print("─" * (12 + col_w * len(datasets)))
+    print("─" * (lbl_w + 2 + col_w * len(datasets)))
 
     # Delta row
     if len(datasets) >= 2:
@@ -171,7 +183,8 @@ def main():
     print(f"\n  Spike detection (> median × 1.5):")
     for label, _, results in datasets:
         spike_parts = []
-        for stage in ("stt_ms", "adapter_ms", "tts_ms", "total_ms"):
+        for stage in ("stt_ms", "adapter_first_token_ms", "time_to_first_audio_ms",
+                      "adapter_ms", "tts_ms", "total_ms"):
             vals = [r[stage] for r in results if stage in r]
             s = spikes(vals)
             if s:

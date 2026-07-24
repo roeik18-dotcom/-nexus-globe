@@ -34,13 +34,15 @@ def test_stats_empty():
 
 
 def test_kpi_pass():
-    assert kpi("echo", "total_ms", 700) == "OK"   # target 800
-    assert kpi("claude", "total_ms", 1999) == "OK"
+    assert kpi("echo", "total_ms", 5) == "OK"                     # target 10ms
+    assert kpi("claude", "adapter_first_token_ms", 1000) == "OK"  # target 1200ms
+    assert kpi("claude", "total_ms", 8000) == "OK"                # target 9000ms
 
 
 def test_kpi_fail():
-    assert kpi("echo", "total_ms", 900) == "!!"   # exceeds 800
-    assert kpi("claude", "total_ms", 3600) == "!!"  # exceeds 3500
+    assert kpi("echo", "total_ms", 20) == "!!"                    # exceeds 10ms
+    assert kpi("claude", "adapter_first_token_ms", 1500) == "!!"  # exceeds 1200ms
+    assert kpi("claude", "total_ms", 9500) == "!!"                # exceeds 9000ms
 
 
 def test_kpi_unknown_label():

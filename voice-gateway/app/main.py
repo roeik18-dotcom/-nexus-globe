@@ -50,6 +50,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from app import turn_context
+from app.audio.sentence import SentenceBuffer
 from app.config import settings
 from app.memory_candidates import candidate_registry
 from app.memory_promotion import promote as _promote_to_memory
@@ -375,11 +376,55 @@ async def _handle_turn(ws: WebSocket, session_id: str, audio_data: bytes) -> Non
         await ws.send_text(json.dumps({"type": "transcript", "text": transcript}))
         logger.info("ws[%s] transcript: %r", session_id, transcript[:80])
 
-        # Adapter (stream text, collect full response; sub-steps emitted inside adapter)
+        # Pipeline: stream adapter → sentence buffer → TTS per sentence → audio frames.
+        # TTS is interleaved with Claude generation, so time_to_first_audio_ms <<
+        # total adapter_ms. adapter_ms and tts_ms may overlap — total_ms is the
+        # authoritative wall-clock figure.
+        _sentence_buf = SentenceBuffer()
         full_text_parts: list[str] = []
+        first_token_ms: int | None = None
+        first_audio_ms: int | None = None
+        t_last_token = time.perf_counter()
+        tts_total_ms: int = 0
+        total_audio_bytes: int = 0
+        t_adapter_start = time.perf_counter()
+
+        turn_context.emit(TraceStep(
+            from_node="gateway", to_node="tts",
+            type="voice.tts.start",
+        ))
+
+        async def _tts_send(sentence: str) -> None:
+            nonlocal first_audio_ms, tts_total_ms, total_audio_bytes
+            if not sentence:
+                return
+            t0 = time.perf_counter()
+            try:
+                audio_chunk = await _tts.synthesize(sentence)
+            except Exception as exc:
+                logger.error("ws[%s] TTS error for sentence %r: %s", session_id, sentence[:40], exc)
+                return
+            tts_total_ms += round((time.perf_counter() - t0) * 1000)
+            if audio_chunk:
+                if first_audio_ms is None:
+                    first_audio_ms = round((time.perf_counter() - t_start) * 1000)
+                await ws.send_bytes(audio_chunk)
+                total_audio_bytes += len(audio_chunk)
+
         try:
             async for chunk in _adapter.respond(transcript, session_id):
+                if first_token_ms is None:
+                    first_token_ms = round((time.perf_counter() - t_start) * 1000)
+                t_last_token = time.perf_counter()
                 full_text_parts.append(chunk)
+                sentence = _sentence_buf.push(chunk)
+                if sentence:
+                    await _tts_send(sentence)
+
+            tail = _sentence_buf.flush()
+            if tail:
+                await _tts_send(tail)
+
         except Exception as exc:
             logger.error("ws[%s] adapter error: %s", session_id, exc)
             _trace.error = f"adapter: {exc}"
@@ -387,51 +432,36 @@ async def _handle_turn(ws: WebSocket, session_id: str, audio_data: bytes) -> Non
             await ws.send_text(json.dumps({"type": "done"}))
             return
 
-        t_adapter = time.perf_counter()
-
+        t_pipeline_end = time.perf_counter()
         full_text = "".join(full_text_parts)
         await ws.send_text(json.dumps({"type": "response_text", "text": full_text}))
 
-        # TTS
-        turn_context.emit(TraceStep(
-            from_node="gateway", to_node="tts",
-            type="voice.tts.start",
-            payload_size=len(full_text),
-        ))
-        try:
-            audio_out = await _tts.synthesize(full_text)
-        except Exception as exc:
-            logger.error("ws[%s] TTS error: %s", session_id, exc)
-            _trace.error = f"TTS: {exc}"
-            await ws.send_text(json.dumps({"type": "error", "message": f"TTS failed: {exc}"}))
-            await ws.send_text(json.dumps({"type": "done"}))
-            return
-
-        t_tts = time.perf_counter()
         turn_context.emit(TraceStep(
             from_node="tts", to_node="gateway",
             type="voice.tts.complete",
-            latency_ms=round((t_tts - t_adapter) * 1000),
-            payload_size=len(audio_out or b""),
+            latency_ms=tts_total_ms,
+            payload_size=total_audio_bytes,
         ))
 
-        if audio_out:
-            await ws.send_bytes(audio_out)
-
         timing = {
-            "stt_ms":     round((t_stt - t_start) * 1000),
-            "adapter_ms": round((t_adapter - t_stt) * 1000),
-            "tts_ms":     round((t_tts - t_adapter) * 1000),
-            "total_ms":   round((t_tts - t_start) * 1000),
+            "stt_ms":                    round((t_stt - t_start) * 1000),
+            "adapter_ms":                round((t_last_token - t_adapter_start) * 1000),
+            "adapter_first_token_ms":    first_token_ms or 0,
+            "tts_ms":                    tts_total_ms,
+            "time_to_first_audio_ms":    first_audio_ms or 0,
+            "total_ms":                  round((t_pipeline_end - t_start) * 1000),
         }
         await ws.send_text(json.dumps({"type": "timing", "stages": timing}))
         await ws.send_text(json.dumps({"type": "done"}))
 
         logger.info(
-            "ws[%s] turn done — STT %dms · adapter %dms · TTS %dms · total %dms · audio %d bytes",
+            "ws[%s] turn done — STT %dms · TTFT %dms · TTFA %dms · total %dms · audio %d bytes",
             session_id,
-            timing["stt_ms"], timing["adapter_ms"], timing["tts_ms"], timing["total_ms"],
-            len(audio_out or b""),
+            timing["stt_ms"],
+            timing["adapter_first_token_ms"],
+            timing["time_to_first_audio_ms"],
+            timing["total_ms"],
+            total_audio_bytes,
         )
     finally:
         _trace.total_ms = round((time.perf_counter() - t_start) * 1000)

@@ -107,11 +107,11 @@ async def run(audio_path: Path, n: int, label: str, host: str, port: int) -> lis
                 e = "  ERR" if result["error"] else ""
                 print(
                     f"  [{i+1:02d}/{n}]  "
-                    f"STT {result.get('stt_ms','?'):>4}ms  "
-                    f"adp {result.get('adapter_ms','?'):>4}ms  "
-                    f"TTS {result.get('tts_ms','?'):>4}ms  "
-                    f"total {result.get('total_ms','?'):>4}ms  "
-                    f"rtt {result['rtt_ms']:>4}ms"
+                    f"TTFT {result.get('adapter_first_token_ms','—'):>5}ms  "
+                    f"TTFA {result.get('time_to_first_audio_ms','—'):>5}ms  "
+                    f"adp {result.get('adapter_ms','—'):>5}ms  "
+                    f"total {result.get('total_ms','—'):>5}ms  "
+                    f"rtt {result['rtt_ms']:>5}ms"
                     f"{e}"
                 )
                 if result["error"]:
@@ -142,16 +142,34 @@ def _stats(values: list[float]) -> dict:
     }
 
 
-# Empirical baselines (Mac Studio, 2026-07-22, MockSTT+MockTTS):
-#   echo  — infrastructure floor:  avg 0ms,    median 0ms,    p95 1ms,    rtt 3ms
-#   claude — LLM-only latency:     avg 2691ms, median 2002ms, p95 4854ms
-# Jarvis targets real-time feel; Philos tolerates deeper latency.
-# STT/TTS targets apply when real providers are enabled.
+# Empirical baselines (Mac Studio, MockSTT+MockTTS):
+#   2026-07-22 — echo: avg 0ms, p95 1ms, rtt 3ms
+#                claude: avg 2691ms, median 2002ms, p95 4854ms (single-session, 5 turns)
+#   2026-07-24 — echo: avg 0ms, p95 1ms
+#                claude: avg 5478ms, median 5826ms, p95 8237ms (10 turns, history growth)
+#
+# With streaming pipeline, the key metric shifts to TTFT / TTFA rather than total.
+# STT/TTS targets apply only when real providers are enabled.
 KPI_TARGETS = {
-    "echo":   {"total_ms": 800,   "stt_ms": 500, "tts_ms": 400},
-    "claude": {"total_ms": 3500,  "stt_ms": 500, "tts_ms": 400},
-    "jarvis": {"total_ms": 3500,  "stt_ms": 500, "tts_ms": 400},
-    "philos": {"total_ms": 5000,  "stt_ms": 500, "tts_ms": 400},
+    "echo": {
+        "total_ms":              10,
+        "time_to_first_audio_ms": 10,
+    },
+    "claude": {
+        "adapter_first_token_ms":  1200,
+        "time_to_first_audio_ms":  1800,
+        "total_ms":                9000,
+    },
+    "jarvis": {
+        "adapter_first_token_ms":  1200,
+        "time_to_first_audio_ms":  1800,
+        "total_ms":                9000,
+    },
+    "philos": {
+        "adapter_first_token_ms":  1500,
+        "time_to_first_audio_ms":  2500,
+        "total_ms":               12000,
+    },
 }
 
 
@@ -168,21 +186,31 @@ def print_summary(label: str, results: list[dict]) -> None:
         print("No successful results to summarize.")
         return
 
-    stages = ["stt_ms", "adapter_ms", "tts_ms", "total_ms", "rtt_ms"]
+    stages = [
+        "stt_ms",
+        "adapter_first_token_ms",
+        "time_to_first_audio_ms",
+        "adapter_ms",
+        "tts_ms",
+        "total_ms",
+        "rtt_ms",
+    ]
     stats = {k: _stats([r[k] for r in ok if k in r]) for k in stages}
 
-    print(f"\n{'─'*72}")
+    print(f"\n{'─'*78}")
     print(f"  Results — {label}  ({len(ok)}/{len(results)} ok)")
-    print(f"{'─'*72}")
-    print(f"  {'Stage':<14} {'avg':>6} {'median':>7} {'p95':>6} {'min':>6} {'max':>6}  KPI")
-    print(f"  {'─'*14} {'─'*6} {'─'*7} {'─'*6} {'─'*6} {'─'*6}  {'─'*4}")
+    print(f"{'─'*78}")
+    print(f"  {'Stage':<22} {'avg':>6} {'median':>7} {'p95':>6} {'min':>6} {'max':>6}  KPI")
+    print(f"  {'─'*22} {'─'*6} {'─'*7} {'─'*6} {'─'*6} {'─'*6}  {'─'*4}")
 
     labels_display = {
-        "stt_ms":      "STT",
-        "adapter_ms":  "Adapter",
-        "tts_ms":      "TTS",
-        "total_ms":    "Total (server)",
-        "rtt_ms":      "RTT (client)",
+        "stt_ms":                   "STT",
+        "adapter_first_token_ms":   "TTFT (first token)",
+        "time_to_first_audio_ms":   "TTFA (first audio)",
+        "adapter_ms":               "Adapter (full)",
+        "tts_ms":                   "TTS (cumulative)",
+        "total_ms":                 "Total (server)",
+        "rtt_ms":                   "RTT (client)",
     }
     for k in stages:
         s = stats.get(k, {})
