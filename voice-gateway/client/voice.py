@@ -157,33 +157,44 @@ def _play(data: bytes) -> None:
     tmp.unlink(missing_ok=True)
 
 
-def _find_input_device() -> tuple[int | None, list[int] | None]:
-    """Return (device_index, channel_mapping) for the configured audio input device.
+def _find_input_device() -> tuple[int | None, int, int]:
+    """Return (device_index, channel_idx_0based, n_channels_to_open).
 
     Searches sounddevice's device list for a device whose name contains
-    AUDIO_DEVICE_PATTERN (case-insensitive).  Returns (None, None) when the
-    pattern is empty or no match is found — callers then use the OS default.
+    AUDIO_DEVICE_PATTERN (case-insensitive).  Falls back to (None, 0, 1)
+    when the pattern is empty or no match is found — callers then use the
+    OS default mono stream.
+
+    Note: the caller must open `n_channels_to_open` channels and extract
+    `indata[:, channel_idx_0based]` in the callback.  The sounddevice
+    `mapping=` parameter is intentionally NOT used because it is absent
+    from many installed versions.
     """
     pattern = AUDIO_DEVICE_PATTERN.strip().lower()
     if not pattern:
-        return None, None
+        return None, 0, 1
     try:
         devices = sd.query_devices()
     except Exception as exc:
         log.warning("audio_device_query_failed  reason=%s", exc)
-        return None, None
+        return None, 0, 1
+    ch_1idx = AUDIO_DEVICE_CHANNEL          # 1-indexed (env-var convention)
+    ch_0idx = ch_1idx - 1                   # 0-indexed (numpy column index)
+    n_ch    = ch_1idx                       # open enough columns to reach it
     for i, dev in enumerate(devices):
-        if pattern in dev["name"].lower() and dev["max_input_channels"] > 0:
+        if (pattern in dev["name"].lower()
+                and dev["max_input_channels"] >= ch_1idx):
             log.info(
-                "audio_device_found  index=%d  name=%s  channel=%d",
-                i, dev["name"], AUDIO_DEVICE_CHANNEL,
+                "audio_device_found  index=%d  name=%s  "
+                "channel_1indexed=%d  channel_0indexed=%d  n_channels=%d",
+                i, dev["name"], ch_1idx, ch_0idx, n_ch,
             )
-            return i, [AUDIO_DEVICE_CHANNEL]
+            return i, ch_0idx, n_ch
     log.warning(
         "audio_device_not_found  pattern=%r — falling back to system default",
         AUDIO_DEVICE_PATTERN,
     )
-    return None, None
+    return None, 0, 1
 
 
 # ── Clap detector ─────────────────────────────────────────────────────────────
@@ -471,12 +482,14 @@ class MonitorStream:
         clap: ClapDetector | None,
         wake: WakeWordDetector | None,
         device: int | None = None,
-        mapping: list[int] | None = None,
+        channel_idx: int = 0,
+        n_channels: int = 1,
     ) -> None:
-        self._clap = clap
-        self._wake = wake
-        self._device  = device
-        self._mapping = mapping
+        self._clap        = clap
+        self._wake        = wake
+        self._device      = device
+        self._channel_idx = channel_idx   # 0-based column in indata to use
+        self._n_channels  = n_channels    # total channels to open on the device
         self._stream: sd.InputStream | None = None
         self._oww_buf: list[np.ndarray]     = []
         self._lock   = threading.Lock()
@@ -491,30 +504,26 @@ class MonitorStream:
             self._frame_count = 0
             stream_kwargs: dict = dict(
                 samplerate=SAMPLE_RATE,
-                channels=1,
+                channels=self._n_channels,
                 dtype=np.int16,
                 blocksize=FRAME_SAMPLES,
                 callback=self._callback,
             )
             if self._device is not None:
                 stream_kwargs["device"] = self._device
-            if self._mapping is not None:
-                stream_kwargs["mapping"] = self._mapping
+            # NOTE: mapping= is intentionally absent — not supported on all
+            # sounddevice versions.  Channel selection happens in _callback.
             self._stream = sd.InputStream(**stream_kwargs)
             self._stream.start()
             self._active = True
-            # Log both what we requested and what PortAudio actually opened.
             _actual_sr    = getattr(self._stream, "samplerate",  "?")
-            _actual_ch    = getattr(self._stream, "channels",    "?")
-            _actual_dtype = getattr(self._stream, "dtype",       "?")
-            _actual_dev   = getattr(self._stream, "device",      "?")
+            _actual_bsize = getattr(self._stream, "blocksize",   "?")
             _alog.info(
-                "mic_stream_started  "
-                "requested(samplerate=%d blocksize=%d dtype=int16 device=%s mapping=%s)  "
-                "actual(samplerate=%s channels=%s dtype=%s device=%s)  "
+                "mic_stream_started  device=%s  requested_channels=%d  "
+                "selected_channel_index=%d  actual_samplerate=%s  actual_blocksize=%s  "
                 "clap=%s  wake=%s",
-                SAMPLE_RATE, FRAME_SAMPLES, self._device, self._mapping,
-                _actual_sr, _actual_ch, _actual_dtype, _actual_dev,
+                self._device, self._n_channels, self._channel_idx,
+                _actual_sr, _actual_bsize,
                 self._clap is not None, self._wake is not None,
             )
 
@@ -534,7 +543,7 @@ class MonitorStream:
         if status:
             _alog.debug("mic_callback_status  status=%s", status)
 
-        frame = indata[:, 0].copy()
+        frame = indata[:, self._channel_idx].copy()
         self._frame_count += 1
 
         # On the first 3 frames log full raw details — dtype, shape, per-channel stats —
@@ -542,11 +551,12 @@ class MonitorStream:
         if self._frame_count <= 3:
             _alog.debug(
                 "mic_raw  frame=%d  indata_dtype=%s  indata_shape=%s  "
-                "ch0_min=%d  ch0_max=%d  ch0_rms=%.1f  ch0_first10=%s",
+                "ch%d_min=%d  ch%d_max=%d  ch%d_rms=%.1f  ch%d_first10=%s",
                 self._frame_count, indata.dtype, indata.shape,
-                int(np.min(indata[:, 0])), int(np.max(indata[:, 0])),
-                float(np.sqrt(np.mean(indata[:, 0].astype(np.float32) ** 2))),
-                indata[:10, 0].tolist(),
+                self._channel_idx, int(np.min(frame)),
+                self._channel_idx, int(np.max(frame)),
+                self._channel_idx, float(np.sqrt(np.mean(frame.astype(np.float32) ** 2))),
+                self._channel_idx, frame[:10].tolist(),
             )
 
         # Heartbeat every 250 frames (5 s at 20 ms/frame) — confirms mic is live.
@@ -582,10 +592,15 @@ class MonitorStream:
 def record_blocking(
     stop_event: threading.Event,
     device: int | None = None,
-    mapping: list[int] | None = None,
+    channel_idx: int = 0,
+    n_channels: int = 1,
     ready_event: threading.Event | None = None,
 ) -> bytes:
     """Record from microphone until stop_event is set. Returns WAV bytes.
+
+    Opens `n_channels` on the device and extracts column `channel_idx` in
+    every callback.  The sounddevice `mapping=` parameter is not used because
+    it is absent from many installed versions.
 
     Sets ready_event on the first audio callback so callers can wait until the
     stream is genuinely open before they accept a stop signal.
@@ -595,13 +610,14 @@ def record_blocking(
     def cb(indata, frames, t, status):
         if ready_event is not None and not ready_event.is_set():
             ready_event.set()
-        chunks.append(indata.copy())
+        chunks.append(indata[:, channel_idx].copy())
 
-    stream_kwargs: dict = dict(samplerate=SAMPLE_RATE, channels=1, dtype=np.int16, callback=cb)
+    stream_kwargs: dict = dict(
+        samplerate=SAMPLE_RATE, channels=n_channels, dtype=np.int16, callback=cb,
+    )
     if device is not None:
         stream_kwargs["device"] = device
-    if mapping is not None:
-        stream_kwargs["mapping"] = mapping
+    # NOTE: mapping= intentionally absent — not supported on all sounddevice versions.
     with sd.InputStream(**stream_kwargs):
         stop_event.wait()
 
@@ -740,8 +756,9 @@ class VoiceClient:
         self._task_desc:   str | None        = None
         self._stop_rec     = threading.Event()
 
-        self._audio_device:  int | None       = None
-        self._audio_mapping: list[int] | None = None
+        self._audio_device:      int | None = None
+        self._audio_channel_idx: int       = 0
+        self._audio_n_channels:  int       = 1
 
         # Single stdin reader — prevents zombie input() threads from stealing
         # ENTER presses across phases.
@@ -766,7 +783,7 @@ class VoiceClient:
 
     def setup(self) -> None:
         self._start_stdin_reader()
-        self._audio_device, self._audio_mapping = _find_input_device()
+        self._audio_device, self._audio_channel_idx, self._audio_n_channels = _find_input_device()
 
         use_clap = self._activation in ("clap", "all")
         use_wake = self._activation in ("wake", "all")
@@ -783,7 +800,9 @@ class VoiceClient:
         if use_clap or use_wake:
             self._monitor = MonitorStream(
                 self._clap_det, self._wake_det,
-                device=self._audio_device, mapping=self._audio_mapping,
+                device=self._audio_device,
+                channel_idx=self._audio_channel_idx,
+                n_channels=self._audio_n_channels,
             )
 
     # ── Trigger callbacks (monitor thread → asyncio loop) ─────────────────
@@ -910,7 +929,8 @@ class VoiceClient:
         _rec_ready = threading.Event()
         rec_task = self._loop.run_in_executor(
             None, record_blocking,
-            self._stop_rec, self._audio_device, self._audio_mapping, _rec_ready,
+            self._stop_rec, self._audio_device,
+            self._audio_channel_idx, self._audio_n_channels, _rec_ready,
         )
 
         # Wait until the stream is open and the first callback has fired.

@@ -30,6 +30,7 @@ from voice import (
     FRAME_MS,
     FRAME_SAMPLES,
     ClapDetector,
+    MonitorStream,
     _rms,
     _spectral_flatness,
 )
@@ -319,3 +320,36 @@ def test_push_is_thread_safe():
     for t in threads:
         t.join()
     # No crash is the test
+
+
+# ── InputStream compatibility ─────────────────────────────────────────────────
+
+def test_monitor_stream_no_mapping_kwarg():
+    """MonitorStream.start() must not pass mapping= to sd.InputStream.
+
+    The mapping parameter is absent from many sounddevice versions and causes
+    an immediate TypeError that silently disables all audio triggers.
+    """
+    import sys
+    from unittest.mock import MagicMock, call
+
+    mock_sd = sys.modules["sounddevice"]
+
+    mock_stream = MagicMock()
+    mock_stream.start = MagicMock()
+    mock_stream.stop  = MagicMock()
+    mock_stream.close = MagicMock()
+    mock_sd.InputStream.return_value = mock_stream
+
+    det = ClapDetector(on_double_clap=lambda: None, warmup_frames=0)
+    ms  = MonitorStream(clap=det, wake=None, device=None, channel_idx=1, n_channels=2)
+    ms.start()
+
+    assert mock_sd.InputStream.called, "InputStream was not constructed"
+    _, kwargs = mock_sd.InputStream.call_args
+    assert "mapping" not in kwargs, (
+        f"mapping= must not be passed to InputStream (breaks older sounddevice), got: {kwargs}"
+    )
+    assert kwargs.get("channels") == 2, f"expected channels=2, got {kwargs.get('channels')}"
+
+    ms.stop()
