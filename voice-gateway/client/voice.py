@@ -522,11 +522,18 @@ def record_blocking(
     stop_event: threading.Event,
     device: int | None = None,
     mapping: list[int] | None = None,
+    ready_event: threading.Event | None = None,
 ) -> bytes:
-    """Record from microphone until stop_event is set. Returns WAV bytes."""
+    """Record from microphone until stop_event is set. Returns WAV bytes.
+
+    Sets ready_event on the first audio callback so callers can wait until the
+    stream is genuinely open before they accept a stop signal.
+    """
     chunks: list[np.ndarray] = []
 
     def cb(indata, frames, t, status):
+        if ready_event is not None and not ready_event.is_set():
+            ready_event.set()
         chunks.append(indata.copy())
 
     stream_kwargs: dict = dict(samplerate=SAMPLE_RATE, channels=1, dtype=np.int16, callback=cb)
@@ -537,7 +544,7 @@ def record_blocking(
     with sd.InputStream(**stream_kwargs):
         stop_event.wait()
 
-    audio = np.concatenate(chunks) if chunks else np.zeros((0, 1), dtype=np.int16)
+    audio = np.concatenate(chunks) if chunks else np.zeros(0, dtype=np.int16)
     return _to_wav(audio.flatten())
 
 
@@ -838,17 +845,55 @@ class VoiceClient:
         with self._state_lock:
             self._state = State.RECORDING
 
+        self._stop_rec.clear()
+        _rec_ready = threading.Event()
+        rec_task = self._loop.run_in_executor(
+            None, record_blocking,
+            self._stop_rec, self._audio_device, self._audio_mapping, _rec_ready,
+        )
+
+        # Wait until the stream is open and the first callback has fired.
+        # Without this gate a queued ENTER (pressed during the greeting phase)
+        # would set stop_rec before any samples are captured → empty WAV.
+        stream_ready = await self._loop.run_in_executor(None, _rec_ready.wait, 3.0)
+        if not stream_ready:
+            log.warning("record_stream_not_ready  timeout=3s — aborting recording")
+            self._stop_rec.set()
+            await rec_task
+            return
+
+        # Drain any ENTERs that arrived before the stream was ready.
+        while not self._stdin_queue.empty():
+            self._stdin_queue.get_nowait()
+
         if self._trigger_type in ("clap", "wake"):
             print("  Speak now…  (press ENTER to send)")
-
-        self._stop_rec.clear()
-        rec_task = self._loop.run_in_executor(
-            None, record_blocking, self._stop_rec, self._audio_device, self._audio_mapping,
-        )
 
         await self._stdin_queue.get()
         self._stop_rec.set()
         wav = await rec_task
+
+        # ── Debug: log WAV stats before sending ──────────────────────────
+        try:
+            _buf = io.BytesIO(wav)
+            _, _s = wavfile.read(_buf)
+            _flat = _s.flatten()
+            _dur  = len(_flat) / SAMPLE_RATE
+            _peak = float(np.max(np.abs(_flat))) / 32768.0 if len(_flat) else 0.0
+            _rms  = float(np.sqrt(np.mean(_flat.astype(np.float32) ** 2))) / 32768.0 if len(_flat) else 0.0
+        except Exception as exc:
+            log.warning("wav_read_failed  reason=%s", exc)
+            _flat, _dur, _peak, _rms = np.zeros(0, dtype=np.int16), 0.0, 0.0, 0.0
+
+        log.debug(
+            "recording_stats  samples=%d  shape=%s  duration_s=%.3f  peak=%.4f  rms=%.4f",
+            len(_flat), _flat.shape, _dur, _peak, _rms,
+        )
+
+        if len(_flat) == 0:
+            print("  [Recording empty — nothing sent]")
+            log.warning("recording_empty  skipping_stt")
+            return
 
         with self._state_lock:
             self._state = State.PROCESSING
