@@ -10,6 +10,7 @@ import type { EssenceLayer } from './ontology';
 import type {
   ConfidenceLevel,
   Conflict,
+  ConflictType,
   EssenceEvolutionEntry,
   EssenceProfile,
   EssenceStateItem,
