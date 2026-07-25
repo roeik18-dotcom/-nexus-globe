@@ -34,20 +34,26 @@ def test_stats_empty():
 
 
 def test_kpi_pass():
-    assert kpi("echo", "total_ms", 5) == "OK"                     # target 10ms
-    assert kpi("claude", "adapter_first_token_ms", 1000) == "OK"  # target 1200ms
-    assert kpi("claude", "total_ms", 8000) == "OK"                # target 9000ms
+    assert kpi("echo", "total_ms", 5) == "OK"                          # target 10ms
+    assert kpi("claude", "adapter_first_token_ms", 1000) == "OK"       # target 1200ms
+    assert kpi("claude", "total_ms", 8000) == "OK"                     # target 9000ms
+    # prefix matching: "claude-stream" resolves to "claude" targets
+    assert kpi("claude-stream", "adapter_first_token_ms", 1000) == "OK"
+    assert kpi("claude_bench", "total_ms", 8000) == "OK"
 
 
 def test_kpi_fail():
-    assert kpi("echo", "total_ms", 20) == "!!"                    # exceeds 10ms
-    assert kpi("claude", "adapter_first_token_ms", 1500) == "!!"  # exceeds 1200ms
-    assert kpi("claude", "total_ms", 9500) == "!!"                # exceeds 9000ms
+    assert kpi("echo", "total_ms", 20) == "!!"                         # exceeds 10ms
+    assert kpi("claude", "adapter_first_token_ms", 1500) == "!!"       # exceeds 1200ms
+    assert kpi("claude", "total_ms", 9500) == "!!"                     # exceeds 9000ms
+    assert kpi("claude-stream", "adapter_first_token_ms", 1500) == "!!" # prefix match + fail
 
 
 def test_kpi_unknown_label():
-    # Unknown label has no target — should not crash
-    assert kpi("jarvis_future", "total_ms", 99999) == "  "
+    # Unknown base name has no target — should not crash
+    # Note: "jarvis_future" resolves to "jarvis" via prefix matching — use truly unknown base
+    assert kpi("custom-run", "total_ms", 99999) == "  "
+    assert kpi("unknown-xyz", "total_ms", 99999) == "  "
 
 
 def test_kpi_unknown_stage():

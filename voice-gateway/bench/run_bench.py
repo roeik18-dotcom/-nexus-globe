@@ -173,8 +173,16 @@ KPI_TARGETS = {
 }
 
 
+def _kpi_targets_for(label: str) -> dict:
+    """Return KPI targets for label, falling back to base name before first '-' or '_'."""
+    if label in KPI_TARGETS:
+        return KPI_TARGETS[label]
+    base = label.replace("_", "-").split("-")[0]
+    return KPI_TARGETS.get(base, {})
+
+
 def _kpi_mark(label: str, key: str, value: float) -> str:
-    target = KPI_TARGETS.get(label, {}).get(key)
+    target = _kpi_targets_for(label).get(key)
     if target is None:
         return ""
     return "PASS" if value <= target else "FAIL"

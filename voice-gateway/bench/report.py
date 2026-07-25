@@ -95,8 +95,16 @@ def spikes(values: list[float], threshold: float = 1.5) -> list[float]:
     return sorted(v for v in values if v > med * threshold)
 
 
+def _kpi_targets_for(label: str) -> dict:
+    """Return KPI targets for label, falling back to base name before first '-' or '_'."""
+    if label in KPI_TARGETS:
+        return KPI_TARGETS[label]
+    base = label.replace("_", "-").split("-")[0]
+    return KPI_TARGETS.get(base, {})
+
+
 def kpi(label: str, key: str, avg: float) -> str:
-    target = KPI_TARGETS.get(label, {}).get(key)
+    target = _kpi_targets_for(label).get(key)
     if target is None:
         return "  "
     return "OK" if avg <= target else "!!"
@@ -201,12 +209,18 @@ def main():
         pct = 100 * len(with_text) // len(ok) if ok else 0
         print(f"    {label}: {len(with_text)}/{len(ok)} ({pct}%)")
 
-    # KPI legend
+    # KPI legend — match by exact label or base name (e.g. "claude-stream" → "claude")
     print(f"\n  KPI: OK = within target, !! = exceeds target")
-    for label, targets in KPI_TARGETS.items():
-        if any(d[0] == label for d in datasets):
+    shown: set[str] = set()
+    for d_label, _, _ in datasets:
+        base = d_label.replace("_", "-").split("-")[0]
+        kpi_key = d_label if d_label in KPI_TARGETS else base
+        if kpi_key in KPI_TARGETS and kpi_key not in shown:
+            shown.add(kpi_key)
+            targets = KPI_TARGETS[kpi_key]
             t_str = "  ".join(f"{k} ≤ {v}ms" for k, v in targets.items())
-            print(f"    {label}: {t_str}")
+            alias = f" (matched from {d_label!r})" if kpi_key != d_label else ""
+            print(f"    {kpi_key}{alias}: {t_str}")
 
     # Baseline-derived targets when echo run is present
     echo_total = None
