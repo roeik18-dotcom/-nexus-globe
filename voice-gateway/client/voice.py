@@ -339,6 +339,7 @@ class WakeWordDetector:
         self._rolling_max = int(2.0 * SAMPLE_RATE / self.OWW_FRAME)
         self._cooldown_until: float = 0.0
         self._first_inference = True
+        self._chunk_count = 0  # counts chunks passed to model.predict()
 
         try:
             from openwakeword.model import Model as OWWModel  # type: ignore
@@ -351,6 +352,15 @@ class WakeWordDetector:
             _alog.info(
                 "wake_vad_started  model=%s  threshold=%.2f  frame_ms=%d",
                 WAKE_OWW_MODEL, WAKE_OWW_THRESHOLD, self.OWW_FRAME * 1000 // SAMPLE_RATE,
+            )
+            # Log every label the model actually exposes so we can detect key mismatches.
+            try:
+                _labels = list(self._model.models.keys()) if hasattr(self._model, "models") else [WAKE_OWW_MODEL]
+            except Exception:
+                _labels = [WAKE_OWW_MODEL]
+            _alog.info(
+                "wake_model_labels  loaded=%s  looking_for=%s  match=%s",
+                _labels, WAKE_OWW_MODEL, WAKE_OWW_MODEL in _labels,
             )
         except Exception as exc:
             log.warning(
@@ -379,7 +389,34 @@ class WakeWordDetector:
             self._rolling.pop(0)
 
         # ── wake audio chunk sent for inference ──────────────────────────
-        pred = self._model.predict(frame.flatten().astype(np.int16))
+        self._chunk_count += 1
+        tensor = frame.flatten().astype(np.int16)
+
+        # Verify every openwakeword input requirement on chunks 1-3 and every 50th.
+        if self._chunk_count <= 3 or self._chunk_count % 50 == 0:
+            _rms_val  = float(np.sqrt(np.mean(tensor.astype(np.float32) ** 2)))
+            _peak_abs = int(np.max(np.abs(tensor))) if len(tensor) else 0
+            _alog.debug(
+                "wake_tensor  chunk=%d  dtype=%s  shape=%s  "
+                "min=%d  max=%d  rms=%.1f  peak=%d  peak_norm=%.5f  first10=%s  "
+                "req_samplerate=%d  req_mono=True  req_dtype=int16  req_frame=%d",
+                self._chunk_count, tensor.dtype, tensor.shape,
+                int(tensor.min()) if len(tensor) else 0,
+                int(tensor.max()) if len(tensor) else 0,
+                _rms_val, _peak_abs,
+                _peak_abs / 32768.0,
+                tensor[:10].tolist(),
+                SAMPLE_RATE, self.OWW_FRAME,
+            )
+            # Warn if the audio arriving here is near-silent (possible wrong channel or muted).
+            if _peak_abs < 50:
+                _alog.warning(
+                    "wake_tensor_silent  chunk=%d  peak=%d  "
+                    "— audio may be from wrong channel or device is muted",
+                    self._chunk_count, _peak_abs,
+                )
+
+        pred = self._model.predict(tensor)
 
         # Log actual prediction keys on first call — reveals model-name mismatches
         # (e.g. openwakeword may key by "hey_jarvis.onnx" instead of "hey_jarvis").
@@ -466,9 +503,18 @@ class MonitorStream:
             self._stream = sd.InputStream(**stream_kwargs)
             self._stream.start()
             self._active = True
+            # Log both what we requested and what PortAudio actually opened.
+            _actual_sr    = getattr(self._stream, "samplerate",  "?")
+            _actual_ch    = getattr(self._stream, "channels",    "?")
+            _actual_dtype = getattr(self._stream, "dtype",       "?")
+            _actual_dev   = getattr(self._stream, "device",      "?")
             _alog.info(
-                "mic_stream_started  samplerate=%d  blocksize=%d  device=%s  mapping=%s  clap=%s  wake=%s",
+                "mic_stream_started  "
+                "requested(samplerate=%d blocksize=%d dtype=int16 device=%s mapping=%s)  "
+                "actual(samplerate=%s channels=%s dtype=%s device=%s)  "
+                "clap=%s  wake=%s",
                 SAMPLE_RATE, FRAME_SAMPLES, self._device, self._mapping,
+                _actual_sr, _actual_ch, _actual_dtype, _actual_dev,
                 self._clap is not None, self._wake is not None,
             )
 
@@ -491,11 +537,26 @@ class MonitorStream:
         frame = indata[:, 0].copy()
         self._frame_count += 1
 
+        # On the first 3 frames log full raw details — dtype, shape, per-channel stats —
+        # so we can verify that PortAudio delivered the expected format and channel.
+        if self._frame_count <= 3:
+            _alog.debug(
+                "mic_raw  frame=%d  indata_dtype=%s  indata_shape=%s  "
+                "ch0_min=%d  ch0_max=%d  ch0_rms=%.1f  ch0_first10=%s",
+                self._frame_count, indata.dtype, indata.shape,
+                int(np.min(indata[:, 0])), int(np.max(indata[:, 0])),
+                float(np.sqrt(np.mean(indata[:, 0].astype(np.float32) ** 2))),
+                indata[:10, 0].tolist(),
+            )
+
         # Heartbeat every 250 frames (5 s at 20 ms/frame) — confirms mic is live.
         if self._frame_count % 250 == 0:
+            _rms_now = float(np.sqrt(np.mean(frame.astype(np.float32) ** 2)))
+            _pk_now  = int(np.max(np.abs(frame))) if len(frame) else 0
             _alog.debug(
-                "mic_heartbeat  frame=%d  clap_path=%s  wake_path=%s",
-                self._frame_count, self._clap is not None, self._wake is not None,
+                "mic_heartbeat  frame=%d  rms=%.1f  peak=%d  clap_path=%s  wake_path=%s",
+                self._frame_count, _rms_now, _pk_now,
+                self._clap is not None, self._wake is not None,
             )
 
         if self._clap:
