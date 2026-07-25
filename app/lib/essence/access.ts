@@ -8,7 +8,7 @@
 
 import type { EssenceLayer } from './ontology';
 import type { SensitivityLevel, TemporalKind } from './schema';
-import type { RetrievalMode } from './api';
+import type { RetrievalMode } from './schema';
 
 // ── Agent Names ────────────────────────────────────────────────────────────────
 

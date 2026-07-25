@@ -70,6 +70,45 @@ export type ConflictType =
   | 'role_difference'         // different roles produce genuinely different traits
   | 'unresolved_contradiction'; // logically incompatible; requires user resolution
 
+// ── Retrieval Mode ─────────────────────────────────────────────────────────────
+
+/**
+ * How much of the profile to load for a given query.
+ * Defined here (not in api.ts) to avoid the api.ts ↔ access.ts circular dependency.
+ */
+export type RetrievalMode =
+  | 'compact'       // high-confidence traits only; minimal payload
+  | 'task_relevant' // nodes relevant to the current task context (default)
+  | 'creative'      // Expression + CreativeDNA + Aesthetics + active state
+  | 'strategic'     // Aspirations + Core Values + Principles
+  | 'deep';         // full profile; only for Philos or explicit user request
+
+// ── Evidence ───────────────────────────────────────────────────────────────────
+
+/** Where evidence for an interpretation stands in the verification lifecycle. */
+export type EvidenceStatus = 'unavailable' | 'referenced' | 'evaluated';
+
+/** A reference to one piece of cross-domain evidence. */
+export interface EvidenceReference {
+  evidenceId: string;
+  sourceType: string;
+  addedAt: string;
+  addedBy: string;
+}
+
+// ── Phase ──────────────────────────────────────────────────────────────────────
+
+/** Lifecycle stage of a multi-month arc. */
+export type PhaseStatus = 'emerging' | 'active' | 'waning' | 'completed';
+
+/** Tracks a phase arc on an ontology node. */
+export interface PhaseMarker {
+  nodeId: string;
+  status: PhaseStatus;
+  startedAt: string;
+  completedAt?: string;
+}
+
 // ── Raw Observation ────────────────────────────────────────────────────────────
 
 /**
@@ -162,6 +201,7 @@ export interface Interpretation {
   archivedAt: string | null;
   /** IDs of Conflict records touching this interpretation. */
   conflictIds: ReadonlyArray<string>;
+  evidenceStatus: EvidenceStatus;
 }
 
 // ── State Item ─────────────────────────────────────────────────────────────────

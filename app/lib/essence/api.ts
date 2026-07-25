@@ -1,39 +1,63 @@
 /**
  * Essence · API Surface v1
  *
- * 13 operations. All reads return summaries or structured views.
- * All writes go through the pipeline — no agent may write directly to
- * Canonical Essence. Proposals are subject to Write Policy evaluation.
+ * Operations for reading from and proposing changes to the Human Model.
+ * All writes go through the semantic pipeline — no agent writes directly.
+ *
+ * Read operations: 9
+ * Write operations (proposals only): 6
  */
 
 import type { EssenceLayer } from './ontology';
 import type {
   ConfidenceLevel,
-  Conflict,
   ConflictType,
-  EssenceEvolutionEntry,
-  EssenceProfile,
   EssenceStateItem,
+  EvidenceStatus,
   Interpretation,
   Observation,
+  RetrievalMode,
   SensitivityLevel,
   TemporalKind,
   StateTemporalScope,
 } from './schema';
-import type { PipelineResult } from './pipeline';
+import type { PipelineResult, PipelineStageSummary } from './pipeline';
+import type { AgentName } from './access';
 
-// ── Retrieval Modes ────────────────────────────────────────────────────────────
+// Re-export RetrievalMode so existing consumers of api.ts still compile.
+export type { RetrievalMode } from './schema';
+
+// ── Authorization ──────────────────────────────────────────────────────────────
 
 /**
- * How much of the profile to load for a given query.
- * Agents request only what they need — Essence does not over-expose.
+ * Proof that a user-authorized action is in progress.
+ * Required for confirmUpdate, rejectUpdate, and correctItem.
+ * Agent-supplied strings are NOT accepted in place of this struct.
  */
-export type RetrievalMode =
-  | 'compact'       // high-confidence traits only; minimal payload
-  | 'task_relevant' // nodes relevant to the current task context (default)
-  | 'creative'      // Expression + CreativeDNA + Aesthetics + active state
-  | 'strategic'     // Aspirations + Core Values + Principles
-  | 'deep';         // full profile; only for Philos or explicit user request
+export interface UserAuthorizedActionContext {
+  readonly actorType: 'user';
+  readonly actionId: string;
+  readonly authorizedAt: string; // ISO 8601
+}
+
+// ── Context ────────────────────────────────────────────────────────────────────
+
+/**
+ * Optional context a requesting agent provides to scope the summary.
+ * Essence uses this to return the most relevant interpretations.
+ */
+export interface EssenceContextView {
+  sessionId?: string;
+  role?: string;
+  audience?: string;
+  relationship?: string;
+  culture?: string;
+  environment?: string;
+  activeDomain?: string;
+  temporalContext?: string;
+  currentIntent?: string;
+  recentTopics?: string[];
+}
 
 // ── Read-Side Types ────────────────────────────────────────────────────────────
 
@@ -53,6 +77,7 @@ export interface EssenceSummary {
     confidence: ConfidenceLevel;
     sensitivity: SensitivityLevel;
     temporalKind: TemporalKind;
+    evidenceStatus: EvidenceStatus;
   }>;
   /** Active state items scoped to the current session or shorter. */
   activeState: EssenceStateItem[];
@@ -75,11 +100,10 @@ export interface EssenceLayerView {
  */
 export interface ProposedUpdate {
   nodeId: string;
-  /** What the agent believes the interpretation should be. */
   proposedContent: string;
   /** The observation IDs this proposal is based on. Must reference ≥1. */
   evidenceObservationIds: string[];
-  proposedBy: string;
+  proposedBy: AgentName;
   proposedAt: string; // ISO 8601
   rationale: string;
 }
@@ -87,14 +111,13 @@ export interface ProposedUpdate {
 /**
  * A correction issued by the user.
  * User corrections always win; they are recorded as a new Observation
- * (source: 'user_correction') and feed the pipeline.
+ * (source: 'user_correction') and feed the pipeline with UserAuthorizedActionContext.
  */
 export interface UserCorrection {
   nodeId: string;
   /** The interpretation ID the user is correcting. null = correcting a gap. */
   targetInterpretationId: string | null;
   correctedContent: string;
-  correctedBy: 'user';
   correctedAt: string; // ISO 8601
   note: string | null;
 }
@@ -111,83 +134,100 @@ export interface EvidencePackage {
   packagedAt: string;
 }
 
-// ── API Interface ──────────────────────────────────────────────────────────────
+// ── Proposal Lifecycle ─────────────────────────────────────────────────────────
+
+export type ProposalStatus = 'pending' | 'confirmed' | 'rejected' | 'expired';
 
 /**
- * The Essence API — the only interface agents use to read or propose changes
- * to the Human Model. Agents do not access EssenceProfile directly.
+ * A pending or terminal proposal record.
  *
- * Read operations: 7
- * Write operations (proposals only): 6
+ * Records are permanent — never removed after reaching a terminal state
+ * (confirmed, rejected, expired). Confirmation and rejection are idempotent.
  */
+export interface PendingEssenceProposal {
+  readonly proposalId: string;
+  readonly profileId: string;
+  readonly nodeId: string;
+  readonly layer: EssenceLayer;
+  readonly proposedContent: string;
+  readonly proposedBy: AgentName;
+  readonly evidenceStatus: EvidenceStatus;
+  readonly proposedAt: string; // ISO 8601
+  readonly expiresAt: string;  // ISO 8601
+  status: ProposalStatus;
+  conflictsWith: string[]; // existing interpretation IDs that conflict
+  pipelineStages: PipelineStageSummary[];
+  committedInterpretationId?: string;
+  rejectionReason?: string;
+}
+
+// ── API Interface ──────────────────────────────────────────────────────────────
+
 export interface EssenceAPI {
 
   // ── Reads ──────────────────────────────────────────────────────────────────
 
-  /**
-   * 1. Get a summary of the profile, scoped to the retrieval mode.
-   * The default mode is 'task_relevant'. Use 'deep' only for Philos-level
-   * analysis or explicit user request.
-   */
+  /** 1. Get a summary of the profile, scoped to the retrieval mode. */
   getEssenceSummary(
     profileId: string,
     mode: RetrievalMode,
-    requestedBy: string,
+    requestedBy: AgentName,
+    context?: EssenceContextView,
   ): Promise<EssenceSummary>;
 
-  /**
-   * 2. Get all interpretations in the Core layer.
-   * Returns only interpretations the requesting agent is authorized to read.
-   */
-  getCore(profileId: string, requestedBy: string): Promise<EssenceLayerView>;
+  /** 2. Get all interpretations in the Core layer. */
+  getCore(profileId: string, requestedBy: AgentName): Promise<EssenceLayerView>;
 
-  /**
-   * 3. Get all interpretations in the Expression layer.
-   */
-  getExpression(profileId: string, requestedBy: string): Promise<EssenceLayerView>;
+  /** 3. Get all interpretations in the Aspirations layer. */
+  getAspirations(profileId: string, requestedBy: AgentName): Promise<EssenceLayerView>;
 
-  /**
-   * 4. Get all interpretations in the Identity layer.
-   */
-  getIdentity(profileId: string, requestedBy: string): Promise<EssenceLayerView>;
+  /** 4. Get all interpretations in the Expression layer. */
+  getExpression(profileId: string, requestedBy: AgentName): Promise<EssenceLayerView>;
 
-  /**
-   * 5. Get currently active state items, optionally filtered by scope.
-   */
+  /** 5. Get all interpretations in the Identity layer. */
+  getIdentity(profileId: string, requestedBy: AgentName): Promise<EssenceLayerView>;
+
+  /** 6. Get currently active state items, optionally filtered by scope. */
   getCurrentState(
     profileId: string,
-    requestedBy: string,
+    requestedBy: AgentName,
     scope?: StateTemporalScope,
   ): Promise<EssenceStateItem[]>;
 
   /**
-   * 6. Get observation IDs backing a specific interpretation.
-   * Returns IDs only — raw observations are not exposed to agents.
+   * 7. Get observation IDs backing a specific interpretation.
+   * Returns IDs only — raw observations are never exposed to agents.
    */
   getEvidence(
     profileId: string,
     interpretationId: string,
-    requestedBy: string,
+    requestedBy: AgentName,
   ): Promise<{ observationIds: string[]; evidenceIds: string[] }>;
 
   /**
-   * 7. Get unresolved conflicts. Returns summary only — agents see conflict
-   * counts and types, not the full Conflict records.
+   * 8. Get unresolved conflicts.
+   * Agents see counts and types only — not full Conflict records.
+   * Philos is the only agent that receives full conflict detail (via canReadConflicts).
    */
   getConflicts(
     profileId: string,
-    requestedBy: string,
+    requestedBy: AgentName,
   ): Promise<{ count: number; types: ConflictType[] }>;
+
+  /** 9. Get all pending proposals for this profile. */
+  getPendingProposals(
+    profileId: string,
+    requestedBy: AgentName,
+  ): Promise<PendingEssenceProposal[]>;
 
   // ── Proposals & Writes ─────────────────────────────────────────────────────
 
   /**
-   * 8. Classify a piece of information to determine which ontology node it belongs to.
-   * Returns the node ID and whether the pipeline accepts this as input.
+   * 10. Classify a piece of information to determine which ontology node it belongs to.
    */
   classifyInformation(
     content: string,
-    requestedBy: string,
+    requestedBy: AgentName,
   ): Promise<{
     nodeId: string;
     layer: EssenceLayer;
@@ -196,7 +236,7 @@ export interface EssenceAPI {
   }>;
 
   /**
-   * 9. Submit an update proposal. Goes through the full semantic pipeline.
+   * 11. Submit an update proposal. Goes through the full semantic pipeline.
    * Returns a PipelineResult — never writes directly to Canonical Essence.
    */
   proposeUpdate(
@@ -206,48 +246,52 @@ export interface EssenceAPI {
   ): Promise<PipelineResult>;
 
   /**
-   * 10. Confirm a pending interpretation (user approval of a queued proposal).
-   * Uses the confirmationToken from a 'pending_user_confirmation' PipelineResult.
+   * 12. Confirm a pending interpretation (user approval of a queued proposal).
+   * Idempotent — confirming an already-confirmed proposal returns the
+   * existing Interpretation without re-running the pipeline.
    */
   confirmUpdate(
     profileId: string,
     confirmationToken: string,
-    confirmedBy: 'user',
+    context: UserAuthorizedActionContext,
   ): Promise<Interpretation>;
 
   /**
-   * 11. Reject a pending interpretation.
-   * Permanently discards the candidate and records the rejection as an observation.
+   * 13. Reject a pending interpretation.
+   * Idempotent — rejecting an already-rejected proposal is a no-op.
    */
   rejectUpdate(
     profileId: string,
     confirmationToken: string,
-    rejectedBy: 'user',
+    context: UserAuthorizedActionContext,
     reason: string | null,
   ): Promise<{ rejected: true; recordedAt: string }>;
 
   /**
-   * 12. Submit a user correction.
+   * 14. Submit a user correction.
    * Creates an Observation (source: 'user_correction') and immediately runs the
-   * pipeline. User corrections bypass normal write thresholds.
+   * pipeline with UserAuthorizedActionContext — bypassing normal write thresholds.
+   * The superseded interpretation is archived, not deleted.
    */
   correctItem(
     profileId: string,
     correction: UserCorrection,
+    context: UserAuthorizedActionContext,
   ): Promise<PipelineResult>;
 
   /**
-   * 13. Archive an interpretation.
+   * 15. Archive an interpretation.
    * Moves it to history; no longer drives agent behavior.
    * Archival is recorded in the evolution log.
+   * Only Philos and user corrections may archive.
    */
   archiveItem(
     profileId: string,
     interpretationId: string,
-    archivedBy: string,
+    archivedBy: AgentName,
     reason: string,
   ): Promise<{ archived: true; evolutionEntryId: string }>;
 }
 
-// ── Conflict type re-export for consumers of api.ts ───────────────────────────
+// Re-exports for consumers of api.ts
 export type { ConflictType } from './schema';

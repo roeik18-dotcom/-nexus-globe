@@ -20,6 +20,7 @@ import type { EssenceLayer, StabilityClass } from './ontology';
 import type {
   ConfidenceLevel,
   ConflictType,
+  EvidenceStatus,
   Interpretation,
   InterpretationKind,
   Observation,
@@ -27,6 +28,24 @@ import type {
   TemporalKind,
   StateTemporalScope,
 } from './schema';
+
+// ── Pipeline Stages ────────────────────────────────────────────────────────────
+
+export type PipelineStage =
+  | 'validate'
+  | 'classify'
+  | 'normalize'
+  | 'evaluate_evidence'
+  | 'detect_conflict'
+  | 'apply_write_policy'
+  | 'create_proposal'
+  | 'commit';
+
+export interface PipelineStageSummary {
+  stage: PipelineStage;
+  outcome: 'passed' | 'flagged' | 'blocked';
+  note?: string;
+}
 
 // ── Stage 1 — Observation ──────────────────────────────────────────────────────
 
@@ -100,6 +119,7 @@ export interface EvidenceEvaluation {
   distinctSourceCount: number;
   adjustedConfidence: ConfidenceLevel;
   evaluatedAt: string;
+  evidenceStatus: EvidenceStatus;
 }
 
 // ── Stage 6 — Conflict Detection ──────────────────────────────────────────────
