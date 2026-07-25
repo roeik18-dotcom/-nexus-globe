@@ -4,8 +4,13 @@
  * Operations for reading from and proposing changes to the Human Model.
  * All writes go through the semantic pipeline — no agent writes directly.
  *
- * Read operations: 9
- * Write operations (proposals only): 6
+ * Split into four sub-interfaces so each service can declare precise `implements`:
+ *   EssenceReadAPI          → EssenceReadService
+ *   EssenceProposalAPI      → EssenceProposalService
+ *   EssenceUserActionAPI    → EssenceProposalService
+ *   EssenceClassificationAPI → (future)
+ *
+ * EssenceAPI remains as the union for backwards-compatible consumers.
  */
 
 import type { EssenceLayer } from './ontology';
@@ -27,18 +32,14 @@ import type { AgentName } from './access';
 // Re-export RetrievalMode so existing consumers of api.ts still compile.
 export type { RetrievalMode } from './schema';
 
+// Re-export ConflictType for consumers.
+export type { ConflictType } from './schema';
+
 // ── Authorization ──────────────────────────────────────────────────────────────
 
-/**
- * Proof that a user-authorized action is in progress.
- * Required for confirmUpdate, rejectUpdate, and correctItem.
- * Agent-supplied strings are NOT accepted in place of this struct.
- */
-export interface UserAuthorizedActionContext {
-  readonly actorType: 'user';
-  readonly actionId: string;
-  readonly authorizedAt: string; // ISO 8601
-}
+// UserAuthorizedActionContext lives in actor.ts to break the pipeline-runner → api.ts
+// upward dependency. Re-exported here for backwards compatibility.
+export type { UserAuthorizedActionContext } from './actor';
 
 // ── Context ────────────────────────────────────────────────────────────────────
 
@@ -161,13 +162,11 @@ export interface PendingEssenceProposal {
   rejectionReason?: string;
 }
 
-// ── API Interface ──────────────────────────────────────────────────────────────
+// ── Sub-Interface: Read ────────────────────────────────────────────────────────
 
-export interface EssenceAPI {
-
-  // ── Reads ──────────────────────────────────────────────────────────────────
-
-  /** 1. Get a summary of the profile, scoped to the retrieval mode. */
+/** Implemented by EssenceReadService. */
+export interface EssenceReadAPI {
+  /** Get a summary of the profile, scoped to the retrieval mode. */
   getEssenceSummary(
     profileId: string,
     mode: RetrievalMode,
@@ -175,19 +174,14 @@ export interface EssenceAPI {
     context?: EssenceContextView,
   ): Promise<EssenceSummary>;
 
-  /** 2. Get all interpretations in the Core layer. */
-  getCore(profileId: string, requestedBy: AgentName): Promise<EssenceLayerView>;
+  /** Get all interpretations in a specific layer. */
+  getLayerView(
+    profileId: string,
+    layer: EssenceLayer,
+    requestedBy: AgentName,
+  ): Promise<EssenceLayerView>;
 
-  /** 3. Get all interpretations in the Aspirations layer. */
-  getAspirations(profileId: string, requestedBy: AgentName): Promise<EssenceLayerView>;
-
-  /** 4. Get all interpretations in the Expression layer. */
-  getExpression(profileId: string, requestedBy: AgentName): Promise<EssenceLayerView>;
-
-  /** 5. Get all interpretations in the Identity layer. */
-  getIdentity(profileId: string, requestedBy: AgentName): Promise<EssenceLayerView>;
-
-  /** 6. Get currently active state items, optionally filtered by scope. */
+  /** Get currently active state items, optionally filtered by scope. */
   getCurrentState(
     profileId: string,
     requestedBy: AgentName,
@@ -195,7 +189,7 @@ export interface EssenceAPI {
   ): Promise<EssenceStateItem[]>;
 
   /**
-   * 7. Get observation IDs backing a specific interpretation.
+   * Get observation IDs backing a specific interpretation.
    * Returns IDs only — raw observations are never exposed to agents.
    */
   getEvidence(
@@ -205,38 +199,21 @@ export interface EssenceAPI {
   ): Promise<{ observationIds: string[]; evidenceIds: string[] }>;
 
   /**
-   * 8. Get unresolved conflicts.
+   * Get unresolved conflicts.
    * Agents see counts and types only — not full Conflict records.
-   * Philos is the only agent that receives full conflict detail (via canReadConflicts).
    */
   getConflicts(
     profileId: string,
     requestedBy: AgentName,
   ): Promise<{ count: number; types: ConflictType[] }>;
+}
 
-  /** 9. Get all pending proposals for this profile. */
-  getPendingProposals(
-    profileId: string,
-    requestedBy: AgentName,
-  ): Promise<PendingEssenceProposal[]>;
+// ── Sub-Interface: Proposals ───────────────────────────────────────────────────
 
-  // ── Proposals & Writes ─────────────────────────────────────────────────────
-
+/** Implemented by EssenceProposalService. */
+export interface EssenceProposalAPI {
   /**
-   * 10. Classify a piece of information to determine which ontology node it belongs to.
-   */
-  classifyInformation(
-    content: string,
-    requestedBy: AgentName,
-  ): Promise<{
-    nodeId: string;
-    layer: EssenceLayer;
-    classificationConfidence: 'certain' | 'probable' | 'ambiguous';
-    requiresMoreContext: boolean;
-  }>;
-
-  /**
-   * 11. Submit an update proposal. Goes through the full semantic pipeline.
+   * Submit an update proposal. Goes through the full semantic pipeline.
    * Returns a PipelineResult — never writes directly to Canonical Essence.
    */
   proposeUpdate(
@@ -246,7 +223,23 @@ export interface EssenceAPI {
   ): Promise<PipelineResult>;
 
   /**
-   * 12. Confirm a pending interpretation (user approval of a queued proposal).
+   * Get pending proposals for this profile visible to the requesting agent.
+   * Agents see only their own proposals; Philos sees all.
+   */
+  getPendingProposals(
+    profileId: string,
+    requestedBy: AgentName,
+  ): Promise<PendingEssenceProposal[]>;
+}
+
+// ── Sub-Interface: User Actions ────────────────────────────────────────────────
+
+import type { UserAuthorizedActionContext } from './actor';
+
+/** Implemented by EssenceProposalService. */
+export interface EssenceUserActionAPI {
+  /**
+   * Confirm a pending interpretation (user approval of a queued proposal).
    * Idempotent — confirming an already-confirmed proposal returns the
    * existing Interpretation without re-running the pipeline.
    */
@@ -257,7 +250,7 @@ export interface EssenceAPI {
   ): Promise<Interpretation>;
 
   /**
-   * 13. Reject a pending interpretation.
+   * Reject a pending interpretation.
    * Idempotent — rejecting an already-rejected proposal is a no-op.
    */
   rejectUpdate(
@@ -268,7 +261,7 @@ export interface EssenceAPI {
   ): Promise<{ rejected: true; recordedAt: string }>;
 
   /**
-   * 14. Submit a user correction.
+   * Submit a user correction.
    * Creates an Observation (source: 'user_correction') and immediately runs the
    * pipeline with UserAuthorizedActionContext — bypassing normal write thresholds.
    * The superseded interpretation is archived, not deleted.
@@ -280,7 +273,7 @@ export interface EssenceAPI {
   ): Promise<PipelineResult>;
 
   /**
-   * 15. Archive an interpretation.
+   * Archive an interpretation.
    * Moves it to history; no longer drives agent behavior.
    * Archival is recorded in the evolution log.
    * Only Philos and user corrections may archive.
@@ -293,5 +286,22 @@ export interface EssenceAPI {
   ): Promise<{ archived: true; evolutionEntryId: string }>;
 }
 
-// Re-exports for consumers of api.ts
-export type { ConflictType } from './schema';
+// ── Sub-Interface: Classification ─────────────────────────────────────────────
+
+/** Not yet implemented. Placeholder for future classification service. */
+export interface EssenceClassificationAPI {
+  classifyInformation(
+    content: string,
+    requestedBy: AgentName,
+  ): Promise<{
+    nodeId: string;
+    layer: EssenceLayer;
+    classificationConfidence: 'certain' | 'probable' | 'ambiguous';
+    requiresMoreContext: boolean;
+  }>;
+}
+
+// ── Union Interface (backwards compat) ────────────────────────────────────────
+
+/** @deprecated Use the specific sub-interfaces instead. */
+export interface EssenceAPI extends EssenceReadAPI, EssenceProposalAPI, EssenceUserActionAPI, EssenceClassificationAPI {}

@@ -10,62 +10,97 @@
 import type { EssenceLayer } from './ontology';
 import { getEssenceNode } from './ontology';
 import type {
+  Conflict,
   EssenceEvolutionEntry,
   EssenceProfile,
   Interpretation,
+  Observation,
 } from './schema';
 import type { AgentName } from './access';
 import { ACCESS_POLICIES } from './access';
 import type {
+  EssenceProposalAPI,
+  EssenceUserActionAPI,
   PendingEssenceProposal,
   ProposedUpdate,
   UserCorrection,
-  UserAuthorizedActionContext,
   EvidencePackage,
 } from './api';
 import type { PipelineResult } from './pipeline';
 import type { EssenceRepository } from './repository';
-import { PipelineRunner } from './pipeline-runner';
-import type { Clock } from './pipeline-runner';
-import { findInterpretation } from './read-service';
+import type { EssencePipeline, Clock, IdGenerator } from './pipeline-runner';
+import { systemClock, defaultIdGenerator } from './pipeline-runner';
+import type { UserAuthorizedActionContext } from './actor';
+import { findInterpretation } from './interpretation-utils';
 
 export { type Clock };
 
 const LAYERS: EssenceLayer[] = ['core', 'aspirations', 'expression', 'identity'];
 
-export class EssenceProposalService {
+export class EssenceProposalService implements EssenceProposalAPI, EssenceUserActionAPI {
   private readonly proposalRecords = new Map<string, PendingEssenceProposal>();
 
   constructor(
     private readonly repo: EssenceRepository,
-    private readonly runner: PipelineRunner,
-    private readonly clock: Clock = { now: () => Date.now() },
+    private readonly runner: EssencePipeline,
+    private readonly clock: Clock = systemClock,
+    private readonly idGen: IdGenerator = defaultIdGenerator,
   ) {}
 
   async proposeUpdate(
     profileId: string,
     proposal: ProposedUpdate,
-    _evidence: EvidencePackage | null,
+    evidence: EvidencePackage | null,
   ): Promise<PipelineResult> {
-    const profile = await this.repo.getProfile(profileId);
-    if (!profile) {
+    // Verify profile exists before creating the backing observation.
+    if (!(await this.repo.profileExists(profileId))) {
       return structuredReject(`Profile not found: ${profileId}`);
     }
+
+    // Persist the backing observation (two-tier: observation before interpretation).
+    const obs = buildProposalObservation(proposal, this.clock, this.idGen);
+    await this.repo.appendObservation(profileId, obs);
+
+    // Merge evidence IDs from the package (correction 10: wire EvidencePackage).
+    const allEvidenceIds = [
+      ...proposal.evidenceObservationIds,
+      ...(evidence?.evidenceIds ?? []),
+    ];
+
+    const profile = await this.repo.getProfile(profileId);
+    if (!profile) return structuredReject(`Profile not found: ${profileId}`);
 
     const output = this.runner.run({
       profileId,
       nodeId: proposal.nodeId,
       proposedContent: proposal.proposedContent,
       proposedBy: proposal.proposedBy,
-      evidenceObservationIds: proposal.evidenceObservationIds,
+      evidenceObservationIds: allEvidenceIds,
       rationale: proposal.rationale,
       currentProfile: profile,
     });
 
+    // Persist conflict records when a proposal is blocked (correction 3).
+    if (output.result.status === 'blocked_by_conflict') {
+      const now = new Date(this.clock.now()).toISOString();
+      for (const existingId of output.result.conflictIds) {
+        const conflict: Conflict = {
+          id: this.idGen.nextId('conflict'),
+          interpretationIds: [existingId, `pending_${obs.id}`],
+          type: 'unresolved_contradiction',
+          detectedAt: now,
+          resolvedAt: null,
+          resolution: null,
+          resolutionNote: 'Blocked candidate — awaiting user resolution',
+        };
+        await this.repo.appendConflict(profileId, conflict);
+      }
+    }
+
     if (output.result.status === 'pending_user_confirmation') {
       const { confirmationToken, expiresAt } = output.result;
       const node = getEssenceNode(proposal.nodeId);
-      const evidenceStatus = proposal.evidenceObservationIds.length > 0 ? 'referenced' : 'unavailable';
+      const evidenceStatus = allEvidenceIds.length > 0 ? 'referenced' : 'unavailable';
       this.proposalRecords.set(confirmationToken, {
         proposalId: confirmationToken,
         profileId,
@@ -165,17 +200,25 @@ export class EssenceProposalService {
     correction: UserCorrection,
     context: UserAuthorizedActionContext,
   ): Promise<PipelineResult> {
-    const profile = await this.repo.getProfile(profileId);
-    if (!profile) {
+    // Verify profile exists.
+    if (!(await this.repo.profileExists(profileId))) {
       return structuredReject(`Profile not found: ${profileId}`);
     }
+
+    // Persist backing observation (source: user_correction, actor: user).
+    const obs = buildCorrectionObservation(correction, this.clock, this.idGen);
+    await this.repo.appendObservation(profileId, obs);
+
+    // Get fresh profile (includes the new observation).
+    const profile = await this.repo.getProfile(profileId);
+    if (!profile) return structuredReject(`Profile not found: ${profileId}`);
 
     const output = this.runner.run({
       profileId,
       nodeId: correction.nodeId,
       proposedContent: correction.correctedContent,
-      proposedBy: 'philos',
-      evidenceObservationIds: [],
+      proposedBy: 'user',  // correction 1: not 'philos' — records the true actor
+      evidenceObservationIds: [obs.id],
       rationale: correction.note ?? 'User correction',
       authContext: context,
       currentProfile: profile,
@@ -207,7 +250,7 @@ export class EssenceProposalService {
     archiveInterpretation(profile, interpretationId, this.clock, archivedAt);
 
     const nodeId = getInterpretationNodeId(profile, interpretationId) ?? interpretationId;
-    const entryId = `evo_${this.clock.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+    const entryId = this.idGen.nextId('evo');
     const entry: EssenceEvolutionEntry = {
       id: entryId,
       nodeId,
@@ -225,7 +268,14 @@ export class EssenceProposalService {
     return { archived: true, evolutionEntryId: entryId };
   }
 
-  getPendingProposals(profileId: string): PendingEssenceProposal[] {
+  /**
+   * Returns pending proposals visible to the requesting agent.
+   * Agents see only their own proposals; Philos sees all.
+   */
+  async getPendingProposals(
+    profileId: string,
+    requestedBy: AgentName,
+  ): Promise<PendingEssenceProposal[]> {
     const now = this.clock.now();
     const result: PendingEssenceProposal[] = [];
     for (const record of this.proposalRecords.values()) {
@@ -234,6 +284,8 @@ export class EssenceProposalService {
         record.status = 'expired';
         continue;
       }
+      // Cross-agent isolation: agents see only their own proposals unless they're Philos.
+      if (requestedBy !== 'philos' && record.proposedBy !== requestedBy) continue;
       result.push(record);
     }
     return result;
@@ -251,7 +303,7 @@ export class EssenceProposalService {
 
     const now = new Date(this.clock.now()).toISOString();
     const entry: EssenceEvolutionEntry = {
-      id: `evo_${this.clock.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+      id: this.idGen.nextId('evo'),
       nodeId: interp.nodeId,
       previousInterpretationId: null,
       newInterpretationId: interp.id,
@@ -267,6 +319,41 @@ export class EssenceProposalService {
 }
 
 // ── Module-level helpers ───────────────────────────────────────────────────────
+
+function buildProposalObservation(
+  proposal: ProposedUpdate,
+  clock: Clock,
+  idGen: IdGenerator,
+): Observation {
+  const now = new Date(clock.now()).toISOString();
+  return {
+    id: idGen.nextId('obs'),
+    source: 'agent_inference',
+    recordedBy: proposal.proposedBy,
+    content: proposal.proposedContent,
+    sessionId: null,
+    observedAt: now,
+    evidenceIds: proposal.evidenceObservationIds,
+    correctsObservationId: null,
+  };
+}
+
+function buildCorrectionObservation(
+  correction: UserCorrection,
+  clock: Clock,
+  idGen: IdGenerator,
+): Observation {
+  return {
+    id: idGen.nextId('obs'),
+    source: 'user_correction',
+    recordedBy: 'user',
+    content: correction.correctedContent,
+    sessionId: null,
+    observedAt: correction.correctedAt,
+    evidenceIds: [],
+    correctsObservationId: correction.targetInterpretationId,
+  };
+}
 
 function archiveInterpretation(
   profile: EssenceProfile,

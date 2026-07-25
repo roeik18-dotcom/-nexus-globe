@@ -75,6 +75,34 @@ describe('EssenceProposalService — proposeUpdate', () => {
     expect(result.status).toBe('pending_user_confirmation');
     expect((result as any).confirmationToken).toBeDefined();
   });
+
+  it('proposeUpdate persists a backing observation to the profile', async () => {
+    const { repo, svc } = makeService();
+    await repo.createProfile('u1');
+    await svc.proposeUpdate('u1', baseProposal(), null);
+
+    const profile = await repo.getProfile('u1');
+    expect(profile?.observations.length).toBeGreaterThanOrEqual(1);
+    expect(profile?.observations[0].source).toBe('agent_inference');
+  });
+
+  it('EvidencePackage evidenceIds are merged into the pipeline evidence set', async () => {
+    const { repo, svc } = makeService();
+    await repo.createProfile('u1');
+    const result = await svc.proposeUpdate(
+      'u1',
+      baseProposal({ evidenceObservationIds: [] }),
+      {
+        evidenceIds: ['ev-from-package'],
+        sourceType: 'behavioral_pattern',
+        confidenceAsserted: 'high',
+        packagedBy: 'merlin',
+        packagedAt: new Date().toISOString(),
+      }
+    );
+    // Evidence IDs from the package promote status from unavailable → referenced → pending_review
+    expect(result.status).toBe('pending_review');
+  });
 });
 
 describe('EssenceProposalService — confirmUpdate', () => {
@@ -118,7 +146,7 @@ describe('EssenceProposalService — confirmUpdate', () => {
     await expect(svc.confirmUpdate('u1', 'ct_invalid', USER_CTX)).rejects.toThrow(/unknown confirmation token/i);
   });
 
-  it('throws for expired proposal', async () => {
+  it('throws for expired proposal (past 24-hour window)', async () => {
     const clock = makeClock(1000) as Clock & { advance: (n: number) => void };
     const repo = new InMemoryEssenceRepository();
     const runner = new PipelineRunner(clock);
@@ -128,8 +156,8 @@ describe('EssenceProposalService — confirmUpdate', () => {
     const result = await svc.proposeUpdate('u1', baseProposal(), null);
     const token = (result as any).confirmationToken as string;
 
-    // Advance past 7-day expiry
-    (clock as any).advance(8 * 24 * 60 * 60 * 1000);
+    // Advance past the 24-hour expiry window.
+    (clock as any).advance(25 * 60 * 60 * 1000);
 
     await expect(svc.confirmUpdate('u1', token, USER_CTX)).rejects.toThrow(/expired/i);
   });
@@ -191,6 +219,47 @@ describe('EssenceProposalService — correctItem', () => {
     expect(profile?.expression['Preferences'][0].content).toBe('always light mode');
   });
 
+  it('correction records provenance as user, not as any agent', async () => {
+    const { repo, svc } = makeService();
+    await repo.createProfile('u1');
+
+    await svc.correctItem(
+      'u1',
+      {
+        nodeId: 'Preferences',
+        targetInterpretationId: null,
+        correctedContent: 'always light mode',
+        correctedAt: new Date().toISOString(),
+        note: null,
+      },
+      USER_CTX,
+    );
+
+    const profile = await repo.getProfile('u1');
+    const interp = profile?.expression['Preferences'][0];
+    expect(interp?.provenance.createdBy).toBe('user');
+  });
+
+  it('correction persists a user_correction observation', async () => {
+    const { repo, svc } = makeService();
+    await repo.createProfile('u1');
+
+    await svc.correctItem(
+      'u1',
+      {
+        nodeId: 'Preferences',
+        targetInterpretationId: null,
+        correctedContent: 'always light mode',
+        correctedAt: new Date().toISOString(),
+        note: null,
+      },
+      USER_CTX,
+    );
+
+    const profile = await repo.getProfile('u1');
+    expect(profile?.observations.some(o => o.source === 'user_correction')).toBe(true);
+  });
+
   it('correction archives the targeted interpretation', async () => {
     const { repo, svc } = makeService();
     const profile = await repo.createProfile('u1');
@@ -243,12 +312,30 @@ describe('EssenceProposalService — correctItem', () => {
 });
 
 describe('EssenceProposalService — getPendingProposals', () => {
-  it('returns pending proposals for the profile', async () => {
+  it('returns pending proposals for the requesting agent', async () => {
     const { repo, svc } = makeService();
     await repo.createProfile('u1');
-    await svc.proposeUpdate('u1', baseProposal(), null);
+    await svc.proposeUpdate('u1', baseProposal(), null); // proposedBy: 'merlin'
 
-    const pending = svc.getPendingProposals('u1');
+    const pending = await svc.getPendingProposals('u1', 'merlin');
+    expect(pending).toHaveLength(1);
+  });
+
+  it('agent cannot see another agent\'s proposals', async () => {
+    const { repo, svc } = makeService();
+    await repo.createProfile('u1');
+    await svc.proposeUpdate('u1', baseProposal(), null); // proposedBy: 'merlin'
+
+    const pending = await svc.getPendingProposals('u1', 'morgana');
+    expect(pending).toHaveLength(0);
+  });
+
+  it('philos can see all pending proposals', async () => {
+    const { repo, svc } = makeService();
+    await repo.createProfile('u1');
+    await svc.proposeUpdate('u1', baseProposal(), null); // proposedBy: 'merlin'
+
+    const pending = await svc.getPendingProposals('u1', 'philos');
     expect(pending).toHaveLength(1);
   });
 
@@ -259,7 +346,7 @@ describe('EssenceProposalService — getPendingProposals', () => {
     const token = (result as any).confirmationToken as string;
     await svc.confirmUpdate('u1', token, USER_CTX);
 
-    const pending = svc.getPendingProposals('u1');
+    const pending = await svc.getPendingProposals('u1', 'merlin');
     expect(pending).toHaveLength(0);
   });
 
@@ -271,9 +358,66 @@ describe('EssenceProposalService — getPendingProposals', () => {
     await repo.createProfile('u1');
 
     await svc.proposeUpdate('u1', baseProposal(), null);
-    (clock as any).advance(8 * 24 * 60 * 60 * 1000);
+    // Advance past the 24-hour expiry window.
+    (clock as any).advance(25 * 60 * 60 * 1000);
 
-    const pending = svc.getPendingProposals('u1');
+    const pending = await svc.getPendingProposals('u1', 'merlin');
     expect(pending).toHaveLength(0);
+  });
+});
+
+describe('EssenceProposalService — conflict persistence', () => {
+  it('blocked_by_conflict persists a conflict record to the profile', async () => {
+    const { repo, svc } = makeService();
+    const profile = await repo.createProfile('u1');
+
+    // Seed an existing interpretation that will cause a blocking conflict.
+    profile.core['Values'] = [{
+      id: 'existing-values',
+      version: 1,
+      nodeId: 'Values',
+      layer: 'core',
+      stabilityClass: 'Foundational',
+      content: 'honesty',
+      observationIds: [],
+      confidence: 'high',
+      interpretationKind: 'observed_pattern',
+      provenance: {
+        source: 'agent_inference',
+        confidence: 'high',
+        createdBy: 'philos',
+        firstObservedAt: new Date().toISOString(),
+        lastConfirmedAt: new Date().toISOString(),
+        lastUpdatedAt: new Date().toISOString(),
+        evidenceIds: [],
+        conflictingInterpretationIds: [],
+      },
+      sensitivity: 'personal',
+      temporalKind: 'trait',
+      stateScope: null,
+      expiresAt: null,
+      archivedAt: null,
+      conflictIds: [],
+      evidenceStatus: 'unavailable',
+    }];
+    await repo.saveProfile(profile);
+
+    const result = await svc.proposeUpdate(
+      'u1',
+      {
+        nodeId: 'Values',
+        proposedContent: 'something different',
+        evidenceObservationIds: [],
+        proposedBy: 'philos',
+        proposedAt: new Date().toISOString(),
+        rationale: 'test conflict',
+      },
+      null
+    );
+
+    expect(result.status).toBe('blocked_by_conflict');
+
+    const updated = await repo.getProfile('u1');
+    expect(updated?.conflicts.length).toBeGreaterThanOrEqual(1);
   });
 });

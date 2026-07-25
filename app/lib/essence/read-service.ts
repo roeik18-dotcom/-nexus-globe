@@ -11,8 +11,8 @@ import { canAgentReadNode, canAgentReadTemporalKind, ACCESS_POLICIES } from './a
 import type {
   EssenceContextView,
   EssenceLayerView,
+  EssenceReadAPI,
   EssenceSummary,
-  PendingEssenceProposal,
 } from './api';
 import type {
   ConflictType,
@@ -26,14 +26,14 @@ import type { EssenceReadRepository } from './repository';
 
 const LAYERS: EssenceLayer[] = ['core', 'aspirations', 'expression', 'identity'];
 
-export class EssenceReadService {
+export class EssenceReadService implements EssenceReadAPI {
   constructor(private readonly repo: EssenceReadRepository) {}
 
   async getEssenceSummary(
     profileId: string,
     mode: RetrievalMode,
     requestedBy: AgentName,
-    context?: EssenceContextView,
+    _context?: EssenceContextView,
   ): Promise<EssenceSummary> {
     const profile = await this.requireProfile(profileId);
     const policy = ACCESS_POLICIES[requestedBy];
@@ -47,6 +47,7 @@ export class EssenceReadService {
         if (active.length === 0) continue;
         const best = selectBest(active);
         if (!canAgentReadNode(requestedBy, nodeId, layer, best.sensitivity)) continue;
+        if (!passesRetrievalMode(nodeId, layer, best, mode)) continue;
         nodes[nodeId] = {
           nodeId,
           layer,
@@ -118,7 +119,7 @@ export class EssenceReadService {
     requestedBy: AgentName,
   ): Promise<{ observationIds: string[]; evidenceIds: string[] }> {
     const profile = await this.requireProfile(profileId);
-    const interp = findInterpretation(profile, interpretationId);
+    const interp = findInterpretationInProfile(profile, interpretationId);
     if (!interp) return { observationIds: [], evidenceIds: [] };
     return {
       observationIds: [...interp.observationIds],
@@ -128,7 +129,7 @@ export class EssenceReadService {
 
   async getConflicts(
     profileId: string,
-    requestedBy: AgentName,
+    _requestedBy: AgentName,
   ): Promise<{ count: number; types: ConflictType[] }> {
     const profile = await this.requireProfile(profileId);
     const unresolved = profile.conflicts.filter(c => !c.resolvedAt);
@@ -164,7 +165,39 @@ function allStateItems(profile: EssenceProfile): EssenceStateItem[] {
   ];
 }
 
-export function findInterpretation(profile: EssenceProfile, id: string): Interpretation | null {
+/**
+ * Determines whether an interpretation node passes the retrieval mode filter.
+ *
+ * compact      — high-confidence traits only (verified or high)
+ * task_relevant — core + expression + identity layers
+ * creative     — expression layer, or Aesthetics/CreativeDNA nodes
+ * strategic    — aspirations layer, or Values/Principles nodes
+ * deep         — everything
+ */
+function passesRetrievalMode(
+  nodeId: string,
+  layer: EssenceLayer,
+  best: Interpretation,
+  mode: RetrievalMode,
+): boolean {
+  switch (mode) {
+    case 'compact':
+      return best.confidence === 'verified' || best.confidence === 'high';
+    case 'task_relevant':
+      return layer === 'core' || layer === 'expression' || layer === 'identity';
+    case 'creative':
+      return layer === 'expression' || nodeId === 'Aesthetics' || nodeId === 'CreativeDNA';
+    case 'strategic':
+      return layer === 'aspirations' || nodeId === 'Values' || nodeId === 'Principles';
+    case 'deep':
+      return true;
+    default:
+      return true;
+  }
+}
+
+/** Internal helper — not exported (callers use interpretation-utils for cross-module access). */
+function findInterpretationInProfile(profile: EssenceProfile, id: string): Interpretation | null {
   for (const layer of LAYERS) {
     const layerData = profile[layer] as Record<string, Interpretation[]>;
     for (const interpretations of Object.values(layerData)) {

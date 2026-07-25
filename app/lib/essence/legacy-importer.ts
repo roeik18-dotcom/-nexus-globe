@@ -17,6 +17,8 @@
 
 import type { EssenceLayer } from './ontology';
 import type { AgentName } from './access';
+import type { Clock } from './pipeline-runner';
+import { systemClock } from './pipeline-runner';
 import { computeLegacyFingerprint } from './legacy-fingerprint';
 
 export type ImportLedgerState =
@@ -68,10 +70,12 @@ export interface LegacyImportSource {
 export class LegacyImporter {
   private readonly ledger = new Map<string, ImportLedgerEntry>();
 
+  constructor(private readonly clock: Clock = systemClock) {}
+
   scan(source: LegacyImportSource, proposedBy: AgentName): LegacyImportScanResult {
     const candidates: LegacyImportCandidate[] = [];
     const skipped: Array<{ fingerprint: string; nodeId: string; reason: string }> = [];
-    const now = new Date().toISOString();
+    const now = new Date(this.clock.now()).toISOString();
 
     for (const field of source.fields) {
       if (!field.content || field.content.trim() === '') continue;
@@ -116,7 +120,7 @@ export class LegacyImporter {
       ...entry,
       state: 'proposal_created',
       proposalId,
-      updatedAt: new Date().toISOString(),
+      updatedAt: new Date(this.clock.now()).toISOString(),
     });
   }
 
@@ -126,7 +130,7 @@ export class LegacyImporter {
     this.ledger.set(fingerprint, {
       ...entry,
       state: 'confirmed',
-      updatedAt: new Date().toISOString(),
+      updatedAt: new Date(this.clock.now()).toISOString(),
     });
   }
 
@@ -137,7 +141,7 @@ export class LegacyImporter {
       ...entry,
       state: 'rejected',
       reason,
-      updatedAt: new Date().toISOString(),
+      updatedAt: new Date(this.clock.now()).toISOString(),
     });
   }
 
@@ -148,7 +152,7 @@ export class LegacyImporter {
       ...entry,
       state: 'failed',
       reason,
-      updatedAt: new Date().toISOString(),
+      updatedAt: new Date(this.clock.now()).toISOString(),
     });
   }
 

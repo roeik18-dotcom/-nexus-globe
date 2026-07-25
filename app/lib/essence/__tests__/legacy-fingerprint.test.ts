@@ -3,16 +3,17 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { computeLegacyFingerprint } from '../legacy-fingerprint';
+import { computeLegacyFingerprint, FINGERPRINT_MIGRATION_VERSION } from '../legacy-fingerprint';
 
 describe('computeLegacyFingerprint', () => {
-  it('returns a string starting with "fp_"', () => {
+  it('returns a versioned string with the current migration version', () => {
     const fp = computeLegacyFingerprint({
       nodeId: 'Values',
       content: 'truth as non-negotiable',
       sourceFile: 'jarvis.json',
     });
-    expect(fp).toMatch(/^fp_[0-9a-f]{8}$/);
+    expect(fp).toMatch(/^fp_v1_[0-9a-f]{8}$/);
+    expect(fp).toContain(`fp_${FINGERPRINT_MIGRATION_VERSION}_`);
   });
 
   it('is deterministic — same input always produces same output', () => {
@@ -36,5 +37,9 @@ describe('computeLegacyFingerprint', () => {
     const base = { nodeId: 'Values', content: 'same' };
     expect(computeLegacyFingerprint({ ...base, sourceFile: 'file-a.json' }))
       .not.toBe(computeLegacyFingerprint({ ...base, sourceFile: 'file-b.json' }));
+  });
+
+  it('FINGERPRINT_MIGRATION_VERSION is v1', () => {
+    expect(FINGERPRINT_MIGRATION_VERSION).toBe('v1');
   });
 });

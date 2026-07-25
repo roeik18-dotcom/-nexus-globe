@@ -21,6 +21,7 @@ import type {
 } from './schema';
 import type { AgentName } from './access';
 import { canAgentPropose } from './access';
+import type { EssenceActor, UserAuthorizedActionContext } from './actor';
 import type {
   CandidateInterpretation,
   ClassificationResult,
@@ -34,7 +35,6 @@ import type {
   WritePolicy,
   WritePolicyDecision,
 } from './pipeline';
-import type { UserAuthorizedActionContext } from './api';
 
 // ── Clock ──────────────────────────────────────────────────────────────────────
 
@@ -44,13 +44,34 @@ export interface Clock {
 
 export const systemClock: Clock = { now: () => Date.now() };
 
+// ── Id Generator ───────────────────────────────────────────────────────────────
+
+export interface IdGenerator {
+  nextId(prefix: string): string;
+}
+
+export const defaultIdGenerator: IdGenerator = {
+  nextId(prefix: string): string {
+    const ts = Date.now().toString(36);
+    const rand = Math.random().toString(36).slice(2, 8);
+    return `${prefix}_${ts}_${rand}`;
+  },
+};
+
+// ── Pipeline Abstraction ───────────────────────────────────────────────────────
+
+export interface EssencePipeline {
+  run(input: PipelineRunnerInput): PipelineRunnerOutput;
+}
+
 // ── Runner I/O ─────────────────────────────────────────────────────────────────
 
 export interface PipelineRunnerInput {
   profileId: string;
   nodeId: string;
   proposedContent: string;
-  proposedBy: AgentName;
+  /** The actor submitting this proposal. 'user' bypasses the agent-access check. */
+  proposedBy: EssenceActor;
   evidenceObservationIds: string[];
   rationale: string;
   /** Present only for user-authorized actions (correctItem / confirmUpdate). */
@@ -62,12 +83,17 @@ export interface PipelineRunnerInput {
 export interface PipelineRunnerOutput {
   result: PipelineResult;
   stages: PipelineStageSummary[];
+  /** All conflicts detected in Stage 5 (empty for early rejections). */
+  detectedConflicts: DetectedConflict[];
 }
 
 // ── Pipeline Runner ────────────────────────────────────────────────────────────
 
-export class PipelineRunner {
-  constructor(private readonly clock: Clock = systemClock) {}
+export class PipelineRunner implements EssencePipeline {
+  constructor(
+    private readonly clock: Clock = systemClock,
+    private readonly idGen: IdGenerator = defaultIdGenerator,
+  ) {}
 
   run(input: PipelineRunnerInput): PipelineRunnerOutput {
     const stages: PipelineStageSummary[] = [];
@@ -75,16 +101,19 @@ export class PipelineRunner {
     // ── Stage 1: Validate ────────────────────────────────────────────────────
     if (!input.nodeId || !input.proposedContent?.trim()) {
       stages.push(stage('validate', 'blocked', 'empty nodeId or content'));
-      return earlyReject(stages, 'Empty nodeId or content', this.clock);
+      return earlyReject(stages, 'Empty nodeId or content', this.clock, this.idGen);
     }
     const node = getEssenceNode(input.nodeId);
     if (!node) {
       stages.push(stage('validate', 'blocked', `unknown nodeId: ${input.nodeId}`));
-      return earlyReject(stages, `Unknown nodeId: ${input.nodeId}`, this.clock);
+      return earlyReject(stages, `Unknown nodeId: ${input.nodeId}`, this.clock, this.idGen);
     }
-    if (!canAgentPropose(input.proposedBy, node.layer)) {
-      stages.push(stage('validate', 'blocked', `${input.proposedBy} cannot propose to ${node.layer}`));
-      return earlyReject(stages, `Agent ${input.proposedBy} cannot propose to layer ${node.layer}`, this.clock);
+    // User-authorized actions bypass the agent-access check.
+    if (input.authContext?.actorType !== 'user') {
+      if (!canAgentPropose(input.proposedBy as AgentName, node.layer)) {
+        stages.push(stage('validate', 'blocked', `${input.proposedBy} cannot propose to ${node.layer}`));
+        return earlyReject(stages, `Agent ${input.proposedBy} cannot propose to layer ${node.layer}`, this.clock, this.idGen);
+      }
     }
     stages.push(stage('validate', 'passed'));
 
@@ -120,7 +149,7 @@ export class PipelineRunner {
     if (hasBlockingConflict) {
       stages.push(stage('detect_conflict', 'blocked', 'unresolvable contradiction'));
       padBlocked(stages, ['apply_write_policy', 'create_proposal', 'commit']);
-      const candidate = buildCandidate(input, node, evidenceStatus, this.clock);
+      const candidate = buildCandidate(input, node, evidenceStatus, this.clock, this.idGen);
       return {
         result: {
           status: 'blocked_by_conflict',
@@ -131,6 +160,7 @@ export class PipelineRunner {
           reason: 'Unresolved contradiction requires user resolution',
         },
         stages,
+        detectedConflicts,
       };
     }
     stages.push(stage('detect_conflict', detectedConflicts.length > 0 ? 'flagged' : 'passed'));
@@ -139,7 +169,7 @@ export class PipelineRunner {
     const decision = applyWritePolicy(input, node, evidenceStatus);
     stages.push(stage('apply_write_policy', decision === 'reject' ? 'blocked' : 'passed'));
 
-    const candidate = buildCandidate(input, node, evidenceStatus, this.clock);
+    const candidate = buildCandidate(input, node, evidenceStatus, this.clock, this.idGen);
     const conflictDetectionResult: ConflictDetectionResult = {
       evidenceEvaluation: buildEvidenceEvaluation(candidate, evidenceStatus, this.clock),
       detectedConflicts,
@@ -163,17 +193,18 @@ export class PipelineRunner {
           reason: writePolicy.reason,
         },
         stages,
+        detectedConflicts,
       };
     }
 
     // ── Stage 7: Create Proposal ─────────────────────────────────────────────
     stages.push(stage('create_proposal', 'passed'));
-    const confirmationToken = makeId('ct', this.clock);
-    const expiresAt = new Date(this.clock.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const confirmationToken = this.idGen.nextId('ct');
+    const expiresAt = new Date(this.clock.now() + 24 * 60 * 60 * 1000).toISOString();
 
     // ── Stage 8: Commit ──────────────────────────────────────────────────────
     if (decision === 'auto_accept') {
-      const interpretation = buildInterpretation(input, node, evidenceStatus, this.clock);
+      const interpretation = buildInterpretation(input, node, evidenceStatus, this.clock, this.idGen);
       stages.push(stage('commit', 'passed'));
       return {
         result: {
@@ -183,6 +214,7 @@ export class PipelineRunner {
           completedAt: new Date(this.clock.now()).toISOString(),
         },
         stages,
+        detectedConflicts,
       };
     }
 
@@ -197,6 +229,7 @@ export class PipelineRunner {
           expiresAt,
         },
         stages,
+        detectedConflicts,
       };
     }
 
@@ -210,6 +243,7 @@ export class PipelineRunner {
         queuedAt: new Date(this.clock.now()).toISOString(),
       },
       stages,
+      detectedConflicts,
     };
   }
 }
@@ -232,6 +266,7 @@ function earlyReject(
   stages: PipelineStageSummary[],
   reason: string,
   clock: Clock,
+  idGen: IdGenerator,
 ): PipelineRunnerOutput {
   padBlocked(stages, ['classify', 'normalize', 'evaluate_evidence', 'detect_conflict', 'apply_write_policy', 'create_proposal', 'commit']);
   const now = new Date(clock.now()).toISOString();
@@ -275,10 +310,11 @@ function earlyReject(
     result: {
       status: 'rejected',
       candidateInterpretation: placeholderCandidate,
-      writePolicy: buildRejectPolicy(clock, reason),
+      writePolicy: buildRejectPolicy(clock, reason, idGen),
       reason,
     },
     stages,
+    detectedConflicts: [],
   };
 }
 
@@ -339,22 +375,17 @@ function getNodeInterpretations(
   return layerData[nodeId] ?? [];
 }
 
-function makeId(prefix: string, clock: Clock): string {
-  const ts = clock.now().toString(36);
-  const rand = Math.random().toString(36).slice(2, 8);
-  return `${prefix}_${ts}_${rand}`;
-}
-
 function buildCandidate(
   input: PipelineRunnerInput,
   node: { id: string; layer: EssenceLayer; stabilityClass: StabilityClass },
   evidenceStatus: EvidenceStatus,
   clock: Clock,
+  idGen: IdGenerator,
 ): CandidateInterpretation {
   const now = new Date(clock.now()).toISOString();
   const classification: ClassificationResult = {
     observation: {
-      id: makeId('obs', clock),
+      id: idGen.nextId('obs'),
       source: input.authContext?.actorType === 'user' ? 'user_correction' : 'agent_inference',
       recordedBy: input.proposedBy,
       content: input.proposedContent,
@@ -415,6 +446,7 @@ function buildInterpretation(
   node: { id: string; layer: EssenceLayer; stabilityClass: StabilityClass },
   evidenceStatus: EvidenceStatus,
   clock: Clock,
+  idGen: IdGenerator,
 ): Interpretation {
   const now = new Date(clock.now()).toISOString();
   const confidence: ConfidenceLevel =
@@ -430,7 +462,7 @@ function buildInterpretation(
     conflictingInterpretationIds: [],
   };
   return {
-    id: makeId('interp', clock),
+    id: idGen.nextId('interp'),
     version: 1,
     nodeId: input.nodeId,
     layer: node.layer,
@@ -452,7 +484,7 @@ function buildInterpretation(
   };
 }
 
-function buildRejectPolicy(clock: Clock, reason: string): WritePolicy {
+function buildRejectPolicy(clock: Clock, reason: string, idGen: IdGenerator): WritePolicy {
   const now = new Date(clock.now()).toISOString();
   const placeholderCandidate: CandidateInterpretation = {
     normalizationResult: {
