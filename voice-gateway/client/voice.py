@@ -23,6 +23,11 @@ Wake word tuning:
     WAKE_OWW_MODEL      openwakeword model name (default hey_jarvis)
     WAKE_OWW_THRESHOLD  Detection confidence threshold (default 0.5)
 
+Audio device:
+    AUDIO_DEVICE_PATTERN  Substring to match in sounddevice device names (default "Babyface")
+                          Set to "" to use the OS default input device
+    AUDIO_DEVICE_CHANNEL  1-indexed channel number on the matched device (default 2)
+
 Usage:
     cd voice-gateway
     python3 client/voice.py [--activation all] [--host 127.0.0.1] [--port 8765]
@@ -83,6 +88,13 @@ CLAP_SPECTRAL_FLATNESS = float(os.getenv("CLAP_SPECTRAL_FLATNESS", "0.35"))
 # 80 frames × 20ms = 1.6 s of background learning before transient detection starts
 CLAP_WARMUP_FRAMES     = int(os.getenv(  "CLAP_WARMUP_FRAMES",     "80"))
 
+# ── Audio device configuration ────────────────────────────────────────────────
+# AUDIO_DEVICE_PATTERN  substring match against sounddevice device names (case-insensitive)
+# AUDIO_DEVICE_CHANNEL  1-indexed channel on the matched device (sounddevice mapping convention)
+# Set AUDIO_DEVICE_PATTERN="" to skip discovery and use the OS default device.
+AUDIO_DEVICE_PATTERN = os.getenv("AUDIO_DEVICE_PATTERN", "Babyface")
+AUDIO_DEVICE_CHANNEL = int(os.getenv("AUDIO_DEVICE_CHANNEL", "2"))
+
 # ── Wake word configuration ───────────────────────────────────────────────────
 WAKE_PHRASE_HE     = "ג׳רוויס"
 WAKE_OWW_MODEL     = os.getenv("WAKE_OWW_MODEL",     "hey_jarvis")
@@ -142,6 +154,35 @@ def _play(data: bytes) -> None:
     except FileNotFoundError:
         log.debug("afplay not available")
     tmp.unlink(missing_ok=True)
+
+
+def _find_input_device() -> tuple[int | None, list[int] | None]:
+    """Return (device_index, channel_mapping) for the configured audio input device.
+
+    Searches sounddevice's device list for a device whose name contains
+    AUDIO_DEVICE_PATTERN (case-insensitive).  Returns (None, None) when the
+    pattern is empty or no match is found — callers then use the OS default.
+    """
+    pattern = AUDIO_DEVICE_PATTERN.strip().lower()
+    if not pattern:
+        return None, None
+    try:
+        devices = sd.query_devices()
+    except Exception as exc:
+        log.warning("audio_device_query_failed  reason=%s", exc)
+        return None, None
+    for i, dev in enumerate(devices):
+        if pattern in dev["name"].lower() and dev["max_input_channels"] > 0:
+            log.info(
+                "audio_device_found  index=%d  name=%s  channel=%d",
+                i, dev["name"], AUDIO_DEVICE_CHANNEL,
+            )
+            return i, [AUDIO_DEVICE_CHANNEL]
+    log.warning(
+        "audio_device_not_found  pattern=%r — falling back to system default",
+        AUDIO_DEVICE_PATTERN,
+    )
+    return None, None
 
 
 # ── Clap detector ─────────────────────────────────────────────────────────────
@@ -391,9 +432,13 @@ class MonitorStream:
         self,
         clap: ClapDetector | None,
         wake: WakeWordDetector | None,
+        device: int | None = None,
+        mapping: list[int] | None = None,
     ) -> None:
         self._clap = clap
         self._wake = wake
+        self._device  = device
+        self._mapping = mapping
         self._stream: sd.InputStream | None = None
         self._oww_buf: list[np.ndarray]     = []
         self._lock   = threading.Lock()
@@ -406,18 +451,23 @@ class MonitorStream:
                 return
             self._oww_buf.clear()
             self._frame_count = 0
-            self._stream = sd.InputStream(
+            stream_kwargs: dict = dict(
                 samplerate=SAMPLE_RATE,
                 channels=1,
                 dtype=np.int16,
                 blocksize=FRAME_SAMPLES,
                 callback=self._callback,
             )
+            if self._device is not None:
+                stream_kwargs["device"] = self._device
+            if self._mapping is not None:
+                stream_kwargs["mapping"] = self._mapping
+            self._stream = sd.InputStream(**stream_kwargs)
             self._stream.start()
             self._active = True
             _alog.info(
-                "mic_stream_started  samplerate=%d  blocksize=%d  clap=%s  wake=%s",
-                SAMPLE_RATE, FRAME_SAMPLES,
+                "mic_stream_started  samplerate=%d  blocksize=%d  device=%s  mapping=%s  clap=%s  wake=%s",
+                SAMPLE_RATE, FRAME_SAMPLES, self._device, self._mapping,
                 self._clap is not None, self._wake is not None,
             )
 
@@ -467,14 +517,23 @@ class MonitorStream:
 
 
 # ── Recording ─────────────────────────────────────────────────────────────────
-def record_blocking(stop_event: threading.Event) -> bytes:
+def record_blocking(
+    stop_event: threading.Event,
+    device: int | None = None,
+    mapping: list[int] | None = None,
+) -> bytes:
     """Record from microphone until stop_event is set. Returns WAV bytes."""
     chunks: list[np.ndarray] = []
 
     def cb(indata, frames, t, status):
         chunks.append(indata.copy())
 
-    with sd.InputStream(samplerate=SAMPLE_RATE, channels=1, dtype=np.int16, callback=cb):
+    stream_kwargs: dict = dict(samplerate=SAMPLE_RATE, channels=1, dtype=np.int16, callback=cb)
+    if device is not None:
+        stream_kwargs["device"] = device
+    if mapping is not None:
+        stream_kwargs["mapping"] = mapping
+    with sd.InputStream(**stream_kwargs):
         stop_event.wait()
 
     audio = np.concatenate(chunks) if chunks else np.zeros((0, 1), dtype=np.int16)
@@ -601,6 +660,9 @@ class VoiceClient:
         self._task_desc:   str | None        = None
         self._stop_rec     = threading.Event()
 
+        self._audio_device:  int | None       = None
+        self._audio_mapping: list[int] | None = None
+
         # Single stdin reader — prevents zombie input() threads from stealing
         # ENTER presses across phases.
         self._stdin_queue: asyncio.Queue[str] = asyncio.Queue()
@@ -624,6 +686,8 @@ class VoiceClient:
 
     def setup(self) -> None:
         self._start_stdin_reader()
+        self._audio_device, self._audio_mapping = _find_input_device()
+
         use_clap = self._activation in ("clap", "all")
         use_wake = self._activation in ("wake", "all")
 
@@ -637,7 +701,10 @@ class VoiceClient:
                 self._wake_det = None
 
         if use_clap or use_wake:
-            self._monitor = MonitorStream(self._clap_det, self._wake_det)
+            self._monitor = MonitorStream(
+                self._clap_det, self._wake_det,
+                device=self._audio_device, mapping=self._audio_mapping,
+            )
 
     # ── Trigger callbacks (monitor thread → asyncio loop) ─────────────────
     def _on_double_clap(self) -> None:
@@ -763,7 +830,9 @@ class VoiceClient:
             print("  Speak now…  (press ENTER to send)")
 
         self._stop_rec.clear()
-        rec_task = self._loop.run_in_executor(None, record_blocking, self._stop_rec)
+        rec_task = self._loop.run_in_executor(
+            None, record_blocking, self._stop_rec, self._audio_device, self._audio_mapping,
+        )
 
         await self._stdin_queue.get()
         self._stop_rec.set()
