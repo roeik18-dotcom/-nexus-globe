@@ -73,9 +73,10 @@ logging.basicConfig(
 # --debug-activation : set to DEBUG with its own "[ACT]" handler, propagate=False.
 _alog = logging.getLogger("voice.activation")
 
-SAMPLE_RATE   = 16_000
-FRAME_MS      = 20
-FRAME_SAMPLES = SAMPLE_RATE * FRAME_MS // 1000   # 320 samples per 20ms frame
+SAMPLE_RATE       = 16_000
+FRAME_MS          = 20
+FRAME_SAMPLES     = SAMPLE_RATE * FRAME_MS // 1000  # 320 samples per 20ms frame
+MIN_AUDIO_SAMPLES = int(SAMPLE_RATE * 0.15)         # 150ms — STT servers reject clips under ~100ms
 
 # ── Clap detector configuration ───────────────────────────────────────────────
 CLAP_ENERGY_THRESHOLD  = float(os.getenv("CLAP_ENERGY_THRESHOLD",  "0.05"))
@@ -579,6 +580,17 @@ async def do_turn(
         _, samples = wavfile.read(buf)
         merged = np.concatenate([pre_audio, samples.flatten()])
         wav = _to_wav(merged)
+
+    # Pad with trailing silence if the clip is shorter than the STT server's minimum.
+    # This happens when ENTER is pressed immediately after recording starts, or when
+    # the pre-wake rolling buffer is empty.
+    _buf = io.BytesIO(wav)
+    _, _samples = wavfile.read(_buf)
+    _flat = _samples.flatten()
+    if len(_flat) < MIN_AUDIO_SAMPLES:
+        log.debug("audio_padded  samples=%d → %d", len(_flat), MIN_AUDIO_SAMPLES)
+        _flat = np.concatenate([_flat, np.zeros(MIN_AUDIO_SAMPLES - len(_flat), dtype=np.int16)])
+        wav = _to_wav(_flat)
 
     await ws.send(wav)
     await ws.send(json.dumps({"type": "end_of_speech"}))
