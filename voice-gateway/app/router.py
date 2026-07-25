@@ -71,6 +71,8 @@ def build_orchestrator() -> VoiceAdapter:
         }
         router = RuleBasedRouter(default_agent=settings.persona)
         return AgentOrchestrator(registry, router, adapters)
+    if name == "jarvis":
+        return build_jarvis_with_delegation()
     raise ValueError(f"Unknown adapter: {name!r}")
 
 

@@ -52,3 +52,40 @@ def test_build_tts_system(monkeypatch):
     from app.providers.tts.system_tts import SystemTTS
     tts = r.build_tts()
     assert isinstance(tts, SystemTTS)
+
+
+# ── build_orchestrator jarvis path ────────────────────────────────────────────
+
+def test_build_orchestrator_jarvis(monkeypatch):
+    from app import router as r
+    monkeypatch.setattr(r.settings, "adapter", "jarvis")
+    monkeypatch.setattr(r.settings, "anthropic_api_key", "sk-ant-" + "x" * 50)
+    from app.adapters.claude import ClaudeAdapter
+    adapter = r.build_orchestrator()
+    assert isinstance(adapter, ClaudeAdapter)
+
+
+def test_build_orchestrator_jarvis_has_delegation_bus(monkeypatch):
+    from app import router as r
+    monkeypatch.setattr(r.settings, "adapter", "jarvis")
+    monkeypatch.setattr(r.settings, "anthropic_api_key", "sk-ant-" + "x" * 50)
+    adapter = r.build_orchestrator()
+    assert adapter._bus is not None
+
+
+def test_build_orchestrator_jarvis_philos_registered(monkeypatch):
+    from app import router as r
+    monkeypatch.setattr(r.settings, "adapter", "jarvis")
+    monkeypatch.setattr(r.settings, "anthropic_api_key", "sk-ant-" + "x" * 50)
+    from app.adapters.claude import ClaudeAdapter
+    adapter = r.build_orchestrator()
+    assert "philos" in adapter._bus._adapters
+    assert isinstance(adapter._bus._adapters["philos"], ClaudeAdapter)
+
+
+def test_build_orchestrator_jarvis_missing_key_raises(monkeypatch):
+    from app import router as r
+    monkeypatch.setattr(r.settings, "adapter", "jarvis")
+    monkeypatch.setattr(r.settings, "anthropic_api_key", "")
+    with pytest.raises(ValueError, match="ANTHROPIC_API_KEY"):
+        r.build_orchestrator()
