@@ -63,6 +63,11 @@ logging.basicConfig(
     format="%(asctime)s %(name)s %(levelname)s %(message)s",
 )
 
+# Dedicated activation-trace logger.
+# Normal mode  : inherits "voice" level (INFO), propagates — quiet.
+# --debug-activation : set to DEBUG with its own "[ACT]" handler, propagate=False.
+_alog = logging.getLogger("voice.activation")
+
 SAMPLE_RATE   = 16_000
 FRAME_MS      = 20
 FRAME_SAMPLES = SAMPLE_RATE * FRAME_MS // 1000   # 320 samples per 20ms frame
@@ -291,6 +296,7 @@ class WakeWordDetector:
         self._rolling: list[np.ndarray] = []
         self._rolling_max = int(2.0 * SAMPLE_RATE / self.OWW_FRAME)
         self._cooldown_until: float = 0.0
+        self._first_inference = True
 
         try:
             from openwakeword.model import Model as OWWModel  # type: ignore
@@ -300,6 +306,10 @@ class WakeWordDetector:
             )
             self._available = True
             log.info("wake_word openwakeword loaded model=%s", WAKE_OWW_MODEL)
+            _alog.info(
+                "wake_vad_started  model=%s  threshold=%.2f  frame_ms=%d",
+                WAKE_OWW_MODEL, WAKE_OWW_THRESHOLD, self.OWW_FRAME * 1000 // SAMPLE_RATE,
+            )
         except Exception as exc:
             log.warning(
                 "openwakeword unavailable (%s) — wake-word trigger disabled.\n"
@@ -308,6 +318,7 @@ class WakeWordDetector:
                 "download_models; download_models()\"",
                 exc,
             )
+            _alog.warning("wake_vad_unavailable  reason=%s", exc)
 
     @property
     def available(self) -> bool:
@@ -318,17 +329,35 @@ class WakeWordDetector:
             return
         now = self._now()
         if now < self._cooldown_until:
+            _alog.debug("wake_cooldown  remaining_s=%.2f", self._cooldown_until - now)
             return
 
         self._rolling.append(frame.copy())
         if len(self._rolling) > self._rolling_max:
             self._rolling.pop(0)
 
-        pred  = self._model.predict(frame.flatten().astype(np.int16))
-        score = float(pred.get(WAKE_OWW_MODEL, 0.0))
+        # ── wake audio chunk sent for inference ──────────────────────────
+        pred = self._model.predict(frame.flatten().astype(np.int16))
 
-        if score >= WAKE_OWW_THRESHOLD:
+        # Log actual prediction keys on first call — reveals model-name mismatches
+        # (e.g. openwakeword may key by "hey_jarvis.onnx" instead of "hey_jarvis").
+        if self._first_inference:
+            _alog.debug("wake_inference_keys  available=%s  looking_for=%s",
+                        list(pred.keys()), WAKE_OWW_MODEL)
+            self._first_inference = False
+
+        # ── transcript received / normalized score ────────────────────────
+        score = float(pred.get(WAKE_OWW_MODEL, 0.0))
+        _alog.debug("wake_score  score=%.4f  threshold=%.4f", score, WAKE_OWW_THRESHOLD)
+
+        # ── wake match ────────────────────────────────────────────────────
+        matched = score >= WAKE_OWW_THRESHOLD
+        _alog.debug("wake_match  match=%s  score=%.4f  threshold=%.4f",
+                    matched, score, WAKE_OWW_THRESHOLD)
+
+        if matched:
             log.info("wake_word_detected model=%s score=%.3f", WAKE_OWW_MODEL, score)
+            _alog.info("activation_source=wake  score=%.4f", score)
             self._cooldown_until = now + CLAP_COOLDOWN_S
             pre = (
                 np.concatenate(self._rolling).flatten()
@@ -346,6 +375,7 @@ class WakeWordDetector:
                 pass
         self._rolling.clear()
         self._cooldown_until = 0.0
+        _alog.info("wake_vad_stopped")
 
 
 # ── Shared microphone monitor ─────────────────────────────────────────────────
@@ -368,12 +398,14 @@ class MonitorStream:
         self._oww_buf: list[np.ndarray]     = []
         self._lock   = threading.Lock()
         self._active = False
+        self._frame_count = 0
 
     def start(self) -> None:
         with self._lock:
             if self._active:
                 return
             self._oww_buf.clear()
+            self._frame_count = 0
             self._stream = sd.InputStream(
                 samplerate=SAMPLE_RATE,
                 channels=1,
@@ -383,7 +415,11 @@ class MonitorStream:
             )
             self._stream.start()
             self._active = True
-            log.debug("monitor_stream started")
+            _alog.info(
+                "mic_stream_started  samplerate=%d  blocksize=%d  clap=%s  wake=%s",
+                SAMPLE_RATE, FRAME_SAMPLES,
+                self._clap is not None, self._wake is not None,
+            )
 
     def stop(self) -> None:
         with self._lock:
@@ -395,10 +431,21 @@ class MonitorStream:
                 self._stream = None
             self._oww_buf.clear()
             self._active = False
-            log.debug("monitor_stream stopped")
+            _alog.info("mic_stream_stopped  total_frames=%d", self._frame_count)
 
     def _callback(self, indata: np.ndarray, frames: int, t, status) -> None:
+        if status:
+            _alog.debug("mic_callback_status  status=%s", status)
+
         frame = indata[:, 0].copy()
+        self._frame_count += 1
+
+        # Heartbeat every 250 frames (5 s at 20 ms/frame) — confirms mic is live.
+        if self._frame_count % 250 == 0:
+            _alog.debug(
+                "mic_heartbeat  frame=%d  clap_path=%s  wake_path=%s",
+                self._frame_count, self._clap is not None, self._wake is not None,
+            )
 
         if self._clap:
             self._clap.push(frame)
@@ -411,6 +458,11 @@ class MonitorStream:
                 oww_frame  = combined[: WakeWordDetector.OWW_FRAME]
                 remainder  = combined[WakeWordDetector.OWW_FRAME :]
                 self._oww_buf = [remainder] if len(remainder) > 0 else []
+                _alog.debug(
+                    "wake_chunk_sent  samples=%d  ms=%d",
+                    WakeWordDetector.OWW_FRAME,
+                    WakeWordDetector.OWW_FRAME * 1000 // SAMPLE_RATE,
+                )
                 self._wake.push(oww_frame)
 
 
@@ -593,6 +645,7 @@ class VoiceClient:
             if self._state != State.MONITORING:
                 return
             self._state = State.ACTIVATED
+        _alog.info("activation_source=clap")
         self._trigger_type = "clap"
         self._pre_audio   = None
         self._task_title  = "פתיח יום"
@@ -604,6 +657,7 @@ class VoiceClient:
             if self._state != State.MONITORING:
                 return
             self._state = State.ACTIVATED
+        _alog.info("activation_source=wake  pre_audio_samples=%d", len(pre_audio))
         self._trigger_type = "wake"
         self._pre_audio   = pre_audio
         self._task_title  = None
@@ -635,6 +689,13 @@ class VoiceClient:
         # that only a fresh press triggers recording this cycle.
         while not self._stdin_queue.empty():
             self._stdin_queue.get_nowait()
+
+        _alog.info(
+            "monitoring_started  mode=%s  clap=%s  wake=%s",
+            self._activation,
+            self._clap_det is not None,
+            self._wake_det is not None,
+        )
 
         if self._monitor:
             try:
@@ -670,6 +731,8 @@ class VoiceClient:
             if self._state != State.MONITORING:
                 return
             self._state = State.ACTIVATED
+        _alog.info("manual_enter_detected")
+        _alog.info("activation_source=manual")
         self._trigger_type = "manual"
         self._pre_audio   = None
         self._task_title  = None
@@ -771,10 +834,28 @@ def main() -> None:
         default="INFO",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
+    p.add_argument(
+        "--debug-activation",
+        action="store_true",
+        help=(
+            "Emit per-frame activation traces (mic heartbeat, wake scores, "
+            "clap energy) to stderr. Kept separate from --log-level so "
+            "normal output stays clean."
+        ),
+    )
     args = p.parse_args()
 
     logging.getLogger().setLevel(args.log_level)
     log.setLevel(args.log_level)
+
+    if args.debug_activation:
+        _act_handler = logging.StreamHandler()
+        _act_handler.setFormatter(
+            logging.Formatter("%(asctime)s [ACT] %(levelname)s  %(message)s")
+        )
+        _alog.setLevel(logging.DEBUG)
+        _alog.addHandler(_act_handler)
+        _alog.propagate = False  # prevent duplication on the root handler
 
     try:
         asyncio.run(_run(args.host, args.port, args.activation))
