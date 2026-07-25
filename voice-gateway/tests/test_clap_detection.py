@@ -24,6 +24,7 @@ from voice import (
     CLAP_COOLDOWN_S,
     CLAP_MAX_DURATION_MS,
     CLAP_SPECTRAL_FLATNESS,
+    CLAP_WARMUP_FRAMES,
     DOUBLE_CLAP_MAX_MS,
     DOUBLE_CLAP_MIN_MS,
     FRAME_MS,
@@ -72,7 +73,9 @@ def _push_n(det: ClapDetector, frame_fn, n: int) -> None:
 def _make_detector(clock: _FakeClock) -> tuple[ClapDetector, list[int]]:
     """Returns (detector, activations_list). activations_list grows on each double-clap."""
     activations: list[int] = []
-    det = ClapDetector(on_double_clap=lambda: activations.append(1), _now=clock)
+    # warmup_frames=0: tests skip the built-in warmup and calibrate background
+    # manually via the silence frames below, keeping tests fast and deterministic.
+    det = ClapDetector(on_double_clap=lambda: activations.append(1), _now=clock, warmup_frames=0)
     # Warm up background estimate with silence
     _push_n(det, _silence_frame, 50)
     return det, activations
@@ -255,7 +258,7 @@ def test_clap_detector_callback_receives_correct_gap():
 
     # Patch the internal _register_clap to capture the gap
     gap_s = 0.6  # 600ms — well within [250ms, 1200ms]
-    det = ClapDetector(on_double_clap=lambda: captured.append(clock()), _now=clock)
+    det = ClapDetector(on_double_clap=lambda: captured.append(clock()), _now=clock, warmup_frames=0)
     _push_n(det, _silence_frame, 50)
 
     _do_clap(det, clock)
@@ -265,12 +268,46 @@ def test_clap_detector_callback_receives_correct_gap():
     assert len(captured) == 1
 
 
+# ── Warmup gate ───────────────────────────────────────────────────────────────
+
+def test_warmup_blocks_early_transients():
+    """Clap-like frames during warmup must not register as claps."""
+    clock = _FakeClock(0.0)
+    activations: list[int] = []
+    det = ClapDetector(
+        on_double_clap=lambda: activations.append(1),
+        _now=clock,
+        warmup_frames=CLAP_WARMUP_FRAMES,
+    )
+
+    # Feed CLAP_WARMUP_FRAMES - 1 loud broadband frames (all during warmup)
+    _push_n(det, _clap_frame, CLAP_WARMUP_FRAMES - 1)
+    gap_s = (DOUBLE_CLAP_MIN_MS + DOUBLE_CLAP_MAX_MS) / 2 / 1000
+    clock.advance(gap_s)
+    _push_n(det, _clap_frame, CLAP_WARMUP_FRAMES - 1)
+
+    assert activations == [], "transients during warmup must not activate"
+
+
+def test_warmup_allows_detection_after_warmup():
+    """After warmup completes, genuine double-claps must still activate."""
+    clock = _FakeClock(0.0)
+    det, activations = _make_detector(clock)  # warmup_frames=0, already calibrated
+
+    gap_s = (DOUBLE_CLAP_MIN_MS + DOUBLE_CLAP_MAX_MS) / 2 / 1000
+    _do_clap(det, clock)
+    clock.advance(gap_s)
+    _do_clap(det, clock)
+
+    assert len(activations) == 1, "double-clap must activate after warmup"
+
+
 # ── Thread safety ─────────────────────────────────────────────────────────────
 
 def test_push_is_thread_safe():
     """Multiple threads pushing frames simultaneously must not crash."""
     activations: list[int] = []
-    det = ClapDetector(on_double_clap=lambda: activations.append(1))
+    det = ClapDetector(on_double_clap=lambda: activations.append(1), warmup_frames=0)
 
     def worker():
         for _ in range(200):

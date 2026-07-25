@@ -75,6 +75,8 @@ DOUBLE_CLAP_MIN_MS     = int(os.getenv(  "DOUBLE_CLAP_MIN_MS",     "250"))
 DOUBLE_CLAP_MAX_MS     = int(os.getenv(  "DOUBLE_CLAP_MAX_MS",     "1200"))
 CLAP_COOLDOWN_S        = float(os.getenv("CLAP_COOLDOWN_S",        "3.0"))
 CLAP_SPECTRAL_FLATNESS = float(os.getenv("CLAP_SPECTRAL_FLATNESS", "0.35"))
+# 80 frames × 20ms = 1.6 s of background learning before transient detection starts
+CLAP_WARMUP_FRAMES     = int(os.getenv(  "CLAP_WARMUP_FRAMES",     "80"))
 
 # ── Wake word configuration ───────────────────────────────────────────────────
 WAKE_PHRASE_HE     = "ג׳רוויס"
@@ -161,6 +163,7 @@ class ClapDetector:
         self,
         on_double_clap: Callable[[], None],
         _now: Callable[[], float] | None = None,
+        warmup_frames: int = CLAP_WARMUP_FRAMES,
     ) -> None:
         self._on_double_clap = on_double_clap
         self._now: Callable[[], float] = _now or time.monotonic
@@ -169,6 +172,7 @@ class ClapDetector:
         self._clap_frame_count: int = 0
         self._last_clap_time: float | None = None
         self._cooldown_until: float = 0.0
+        self._warmup: int         = warmup_frames
         self._lock = threading.Lock()
 
     # ── Public ────────────────────────────────────────────────────────────
@@ -188,6 +192,12 @@ class ClapDetector:
             return
 
         energy = _rms(frame)
+
+        # Warmup: converge background quickly without registering transients.
+        if self._warmup > 0:
+            self._bg_energy = self._bg_energy * 0.85 + energy * 0.15
+            self._warmup -= 1
+            return
 
         # Adaptive background: slow rise (clap spike should not inflate bg),
         # faster decay toward quiet ambient.
@@ -539,8 +549,29 @@ class VoiceClient:
         self._task_desc:   str | None        = None
         self._stop_rec     = threading.Event()
 
+        # Single stdin reader — prevents zombie input() threads from stealing
+        # ENTER presses across phases.
+        self._stdin_queue: asyncio.Queue[str] = asyncio.Queue()
+
     # ── Setup ──────────────────────────────────────────────────────────────
+    def _start_stdin_reader(self) -> None:
+        """Background daemon thread that feeds sys.stdin lines into _stdin_queue."""
+        def _reader() -> None:
+            while True:
+                try:
+                    line = sys.stdin.readline()
+                except OSError:
+                    break
+                self._loop.call_soon_threadsafe(
+                    self._stdin_queue.put_nowait, line.rstrip("\n") if line else ""
+                )
+                if not line:  # EOF
+                    break
+        t = threading.Thread(target=_reader, daemon=True, name="stdin-reader")
+        t.start()
+
     def setup(self) -> None:
+        self._start_stdin_reader()
         use_clap = self._activation in ("clap", "all")
         use_wake = self._activation in ("wake", "all")
 
@@ -600,8 +631,17 @@ class VoiceClient:
             self._state = State.MONITORING
         self._trigger_event.clear()
 
+        # Discard any ENTER presses that accumulated in a previous phase so
+        # that only a fresh press triggers recording this cycle.
+        while not self._stdin_queue.empty():
+            self._stdin_queue.get_nowait()
+
         if self._monitor:
-            self._monitor.start()
+            try:
+                self._monitor.start()
+            except Exception as exc:
+                log.warning("monitor_stream start failed (%s) — audio triggers disabled", exc)
+                self._monitor = None
 
         use_manual = self._activation in ("manual", "all")
         if use_manual:
@@ -624,7 +664,8 @@ class VoiceClient:
             self._monitor.stop()
 
     async def _await_enter_key(self) -> None:
-        await self._loop.run_in_executor(None, input, "\n[ ENTER to record ]  ")
+        print("\n[ ENTER to record ]  ", end="", flush=True)
+        await self._stdin_queue.get()
         with self._state_lock:
             if self._state != State.MONITORING:
                 return
@@ -661,7 +702,7 @@ class VoiceClient:
         self._stop_rec.clear()
         rec_task = self._loop.run_in_executor(None, record_blocking, self._stop_rec)
 
-        await self._loop.run_in_executor(None, input, "")
+        await self._stdin_queue.get()
         self._stop_rec.set()
         wav = await rec_task
 
