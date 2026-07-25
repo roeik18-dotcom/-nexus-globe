@@ -53,6 +53,16 @@ const VIEWS = [
     display: "Document list",
     accent: "#F87171",
   },
+  {
+    href:   "/essence",
+    label:  "Essence",
+    status: "Live",
+    statusColor: "#34D399",
+    role:   "Human model",
+    desc:   "The canonical model of who the user is. All agents query here — none maintain an independent user model. Observation → pipeline → Canonical Essence.",
+    display: "Ontology explorer",
+    accent: "#A78BFA",
+  },
 ];
 
 export default function HomePage() {
