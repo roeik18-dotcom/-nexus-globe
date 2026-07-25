@@ -83,6 +83,26 @@ async def _one_turn(ws, audio_bytes: bytes) -> dict:
     }
 
 
+def _fmt_turn(i: int, n: int, result: dict) -> str:
+    e = "  ERR" if result.get("error") else ""
+    pre = result.get('pre_llm_ms', '—')
+    llm = result.get('llm_first_token_ms', '—')
+    ttft = result.get('adapter_first_token_ms', '—')
+    ttfa = result.get('time_to_first_audio_ms', '—')
+    total = result.get('total_ms', '—')
+    rtt = result.get('rtt_ms', '—')
+    return (
+        f"  [{i+1:02d}/{n}]  "
+        f"pre {pre:>5}ms  "
+        f"LLM-TTFT {llm:>5}ms  "
+        f"TTFT {ttft:>5}ms  "
+        f"TTFA {ttfa:>5}ms  "
+        f"total {total:>5}ms  "
+        f"rtt {rtt:>5}ms"
+        f"{e}"
+    )
+
+
 async def run(audio_path: Path, n: int, label: str, host: str, port: int) -> list[dict]:
     audio_bytes = audio_path.read_bytes()
     uri = f"ws://{host}:{port}/ws/voice"
@@ -104,16 +124,7 @@ async def run(audio_path: Path, n: int, label: str, host: str, port: int) -> lis
             try:
                 result = await _one_turn(ws, audio_bytes)
                 results.append(result)
-                e = "  ERR" if result["error"] else ""
-                print(
-                    f"  [{i+1:02d}/{n}]  "
-                    f"TTFT {result.get('adapter_first_token_ms','—'):>5}ms  "
-                    f"TTFA {result.get('time_to_first_audio_ms','—'):>5}ms  "
-                    f"adp {result.get('adapter_ms','—'):>5}ms  "
-                    f"total {result.get('total_ms','—'):>5}ms  "
-                    f"rtt {result['rtt_ms']:>5}ms"
-                    f"{e}"
-                )
+                print(_fmt_turn(i, n, result))
                 if result["error"]:
                     errors += 1
             except Exception as exc:
@@ -122,6 +133,43 @@ async def run(audio_path: Path, n: int, label: str, host: str, port: int) -> lis
 
             # brief pause between turns to avoid hammering the API
             await asyncio.sleep(0.3)
+
+    print(f"\n{n - errors}/{n} turns succeeded  ({errors} errors)")
+    return results
+
+
+async def run_fresh(audio_path: Path, n: int, label: str, host: str, port: int) -> list[dict]:
+    """Fresh-session mode: each turn uses an independent WebSocket session.
+
+    Eliminates context-growth effects (summary overhead, history length) so each
+    turn is measured in identical conditions — useful for isolating cold-start latency.
+    """
+    audio_bytes = audio_path.read_bytes()
+    uri = f"ws://{host}:{port}/ws/voice"
+    results: list[dict] = []
+    errors = 0
+
+    print(f"\nBenchmark (fresh-session): {label}  |  {n} turns  |  {len(audio_bytes):,} bytes/turn")
+    print(f"Server:    {uri}")
+    print(f"Audio:     {audio_path}\n")
+
+    for i in range(n):
+        try:
+            async with websockets.connect(uri) as ws:
+                raw = await ws.recv()
+                session = json.loads(raw)
+                if i == 0:
+                    print(f"First session: {session.get('session_id', '?')}\n")
+                result = await _one_turn(ws, audio_bytes)
+                results.append(result)
+                print(_fmt_turn(i, n, result))
+                if result["error"]:
+                    errors += 1
+        except Exception as exc:
+            print(f"  [{i+1:02d}/{n}]  ERROR: {exc}")
+            errors += 1
+
+        await asyncio.sleep(0.3)
 
     print(f"\n{n - errors}/{n} turns succeeded  ({errors} errors)")
     return results
@@ -196,11 +244,15 @@ def print_summary(label: str, results: list[dict]) -> None:
 
     stages = [
         "stt_ms",
+        "pre_llm_ms",
+        "llm_first_token_ms",
         "adapter_first_token_ms",
+        "first_sentence_ready_ms",
         "time_to_first_audio_ms",
         "adapter_ms",
         "tts_ms",
         "total_ms",
+        "summary_ms",
         "rtt_ms",
     ]
     stats = {k: _stats([r[k] for r in ok if k in r]) for k in stages}
@@ -213,11 +265,15 @@ def print_summary(label: str, results: list[dict]) -> None:
 
     labels_display = {
         "stt_ms":                   "STT",
-        "adapter_first_token_ms":   "TTFT (first token)",
+        "pre_llm_ms":               "Pre-LLM overhead",
+        "llm_first_token_ms":       "LLM TTFT (network)",
+        "adapter_first_token_ms":   "TTFT (combined)",
+        "first_sentence_ready_ms":  "1st sentence ready",
         "time_to_first_audio_ms":   "TTFA (first audio)",
         "adapter_ms":               "Adapter (full)",
         "tts_ms":                   "TTS (cumulative)",
         "total_ms":                 "Total (server)",
+        "summary_ms":               "BG summary (prev)",
         "rtt_ms":                   "RTT (client)",
     }
     for k in stages:
@@ -255,12 +311,14 @@ def save_results(label: str, results: list[dict], out_dir: Path) -> Path:
 
 def main():
     parser = argparse.ArgumentParser(description="Voice Gateway latency benchmark")
-    parser.add_argument("--audio",   default="bench/test.wav", help="WAV file to send each turn")
-    parser.add_argument("--n",       type=int, default=25,     help="Number of turns")
-    parser.add_argument("--label",   default="run",            help="Adapter label (echo, claude, …)")
-    parser.add_argument("--host",    default="127.0.0.1")
-    parser.add_argument("--port",    type=int, default=8765)
-    parser.add_argument("--out-dir", default="bench/results",  help="Directory for JSON results")
+    parser.add_argument("--audio",         default="bench/test.wav", help="WAV file to send each turn")
+    parser.add_argument("--n",             type=int, default=25,     help="Number of turns")
+    parser.add_argument("--label",         default="run",            help="Adapter label (echo, claude, …)")
+    parser.add_argument("--host",          default="127.0.0.1")
+    parser.add_argument("--port",          type=int, default=8765)
+    parser.add_argument("--out-dir",       default="bench/results",  help="Directory for JSON results")
+    parser.add_argument("--fresh-session", action="store_true",
+                        help="Each turn uses an independent WebSocket session (no history growth)")
     args = parser.parse_args()
 
     audio_path = Path(args.audio)
@@ -269,7 +327,8 @@ def main():
         print("Generate one first:  python3 bench/gen_audio.py")
         sys.exit(1)
 
-    results = asyncio.run(run(audio_path, args.n, args.label, args.host, args.port))
+    runner = run_fresh if args.fresh_session else run
+    results = asyncio.run(runner(audio_path, args.n, args.label, args.host, args.port))
     print_summary(args.label, results)
     save_results(args.label, results, Path(args.out_dir))
 

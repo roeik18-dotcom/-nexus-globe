@@ -24,9 +24,11 @@ class SentenceBuffer:
 
     Parameters
     ----------
-    min_chars      : int  — minimum chars before any boundary is honoured
-    max_chars      : int  — force word-boundary cut above this length
-    weak_threshold : int  — honour comma/semicolon only above this length
+    min_chars       : int       — minimum chars before any boundary is honoured
+    max_chars       : int       — force word-boundary cut above this length
+    weak_threshold  : int       — honour comma/semicolon only above this length
+    first_min_chars : int|None  — lower min_chars for the FIRST emission only;
+                                  reverts to min_chars after the first chunk is sent
     """
 
     def __init__(
@@ -34,11 +36,14 @@ class SentenceBuffer:
         min_chars: int = MIN_CHARS,
         max_chars: int = MAX_CHARS,
         weak_threshold: int = WEAK_THRESHOLD,
+        first_min_chars: int | None = None,
     ) -> None:
         self._buf = ""
         self._min = min_chars
         self._max = max_chars
         self._weak = weak_threshold
+        self._first_min = first_min_chars
+        self._first_emitted = False
 
     def push(self, text: str) -> str | None:
         """Add *text*; return a speakable chunk if a boundary was found, else None."""
@@ -52,10 +57,16 @@ class SentenceBuffer:
         return result
 
     # ------------------------------------------------------------------
+    def _effective_min(self) -> int:
+        if not self._first_emitted and self._first_min is not None:
+            return self._first_min
+        return self._min
+
     def _try_split(self) -> str | None:
         buf = self._buf
+        min_c = self._effective_min()
 
-        if len(buf) < self._min:
+        if len(buf) < min_c:
             return None
 
         # Paragraph break — strongest natural pause
@@ -71,19 +82,23 @@ class SentenceBuffer:
         # Weak clause boundary — only when buffer is long enough
         if len(buf) >= self._weak:
             m = _WEAK.search(buf)
-            if m and m.start() >= self._min:
+            if m and m.start() >= min_c:
                 return self._take(m.end())
 
         # Force cut at MAX_CHARS at the last word boundary
         if len(buf) >= self._max:
-            cut = buf.rfind(' ', self._min, self._max)
+            cut = buf.rfind(' ', min_c, self._max)
             if cut > 0:
                 chunk = buf[:cut].strip()
                 self._buf = buf[cut + 1:]
+                if chunk:
+                    self._first_emitted = True
                 return chunk or None
             # No word boundary found — hard cut (very rare: e.g. huge single token)
             chunk = buf[:self._max].strip()
             self._buf = buf[self._max:]
+            if chunk:
+                self._first_emitted = True
             return chunk or None
 
         return None
@@ -91,4 +106,6 @@ class SentenceBuffer:
     def _take(self, end: int) -> str | None:
         chunk = self._buf[:end].strip()
         self._buf = self._buf[end:]
+        if chunk:
+            self._first_emitted = True
         return chunk or None

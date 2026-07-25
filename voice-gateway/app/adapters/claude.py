@@ -1,5 +1,6 @@
 """Claude adapter — temporary backend for Phase 1 Voice MVP."""
 
+import asyncio
 import logging
 import time
 from collections import Counter, defaultdict
@@ -19,6 +20,7 @@ from app.summary import (
     SummaryState,
     should_summarize,
     summarize_range,
+    summary_latency_registry,
     summary_registry,
 )
 from app.task import task_registry
@@ -60,69 +62,78 @@ class ClaudeAdapter(VoiceAdapter):
         self._bus = bus
         # session_id → list of {"role": ..., "content": ...}
         self._history: dict[str, list[dict]] = defaultdict(list)
+        # per-session asyncio.Lock to prevent concurrent summaries
+        self._summary_locks: dict[str, asyncio.Lock] = {}
 
     @property
     def name(self) -> str:
         return f"claude:{self._persona}"
 
-    async def _maybe_summarize(self, session_id: str, history: list[dict]) -> None:
-        state = summary_registry.get(session_id)
-        summarized_until = state.summarized_until if state else 0
+    async def _bg_summarize(self, session_id: str, history_len: int) -> None:
+        """Compress message history in the background without blocking LLM token generation."""
+        if session_id not in self._summary_locks:
+            self._summary_locks[session_id] = asyncio.Lock()
+        lock = self._summary_locks[session_id]
 
-        if not should_summarize(len(history), summarized_until):
+        if lock.locked():
+            logger.debug("summary[%s] skipped — previous summary still in progress", session_id)
             return
 
-        start, end = summarize_range(len(history), summarized_until)
-        t0 = time.perf_counter()
-        turn_context.emit(TraceStep(
-            from_node="claude", to_node="summary",
-            type="summary.start",
-            description=f"msgs {start}..{end}",
-        ))
+        async with lock:
+            state = summary_registry.get(session_id)
+            summarized_until = state.summarized_until if state else 0
 
-        to_summarize = history[start:end]
+            if not should_summarize(history_len, summarized_until):
+                return
 
-        lines = "\n".join(
-            f"{'User' if m['role'] == 'user' else 'Assistant'}: {m['content']}"
-            for m in to_summarize
-        )
-        prior = f"Prior summary:\n{state.text}\n\n" if state and state.text else ""
-        prompt = f"{prior}Conversation:\n{lines}"
+            history = self._history.get(session_id, [])
+            if len(history) < history_len:
+                return  # session reset between scheduling and execution
 
-        parts: list[str] = []
-        async with self._client.messages.stream(
-            model=settings.claude_model,
-            max_tokens=512,
-            system=SUMMARIZE_PROMPT,
-            messages=[{"role": "user", "content": prompt}],
-        ) as stream:
-            async for chunk in stream.text_stream:
-                parts.append(chunk)
+            start, end = summarize_range(history_len, summarized_until)
+            to_summarize = history[start:end]
 
-        new_state = SummaryState(
-            text="".join(parts),
-            version=(state.version + 1 if state else 1),
-            summarized_until=end,
-        )
-        summary_registry.set(session_id, new_state)
-        turn_context.emit(TraceStep(
-            from_node="summary", to_node="claude",
-            type="summary.complete",
-            latency_ms=round((time.perf_counter() - t0) * 1000),
-            payload_size=len(new_state.text),
-        ))
-        logger.info(
-            "summary[%s] v%d covers 0..%d (%d messages compressed)",
-            session_id, new_state.version, end, end - start,
-        )
+            t0 = time.perf_counter()
+            lines = "\n".join(
+                f"{'User' if m['role'] == 'user' else 'Assistant'}: {m['content']}"
+                for m in to_summarize
+            )
+            prior = f"Prior summary:\n{state.text}\n\n" if state and state.text else ""
+            prompt = f"{prior}Conversation:\n{lines}"
+
+            parts: list[str] = []
+            try:
+                async with self._client.messages.stream(
+                    model=settings.claude_model,
+                    max_tokens=512,
+                    system=SUMMARIZE_PROMPT,
+                    messages=[{"role": "user", "content": prompt}],
+                ) as stream:
+                    async for chunk in stream.text_stream:
+                        parts.append(chunk)
+            except Exception as exc:
+                logger.error("summary[%s] background error: %s", session_id, exc)
+                return
+
+            new_state = SummaryState(
+                text="".join(parts),
+                version=(state.version + 1 if state else 1),
+                summarized_until=end,
+            )
+            summary_registry.set(session_id, new_state)
+            elapsed_ms = round((time.perf_counter() - t0) * 1000)
+            summary_latency_registry.set(session_id, elapsed_ms)
+            logger.info(
+                "summary[%s] v%d covers 0..%d (%d messages) latency=%dms",
+                session_id, new_state.version, end, end - start, elapsed_ms,
+            )
 
     async def respond(self, text: str, session_id: str) -> AsyncIterator[str]:
         history = self._history[session_id]
         history.append({"role": "user", "content": text})
         _history_len_before = len(history) - 1
         _pre_summary_state = summary_registry.get(session_id)
-
-        await self._maybe_summarize(session_id, history)
+        # Summary runs as a background task AFTER this turn to avoid blocking LLM start.
 
         # Delegation: call sub-agent before building the API prompt
         delegation_result = None
@@ -270,7 +281,10 @@ class ClaudeAdapter(VoiceAdapter):
         logger.debug(
             "claude[%s] turn complete (%d chars)", session_id, len("".join(full_response))
         )
+        # Schedule background summary now that history is complete for this turn.
+        asyncio.create_task(self._bg_summarize(session_id, len(history)))
 
     async def reset(self, session_id: str) -> None:
         self._history.pop(session_id, None)
+        self._summary_locks.pop(session_id, None)
         logger.debug("claude[%s] history cleared", session_id)

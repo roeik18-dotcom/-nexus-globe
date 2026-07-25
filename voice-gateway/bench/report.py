@@ -20,20 +20,28 @@ from pathlib import Path
 
 STAGES = [
     "stt_ms",
+    "pre_llm_ms",
+    "llm_first_token_ms",
     "adapter_first_token_ms",
+    "first_sentence_ready_ms",
     "time_to_first_audio_ms",
     "adapter_ms",
     "tts_ms",
     "total_ms",
+    "summary_ms",
     "rtt_ms",
 ]
 STAGE_LABELS = {
     "stt_ms":                   "STT",
-    "adapter_first_token_ms":   "TTFT (first token)",
+    "pre_llm_ms":               "Pre-LLM overhead",
+    "llm_first_token_ms":       "LLM TTFT (network)",
+    "adapter_first_token_ms":   "TTFT (combined)",
+    "first_sentence_ready_ms":  "1st sentence ready",
     "time_to_first_audio_ms":   "TTFA (first audio)",
     "adapter_ms":               "Adapter (full)",
     "tts_ms":                   "TTS (cumul.)",
     "total_ms":                 "Total (server)",
+    "summary_ms":               "BG summary (prev)",
     "rtt_ms":                   "RTT (client)",
 }
 
@@ -120,20 +128,27 @@ def main():
         print("Usage: python3 bench/report.py bench/results/echo_*.json bench/results/claude_*.json")
         sys.exit(1)
 
-    datasets: list[tuple[str, dict[str, dict], list[dict]]] = []
+    datasets: list[tuple[str, dict[str, dict], list[dict], Path]] = []
     for path in paths:
         label, results = load(path)
+        if not results:
+            print(f"  Skipping {path.name}: 0 successful results", file=sys.stderr)
+            continue
         stage_stats = {k: stats([r[k] for r in results if k in r]) for k in STAGES}
-        datasets.append((label, stage_stats, results))
+        datasets.append((label, stage_stats, results, path))
 
-    # Header
-    col_w = 28
+    if not datasets:
+        print("No usable result files.")
+        sys.exit(1)
+
+    # Header — use filename stem for unique column identity
+    col_w = 30
     adapter_names = [
-        f"{label} (n={len(json.loads(p.read_text())['results'])})"
-        for (label, _, _), p in zip(datasets, paths)
+        f"{path.stem} (n={len(json.loads(path.read_text())['results'])})"
+        for (_, _, _, path) in datasets
     ]
 
-    lbl_w = 20  # stage label column width — fits "TTFT (first token)" (18 chars)
+    lbl_w = 22  # stage label column width — fits "1st sentence ready" (18 chars) + padding
     print(f"\n{'Voice Gateway — Latency Comparison':^{lbl_w + 2 + col_w * len(datasets)}}")
     print("═" * (lbl_w + 2 + col_w * len(datasets)))
     print(f"  {'Stage':<{lbl_w}}", end="")
@@ -150,7 +165,7 @@ def main():
 
     for stage in STAGES:
         print(f"  {STAGE_LABELS[stage]:<{lbl_w}}", end="")
-        for label, stage_stats, _ in datasets:
+        for label, stage_stats, _, _path in datasets:
             s = stage_stats.get(stage, {})
             if not s:
                 print(f"  {'n/a':<{col_w - 2}}", end="")
@@ -165,20 +180,20 @@ def main():
     # Delta row
     if len(datasets) >= 2:
         totals = []
-        for _, stage_stats, _ in datasets:
+        for _, stage_stats, _, _path in datasets:
             s = stage_stats.get("total_ms", {})
             totals.append(s.get("avg") if s else None)
 
         baseline = totals[0]
         print(f"\n  Delta vs baseline:")
-        for i, (label, _, _) in enumerate(datasets[1:], 1):
+        for i, (label, _, _, _path) in enumerate(datasets[1:], 1):
             if baseline is not None and totals[i] is not None:
                 delta = totals[i] - baseline
                 print(f"    {label}: +{delta:.0f}ms over {datasets[0][0]}")
 
     # Contribution %
     print(f"\n  Stage contributions (% of avg total):")
-    for label, stage_stats, _ in datasets:
+    for label, stage_stats, _, _path in datasets:
         c = contributions(stage_stats)
         if c:
             parts = "  ".join(
@@ -189,7 +204,7 @@ def main():
 
     # Spike detection
     print(f"\n  Spike detection (> median × 1.5):")
-    for label, _, results in datasets:
+    for label, _, results, _path in datasets:
         spike_parts = []
         for stage in ("stt_ms", "adapter_first_token_ms", "time_to_first_audio_ms",
                       "adapter_ms", "tts_ms", "total_ms"):
@@ -202,7 +217,7 @@ def main():
 
     # STT accuracy
     print(f"\n  STT accuracy (non-empty transcripts):")
-    for path, (label, _, _) in zip(paths, datasets):
+    for label, _, _, path in datasets:
         all_results = json.loads(path.read_text())["results"]
         ok = [r for r in all_results if not r.get("error")]
         with_text = [r for r in ok if r.get("transcript")]
@@ -212,7 +227,7 @@ def main():
     # KPI legend — match by exact label or base name (e.g. "claude-stream" → "claude")
     print(f"\n  KPI: OK = within target, !! = exceeds target")
     shown: set[str] = set()
-    for d_label, _, _ in datasets:
+    for d_label, _, _, _path in datasets:
         base = d_label.replace("_", "-").split("-")[0]
         kpi_key = d_label if d_label in KPI_TARGETS else base
         if kpi_key in KPI_TARGETS and kpi_key not in shown:
@@ -224,7 +239,7 @@ def main():
 
     # Baseline-derived targets when echo run is present
     echo_total = None
-    for label, stage_stats, _ in datasets:
+    for label, stage_stats, _, _path in datasets:
         if label == "echo":
             echo_total = (stage_stats.get("total_ms") or {}).get("avg")
             break

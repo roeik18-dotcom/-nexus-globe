@@ -35,12 +35,19 @@ WebSocket protocol (binary + JSON frames):
     {"type": "candidates", "items": [...]}   : response to list_memory_candidates
 
 Timing stages (all in milliseconds, server-side only):
-    stt_ms        — audio received → transcript ready
-    adapter_ms    — transcript ready → last text chunk
-    tts_ms        — text ready → audio bytes ready
-    total_ms      — end_of_speech received → audio sent
+    stt_ms                  — audio received → transcript ready
+    pre_llm_ms              — adapter overhead before LLM call (recall, context build; excl. summary which runs in bg)
+    llm_first_token_ms      — LLM API call → first token (network + inference TTFT)
+    adapter_first_token_ms  — turn start → first adapter token (= stt + pre_llm + llm_first_token)
+    first_sentence_ready_ms — turn start → first sentence emitted from SentenceBuffer
+    time_to_first_audio_ms  — turn start → first TTS audio bytes sent (TTFA)
+    adapter_ms              — transcript ready → last text chunk (full adapter wall time)
+    tts_ms                  — cumulative TTS synthesis time (may overlap adapter_ms)
+    total_ms                — end_of_speech received → last audio byte sent
+    summary_ms              — background summary latency from previous turn (0 if none)
 """
 
+import asyncio
 import json
 import logging
 import time
@@ -57,7 +64,7 @@ from app.memory_promotion import promote as _promote_to_memory
 from app.observability.json_log import json_log_subscriber
 from app.router import build_orchestrator, build_stt, build_tts
 from app.session import registry
-from app.summary import summary_registry
+from app.summary import summary_latency_registry, summary_registry
 from app.task import task_registry
 from app.tool_memory import ToolMemoryEntry, tool_memory_registry
 from app.trace import TraceStep, TurnTrace
@@ -328,6 +335,7 @@ async def voice_ws(ws: WebSocket):
         registry.remove(session_id)
         task_registry.clear(session_id)
         summary_registry.clear(session_id)
+        summary_latency_registry.clear(session_id)
         tool_memory_registry.clear(session_id)
         candidate_registry.clear(session_id)
         await _adapter.reset(session_id)
@@ -377,17 +385,21 @@ async def _handle_turn(ws: WebSocket, session_id: str, audio_data: bytes) -> Non
         logger.info("ws[%s] transcript: %r", session_id, transcript[:80])
 
         # Pipeline: stream adapter → sentence buffer → TTS per sentence → audio frames.
-        # TTS is interleaved with Claude generation, so time_to_first_audio_ms <<
-        # total adapter_ms. adapter_ms and tts_ms may overlap — total_ms is the
-        # authoritative wall-clock figure.
-        _sentence_buf = SentenceBuffer()
+        # TTS is interleaved with Claude generation; adapter_ms and tts_ms overlap.
+        # total_ms is the authoritative wall-clock figure.
+        # first_min_chars=8 allows shorter first TTS chunks; a 400ms timeout flush
+        # fires if no sentence boundary is found quickly after the first LLM token.
+        _sentence_buf = SentenceBuffer(first_min_chars=8)
         full_text_parts: list[str] = []
         first_token_ms: int | None = None
+        first_sentence_ready_ms: int | None = None
         first_audio_ms: int | None = None
+        _first_sentence_sent = False
         t_last_token = time.perf_counter()
         tts_total_ms: int = 0
         total_audio_bytes: int = 0
         t_adapter_start = time.perf_counter()
+        _timeout_task: asyncio.Task | None = None
 
         turn_context.emit(TraceStep(
             from_node="gateway", to_node="tts",
@@ -395,9 +407,12 @@ async def _handle_turn(ws: WebSocket, session_id: str, audio_data: bytes) -> Non
         ))
 
         async def _tts_send(sentence: str) -> None:
-            nonlocal first_audio_ms, tts_total_ms, total_audio_bytes
+            nonlocal first_sentence_ready_ms, first_audio_ms, tts_total_ms, total_audio_bytes, _first_sentence_sent
             if not sentence:
                 return
+            if first_sentence_ready_ms is None:
+                first_sentence_ready_ms = round((time.perf_counter() - t_start) * 1000)
+            _first_sentence_sent = True
             t0 = time.perf_counter()
             try:
                 audio_chunk = await _tts.synthesize(sentence)
@@ -411,10 +426,20 @@ async def _handle_turn(ws: WebSocket, session_id: str, audio_data: bytes) -> Non
                 await ws.send_bytes(audio_chunk)
                 total_audio_bytes += len(audio_chunk)
 
+        async def _maybe_timeout_flush() -> None:
+            """After 400ms from TTFT, force-flush buffer if first sentence not yet sent."""
+            nonlocal _first_sentence_sent
+            await asyncio.sleep(0.4)
+            if not _first_sentence_sent:
+                forced = _sentence_buf.flush()
+                if forced:
+                    await _tts_send(forced)
+
         try:
             async for chunk in _adapter.respond(transcript, session_id):
                 if first_token_ms is None:
                     first_token_ms = round((time.perf_counter() - t_start) * 1000)
+                    _timeout_task = asyncio.create_task(_maybe_timeout_flush())
                 t_last_token = time.perf_counter()
                 full_text_parts.append(chunk)
                 sentence = _sentence_buf.push(chunk)
@@ -431,6 +456,13 @@ async def _handle_turn(ws: WebSocket, session_id: str, audio_data: bytes) -> Non
             await ws.send_text(json.dumps({"type": "error", "message": f"adapter: {exc}"}))
             await ws.send_text(json.dumps({"type": "done"}))
             return
+        finally:
+            if _timeout_task and not _timeout_task.done():
+                _timeout_task.cancel()
+                try:
+                    await _timeout_task
+                except asyncio.CancelledError:
+                    pass
 
         t_pipeline_end = time.perf_counter()
         full_text = "".join(full_text_parts)
@@ -443,22 +475,38 @@ async def _handle_turn(ws: WebSocket, session_id: str, audio_data: bytes) -> Non
             payload_size=total_audio_bytes,
         ))
 
+        # Extract fine-grained LLM timing from trace steps.
+        _llm_ftok_ms = round(next(
+            (s.latency_ms for s in _trace.steps if s.type == "llm.first_token"), 0.0
+        ))
+        _stt_ms = round((t_stt - t_start) * 1000)
+        # pre_llm_ms = adapter overhead before LLM call (recall + context build, excl bg summary)
+        _pre_llm_ms = max(0, (first_token_ms or 0) - _stt_ms - _llm_ftok_ms)
+        # summary_ms: latency of background summary that completed between turns (0 if none)
+        _summary_ms = summary_latency_registry.pop(session_id) or 0
+
         timing = {
-            "stt_ms":                    round((t_stt - t_start) * 1000),
-            "adapter_ms":                round((t_last_token - t_adapter_start) * 1000),
+            "stt_ms":                    _stt_ms,
+            "pre_llm_ms":                _pre_llm_ms,
+            "llm_first_token_ms":        _llm_ftok_ms,
             "adapter_first_token_ms":    first_token_ms or 0,
-            "tts_ms":                    tts_total_ms,
+            "first_sentence_ready_ms":   first_sentence_ready_ms or 0,
             "time_to_first_audio_ms":    first_audio_ms or 0,
+            "adapter_ms":                round((t_last_token - t_adapter_start) * 1000),
+            "tts_ms":                    tts_total_ms,
             "total_ms":                  round((t_pipeline_end - t_start) * 1000),
+            "summary_ms":                _summary_ms,
         }
         await ws.send_text(json.dumps({"type": "timing", "stages": timing}))
         await ws.send_text(json.dumps({"type": "done"}))
 
         logger.info(
-            "ws[%s] turn done — STT %dms · TTFT %dms · TTFA %dms · total %dms · audio %d bytes",
+            "ws[%s] turn done — STT %dms · pre-LLM %dms · LLM-TTFT %dms · "
+            "TTFA %dms · total %dms · audio %d bytes",
             session_id,
             timing["stt_ms"],
-            timing["adapter_first_token_ms"],
+            timing["pre_llm_ms"],
+            timing["llm_first_token_ms"],
             timing["time_to_first_audio_ms"],
             timing["total_ms"],
             total_audio_bytes,

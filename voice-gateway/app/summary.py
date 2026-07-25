@@ -59,3 +59,22 @@ def summarize_range(history_len: int, summarized_until: int) -> tuple[int, int]:
 
 
 summary_registry = SummaryRegistry()
+
+
+class SummaryLatencyRegistry:
+    """Stores the latency of the most-recently completed background summary per session."""
+
+    def __init__(self) -> None:
+        self._ms: dict[str, int] = {}
+
+    def set(self, session_id: str, ms: int) -> None:
+        self._ms[session_id] = ms
+
+    def pop(self, session_id: str) -> int | None:
+        return self._ms.pop(session_id, None)
+
+    def clear(self, session_id: str) -> None:
+        self._ms.pop(session_id, None)
+
+
+summary_latency_registry = SummaryLatencyRegistry()

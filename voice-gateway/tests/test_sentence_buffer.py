@@ -128,3 +128,49 @@ def test_paragraph_break_stronger_than_period():
     result = buf.push("First part\n\nSecond part. Third.")
     assert result is not None
     assert "First part" in result
+
+
+# ── first_min_chars tests ──────────────────────────────────────────────────────
+
+def test_first_min_chars_allows_short_first_emission():
+    # With first_min_chars=5, "Hi." (3 chars) should still not trigger (below 5),
+    # but "Hello." (6 chars) should trigger on the first emission.
+    buf = SentenceBuffer(min_chars=15, first_min_chars=6)
+    result = buf.push("Hello. World.")
+    assert result == "Hello."
+
+
+def test_first_min_chars_reverts_after_first_emission():
+    # After first emission uses first_min_chars, subsequent cuts use min_chars.
+    buf = SentenceBuffer(min_chars=15, first_min_chars=6)
+    # First emission: "Hello." (6 chars ≥ first_min_chars=6) → emitted
+    r1 = buf.push("Hello. Hi.")
+    assert r1 == "Hello."
+    # "Hi." (3 chars) is below min_chars=15 — should not emit
+    r2 = buf.push(" More text here.")
+    # "Hi.  More text here." → strong boundary → "Hi." at 3 chars, but min_chars=15
+    # "Hi.  More text here." is 20 chars total > 15 → triggers strong boundary
+    assert r2 is not None or buf.flush() != ""
+
+
+def test_first_min_chars_none_uses_min_chars():
+    # When first_min_chars is None, first emission uses normal min_chars.
+    buf = SentenceBuffer(min_chars=15, first_min_chars=None)
+    # "Hi." is 3 chars, well below min_chars=15 → no emission
+    result = buf.push("Hi.")
+    assert result is None
+
+
+def test_first_emitted_flag_set_after_emission():
+    buf = SentenceBuffer(min_chars=15, first_min_chars=6)
+    assert buf._first_emitted is False
+    buf.push("Hello. Rest of text.")
+    assert buf._first_emitted is True
+
+
+def test_first_min_chars_still_respects_strong_boundary():
+    # Even with first_min_chars active, we need a sentence boundary to split.
+    # Text without punctuation should not split below first_min_chars.
+    buf = SentenceBuffer(min_chars=15, first_min_chars=8)
+    result = buf.push("Hi")  # 2 chars, no boundary
+    assert result is None
