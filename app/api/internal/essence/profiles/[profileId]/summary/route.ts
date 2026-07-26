@@ -23,17 +23,12 @@
 
 import { timingSafeEqual } from 'node:crypto';
 import { EssenceReadService } from '@/app/lib/essence/read-service';
-import { InMemoryEssenceRepository } from '@/app/lib/essence/in-memory-repository';
+import { getRepository, _setRepository } from '@/app/lib/essence/server-repository';
 import { ACCESS_POLICIES } from '@/app/lib/essence/access';
 import type { AgentName } from '@/app/lib/essence/access';
 import type { EssenceSummary } from '@/app/lib/essence/api';
 
-// Module-level singleton repository.
-// Use _setRepository() in tests to inject a pre-seeded instance.
-let _repo = new InMemoryEssenceRepository();
-export function _setRepository(r: InMemoryEssenceRepository): void {
-  _repo = r;
-}
+export { _setRepository };
 
 const VALID_ACTORS = new Set<AgentName>(Object.keys(ACCESS_POLICIES) as AgentName[]);
 
@@ -96,7 +91,7 @@ export async function GET(
   }
 
   const { profileId } = await ctx.params;
-  const svc = new EssenceReadService(_repo.asReadRepository());
+  const svc = new EssenceReadService(getRepository().asReadRepository());
 
   try {
     const summary = await svc.getEssenceSummary(profileId, 'task_relevant', actor);

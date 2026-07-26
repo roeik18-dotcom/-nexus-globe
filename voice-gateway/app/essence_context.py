@@ -168,6 +168,51 @@ def _build_context_block(summary: dict[str, Any]) -> str:
     return "\n\n".join(parts)
 
 
+async def observe_exchange(
+    profile_id: str,
+    session_id: str,
+    user_message: str,
+    assistant_response: str,
+) -> None:
+    """Post exchange content to the Essence observe endpoint for orientation inference.
+
+    Fire-and-forget — never raises. Returns silently on any error.
+    Never logs token values, exchange content, or raw profile/session identifiers.
+    """
+    token = settings.internal_essence_token
+    base_url = settings.essence_base_url
+
+    if not token:
+        logger.warning("essence_context: INTERNAL_ESSENCE_TOKEN not configured; skipping observe")
+        return
+
+    url = f"{base_url}/api/internal/essence/profiles/{profile_id}/observe"
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.post(
+                url,
+                json={
+                    "sessionId": session_id,
+                    "userMessage": user_message,
+                    "assistantResponse": assistant_response,
+                },
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "X-Essence-Actor": "merlin",
+                },
+            )
+
+        if resp.status_code not in (200, 204):
+            logger.warning(
+                "essence_context: observe returned HTTP %d",
+                resp.status_code,
+            )
+
+    except Exception:
+        logger.warning("essence_context: observe failed; continuing")
+
+
 async def fetch_essence_context(profile_id: str) -> str:
     """Return a formatted Essence context block for Merlin's system prompt.
 

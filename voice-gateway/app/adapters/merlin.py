@@ -57,6 +57,11 @@ class MerlinAdapter(ClaudeAdapter):
 
     # ── Session boundary ──────────────────────────────────────────────────────
 
+    def get_profile_id(self, session_id: str) -> str | None:
+        """Return the profile_id bound to session_id, or None if not registered."""
+        ctx = self._session_contexts.get(session_id)
+        return ctx.profile_id if ctx else None
+
     def register_session(self, ctx: VoiceSessionContext) -> None:
         """Call at WebSocket connect time to bind a profile_id to the session."""
         self._session_contexts[ctx.session_id] = ctx

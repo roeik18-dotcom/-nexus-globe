@@ -58,6 +58,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from app import turn_context
 from app.adapters.merlin import MerlinAdapter, VoiceSessionContext
+from app.essence_context import observe_exchange
 from app.audio.sentence import SentenceBuffer
 from app.config import settings
 from app.memory_candidates import candidate_registry
@@ -463,6 +464,13 @@ async def _run_pipeline(
 
     t_pipeline_end = time.perf_counter()
     full_text = "".join(full_text_parts)
+
+    # Fire-and-forget orientation inference (M0-8C). Never blocks response delivery.
+    if isinstance(_adapter, MerlinAdapter):
+        _pid = _adapter.get_profile_id(session_id)
+        if _pid:
+            asyncio.create_task(observe_exchange(_pid, session_id, transcript, full_text))
+
     await ws.send_text(json.dumps({"type": "response_text", "text": full_text}))
 
     turn_context.emit(TraceStep(
