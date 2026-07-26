@@ -17,7 +17,7 @@ import type {
   Observation,
 } from './schema';
 import type { AgentName } from './access';
-import { ACCESS_POLICIES } from './access';
+import { ACCESS_POLICIES, canAgentPropose } from './access';
 import type {
   EssenceProposalAPI,
   EssenceUserActionAPI,
@@ -31,6 +31,7 @@ import type { EssenceRepository } from './repository';
 import type { EssencePipeline, Clock, IdGenerator } from './pipeline-runner';
 import { systemClock, defaultIdGenerator } from './pipeline-runner';
 import type { UserAuthorizedActionContext } from './actor';
+import { actorLabel } from './actor';
 import { findInterpretation } from './interpretation-utils';
 
 export { type Clock };
@@ -58,26 +59,44 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     }
 
     // Pre-validate schema integrity before writing anything to the store.
-    // Access-control and conflict checks run inside the pipeline (after the observation
-    // is persisted), because those rejections represent real signals worth recording.
     // Schema violations (unknown node, empty content) are not meaningful signals.
     if (!proposal.nodeId || !proposal.proposedContent?.trim()) {
       return structuredReject('Empty nodeId or proposedContent');
     }
-    if (!getEssenceNode(proposal.nodeId)) {
+    const node = getEssenceNode(proposal.nodeId);
+    if (!node) {
       return structuredReject(`Unknown nodeId: ${proposal.nodeId}`);
     }
 
+    // Authorization check before any persistence.
+    // Unauthorized agents must never create Observations.
+    if (!canAgentPropose(proposal.proposedBy, node.layer)) {
+      return structuredReject(`Agent ${proposal.proposedBy} cannot propose to layer ${node.layer}`);
+    }
+
+    // Load profile to validate evidence IDs before writing anything.
+    const preProfile = await this.repo.getProfile(profileId);
+    if (!preProfile) return structuredReject(`Profile not found: ${profileId}`);
+
+    // Validate that every referenced observation ID belongs to this profile.
+    const knownObsIds = new Set(preProfile.observations.map(o => o.id));
+    for (const id of proposal.evidenceObservationIds) {
+      if (!knownObsIds.has(id)) {
+        return structuredReject(`Unknown or cross-profile observation ID: ${id}`);
+      }
+    }
+
     // Persist the backing observation (two-tier: observation before interpretation).
-    // Runs after schema pre-validation so garbage inputs never reach the store.
     const obs = buildProposalObservation(proposal, this.clock, this.idGen);
     await this.repo.appendObservation(profileId, obs);
 
-    // Merge evidence IDs from the package (correction 10: wire EvidencePackage).
-    const allEvidenceIds = [
+    // Merge and deduplicate evidence IDs.
+    // proposal.evidenceObservationIds: validated profile observation IDs.
+    // evidence.evidenceIds: cross-domain Evidence Engine IDs (not validated against profile).
+    const allEvidenceIds = [...new Set([
       ...proposal.evidenceObservationIds,
       ...(evidence?.evidenceIds ?? []),
-    ];
+    ])];
 
     const profile = await this.repo.getProfile(profileId);
     if (!profile) return structuredReject(`Profile not found: ${profileId}`);
@@ -86,7 +105,7 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
       profileId,
       nodeId: proposal.nodeId,
       proposedContent: proposal.proposedContent,
-      proposedBy: proposal.proposedBy,
+      proposedBy: { type: 'agent', agentName: proposal.proposedBy },
       evidenceObservationIds: allEvidenceIds,
       rationale: proposal.rationale,
       currentProfile: profile,
@@ -163,10 +182,9 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
       profileId,
       nodeId: record.nodeId,
       proposedContent: record.proposedContent,
-      proposedBy: record.proposedBy,
+      proposedBy: { type: 'user', actionContext: context },
       evidenceObservationIds: [],
       rationale: 'User confirmed proposal',
-      authContext: context,
       currentProfile: profile,
     });
 
@@ -229,10 +247,9 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
       profileId,
       nodeId: correction.nodeId,
       proposedContent: correction.correctedContent,
-      proposedBy: 'user',  // correction 1: not 'philos' — records the true actor
+      proposedBy: { type: 'user', actionContext: context },
       evidenceObservationIds: [obs.id],
       rationale: correction.note ?? 'User correction',
-      authContext: context,
       currentProfile: profile,
     });
 

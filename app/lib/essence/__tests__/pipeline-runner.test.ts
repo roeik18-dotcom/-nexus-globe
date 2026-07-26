@@ -22,7 +22,7 @@ function baseInput(overrides: Partial<PipelineRunnerInput> = {}): PipelineRunner
     profileId: 'p1',
     nodeId: 'Preferences',
     proposedContent: 'dark mode',
-    proposedBy: 'merlin',
+    proposedBy: { type: 'agent', agentName: 'merlin' },
     evidenceObservationIds: [],
     rationale: 'observed from settings',
     currentProfile: createEmptyEssenceProfile('p1'),
@@ -51,7 +51,7 @@ describe('PipelineRunner — validation failures', () => {
   });
 
   it('nexus proposing to core → rejected (access denied)', () => {
-    const out = runner.run(baseInput({ nodeId: 'Values', proposedBy: 'nexus' }));
+    const out = runner.run(baseInput({ nodeId: 'Values', proposedBy: { type: 'agent', agentName: 'nexus' } }));
     expect(out.result.status).toBe('rejected');
     expect((out.result as any).reason).toMatch(/cannot propose to layer/i);
   });
@@ -76,7 +76,7 @@ describe('PipelineRunner — write-policy matrix (no UserAuthorizedActionContext
   it('Values (requiresUserConfirmation) + evidence → still pending_user_confirmation', () => {
     const out = runner.run(baseInput({
       nodeId: 'Values',
-      proposedBy: 'philos',
+      proposedBy: { type: 'agent', agentName: 'philos' },
       evidenceObservationIds: ['obs-1'],
     }));
     expect(out.result.status).toBe('pending_user_confirmation');
@@ -85,7 +85,7 @@ describe('PipelineRunner — write-policy matrix (no UserAuthorizedActionContext
   it('Psychology (requiresUserConfirmation) → pending_user_confirmation', () => {
     const out = runner.run(baseInput({
       nodeId: 'Psychology',
-      proposedBy: 'philos',
+      proposedBy: { type: 'agent', agentName: 'philos' },
     }));
     expect(out.result.status).toBe('pending_user_confirmation');
   });
@@ -93,7 +93,7 @@ describe('PipelineRunner — write-policy matrix (no UserAuthorizedActionContext
   it('Roles + no evidence → pending_user_confirmation (philos, all-layer access)', () => {
     const out = runner.run(baseInput({
       nodeId: 'Roles',
-      proposedBy: 'philos',
+      proposedBy: { type: 'agent', agentName: 'philos' },
     }));
     expect(out.result.status).toBe('pending_user_confirmation');
   });
@@ -105,7 +105,7 @@ describe('PipelineRunner — UserAuthorizedActionContext → accepted', () => {
   it('Preferences + user auth → accepted', () => {
     const out = runner.run(baseInput({
       nodeId: 'Preferences',
-      authContext: USER_CTX,
+      proposedBy: { type: 'user', actionContext: USER_CTX },
     }));
     expect(out.result.status).toBe('accepted');
   });
@@ -113,14 +113,13 @@ describe('PipelineRunner — UserAuthorizedActionContext → accepted', () => {
   it('Values + user auth → accepted', () => {
     const out = runner.run(baseInput({
       nodeId: 'Values',
-      proposedBy: 'philos',
-      authContext: USER_CTX,
+      proposedBy: { type: 'user', actionContext: USER_CTX },
     }));
     expect(out.result.status).toBe('accepted');
   });
 
   it('accepted result has an interpretation with the correct nodeId', () => {
-    const out = runner.run(baseInput({ authContext: USER_CTX }));
+    const out = runner.run(baseInput({ proposedBy: { type: 'user', actionContext: USER_CTX } }));
     expect(out.result.status).toBe('accepted');
     const interp = (out.result as any).interpretation;
     expect(interp.nodeId).toBe('Preferences');
@@ -128,7 +127,7 @@ describe('PipelineRunner — UserAuthorizedActionContext → accepted', () => {
   });
 
   it('accepted interpretation has evidenceStatus', () => {
-    const out = runner.run(baseInput({ authContext: USER_CTX }));
+    const out = runner.run(baseInput({ proposedBy: { type: 'user', actionContext: USER_CTX } }));
     const interp = (out.result as any).interpretation;
     expect(['unavailable', 'referenced', 'evaluated']).toContain(interp.evidenceStatus);
   });
@@ -206,7 +205,7 @@ describe('PipelineRunner — conflict detection', () => {
 
     const out = runner.run(baseInput({
       nodeId: 'Values',
-      proposedBy: 'philos',
+      proposedBy: { type: 'agent', agentName: 'philos' },
       proposedContent: 'justice over everything',
       currentProfile: profile,
     }));
@@ -249,10 +248,9 @@ describe('PipelineRunner — conflict detection', () => {
 
     const out = runner.run(baseInput({
       nodeId: 'Values',
-      proposedBy: 'philos',
+      proposedBy: { type: 'user', actionContext: USER_CTX },
       proposedContent: 'new value',
       currentProfile: profile,
-      authContext: USER_CTX,
     }));
     // Conflict detection (Stage 5) runs before write policy (Stage 6).
     // The pipeline returns blocked_by_conflict regardless of authContext.
@@ -264,7 +262,7 @@ describe('PipelineRunner — stage audit trail', () => {
   const runner = new PipelineRunner();
 
   it('all 8 stages appear in the output', () => {
-    const out = runner.run(baseInput({ authContext: USER_CTX }));
+    const out = runner.run(baseInput({ proposedBy: { type: 'user', actionContext: USER_CTX } }));
     const stageNames = out.stages.map(s => s.stage);
     const EXPECTED = ['validate', 'classify', 'normalize', 'evaluate_evidence', 'detect_conflict', 'apply_write_policy', 'create_proposal', 'commit'];
     for (const name of EXPECTED) {
@@ -278,7 +276,7 @@ describe('PipelineRunner — stage audit trail', () => {
   });
 
   it('successful run has validate: passed', () => {
-    const out = runner.run(baseInput({ authContext: USER_CTX }));
+    const out = runner.run(baseInput({ proposedBy: { type: 'user', actionContext: USER_CTX } }));
     const validate = out.stages.find(s => s.stage === 'validate');
     expect(validate?.outcome).toBe('passed');
   });
@@ -334,7 +332,7 @@ describe('PipelineRunner — conflict type classification', () => {
     const profile = makeExistingInterpretation('identity', 'Roles');
     const out = runner.run(baseInput({
       nodeId: 'Roles',
-      proposedBy: 'philos', // philos has write access to identity layer; merlin does not
+      proposedBy: { type: 'agent', agentName: 'philos' }, // philos has write access to identity layer; merlin does not
       proposedContent: 'new role',
       currentProfile: profile,
     }));

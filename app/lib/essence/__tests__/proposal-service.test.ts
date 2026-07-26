@@ -77,11 +77,22 @@ describe('EssenceProposalService — proposeUpdate', () => {
 
   it('agent proposal with evidence → pending_review', async () => {
     const { repo, svc } = makeService();
-    await repo.createProfile('u1');
+    const profile = await repo.createProfile('u1');
+    profile.observations.push({
+      id: 'obs-1',
+      source: 'agent_inference',
+      recordedBy: 'merlin',
+      content: 'prior observed signal',
+      sessionId: null,
+      observedAt: new Date().toISOString(),
+      evidenceIds: [],
+      correctsObservationId: null,
+    });
+    await repo.saveProfile(profile);
     const result = await svc.proposeUpdate(
       'u1',
       baseProposal({ evidenceObservationIds: ['obs-1'] }),
-      null
+      null,
     );
     expect(result.status).toBe('pending_review');
   });
@@ -385,6 +396,19 @@ describe('EssenceProposalService — getPendingProposals', () => {
 });
 
 describe('EssenceProposalService — conflict persistence', () => {
+  it('nexus (no write access) proposal → rejected with no Observation written', async () => {
+    const { repo, svc } = makeService();
+    await repo.createProfile('u1');
+    const result = await svc.proposeUpdate(
+      'u1',
+      baseProposal({ proposedBy: 'nexus', nodeId: 'Preferences' }),
+      null,
+    );
+    expect(result.status).toBe('rejected');
+    const profile = await repo.getProfile('u1');
+    expect(profile?.observations).toHaveLength(0);
+  });
+
   it('blocked_by_conflict persists a conflict record to the profile', async () => {
     const { repo, svc } = makeService();
     const profile = await repo.createProfile('u1');
@@ -437,5 +461,112 @@ describe('EssenceProposalService — conflict persistence', () => {
 
     const updated = await repo.getProfile('u1');
     expect(updated?.conflicts.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('EssenceProposalService — evidence validation', () => {
+  it('unknown observation ID in evidenceObservationIds → rejected with no Observation written', async () => {
+    const { repo, svc } = makeService();
+    await repo.createProfile('u1');
+    const result = await svc.proposeUpdate(
+      'u1',
+      baseProposal({ evidenceObservationIds: ['obs-does-not-exist'] }),
+      null,
+    );
+    expect(result.status).toBe('rejected');
+    const profile = await repo.getProfile('u1');
+    expect(profile?.observations).toHaveLength(0);
+  });
+
+  it('valid same-profile observation ID is accepted as evidence', async () => {
+    const { repo, svc } = makeService();
+    const profile = await repo.createProfile('u1');
+    const existingObs = {
+      id: 'obs-valid',
+      source: 'agent_inference' as const,
+      recordedBy: 'merlin',
+      content: 'something observed',
+      sessionId: null,
+      observedAt: new Date().toISOString(),
+      evidenceIds: [],
+      correctsObservationId: null,
+    };
+    profile.observations.push(existingObs);
+    await repo.saveProfile(profile);
+
+    const result = await svc.proposeUpdate(
+      'u1',
+      baseProposal({ evidenceObservationIds: ['obs-valid'] }),
+      null,
+    );
+    // Referenced evidence → pending_review
+    expect(result.status).toBe('pending_review');
+  });
+
+  it('duplicate evidence IDs are deduplicated — no double-counting', async () => {
+    const { repo, svc } = makeService();
+    const profile = await repo.createProfile('u1');
+    profile.observations.push({
+      id: 'obs-1',
+      source: 'agent_inference' as const,
+      recordedBy: 'merlin',
+      content: 'obs content',
+      sessionId: null,
+      observedAt: new Date().toISOString(),
+      evidenceIds: [],
+      correctsObservationId: null,
+    });
+    await repo.saveProfile(profile);
+
+    // Pass the same ID from both proposal and package
+    const result = await svc.proposeUpdate(
+      'u1',
+      baseProposal({ evidenceObservationIds: ['obs-1'] }),
+      {
+        evidenceIds: ['obs-1'],
+        sourceType: 'behavioral_pattern',
+        confidenceAsserted: 'high',
+        packagedBy: 'merlin',
+        packagedAt: new Date().toISOString(),
+      },
+    );
+    expect(result.status).toBe('pending_review');
+  });
+
+  it('cross-domain EvidencePackage IDs are accepted without requiring a profile observation', async () => {
+    const { repo, svc } = makeService();
+    await repo.createProfile('u1');
+
+    const result = await svc.proposeUpdate(
+      'u1',
+      baseProposal({ evidenceObservationIds: [] }),
+      {
+        evidenceIds: ['cross-domain-ev-99'],
+        sourceType: 'behavioral_pattern',
+        confidenceAsserted: 'high',
+        packagedBy: 'merlin',
+        packagedAt: new Date().toISOString(),
+      },
+    );
+    // EvidencePackage IDs count as evidence even without a matching profile observation
+    expect(result.status).toBe('pending_review');
+  });
+});
+
+describe('EssenceProposalService — Observation immutability', () => {
+  it('confirmation does not append a duplicate Observation to the profile', async () => {
+    const { repo, svc } = makeService();
+    await repo.createProfile('u1');
+    const result = await svc.proposeUpdate('u1', baseProposal(), null);
+    expect(result.status).toBe('pending_user_confirmation');
+    const token = (result as any).confirmationToken as string;
+
+    const before = await repo.getProfile('u1');
+    const obsCountBefore = before?.observations.length ?? 0;
+
+    await svc.confirmUpdate('u1', token, USER_CTX);
+
+    const after = await repo.getProfile('u1');
+    expect(after?.observations.length).toBe(obsCountBefore);
   });
 });

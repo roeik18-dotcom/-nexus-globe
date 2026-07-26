@@ -8,9 +8,7 @@
  *   EssenceReadAPI          → EssenceReadService
  *   EssenceProposalAPI      → EssenceProposalService
  *   EssenceUserActionAPI    → EssenceProposalService
- *   EssenceClassificationAPI → (future)
- *
- * EssenceAPI remains as the union for backwards-compatible consumers.
+ *   EssenceClassificationAPI → EssenceClassificationService
  */
 
 import type { EssenceLayer } from './ontology';
@@ -288,20 +286,24 @@ export interface EssenceUserActionAPI {
 
 // ── Sub-Interface: Classification ─────────────────────────────────────────────
 
-/** Not yet implemented. Placeholder for future classification service. */
+export type ClassificationResult =
+  | {
+      status: 'classified';
+      nodeId: string;
+      layer: EssenceLayer;
+      classificationConfidence: 'certain' | 'probable' | 'ambiguous';
+      requiresMoreContext: boolean;
+    }
+  | {
+      status: 'unsupported';
+      reason: string;
+    };
+
+/** Implemented by EssenceClassificationService. */
 export interface EssenceClassificationAPI {
   classifyInformation(
     content: string,
     requestedBy: AgentName,
-  ): Promise<{
-    nodeId: string;
-    layer: EssenceLayer;
-    classificationConfidence: 'certain' | 'probable' | 'ambiguous';
-    requiresMoreContext: boolean;
-  }>;
+  ): Promise<ClassificationResult>;
 }
 
-// ── Union Interface (backwards compat) ────────────────────────────────────────
-
-/** @deprecated Use the specific sub-interfaces instead. */
-export interface EssenceAPI extends EssenceReadAPI, EssenceProposalAPI, EssenceUserActionAPI, EssenceClassificationAPI {}

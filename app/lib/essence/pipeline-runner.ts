@@ -21,7 +21,8 @@ import type {
 } from './schema';
 import type { AgentName } from './access';
 import { canAgentPropose } from './access';
-import type { EssenceActor, UserAuthorizedActionContext } from './actor';
+import type { EssenceActor } from './actor';
+import { actorLabel } from './actor';
 import type {
   CandidateInterpretation,
   ClassificationResult,
@@ -70,12 +71,15 @@ export interface PipelineRunnerInput {
   profileId: string;
   nodeId: string;
   proposedContent: string;
-  /** The actor submitting this proposal. 'user' bypasses the agent-access check. */
+  /**
+   * The actor submitting this proposal.
+   * - 'agent': subject to canAgentPropose access check.
+   * - 'user': bypasses agent-access check; auto_accept write policy.
+   * - 'legacy_import': bypasses agent-access check; auto_accept write policy.
+   */
   proposedBy: EssenceActor;
   evidenceObservationIds: string[];
   rationale: string;
-  /** Present only for user-authorized actions (correctItem / confirmUpdate). */
-  authContext?: UserAuthorizedActionContext;
   /** Snapshot of the profile at the time of proposal. */
   currentProfile: EssenceProfile;
 }
@@ -108,11 +112,12 @@ export class PipelineRunner implements EssencePipeline {
       stages.push(stage('validate', 'blocked', `unknown nodeId: ${input.nodeId}`));
       return earlyReject(stages, `Unknown nodeId: ${input.nodeId}`, this.clock, this.idGen);
     }
-    // User-authorized actions bypass the agent-access check.
-    if (input.authContext?.actorType !== 'user') {
-      if (!canAgentPropose(input.proposedBy as AgentName, node.layer)) {
-        stages.push(stage('validate', 'blocked', `${input.proposedBy} cannot propose to ${node.layer}`));
-        return earlyReject(stages, `Agent ${input.proposedBy} cannot propose to layer ${node.layer}`, this.clock, this.idGen);
+    // Only agents are subject to the canAgentPropose access check.
+    // Users and legacy imports are pre-authorized by their actor type.
+    if (input.proposedBy.type === 'agent') {
+      if (!canAgentPropose(input.proposedBy.agentName, node.layer)) {
+        stages.push(stage('validate', 'blocked', `${input.proposedBy.agentName} cannot propose to ${node.layer}`));
+        return earlyReject(stages, `Agent ${input.proposedBy.agentName} cannot propose to layer ${node.layer}`, this.clock, this.idGen);
       }
     }
     stages.push(stage('validate', 'passed'));
@@ -325,7 +330,8 @@ function applyWritePolicy(
   node: { id: string; layer: EssenceLayer; confidenceRules: { writeThreshold: string; requiresUserConfirmation: boolean } },
   evidenceStatus: EvidenceStatus,
 ): WritePolicyDecision {
-  if (input.authContext?.actorType === 'user') return 'auto_accept';
+  // Users and legacy imports carry pre-authorized context — auto accept.
+  if (input.proposedBy.type !== 'agent') return 'auto_accept';
   const { writeThreshold, requiresUserConfirmation } = node.confidenceRules;
   if (requiresUserConfirmation || writeThreshold === 'user_confirmed') return 'require_user_confirmation';
   if (evidenceStatus === 'unavailable') return 'require_user_confirmation';
@@ -383,11 +389,12 @@ function buildCandidate(
   idGen: IdGenerator,
 ): CandidateInterpretation {
   const now = new Date(clock.now()).toISOString();
+  const isUserOrImport = input.proposedBy.type !== 'agent';
   const classification: ClassificationResult = {
     observation: {
       id: idGen.nextId('obs'),
-      source: input.authContext?.actorType === 'user' ? 'user_correction' : 'agent_inference',
-      recordedBy: input.proposedBy,
+      source: isUserOrImport ? 'user_correction' : 'agent_inference',
+      recordedBy: actorLabel(input.proposedBy),
       content: input.proposedContent,
       sessionId: null,
       observedAt: now,
@@ -414,14 +421,14 @@ function buildCandidate(
     normalizationResult: normalization,
     candidateContent: input.proposedContent.trim(),
     candidateConfidence: evidenceStatus === 'unavailable' ? 'low' : 'medium',
-    interpretationKind: input.authContext?.actorType === 'user'
+    interpretationKind: isUserOrImport
       ? 'user_confirmed_understanding'
       : 'probable_interpretation',
     temporalKind: 'trait',
     stateScope: null,
     sensitivity: 'personal',
     proposedAt: now,
-    proposedBy: input.proposedBy,
+    proposedBy: actorLabel(input.proposedBy),
   };
 }
 
@@ -449,12 +456,13 @@ function buildInterpretation(
   idGen: IdGenerator,
 ): Interpretation {
   const now = new Date(clock.now()).toISOString();
+  const isUserOrImport = input.proposedBy.type !== 'agent';
   const confidence: ConfidenceLevel =
-    input.authContext?.actorType === 'user' ? 'verified' : evidenceStatus === 'unavailable' ? 'low' : 'medium';
+    isUserOrImport ? 'verified' : evidenceStatus === 'unavailable' ? 'low' : 'medium';
   const provenance: Provenance = {
-    source: input.authContext?.actorType === 'user' ? 'user_correction' : 'agent_inference',
+    source: isUserOrImport ? 'user_correction' : 'agent_inference',
     confidence,
-    createdBy: input.proposedBy,
+    createdBy: actorLabel(input.proposedBy),
     firstObservedAt: now,
     lastConfirmedAt: now,
     lastUpdatedAt: now,
@@ -470,7 +478,7 @@ function buildInterpretation(
     content: input.proposedContent.trim(),
     observationIds: input.evidenceObservationIds,
     confidence,
-    interpretationKind: input.authContext?.actorType === 'user'
+    interpretationKind: isUserOrImport
       ? 'user_confirmed_understanding'
       : 'probable_interpretation',
     provenance,
