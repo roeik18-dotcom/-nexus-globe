@@ -3,6 +3,13 @@
  *
  * Unit tests for LLMOrientationProvider. The Anthropic client is injected as
  * a mock — no real API calls are made.
+ *
+ * Failure model under test:
+ *   - API/transport errors → extractSignals() throws (caller sees rejected Promise)
+ *   - Missing tool_use block → throws (protocol violation)
+ *   - Missing or non-array signals field → throws (malformed tool input)
+ *   - Valid empty signals array → returns [] (genuine "no signals found")
+ *   - Signals failing validation → silently dropped; may return []
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -275,17 +282,26 @@ describe('LLMOrientationProvider', () => {
     expect(signals).toHaveLength(2);
   });
 
-  // ── No tool_use block ──────────────────────────────────────────────────────
+  // ── Valid empty result (not a failure) ────────────────────────────────────
 
-  it('returns [] when LLM returns no tool_use block', async () => {
+  it('returns [] when LLM explicitly provides an empty signals array — this is not a failure', async () => {
+    const { provider, mockCreate } = makeProvider();
+    mockCreate.mockResolvedValueOnce(makeToolResponse([]));
+
+    // Must resolve, not reject
+    await expect(provider.extractSignals(makeInput(), makeProfile())).resolves.toHaveLength(0);
+  });
+
+  // ── Protocol failures — must throw ────────────────────────────────────────
+
+  it('throws when response has no tool_use block (protocol violation with forced tool_choice)', async () => {
     const { provider, mockCreate } = makeProvider();
     mockCreate.mockResolvedValueOnce(makeTextResponse());
 
-    const signals = await provider.extractSignals(makeInput(), makeProfile());
-    expect(signals).toHaveLength(0);
+    await expect(provider.extractSignals(makeInput(), makeProfile())).rejects.toThrow();
   });
 
-  it('returns [] when tool input has no signals array', async () => {
+  it('throws when tool input has no signals field', async () => {
     const { provider, mockCreate } = makeProvider();
     mockCreate.mockResolvedValueOnce({
       ...makeToolResponse([]),
@@ -297,11 +313,10 @@ describe('LLMOrientationProvider', () => {
       }],
     });
 
-    const signals = await provider.extractSignals(makeInput(), makeProfile());
-    expect(signals).toHaveLength(0);
+    await expect(provider.extractSignals(makeInput(), makeProfile())).rejects.toThrow();
   });
 
-  it('returns [] when signals is not an array', async () => {
+  it('throws when signals field is not an array', async () => {
     const { provider, mockCreate } = makeProvider();
     mockCreate.mockResolvedValueOnce({
       ...makeToolResponse([]),
@@ -313,26 +328,23 @@ describe('LLMOrientationProvider', () => {
       }],
     });
 
-    const signals = await provider.extractSignals(makeInput(), makeProfile());
-    expect(signals).toHaveLength(0);
+    await expect(provider.extractSignals(makeInput(), makeProfile())).rejects.toThrow();
   });
 
-  // ── Graceful degradation ───────────────────────────────────────────────────
+  // ── Infrastructure failures — must propagate ──────────────────────────────
 
-  it('returns [] when the API call throws — never propagates the error', async () => {
+  it('propagates API errors — extractSignals() rejects', async () => {
     const { provider, mockCreate } = makeProvider();
     mockCreate.mockRejectedValueOnce(new Error('API unavailable'));
 
-    const signals = await provider.extractSignals(makeInput(), makeProfile());
-    expect(signals).toHaveLength(0);
+    await expect(provider.extractSignals(makeInput(), makeProfile())).rejects.toThrow('API unavailable');
   });
 
-  it('returns [] when the API call rejects with a non-Error value', async () => {
+  it('propagates non-Error API rejections', async () => {
     const { provider, mockCreate } = makeProvider();
-    mockCreate.mockRejectedValueOnce('string error');
+    mockCreate.mockRejectedValueOnce('rate limited');
 
-    const signals = await provider.extractSignals(makeInput(), makeProfile());
-    expect(signals).toHaveLength(0);
+    await expect(provider.extractSignals(makeInput(), makeProfile())).rejects.toBe('rate limited');
   });
 
   // ── Valid signals pass through alongside invalid ones ──────────────────────
@@ -351,9 +363,61 @@ describe('LLMOrientationProvider', () => {
     expect(signals.map(s => s.candidateValue)).toEqual(['brief', 'phased']);
   });
 
-  // ── debug mode ────────────────────────────────────────────────────────────
+  // ── Content logging policy ─────────────────────────────────────────────────
 
-  it('debug=false: reasoning field is omitted from tool schema (inspects the create call)', async () => {
+  it('never logs reasoning in debug=false mode', async () => {
+    const { provider, mockCreate } = makeProvider(false);
+    mockCreate.mockResolvedValueOnce(makeToolResponse([
+      {
+        dimensionKey:   'OrientationResponseDepth',
+        candidateValue: 'brief',
+        signalWeight:   1.0,
+        reasoning:      'User-derived content that must not be logged.',
+      },
+    ]));
+
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    await provider.extractSignals(makeInput(), makeProfile());
+    expect(debugSpy).not.toHaveBeenCalled();
+    debugSpy.mockRestore();
+  });
+
+  it('never logs reasoning in debug=true mode', async () => {
+    const { provider, mockCreate } = makeProvider(true);
+    mockCreate.mockResolvedValueOnce(makeToolResponse([
+      {
+        dimensionKey:   'OrientationResponseDepth',
+        candidateValue: 'brief',
+        signalWeight:   1.0,
+        reasoning:      'User-derived content that must not be logged even in debug mode.',
+      },
+    ]));
+
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    await provider.extractSignals(makeInput(), makeProfile());
+    expect(debugSpy).not.toHaveBeenCalled();
+    debugSpy.mockRestore();
+  });
+
+  it('reasoning field is not present on any returned OrientationSignal', async () => {
+    const { provider, mockCreate } = makeProvider(true);
+    mockCreate.mockResolvedValueOnce(makeToolResponse([
+      {
+        dimensionKey:   'OrientationResponseDepth',
+        candidateValue: 'brief',
+        signalWeight:   1.0,
+        reasoning:      'Some reasoning text.',
+      },
+    ]));
+
+    const signals = await provider.extractSignals(makeInput(), makeProfile());
+    expect(signals).toHaveLength(1);
+    expect(Object.keys(signals[0])).not.toContain('reasoning');
+  });
+
+  // ── debug=false/true schema effect ────────────────────────────────────────
+
+  it('debug=false: reasoning field is absent from tool schema', async () => {
     const { provider, mockCreate } = makeProvider(false);
     mockCreate.mockResolvedValueOnce(makeToolResponse([]));
 
@@ -375,52 +439,7 @@ describe('LLMOrientationProvider', () => {
     expect(itemProps['reasoning']).toBeDefined();
   });
 
-  it('debug=true: reasoning is logged via console.debug when present in signal', async () => {
-    const { provider, mockCreate } = makeProvider(true);
-    mockCreate.mockResolvedValueOnce(makeToolResponse([
-      {
-        dimensionKey: 'OrientationResponseDepth',
-        candidateValue: 'brief',
-        signalWeight: 1.0,
-        reasoning: 'User explicitly said "brief".',
-      },
-    ]));
-
-    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
-    await provider.extractSignals(makeInput(), makeProfile());
-    expect(debugSpy).toHaveBeenCalledOnce();
-    debugSpy.mockRestore();
-  });
-
-  it('debug=false: reasoning in response is silently ignored', async () => {
-    const { provider, mockCreate } = makeProvider(false);
-    mockCreate.mockResolvedValueOnce(makeToolResponse([
-      {
-        dimensionKey: 'OrientationResponseDepth',
-        candidateValue: 'brief',
-        signalWeight: 1.0,
-        reasoning: 'Would be logged in debug mode.',
-      },
-    ]));
-
-    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
-    const signals = await provider.extractSignals(makeInput(), makeProfile());
-    expect(debugSpy).not.toHaveBeenCalled();
-    expect(signals).toHaveLength(1);
-    debugSpy.mockRestore();
-  });
-
-  // ── Empty signals array ────────────────────────────────────────────────────
-
-  it('returns [] when LLM returns an empty signals array', async () => {
-    const { provider, mockCreate } = makeProvider();
-    mockCreate.mockResolvedValueOnce(makeToolResponse([]));
-
-    const signals = await provider.extractSignals(makeInput(), makeProfile());
-    expect(signals).toHaveLength(0);
-  });
-
-  // ── tool_choice and model pass-through (observability of API call) ─────────
+  // ── tool_choice API call ───────────────────────────────────────────────────
 
   it('forces tool_choice to the extraction tool', async () => {
     const { provider, mockCreate } = makeProvider();

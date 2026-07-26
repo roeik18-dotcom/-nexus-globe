@@ -15,7 +15,16 @@
  *   The full OrientationSignal contract is (0, 1]; any LLM output outside that
  *   range is rejected during validation.
  *
- * Graceful degradation: extractSignals() returns [] on any error — never throws.
+ * Failure model:
+ *   Infrastructure failures (API errors, timeouts, network) and protocol failures
+ *   (no tool_use block, malformed tool input) are propagated as thrown errors so
+ *   the caller (CompositeOrientationProvider) can distinguish them from a valid
+ *   empty inference result.
+ *   validate() returns [] only when the LLM genuinely found no valid signals.
+ *
+ * Content logging policy:
+ *   Reasoning produced by the model may contain user-derived content and must
+ *   never be logged, persisted, or returned — in any mode.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -93,6 +102,9 @@ function buildSignalProperties(debug: boolean): Record<string, unknown> {
     },
   };
   if (debug) {
+    // reasoning is requested from the model for schema-level prompting only.
+    // It is consumed here for tool-schema completeness and then discarded.
+    // It must never be logged, persisted, or returned — see content logging policy above.
     props['reasoning'] = {
       type: 'string',
       description: 'Brief explanation of the specific user language that supports this signal.',
@@ -118,7 +130,8 @@ export class LLMOrientationProvider implements OrientationInferenceProvider {
 
   /**
    * @param agentName - Agent name embedded in the `inferredBy` field of each signal.
-   * @param debug     - When true, include reasoning in the tool schema and log signals.
+   * @param debug     - When true, include reasoning in the tool schema (schema-level only;
+   *                    reasoning is never logged, persisted, or returned in any mode).
    * @param client    - Anthropic client; defaults to `new Anthropic()` (uses ANTHROPIC_API_KEY).
    * @param clock     - Injected clock; defaults to system clock.
    * @param model     - Model override; defaults to claude-haiku-4-5-20251001.
@@ -134,20 +147,34 @@ export class LLMOrientationProvider implements OrientationInferenceProvider {
     this.model = model;
   }
 
+  /**
+   * Extract orientation signals from the exchange.
+   *
+   * Throws on infrastructure or protocol failures — the caller
+   * (CompositeOrientationProvider) handles these via Promise.allSettled and
+   * reports them through its diagnostics hook.
+   * Returns [] only when the LLM genuinely produced no valid signals.
+   */
   async extractSignals(
     input: OrientationInferenceInput,
     _profile: Readonly<EssenceProfile>,
   ): Promise<OrientationSignal[]> {
-    try {
-      const rawSignals = await this.callLLM(input);
-      return this.validate(rawSignals, input);
-    } catch {
-      return [];
-    }
+    const rawSignals = await this.callLLM(input);
+    return this.validate(rawSignals, input);
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────────
 
+  /**
+   * Call the LLM and return raw signal objects from the tool response.
+   *
+   * Throws on:
+   *   - API / transport errors (propagated from client.messages.create)
+   *   - Missing tool_use block (protocol violation; tool_choice forces it)
+   *   - Missing or non-array signals field (malformed tool input)
+   *
+   * Returns [] only when the model explicitly provides an empty signals array.
+   */
   private async callLLM(input: OrientationInferenceInput): Promise<RawSignal[]> {
     const userContent =
       `<assistant_response>\n${input.exchange.assistantResponse}\n</assistant_response>\n\n` +
@@ -187,14 +214,29 @@ export class LLMOrientationProvider implements OrientationInferenceProvider {
     const toolUse = response.content.find(
       (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use',
     );
-    if (!toolUse) return [];
+    if (!toolUse) {
+      throw new Error(
+        `[LLMOrientationProvider] protocol violation: no tool_use block in response despite forced tool_choice`,
+      );
+    }
 
     const toolInput = toolUse.input as Record<string, unknown>;
-    if (!Array.isArray(toolInput['signals'])) return [];
+    if (!Array.isArray(toolInput['signals'])) {
+      throw new Error(
+        `[LLMOrientationProvider] malformed tool input: signals field is missing or not an array`,
+      );
+    }
 
     return toolInput['signals'] as RawSignal[];
   }
 
+  /**
+   * Validate and map raw LLM output to OrientationSignals.
+   * Invalid entries are silently dropped — this is not a failure.
+   * Returns [] when the LLM found no valid signals for this exchange.
+   * The reasoning field, if present, is read for deduplication bookkeeping
+   * and then discarded — never logged, persisted, or returned.
+   */
   private validate(rawSignals: RawSignal[], input: OrientationInferenceInput): OrientationSignal[] {
     const inferredAt = new Date(this.clock.now()).toISOString();
     const emitted = new Set<string>();
@@ -215,12 +257,8 @@ export class LLMOrientationProvider implements OrientationInferenceProvider {
       if (emitted.has(dedupKey)) continue;
       emitted.add(dedupKey);
 
-      if (this.debug && typeof raw.reasoning === 'string') {
-        console.debug(
-          `[LLMOrientationProvider] ${dimensionKey}=${raw.candidateValue}` +
-            ` (w=${raw.signalWeight}): ${raw.reasoning}`,
-        );
-      }
+      // raw.reasoning is intentionally not used here.
+      // Content logging policy: reasoning is discarded without logging in all modes.
 
       signals.push({
         dimensionKey,

@@ -44,6 +44,16 @@ export { _setRepository, _clearRegistry };
 
 const VALID_ACTORS = new Set<AgentName>(Object.keys(ACCESS_POLICIES) as AgentName[]);
 
+/**
+ * Fixed inference identity for this route.
+ *
+ * X-Essence-Actor controls authorization (which agents may call this endpoint).
+ * Inference provenance — inferredBy, proposedBy, recordedBy — is always Merlin.
+ * The two concerns must not be conflated: trusting the header for provenance would
+ * let any authorized caller claim a different agent's identity in the human model.
+ */
+const OBSERVE_ACTOR: AgentName = 'merlin';
+
 function forbidden(): Response {
   return Response.json({ error: 'Forbidden' }, { status: 403 });
 }
@@ -138,11 +148,11 @@ export async function POST(
     return Response.json({ error: 'Internal error' }, { status: 500 });
   }
 
-  // Assemble providers. LLM provider is included when ANTHROPIC_API_KEY is configured.
-  // Both providers degrade gracefully on failure — the composite is always safe to use.
-  const providers = [new RuleBasedOrientationProvider(actor)];
+  // Assemble providers using the fixed Merlin identity (OBSERVE_ACTOR), not the auth header.
+  // LLM provider is included when ANTHROPIC_API_KEY is configured.
+  const providers = [new RuleBasedOrientationProvider(OBSERVE_ACTOR)];
   if (process.env.ANTHROPIC_API_KEY) {
-    providers.push(new LLMOrientationProvider(actor));
+    providers.push(new LLMOrientationProvider(OBSERVE_ACTOR));
   }
 
   // Get-or-create stateful per-session orchestrator.
@@ -150,7 +160,7 @@ export async function POST(
     new OrientationInferenceOrchestrator(
       new CompositeOrientationProvider(providers),
       new EssenceProposalService(getRepository(), new PipelineRunner()),
-      actor,
+      OBSERVE_ACTOR,
     ),
   );
 

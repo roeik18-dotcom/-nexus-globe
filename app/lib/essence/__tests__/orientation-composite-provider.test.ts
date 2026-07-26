@@ -4,8 +4,9 @@
  * Unit tests for CompositeOrientationProvider.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CompositeOrientationProvider } from '../orientation-composite-provider';
+import type { CompositeDiagnostics } from '../orientation-composite-provider';
 import type { OrientationInferenceInput, OrientationSignal } from '../orientation-inference';
 import type { EssenceProfile } from '../schema';
 import { createEmptyEssenceProfile } from '../schema';
@@ -129,6 +130,103 @@ describe('CompositeOrientationProvider', () => {
     ]);
 
     await expect(composite.extractSignals(makeInput(), makeProfile())).resolves.toHaveLength(0);
+  });
+
+  // ── CompositeDiagnostics ───────────────────────────────────────────────────
+
+  describe('with diagnostics', () => {
+    let diagnostics: CompositeDiagnostics;
+
+    beforeEach(() => {
+      diagnostics = { onProviderFailure: vi.fn() };
+    });
+
+    it('calls diagnostics with the correct provider index when a provider fails', async () => {
+      const s1 = makeSignal('OrientationResponseDepth', 'brief');
+      const err = new Error('LLM failed');
+      const composite = new CompositeOrientationProvider(
+        [makeProvider([s1]), makeFailingProvider(err)],
+        diagnostics,
+      );
+
+      await composite.extractSignals(makeInput(), makeProfile());
+
+      expect(diagnostics.onProviderFailure).toHaveBeenCalledTimes(1);
+      expect(diagnostics.onProviderFailure).toHaveBeenCalledWith(1, err);
+    });
+
+    it('calls diagnostics with index 0 when the first provider fails', async () => {
+      const err = new Error('Rule failed');
+      const composite = new CompositeOrientationProvider(
+        [makeFailingProvider(err), makeProvider([])],
+        diagnostics,
+      );
+
+      await composite.extractSignals(makeInput(), makeProfile());
+
+      expect(diagnostics.onProviderFailure).toHaveBeenCalledWith(0, err);
+    });
+
+    it('returns signals from succeeding providers even when another provider fails', async () => {
+      const s1 = makeSignal('OrientationResponseDepth', 'brief');
+      const err = new Error('LLM failed');
+      const composite = new CompositeOrientationProvider(
+        [makeProvider([s1]), makeFailingProvider(err)],
+        diagnostics,
+      );
+
+      const signals = await composite.extractSignals(makeInput(), makeProfile());
+
+      expect(signals).toHaveLength(1);
+      expect(signals[0]).toBe(s1);
+    });
+
+    it('does not call diagnostics when all providers succeed', async () => {
+      const s1 = makeSignal('OrientationResponseDepth', 'brief');
+      const composite = new CompositeOrientationProvider(
+        [makeProvider([s1]), makeProvider([])],
+        diagnostics,
+      );
+
+      await composite.extractSignals(makeInput(), makeProfile());
+
+      expect(diagnostics.onProviderFailure).not.toHaveBeenCalled();
+    });
+
+    it('calls diagnostics once per failed provider with the correct index each time', async () => {
+      const errA = new Error('Provider A failed');
+      const errB = new Error('Provider B failed');
+      const s1 = makeSignal('OrientationCommunicationStyle', 'direct');
+      const composite = new CompositeOrientationProvider(
+        [makeFailingProvider(errA), makeProvider([s1]), makeFailingProvider(errB)],
+        diagnostics,
+      );
+
+      const signals = await composite.extractSignals(makeInput(), makeProfile());
+
+      expect(diagnostics.onProviderFailure).toHaveBeenCalledTimes(2);
+      expect(diagnostics.onProviderFailure).toHaveBeenNthCalledWith(1, 0, errA);
+      expect(diagnostics.onProviderFailure).toHaveBeenNthCalledWith(2, 2, errB);
+      expect(signals).toHaveLength(1);
+      expect(signals[0]).toBe(s1);
+    });
+
+    it('works without diagnostics — no error when no diagnostics hook provided', async () => {
+      const composite = new CompositeOrientationProvider([makeFailingProvider()]);
+      await expect(composite.extractSignals(makeInput(), makeProfile())).resolves.toHaveLength(0);
+    });
+
+    it('passes non-Error rejections to diagnostics unchanged', async () => {
+      const rejection = 'plain string rejection';
+      const composite = new CompositeOrientationProvider(
+        [makeFailingProvider(rejection)],
+        diagnostics,
+      );
+
+      await composite.extractSignals(makeInput(), makeProfile());
+
+      expect(diagnostics.onProviderFailure).toHaveBeenCalledWith(0, rejection);
+    });
   });
 
   // ── Providers run in parallel ──────────────────────────────────────────────
