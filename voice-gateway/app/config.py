@@ -40,5 +40,12 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8765
 
+    # ── Essence integration ────────────────────────────────────────────────────
+    # Shared secret for the internal Essence API route.
+    # Must match INTERNAL_ESSENCE_TOKEN in the Next.js environment.
+    # Leave unset to disable Essence context injection (graceful degradation).
+    internal_essence_token: str | None = None
+    essence_base_url: str = "http://localhost:3000"
+
 
 settings = Settings()
