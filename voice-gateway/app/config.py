@@ -1,3 +1,5 @@
+from typing import Literal
+
 from app.context_builder import ContextBuilder
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -26,7 +28,7 @@ class Settings(BaseSettings):
     adapter: str = "claude"
 
     claude_model: str = "claude-opus-4-8"
-    persona: str = "jarvis"
+    persona: Literal["jarvis", "philos", "merlin"] = "jarvis"
 
     @property
     def claude_system_prompt(self) -> str:
