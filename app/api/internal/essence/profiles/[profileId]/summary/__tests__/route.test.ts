@@ -1,5 +1,11 @@
 /**
- * Internal Essence summary route — auth, actor validation, profile resolution.
+ * Internal Essence summary route — auth, actor validation, DTO shape, profile resolution.
+ *
+ * HTTP contract under test:
+ *   403  missing or invalid Authorization token
+ *   400  missing or unknown X-Essence-Actor
+ *   404  profile does not exist
+ *   200  valid token + valid actor + existing profile
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -66,8 +72,7 @@ function makeInterpretation(overrides: Partial<Interpretation> = {}): Interpreta
   };
 }
 
-// Lazy-import the route module so we can control the env before it resolves.
-// Vitest caches modules, so _setRepository calls persist across the test file.
+// Lazy-import so module is shared across tests (Vitest module cache).
 async function route() {
   return await import('../route');
 }
@@ -77,7 +82,6 @@ async function route() {
 describe('GET /api/internal/essence/profiles/[profileId]/summary', () => {
   beforeEach(async () => {
     vi.stubEnv('INTERNAL_ESSENCE_TOKEN', VALID_TOKEN);
-    // Reset the repository to an empty state before each test.
     const { _setRepository } = await route();
     _setRepository(new InMemoryEssenceRepository());
   });
@@ -86,7 +90,7 @@ describe('GET /api/internal/essence/profiles/[profileId]/summary', () => {
     vi.unstubAllEnvs();
   });
 
-  // ── Token auth ──────────────────────────────────────────────────────────────
+  // ── Token auth → 403 ───────────────────────────────────────────────────────
 
   it('returns 403 when Authorization header is absent', async () => {
     const { GET } = await route();
@@ -116,27 +120,27 @@ describe('GET /api/internal/essence/profiles/[profileId]/summary', () => {
   });
 
   it('fails closed (403) when INTERNAL_ESSENCE_TOKEN is not set on the server', async () => {
-    vi.unstubAllEnvs(); // remove the token set in beforeEach
+    vi.unstubAllEnvs();
     const { GET } = await route();
     const res = await GET(makeRequest({ token: VALID_TOKEN, actor: 'merlin' }), makeCtx());
     expect(res.status).toBe(403);
   });
 
-  // ── Actor validation ────────────────────────────────────────────────────────
+  // ── Actor validation → 400 ─────────────────────────────────────────────────
 
-  it('returns 403 when X-Essence-Actor header is absent', async () => {
+  it('returns 400 when X-Essence-Actor header is absent', async () => {
     const { GET } = await route();
     const res = await GET(makeRequest({ token: VALID_TOKEN }), makeCtx());
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(400);
   });
 
-  it('returns 403 when X-Essence-Actor is an unknown agent name', async () => {
+  it('returns 400 when X-Essence-Actor is an unknown agent name', async () => {
     const { GET } = await route();
     const res = await GET(makeRequest({ token: VALID_TOKEN, actor: 'skynet' }), makeCtx());
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(400);
   });
 
-  // ── Profile resolution ──────────────────────────────────────────────────────
+  // ── Profile resolution → 404 ───────────────────────────────────────────────
 
   it('returns 404 when the profile does not exist', async () => {
     const { GET } = await route();
@@ -144,7 +148,9 @@ describe('GET /api/internal/essence/profiles/[profileId]/summary', () => {
     expect(res.status).toBe(404);
   });
 
-  it('returns 200 with summary for valid token and existing profile', async () => {
+  // ── Successful response → 200 ──────────────────────────────────────────────
+
+  it('returns 200 with DTO fields for valid token and existing profile', async () => {
     const { GET, _setRepository } = await route();
     const repo = new InMemoryEssenceRepository();
     await repo.createProfile('u1');
@@ -159,16 +165,40 @@ describe('GET /api/internal/essence/profiles/[profileId]/summary', () => {
     expect(typeof body.retrievedAt).toBe('string');
   });
 
-  it('summary nodes are filtered to task_relevant layers by EssenceReadService', async () => {
+  // ── Transport DTO — conflict metadata excluded ─────────────────────────────
+
+  it('response does not include unresolvedConflictCount', async () => {
+    const { GET, _setRepository } = await route();
+    const repo = new InMemoryEssenceRepository();
+    await repo.createProfile('u1');
+    _setRepository(repo);
+
+    const res = await GET(makeRequest({ token: VALID_TOKEN, actor: 'merlin' }), makeCtx('u1'));
+    const body = await res.json() as Record<string, unknown>;
+    expect(body.unresolvedConflictCount).toBeUndefined();
+  });
+
+  it('response does not include conflicts array', async () => {
+    const { GET, _setRepository } = await route();
+    const repo = new InMemoryEssenceRepository();
+    await repo.createProfile('u1');
+    _setRepository(repo);
+
+    const res = await GET(makeRequest({ token: VALID_TOKEN, actor: 'merlin' }), makeCtx('u1'));
+    const body = await res.json() as Record<string, unknown>;
+    expect(body.conflicts).toBeUndefined();
+  });
+
+  // ── Layer filtering via EssenceReadService ─────────────────────────────────
+
+  it('summary nodes respect task_relevant mode — aspirations layer excluded', async () => {
     const { GET, _setRepository } = await route();
     const repo = new InMemoryEssenceRepository();
     const profile = await repo.createProfile('u1');
 
-    // Add an interpretation in an aspirations-layer node (Merlin cannot read aspirations)
     profile.aspirations['Aspirations_Becoming'] = [
       makeInterpretation({ layer: 'aspirations', nodeId: 'Aspirations_Becoming' }),
     ];
-    // Add a readable expression-layer node
     profile.expression['Preferences'] = [makeInterpretation()];
     await repo.saveProfile(profile);
     _setRepository(repo);
@@ -178,19 +208,5 @@ describe('GET /api/internal/essence/profiles/[profileId]/summary', () => {
     const body = await res.json() as { nodes: Record<string, unknown> };
     expect(body.nodes['Preferences']).toBeDefined();
     expect(body.nodes['Aspirations_Becoming']).toBeUndefined();
-  });
-
-  // ── Response does not expose internal conflicts ─────────────────────────────
-
-  it('unresolvedConflictCount is a number but individual conflicts are not returned', async () => {
-    const { GET, _setRepository } = await route();
-    const repo = new InMemoryEssenceRepository();
-    await repo.createProfile('u1');
-    _setRepository(repo);
-
-    const res = await GET(makeRequest({ token: VALID_TOKEN, actor: 'merlin' }), makeCtx('u1'));
-    const body = await res.json() as Record<string, unknown>;
-    expect(typeof body.unresolvedConflictCount).toBe('number');
-    expect(body.conflicts).toBeUndefined();
   });
 });
