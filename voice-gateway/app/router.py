@@ -34,11 +34,19 @@ def build_adapter() -> VoiceAdapter:
 
 
 def build_orchestrator() -> VoiceAdapter:
-    """Build a multi-agent orchestrator (claude) or single adapter (echo)."""
+    """Build a multi-agent orchestrator (claude) or single adapter (echo/merlin)."""
     name = settings.adapter
     if name == "echo":
         from app.adapters.echo import EchoAdapter
         return EchoAdapter()
+    if name == "merlin":
+        if not _valid_anthropic_key(settings.anthropic_api_key):
+            raise ValueError(
+                "ANTHROPIC_API_KEY is missing or invalid "
+                "(must start with 'sk-ant-' and be >50 chars)"
+            )
+        from app.adapters.merlin import MerlinAdapter
+        return MerlinAdapter()
     if name == "claude":
         if not _valid_anthropic_key(settings.anthropic_api_key):
             raise ValueError(

@@ -64,6 +64,8 @@ class ClaudeAdapter(VoiceAdapter):
         self._history: dict[str, list[dict]] = defaultdict(list)
         # per-session asyncio.Lock to prevent concurrent summaries
         self._summary_locks: dict[str, asyncio.Lock] = {}
+        # per-session Essence context block injected by MerlinAdapter (empty for other personas)
+        self._essence_extra: dict[str, str] = {}
 
     @property
     def name(self) -> str:
@@ -230,7 +232,8 @@ class ClaudeAdapter(VoiceAdapter):
             )
 
         system_prompt = build_system_prompt_with_task(
-            self._persona, task, summary_state, tool_mem, recall_result=recall_result
+            self._persona, task, summary_state, tool_mem, recall_result=recall_result,
+            essence_context=self._essence_extra.get(session_id, ""),
         )
 
         # Inject delegation result as a dedicated block in the system prompt.
@@ -287,4 +290,5 @@ class ClaudeAdapter(VoiceAdapter):
     async def reset(self, session_id: str) -> None:
         self._history.pop(session_id, None)
         self._summary_locks.pop(session_id, None)
+        self._essence_extra.pop(session_id, None)
         logger.debug("claude[%s] history cleared", session_id)

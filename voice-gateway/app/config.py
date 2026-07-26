@@ -8,8 +8,8 @@ def build_system_prompt(persona: str) -> str:
     return ContextBuilder.for_session(persona).build()
 
 
-def build_system_prompt_with_task(persona: str, task=None, summary=None, tool_memory=None, recall_result=None) -> str:
-    return ContextBuilder.for_session(persona, task, summary, tool_memory, recall_result=recall_result).build()
+def build_system_prompt_with_task(persona: str, task=None, summary=None, tool_memory=None, recall_result=None, essence_context: str = "") -> str:
+    return ContextBuilder.for_session(persona, task, summary, tool_memory, recall_result=recall_result, essence_context=essence_context).build()
 
 
 class Settings(BaseSettings):

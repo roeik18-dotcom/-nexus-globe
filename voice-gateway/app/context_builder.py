@@ -100,6 +100,16 @@ class ToolMemoryLayer:
         return format_block(self._entries)
 
 
+class EssenceContextLayer:
+    """Renders a pre-fetched Essence context block into the system prompt."""
+
+    def __init__(self, block: str) -> None:
+        self._block = block
+
+    def render(self) -> str:
+        return self._block  # Already formatted with provenance by essence_context.py
+
+
 class ContextBuilder:
     def __init__(self, layers: list) -> None:
         self._layers = layers
@@ -116,12 +126,16 @@ class ContextBuilder:
         summary=None,
         tool_memory=None,
         recall_result=None,
+        essence_context: str = "",
     ) -> "ContextBuilder":
-        return cls([
+        layers: list = [
             BaseIdentityLayer(persona),
             PersonaLayer(persona),
             PersistentMemoryLayer(recall_result=recall_result, persona=persona),
             SessionSummaryLayer(summary),
             CurrentTaskLayer(task),
             ToolMemoryLayer(tool_memory or []),
-        ])
+        ]
+        if essence_context:
+            layers.append(EssenceContextLayer(essence_context))
+        return cls(layers)
