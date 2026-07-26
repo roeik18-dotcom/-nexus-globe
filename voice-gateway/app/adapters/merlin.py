@@ -4,13 +4,13 @@ Architecture:
   MerlinAdapter subclasses ClaudeAdapter (reuses all streaming, history,
   summarization, and delegation logic).  The only addition is a one-shot
   Essence context fetch at the start of each session, injected into the
-  system prompt via ClaudeAdapter._essence_extra.
+  system prompt via ClaudeAdapter._set_session_essence().
 
 Session lifecycle:
   1. main.py creates a VoiceSessionContext(session_id, profile_id) at
      WebSocket connection time and passes it to register_session().
   2. The first respond() call fetches Essence context for profile_id,
-     caches it, and sets _essence_extra so ClaudeAdapter picks it up.
+     caches it, and calls _set_session_essence() so ClaudeAdapter picks it up.
   3. Subsequent respond() calls skip the fetch — cache hit.
   4. reset() clears the cache and delegates to ClaudeAdapter.reset().
   5. unregister_session() is called in finally at disconnect.
@@ -65,7 +65,7 @@ class MerlinAdapter(ClaudeAdapter):
         """Call in finally at WebSocket disconnect to release all session state."""
         self._session_contexts.pop(session_id, None)
         self._essence_cache.pop(session_id, None)
-        self._essence_extra.pop(session_id, None)
+        self._clear_session_essence(session_id)
 
     # ── Adapter interface ─────────────────────────────────────────────────────
 
@@ -79,16 +79,13 @@ class MerlinAdapter(ClaudeAdapter):
                 logger.debug("merlin[%s] no profile_id — skipping Essence fetch", session_id)
                 block = ""
             self._essence_cache[session_id] = block
-            # Inject once; ClaudeAdapter reads _essence_extra every turn.
-            if block:
-                self._essence_extra[session_id] = block
-            else:
-                self._essence_extra.pop(session_id, None)
+            # Inject once; ClaudeAdapter reads the stored block every turn.
+            self._set_session_essence(session_id, block)
 
         async for chunk in super().respond(text, session_id):
             yield chunk
 
     async def reset(self, session_id: str) -> None:
         self._essence_cache.pop(session_id, None)
-        self._essence_extra.pop(session_id, None)
+        self._clear_session_essence(session_id)
         await super().reset(session_id)

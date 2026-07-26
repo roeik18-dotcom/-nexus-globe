@@ -64,8 +64,19 @@ class ClaudeAdapter(VoiceAdapter):
         self._history: dict[str, list[dict]] = defaultdict(list)
         # per-session asyncio.Lock to prevent concurrent summaries
         self._summary_locks: dict[str, asyncio.Lock] = {}
-        # per-session Essence context block injected by MerlinAdapter (empty for other personas)
+        # per-session Essence context block; written via _set_session_essence only
         self._essence_extra: dict[str, str] = {}
+
+    def _set_session_essence(self, session_id: str, block: str) -> None:
+        """Set or clear the Essence context block for a session."""
+        if block:
+            self._essence_extra[session_id] = block
+        else:
+            self._essence_extra.pop(session_id, None)
+
+    def _clear_session_essence(self, session_id: str) -> None:
+        """Remove the Essence context block for a session."""
+        self._essence_extra.pop(session_id, None)
 
     @property
     def name(self) -> str:
@@ -290,5 +301,5 @@ class ClaudeAdapter(VoiceAdapter):
     async def reset(self, session_id: str) -> None:
         self._history.pop(session_id, None)
         self._summary_locks.pop(session_id, None)
-        self._essence_extra.pop(session_id, None)
+        self._clear_session_essence(session_id)
         logger.debug("claude[%s] history cleared", session_id)
