@@ -156,13 +156,17 @@ export interface Provenance {
 // ── Conflict ───────────────────────────────────────────────────────────────────
 
 /**
- * A detected conflict between exactly two interpretations.
+ * A detected conflict between an existing interpretation and a conflicting candidate.
  * Created by the ConflictDetection stage of the semantic pipeline.
  * Resolved either automatically (temporal_change) or by user confirmation.
+ *
+ * interpretationIds[0] — the existing committed interpretation.
+ * interpretationIds[1] — the conflicting interpretation, or null when the candidate
+ *   was blocked before being committed (blocked_by_conflict path).
  */
 export interface Conflict {
   readonly id: string;
-  readonly interpretationIds: readonly [string, string];
+  readonly interpretationIds: readonly [string, string | null];
   readonly type: ConflictType;
   readonly detectedAt: string; // ISO 8601
   resolvedAt: string | null;

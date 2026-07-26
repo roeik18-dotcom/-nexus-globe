@@ -50,6 +50,24 @@ describe('EssenceProposalService — proposeUpdate', () => {
     expect(result.status).toBe('rejected');
   });
 
+  it('unknown nodeId → rejected without persisting an observation', async () => {
+    const { repo, svc } = makeService();
+    await repo.createProfile('u1');
+    const result = await svc.proposeUpdate('u1', baseProposal({ nodeId: 'NonExistentNode' }), null);
+    expect(result.status).toBe('rejected');
+    const profile = await repo.getProfile('u1');
+    expect(profile?.observations).toHaveLength(0);
+  });
+
+  it('empty proposedContent → rejected without persisting an observation', async () => {
+    const { repo, svc } = makeService();
+    await repo.createProfile('u1');
+    const result = await svc.proposeUpdate('u1', baseProposal({ proposedContent: '   ' }), null);
+    expect(result.status).toBe('rejected');
+    const profile = await repo.getProfile('u1');
+    expect(profile?.observations).toHaveLength(0);
+  });
+
   it('agent proposal with no evidence → pending_user_confirmation', async () => {
     const { repo, svc } = makeService();
     await repo.createProfile('u1');

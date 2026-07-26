@@ -52,12 +52,24 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     proposal: ProposedUpdate,
     evidence: EvidencePackage | null,
   ): Promise<PipelineResult> {
-    // Verify profile exists before creating the backing observation.
+    // Verify profile exists before doing any work.
     if (!(await this.repo.profileExists(profileId))) {
       return structuredReject(`Profile not found: ${profileId}`);
     }
 
+    // Pre-validate schema integrity before writing anything to the store.
+    // Access-control and conflict checks run inside the pipeline (after the observation
+    // is persisted), because those rejections represent real signals worth recording.
+    // Schema violations (unknown node, empty content) are not meaningful signals.
+    if (!proposal.nodeId || !proposal.proposedContent?.trim()) {
+      return structuredReject('Empty nodeId or proposedContent');
+    }
+    if (!getEssenceNode(proposal.nodeId)) {
+      return structuredReject(`Unknown nodeId: ${proposal.nodeId}`);
+    }
+
     // Persist the backing observation (two-tier: observation before interpretation).
+    // Runs after schema pre-validation so garbage inputs never reach the store.
     const obs = buildProposalObservation(proposal, this.clock, this.idGen);
     await this.repo.appendObservation(profileId, obs);
 
@@ -86,12 +98,12 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
       for (const existingId of output.result.conflictIds) {
         const conflict: Conflict = {
           id: this.idGen.nextId('conflict'),
-          interpretationIds: [existingId, `pending_${obs.id}`],
+          interpretationIds: [existingId, null],
           type: 'unresolved_contradiction',
           detectedAt: now,
           resolvedAt: null,
           resolution: null,
-          resolutionNote: 'Blocked candidate — awaiting user resolution',
+          resolutionNote: null,
         };
         await this.repo.appendConflict(profileId, conflict);
       }
