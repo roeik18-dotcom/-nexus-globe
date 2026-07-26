@@ -890,6 +890,204 @@ export const ESSENCE_ONTOLOGY: Record<string, EssenceNode> = {
     },
   },
 
+  // ── Orientation Dimensions — Merlin interaction preferences ─────────────────
+  // Five single-valued traits that personalize how Merlin communicates.
+  // Stored as Interpretation nodes in the expression layer.
+  // Canonical node IDs are in orientation.ts; this file defines the ontology.
+  // Lifecycle: each dimension must have at most one active Interpretation.
+  // Future write paths (M0-5+) must archive the prior value on update.
+
+  OrientationCommunicationStyle: {
+    id: 'OrientationCommunicationStyle',
+    name: 'Orientation: Communication Style',
+    layer: 'expression',
+    parent: null,
+    children: [],
+    stabilityClass: 'Adaptive',
+    definition: 'The preferred delivery register for Merlin interactions: how direct, exploratory, or collaborative the user wants responses to be. Captures whether answers should be led, reasoning shown, or collaboration invited.',
+    ownershipQuestion: 'Does the user want answers delivered directly, thinking shown openly, or collaboration invited?',
+    classificationTest: 'Does this signal how the user wants Merlin to frame and deliver responses in terms of directness vs. exploration? If yes → OrientationCommunicationStyle.',
+    relations: [
+      { targetId: 'Communication', type: 'refines', note: 'Narrows the general Communication node to Merlin-specific interaction register' },
+      { targetId: 'Preferences', type: 'refines', note: 'A Merlin-specific operational preference' },
+    ],
+    opposites: [
+      'Communication (general expression node; this is Merlin-interaction-specific)',
+      'OrientationResponseDepth (how much, not in what mode)',
+    ],
+    dependencies: ['Communication'],
+    examples: [
+      'direct: "Give me the answer, skip the setup"',
+      'exploratory: "Walk me through the reasoning"',
+      'collaborative: "Give me a starting point and ask what I think"',
+    ],
+    nonExamples: [
+      'How much context to include → OrientationResponseDepth',
+      'Whether to show one option or several → OrientationDecisionStyle',
+      'General communication style across all agents → Communication',
+    ],
+    status: 'stable',
+    userFacing: true,
+    confidenceRules: {
+      writeThreshold: 'single_source',
+      requiresUserConfirmation: false,
+      maxConfidenceFromSingleSource: 'high',
+      minEvidenceCount: 1,
+    },
+  },
+
+  OrientationResponseDepth: {
+    id: 'OrientationResponseDepth',
+    name: 'Orientation: Response Depth',
+    layer: 'expression',
+    parent: null,
+    children: [],
+    stabilityClass: 'Adaptive',
+    definition: 'How much explanatory context and rationale Merlin should include by default. Controls whether Merlin omits explanations, adds brief rationale, or expands reasoning unless told otherwise.',
+    ownershipQuestion: 'Does the user want Merlin to omit explanations, include brief rationale, or expand reasoning by default?',
+    classificationTest: 'Does this signal how much explanatory content Merlin should include in a typical response? If yes → OrientationResponseDepth.',
+    relations: [
+      { targetId: 'Preferences', type: 'refines', note: 'A Merlin-specific operational preference' },
+      { targetId: 'OrientationCommunicationStyle', type: 'informs', note: 'Depth and register together shape response texture' },
+    ],
+    opposites: [
+      'OrientationCommunicationStyle (the mode, not the amount)',
+      'OrientationTaskFraming (how to open, not how much to include)',
+    ],
+    dependencies: [],
+    examples: [
+      'brief: "Just the result — I\'ll ask if I need context"',
+      'balanced: "A sentence of rationale is fine"',
+      'explanatory: "Show me your reasoning"',
+    ],
+    nonExamples: [
+      'Delivery register → OrientationCommunicationStyle',
+      'How to open a response → OrientationTaskFraming',
+    ],
+    status: 'stable',
+    userFacing: true,
+    confidenceRules: {
+      writeThreshold: 'single_source',
+      requiresUserConfirmation: false,
+      maxConfidenceFromSingleSource: 'high',
+      minEvidenceCount: 1,
+    },
+  },
+
+  OrientationTaskFraming: {
+    id: 'OrientationTaskFraming',
+    name: 'Orientation: Task Framing',
+    layer: 'expression',
+    parent: null,
+    children: [],
+    stabilityClass: 'Adaptive',
+    definition: 'How Merlin should open its response to task requests — whether to lead with the action, provide brief context first, or present multiple paths before recommending.',
+    ownershipQuestion: 'Does the user want task responses opened with the action, with context, or with options?',
+    classificationTest: 'Does this signal how Merlin should structure the opening of a task response? If yes → OrientationTaskFraming.',
+    relations: [
+      { targetId: 'Preferences', type: 'refines' },
+      { targetId: 'OrientationDecisionStyle', type: 'informs', note: 'Framing and decision style interact when multiple options are relevant' },
+    ],
+    opposites: [
+      'OrientationResponseDepth (how much, not how to open)',
+      'OrientationDecisionStyle (how to handle choices, not how to open tasks)',
+    ],
+    dependencies: [],
+    examples: [
+      'action_first: "Start with what to do, explain if I ask"',
+      'context_first: "A sentence of context before the action"',
+      'options_first: "Show me two or three paths before committing"',
+    ],
+    nonExamples: [
+      'How to present decisions → OrientationDecisionStyle',
+      'How much rationale to include → OrientationResponseDepth',
+    ],
+    status: 'stable',
+    userFacing: true,
+    confidenceRules: {
+      writeThreshold: 'single_source',
+      requiresUserConfirmation: false,
+      maxConfidenceFromSingleSource: 'high',
+      minEvidenceCount: 1,
+    },
+  },
+
+  OrientationDecisionStyle: {
+    id: 'OrientationDecisionStyle',
+    name: 'Orientation: Decision Style',
+    layer: 'expression',
+    parent: null,
+    children: [],
+    stabilityClass: 'Adaptive',
+    definition: 'How Merlin should handle decisions and recommendations — whether to recommend one option directly, present two options for comparison, or outline trade-offs before recommending.',
+    ownershipQuestion: 'Does the user want Merlin to recommend directly, compare options, or deliberate on trade-offs?',
+    classificationTest: 'Does this signal how Merlin should approach choices and recommendations? If yes → OrientationDecisionStyle.',
+    relations: [
+      { targetId: 'Preferences', type: 'refines' },
+      { targetId: 'OrientationTaskFraming', type: 'informs' },
+    ],
+    opposites: [
+      'OrientationTaskFraming (how to open tasks, not how to decide)',
+      'OrientationTaskCadence (pacing, not decision style)',
+    ],
+    dependencies: [],
+    examples: [
+      'decisive: "Pick one and tell me why"',
+      'comparative: "Two options with a short comparison"',
+      'deliberative: "Show trade-offs before recommending"',
+    ],
+    nonExamples: [
+      'How to open a task response → OrientationTaskFraming',
+      'How much detail to include → OrientationResponseDepth',
+    ],
+    status: 'stable',
+    userFacing: true,
+    confidenceRules: {
+      writeThreshold: 'single_source',
+      requiresUserConfirmation: false,
+      maxConfidenceFromSingleSource: 'high',
+      minEvidenceCount: 1,
+    },
+  },
+
+  OrientationTaskCadence: {
+    id: 'OrientationTaskCadence',
+    name: 'Orientation: Task Cadence',
+    layer: 'expression',
+    parent: null,
+    children: [],
+    stabilityClass: 'Adaptive',
+    definition: 'How Merlin should pace and sequence task breakdown — whether to present only the immediate next step, show the current step with a brief overall plan, or lay out the full flow at once.',
+    ownershipQuestion: 'Does the user want Merlin to focus on the next step, show a brief plan, or present the full flow?',
+    classificationTest: 'Does this signal how Merlin should pace task delivery and sequencing? If yes → OrientationTaskCadence.',
+    relations: [
+      { targetId: 'Preferences', type: 'refines' },
+      { targetId: 'OrientationTaskFraming', type: 'informs' },
+    ],
+    opposites: [
+      'OrientationTaskFraming (how to open a response, not how to pace steps)',
+      'OrientationDecisionStyle (handling choices, not pacing)',
+    ],
+    dependencies: [],
+    examples: [
+      'single_step: "One thing at a time — I\'ll ask for the next"',
+      'phased: "Show the step and a brief roadmap"',
+      'continuous: "Walk me through the whole thing"',
+    ],
+    nonExamples: [
+      'How to open a task → OrientationTaskFraming',
+      'How to handle decisions → OrientationDecisionStyle',
+    ],
+    status: 'stable',
+    userFacing: true,
+    confidenceRules: {
+      writeThreshold: 'single_source',
+      requiresUserConfirmation: false,
+      maxConfidenceFromSingleSource: 'high',
+      minEvidenceCount: 1,
+    },
+  },
+
   // ═══════════════════════════════════════════════════════════════════════════
   // IDENTITY — how Expression is recognized when it meets the world
   // Identity is not produced by Expression alone.

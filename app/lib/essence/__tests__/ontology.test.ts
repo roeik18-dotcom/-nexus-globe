@@ -25,8 +25,8 @@ const EXPECTED_NODE_IDS = [
 ];
 
 describe('ontology', () => {
-  it('has exactly 23 nodes', () => {
-    expect(Object.keys(ESSENCE_ONTOLOGY)).toHaveLength(23);
+  it('has exactly 28 nodes', () => {
+    expect(Object.keys(ESSENCE_ONTOLOGY)).toHaveLength(28);
   });
 
   it('contains all expected node IDs', () => {
@@ -48,7 +48,7 @@ describe('ontology', () => {
     );
     expect(byLayer['core']).toBe(8);
     expect(byLayer['aspirations']).toBe(5);
-    expect(byLayer['expression']).toBe(6);
+    expect(byLayer['expression']).toBe(11);
     expect(byLayer['identity']).toBe(4);
   });
 

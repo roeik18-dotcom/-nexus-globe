@@ -81,6 +81,9 @@ export const ACCESS_POLICIES: Record<AgentName, AgentAccessPolicy> = {
       'Values', 'Needs', 'IntrinsicConstraints',
       // Expression: enough to match communication and working style
       'Principles', 'Communication', 'Style', 'Preferences',
+      // Expression: orientation dimensions for response personalization
+      'OrientationCommunicationStyle', 'OrientationResponseDepth', 'OrientationTaskFraming',
+      'OrientationDecisionStyle', 'OrientationTaskCadence',
       // Identity: enough to know roles and context
       'Roles', 'ProfessionalIdentity',
     ],
