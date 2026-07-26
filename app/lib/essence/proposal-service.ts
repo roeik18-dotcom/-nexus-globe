@@ -33,6 +33,7 @@ import { systemClock, defaultIdGenerator } from './pipeline-runner';
 import type { UserAuthorizedActionContext } from './actor';
 import { actorLabel } from './actor';
 import { findInterpretation } from './interpretation-utils';
+import { isOrientationNode } from './orientation';
 
 export { type Clock };
 
@@ -206,7 +207,7 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     }
 
     const interp = output.result.interpretation;
-    await this.writeInterpretation(profile, interp);
+    await this.writeInterpretation(profile, interp, output.result.writeDisposition);
 
     record.status = 'confirmed';
     record.committedInterpretationId = interp.id;
@@ -267,10 +268,15 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     });
 
     if (output.result.status === 'accepted') {
-      if (correction.targetInterpretationId) {
-        archiveInterpretation(profile, correction.targetInterpretationId, this.clock);
+      const interp = output.result.interpretation;
+      if (output.result.writeDisposition === 'replace_single_value') {
+        await this.writeInterpretation(profile, interp, 'replace_single_value');
+      } else {
+        if (correction.targetInterpretationId) {
+          archiveInterpretation(profile, correction.targetInterpretationId, this.clock);
+        }
+        await this.writeInterpretation(profile, interp, 'append');
       }
-      await this.writeInterpretation(profile, output.result.interpretation);
     }
 
     return output.result;
@@ -338,7 +344,17 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
   private async writeInterpretation(
     profile: EssenceProfile,
     interp: Interpretation,
+    writeDisposition: 'append' | 'replace_single_value',
   ): Promise<void> {
+    if (writeDisposition === 'replace_single_value' && !isOrientationNode(interp.nodeId)) {
+      throw new Error(`replace_single_value is only valid for orientation nodes; got '${interp.nodeId}'`);
+    }
+    if (writeDisposition === 'replace_single_value') {
+      const layerData = profile[interp.layer] as Record<string, Interpretation[]>;
+      for (const prev of layerData[interp.nodeId] ?? []) {
+        if (!prev.archivedAt) archiveInterpretation(profile, prev.id, this.clock);
+      }
+    }
     const layerData = profile[interp.layer] as Record<string, Interpretation[]>;
     if (!layerData[interp.nodeId]) layerData[interp.nodeId] = [];
     layerData[interp.nodeId].push(interp);

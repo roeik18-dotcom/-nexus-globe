@@ -11,6 +11,7 @@
 
 import type { EssenceLayer, StabilityClass } from './ontology';
 import { getEssenceNode } from './ontology';
+import { isOrientationNode, isValidOrientationValue } from './orientation';
 import type {
   ConfidenceLevel,
   ConflictType,
@@ -112,6 +113,14 @@ export class PipelineRunner implements EssencePipeline {
       stages.push(stage('validate', 'blocked', `unknown nodeId: ${input.nodeId}`));
       return earlyReject(stages, `Unknown nodeId: ${input.nodeId}`, this.clock, this.idGen);
     }
+    // Orientation nodes only accept categorical values defined in ORIENTATION_SCHEMA.
+    if (isOrientationNode(input.nodeId)) {
+      const trimmed = input.proposedContent.trim();
+      if (!isValidOrientationValue(input.nodeId, trimmed)) {
+        stages.push(stage('validate', 'blocked', `'${trimmed}' is not a valid value for ${input.nodeId}`));
+        return earlyReject(stages, `'${trimmed}' is not a valid value for ${input.nodeId}`, this.clock, this.idGen);
+      }
+    }
     // Only agents are subject to the canAgentPropose access check.
     // Users and legacy imports are pre-authorized by their actor type.
     if (input.proposedBy.type === 'agent') {
@@ -210,12 +219,14 @@ export class PipelineRunner implements EssencePipeline {
     // ── Stage 8: Commit ──────────────────────────────────────────────────────
     if (decision === 'auto_accept') {
       const interpretation = buildInterpretation(input, node, evidenceStatus, this.clock, this.idGen);
+      const writeDisposition = isOrientationNode(input.nodeId) ? 'replace_single_value' : 'append';
       stages.push(stage('commit', 'passed'));
       return {
         result: {
           status: 'accepted',
           interpretation,
           writePolicy,
+          writeDisposition,
           completedAt: new Date(this.clock.now()).toISOString(),
         },
         stages,
@@ -358,6 +369,7 @@ function classifyConflictType(
   layer: EssenceLayer,
   existing: Interpretation,
 ): ConflictType {
+  if (isOrientationNode(nodeId)) return 'preference_shift';
   if (nodeId === 'Preferences') return 'preference_shift';
   if (layer === 'identity') return 'role_difference';
   if (existing.temporalKind === 'state') return 'temporal_change';
@@ -365,6 +377,7 @@ function classifyConflictType(
 }
 
 function classifyConflictSeverity(nodeId: string, existing: Interpretation): DetectedConflict['severity'] {
+  if (isOrientationNode(nodeId)) return 'auto_resolvable';
   if (existing.temporalKind === 'state') return 'auto_resolvable';
   if (nodeId === 'Preferences') return 'auto_resolvable';
   return 'requires_user';

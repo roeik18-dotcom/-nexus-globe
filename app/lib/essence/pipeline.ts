@@ -167,6 +167,13 @@ export type PipelineResult =
       status: 'accepted';
       interpretation: Interpretation;
       writePolicy: WritePolicy;
+      /**
+       * How ProposalService must persist this interpretation.
+       * 'append'               — standard write; add to the existing interpretation list.
+       * 'replace_single_value' — orientation nodes only; archive all active interpretations
+       *                          for this node before writing the new one.
+       */
+      writeDisposition: 'append' | 'replace_single_value';
       completedAt: string;
     }
   | {

@@ -62,11 +62,19 @@ export type StateTemporalScope =
   | 'short_term'  // days to a few weeks
   | 'open_ended'; // no defined TTL; requires explicit archival
 
-/** The type of conflict between two interpretations. */
+/**
+ * The type of conflict between two interpretations.
+ *
+ * Most conflict types represent genuine evidence-level contradictions that may
+ * require human judgement. 'preference_shift' is the exception: it is a lifecycle
+ * event, not an evidence conflict. A newer value supersedes an existing orientation
+ * preference. Not a factual contradiction. Does not reduce trust. Expected lifecycle
+ * for single-valued orientation dimensions — always auto_resolvable.
+ */
 export type ConflictType =
   | 'temporal_change'         // interpretation changed over time; may be evolution
   | 'context_difference'      // true in one context, different in another; both may be valid
-  | 'preference_shift'        // user preferences have shifted; old may be outdated
+  | 'preference_shift'        // lifecycle supersession; not an evidence conflict
   | 'role_difference'         // different roles produce genuinely different traits
   | 'unresolved_contradiction'; // logically incompatible; requires user resolution
 
