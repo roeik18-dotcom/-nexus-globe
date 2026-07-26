@@ -74,13 +74,29 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
       return structuredReject(`Agent ${proposal.proposedBy} cannot propose to layer ${node.layer}`);
     }
 
+    // External evidence refs require an EvidenceResolver, which is not wired in Phase 1A.
+    // Reject early — before any persistence — so callers get a typed failure.
+    if ((evidence?.externalEvidenceRefs ?? []).length > 0) {
+      return {
+        status: 'unsupported_external_evidence',
+        reason: 'ExternalEvidenceRef validation requires an EvidenceResolver (not available in Phase 1A). ' +
+                'Omit externalEvidenceRefs or inject an EvidenceResolver.',
+      };
+    }
+
     // Load profile to validate evidence IDs before writing anything.
     const preProfile = await this.repo.getProfile(profileId);
     if (!preProfile) return structuredReject(`Profile not found: ${profileId}`);
 
-    // Validate that every referenced observation ID belongs to this profile.
+    // Validate that every referenced Essence Observation ID belongs to this profile.
+    // observation IDs from the proposal and from the evidence package share the same
+    // validation: both must be real Observations stored in this profile.
     const knownObsIds = new Set(preProfile.observations.map(o => o.id));
-    for (const id of proposal.evidenceObservationIds) {
+    const allCandidateObsIds = [
+      ...proposal.evidenceObservationIds,
+      ...(evidence?.observationIds ?? []),
+    ];
+    for (const id of allCandidateObsIds) {
       if (!knownObsIds.has(id)) {
         return structuredReject(`Unknown or cross-profile observation ID: ${id}`);
       }
@@ -90,13 +106,8 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     const obs = buildProposalObservation(proposal, this.clock, this.idGen);
     await this.repo.appendObservation(profileId, obs);
 
-    // Merge and deduplicate evidence IDs.
-    // proposal.evidenceObservationIds: validated profile observation IDs.
-    // evidence.evidenceIds: cross-domain Evidence Engine IDs (not validated against profile).
-    const allEvidenceIds = [...new Set([
-      ...proposal.evidenceObservationIds,
-      ...(evidence?.evidenceIds ?? []),
-    ])];
+    // Merge and deduplicate validated Essence Observation IDs.
+    const allEvidenceIds = [...new Set(allCandidateObsIds)];
 
     const profile = await this.repo.getProfile(profileId);
     if (!profile) return structuredReject(`Profile not found: ${profileId}`);
@@ -111,15 +122,18 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
       currentProfile: profile,
     });
 
-    // Persist conflict records when a proposal is blocked (correction 3).
+    // Persist conflict records when a proposal is blocked.
+    // triggeringObservationId is the backing observation we just appended — always a real ID.
+    // candidateInterpretationId is omitted: the candidate was blocked before being committed.
     if (output.result.status === 'blocked_by_conflict') {
       const now = new Date(this.clock.now()).toISOString();
       for (const existingId of output.result.conflictIds) {
         const conflict: Conflict = {
           id: this.idGen.nextId('conflict'),
-          interpretationIds: [existingId, null],
           type: 'unresolved_contradiction',
           detectedAt: now,
+          existingInterpretationIds: [existingId],
+          triggeringObservationId: obs.id,
           resolvedAt: null,
           resolution: null,
           resolutionNote: null,
@@ -130,7 +144,6 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
 
     if (output.result.status === 'pending_user_confirmation') {
       const { confirmationToken, expiresAt } = output.result;
-      const node = getEssenceNode(proposal.nodeId);
       const evidenceStatus = allEvidenceIds.length > 0 ? 'referenced' : 'unavailable';
       this.proposalRecords.set(confirmationToken, {
         proposalId: confirmationToken,

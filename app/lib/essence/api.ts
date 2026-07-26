@@ -19,6 +19,7 @@ import type {
   EvidenceStatus,
   Interpretation,
   Observation,
+  ObservationSource,
   RetrievalMode,
   SensitivityLevel,
   TemporalKind,
@@ -122,13 +123,34 @@ export interface UserCorrection {
 }
 
 /**
- * A package of evidence from the cross-domain Evidence Engine.
- * Passed in by agents; Essence holds IDs, never raw evidence.
+ * A reference to one item in the cross-domain Evidence Engine.
+ * These IDs cannot be validated against Essence profile observations —
+ * they require an injected EvidenceResolver (not available in Phase 1A).
+ */
+export interface ExternalEvidenceRef {
+  evidenceId: string;
+  sourceType: ObservationSource;
+  confidenceAsserted: ConfidenceLevel;
+}
+
+/**
+ * A typed package of evidence attached to a proposal.
+ *
+ * Two distinct evidence kinds are separated by design:
+ *   observationIds      — Essence Observation IDs from this profile (validated before use).
+ *   externalEvidenceRefs — Cross-domain Evidence Engine references (require EvidenceResolver).
+ *
+ * Mixing the two as undifferentiated strings is not permitted.
  */
 export interface EvidencePackage {
-  evidenceIds: string[];
-  sourceType: Observation['source'];
-  confidenceAsserted: ConfidenceLevel;
+  /** Essence Observation IDs that support this proposal. Must exist in the same profile. */
+  observationIds: string[];
+  /**
+   * Cross-domain Evidence Engine references.
+   * Validated only when an EvidenceResolver is injected; otherwise the proposal
+   * returns status 'unsupported_external_evidence'.
+   */
+  externalEvidenceRefs: ExternalEvidenceRef[];
   packagedBy: string;
   packagedAt: string;
 }

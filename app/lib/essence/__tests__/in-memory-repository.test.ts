@@ -23,9 +23,10 @@ function makeObs(id = 'obs-1'): Observation {
 function makeConflict(id = 'conflict-1'): Conflict {
   return {
     id,
-    interpretationIds: ['interp-a', 'interp-b'],
     type: 'unresolved_contradiction',
     detectedAt: new Date().toISOString(),
+    existingInterpretationIds: ['interp-a'],
+    triggeringObservationId: 'obs-trigger-1',
     resolvedAt: null,
     resolution: null,
     resolutionNote: null,

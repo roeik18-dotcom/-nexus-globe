@@ -115,21 +115,30 @@ describe('EssenceProposalService — proposeUpdate', () => {
     expect(profile?.observations[0].source).toBe('agent_inference');
   });
 
-  it('EvidencePackage evidenceIds are merged into the pipeline evidence set', async () => {
+  it('EvidencePackage observationIds promote status to pending_review', async () => {
     const { repo, svc } = makeService();
-    await repo.createProfile('u1');
+    const profile = await repo.createProfile('u1');
+    profile.observations.push({
+      id: 'obs-pkg-1',
+      source: 'agent_inference' as const,
+      recordedBy: 'merlin',
+      content: 'packaged evidence',
+      sessionId: null,
+      observedAt: new Date().toISOString(),
+      evidenceIds: [],
+      correctsObservationId: null,
+    });
+    await repo.saveProfile(profile);
     const result = await svc.proposeUpdate(
       'u1',
       baseProposal({ evidenceObservationIds: [] }),
       {
-        evidenceIds: ['ev-from-package'],
-        sourceType: 'behavioral_pattern',
-        confidenceAsserted: 'high',
+        observationIds: ['obs-pkg-1'],
+        externalEvidenceRefs: [],
         packagedBy: 'merlin',
         packagedAt: new Date().toISOString(),
-      }
+      },
     );
-    // Evidence IDs from the package promote status from unavailable → referenced → pending_review
     expect(result.status).toBe('pending_review');
   });
 });
@@ -462,6 +471,71 @@ describe('EssenceProposalService — conflict persistence', () => {
     const updated = await repo.getProfile('u1');
     expect(updated?.conflicts.length).toBeGreaterThanOrEqual(1);
   });
+
+  it('persisted conflict has named fields — no tuple, no fake IDs', async () => {
+    const { repo, svc } = makeService();
+    const profile = await repo.createProfile('u1');
+
+    profile.core['Values'] = [{
+      id: 'existing-values-2',
+      version: 1,
+      nodeId: 'Values',
+      layer: 'core',
+      stabilityClass: 'Foundational',
+      content: 'integrity',
+      observationIds: [],
+      confidence: 'high',
+      interpretationKind: 'observed_pattern',
+      provenance: {
+        source: 'agent_inference',
+        confidence: 'high',
+        createdBy: 'philos',
+        firstObservedAt: new Date().toISOString(),
+        lastConfirmedAt: new Date().toISOString(),
+        lastUpdatedAt: new Date().toISOString(),
+        evidenceIds: [],
+        conflictingInterpretationIds: [],
+      },
+      sensitivity: 'personal',
+      temporalKind: 'trait',
+      stateScope: null,
+      expiresAt: null,
+      archivedAt: null,
+      conflictIds: [],
+      evidenceStatus: 'unavailable',
+    }];
+    await repo.saveProfile(profile);
+
+    await svc.proposeUpdate(
+      'u1',
+      {
+        nodeId: 'Values',
+        proposedContent: 'something conflicting',
+        evidenceObservationIds: [],
+        proposedBy: 'philos',
+        proposedAt: new Date().toISOString(),
+        rationale: 'schema test',
+      },
+      null,
+    );
+
+    const updated = await repo.getProfile('u1');
+    const conflict = updated?.conflicts[0];
+    expect(conflict).toBeDefined();
+
+    // Named fields — no tuple members.
+    expect(conflict?.existingInterpretationIds).toContain('existing-values-2');
+    expect(conflict?.triggeringObservationId).toBeDefined();
+    expect(typeof conflict?.triggeringObservationId).toBe('string');
+    expect(conflict?.triggeringObservationId.length).toBeGreaterThan(0);
+
+    // triggeringObservationId must reference a real Observation in the profile.
+    const obsIds = updated!.observations.map(o => o.id);
+    expect(obsIds).toContain(conflict?.triggeringObservationId);
+
+    // candidateInterpretationId must be absent (candidate was blocked, never committed).
+    expect(conflict?.candidateInterpretationId).toBeUndefined();
+  });
 });
 
 describe('EssenceProposalService — evidence validation', () => {
@@ -518,14 +592,13 @@ describe('EssenceProposalService — evidence validation', () => {
     });
     await repo.saveProfile(profile);
 
-    // Pass the same ID from both proposal and package
+    // Pass the same ID from both proposal and package — must be deduped
     const result = await svc.proposeUpdate(
       'u1',
       baseProposal({ evidenceObservationIds: ['obs-1'] }),
       {
-        evidenceIds: ['obs-1'],
-        sourceType: 'behavioral_pattern',
-        confidenceAsserted: 'high',
+        observationIds: ['obs-1'],
+        externalEvidenceRefs: [],
         packagedBy: 'merlin',
         packagedAt: new Date().toISOString(),
       },
@@ -533,7 +606,7 @@ describe('EssenceProposalService — evidence validation', () => {
     expect(result.status).toBe('pending_review');
   });
 
-  it('cross-domain EvidencePackage IDs are accepted without requiring a profile observation', async () => {
+  it('ExternalEvidenceRef without EvidenceResolver → unsupported_external_evidence', async () => {
     const { repo, svc } = makeService();
     await repo.createProfile('u1');
 
@@ -541,15 +614,17 @@ describe('EssenceProposalService — evidence validation', () => {
       'u1',
       baseProposal({ evidenceObservationIds: [] }),
       {
-        evidenceIds: ['cross-domain-ev-99'],
-        sourceType: 'behavioral_pattern',
-        confidenceAsserted: 'high',
+        observationIds: [],
+        externalEvidenceRefs: [{
+          evidenceId: 'cross-domain-ev-99',
+          sourceType: 'behavioral_pattern',
+          confidenceAsserted: 'high',
+        }],
         packagedBy: 'merlin',
         packagedAt: new Date().toISOString(),
       },
     );
-    // EvidencePackage IDs count as evidence even without a matching profile observation
-    expect(result.status).toBe('pending_review');
+    expect(result.status).toBe('unsupported_external_evidence');
   });
 });
 

@@ -156,19 +156,25 @@ export interface Provenance {
 // ── Conflict ───────────────────────────────────────────────────────────────────
 
 /**
- * A detected conflict between an existing interpretation and a conflicting candidate.
- * Created by the ConflictDetection stage of the semantic pipeline.
- * Resolved either automatically (temporal_change) or by user confirmation.
+ * A detected conflict between one or more existing interpretations and an incoming candidate.
+ * Created by the ConflictDetection stage of the semantic pipeline when a blocking conflict
+ * is found. Resolved automatically (temporal_change / preference_shift) or by user confirmation.
  *
- * interpretationIds[0] — the existing committed interpretation.
- * interpretationIds[1] — the conflicting interpretation, or null when the candidate
- *   was blocked before being committed (blocked_by_conflict path).
+ * Fields use explicit names rather than positional tuple members:
+ *   existingInterpretationIds  — committed interpretations involved in the conflict.
+ *   triggeringObservationId    — the Observation that triggered detection (never a fake ID).
+ *   candidateInterpretationId  — absent when the candidate was blocked before being committed.
  */
 export interface Conflict {
   readonly id: string;
-  readonly interpretationIds: readonly [string, string | null];
   readonly type: ConflictType;
   readonly detectedAt: string; // ISO 8601
+  /** Committed interpretation IDs that this conflict involves. */
+  readonly existingInterpretationIds: ReadonlyArray<string>;
+  /** The Observation that triggered conflict detection. Always a real Observation ID. */
+  readonly triggeringObservationId: string;
+  /** Set only when a candidate Interpretation was committed before the conflict was detected. */
+  readonly candidateInterpretationId?: string;
   resolvedAt: string | null;
   resolution: 'accepted_newer' | 'accepted_older' | 'both_valid' | 'user_resolved' | null;
   resolutionNote: string | null;

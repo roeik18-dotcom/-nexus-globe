@@ -194,4 +194,13 @@ export type PipelineResult =
       candidateInterpretation: CandidateInterpretation;
       conflictIds: string[];
       reason: string;
+    }
+  | {
+      /**
+       * One or more ExternalEvidenceRef values were provided but no EvidenceResolver
+       * is wired. External evidence cannot be validated without a resolver.
+       * Callers must either omit externalEvidenceRefs or inject an EvidenceResolver.
+       */
+      status: 'unsupported_external_evidence';
+      reason: string;
     };
