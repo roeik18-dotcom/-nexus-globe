@@ -28,7 +28,7 @@ import type {
 import type {
   OrientationInferenceProvider,
   OrientationSignal,
-  SessionContext,
+  OrientationInferenceInput,
 } from '../orientation-inference';
 import type { EssenceProfile, Interpretation } from '../schema';
 import type { OrientationDimensionKey } from '../orientation';
@@ -47,7 +47,7 @@ class StubOrientationProvider implements OrientationInferenceProvider {
   }
 
   async extractSignals(
-    _ctx: SessionContext,
+    _input: OrientationInferenceInput,
     _profile: Readonly<EssenceProfile>,
   ): Promise<OrientationSignal[]> {
     return [...this.configured];

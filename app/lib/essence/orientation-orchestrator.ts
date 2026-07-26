@@ -92,7 +92,12 @@ export class OrientationInferenceOrchestrator implements OrientationInferenceOrc
     // The provider analyzes the exchange content; the accumulator validates that each
     // signal's sourceObservationId exists in the profile before accepting it.
     const signals = await this.provider.extractSignals(
-      { sessionId: context.sessionId, profileId: context.profileId },
+      {
+        sessionId:           context.sessionId,
+        profileId:           context.profileId,
+        sourceObservationId: context.sessionObservationId,
+        exchange:            context.exchange,
+      },
       profile,
     );
 

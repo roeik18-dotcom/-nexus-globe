@@ -1,11 +1,15 @@
 /**
- * Essence · Orientation Inference — Shared Types (M0-6A)
+ * Essence · Orientation Inference — Shared Types (M0-6A, M0-8A)
  *
  * All types shared between OrientationEvidenceAccumulator,
  * OrientationProposalEngine, and their callers.
  *
  * Neither the accumulator nor the engine imports from this file's peers —
  * all shared contracts live here to prevent circular dependencies.
+ *
+ * M0-8A: ExchangeRecord and OrientationInferenceInput added here (not in
+ * orientation-integration.ts) to avoid a circular dependency: the Provider
+ * interface lives here, and its input type references ExchangeRecord.
  */
 
 import type { ConfidenceLevel } from './schema';
@@ -140,6 +144,28 @@ export interface SessionContext {
   readonly profileId: string;
 }
 
+/** Verbatim messages from one conversation turn passed to providers. */
+export interface ExchangeRecord {
+  readonly userMessage: string;
+  readonly assistantResponse: string;
+}
+
+/**
+ * Full input to OrientationInferenceProvider.extractSignals() (M0-8A).
+ *
+ * Extends SessionContext with the exchange content and the backing Observation ID.
+ * The Orchestrator guarantees sourceObservationId exists in the profile before
+ * calling extractSignals() — providers may use it as sourceObservationId on
+ * every OrientationSignal they return.
+ */
+export interface OrientationInferenceInput {
+  readonly sessionId:           string;
+  readonly profileId:           string;
+  /** ID of the Essence Observation already appended for this exchange. */
+  readonly sourceObservationId: string;
+  readonly exchange:            ExchangeRecord;
+}
+
 /**
  * Model-agnostic interface for extracting orientation signals from a session.
  * Implementations may be LLM-based, rule-based, or embedding-based.
@@ -147,7 +173,7 @@ export interface SessionContext {
  */
 export interface OrientationInferenceProvider {
   extractSignals(
-    sessionContext: SessionContext,
+    input: OrientationInferenceInput,
     profile: Readonly<EssenceProfile>,
   ): Promise<OrientationSignal[]>;
 }

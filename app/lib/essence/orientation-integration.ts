@@ -1,27 +1,22 @@
 /**
- * Essence · Orientation Integration Types (M0-7A)
+ * Essence · Orientation Integration Types (M0-7A, M0-8A)
  *
  * Shared types for the OrientationInferenceOrchestrator integration layer.
- * These bridge the frozen M0-6 inference primitives and the EssenceProposalService.
+ * These bridge the M0-6/M0-8A inference primitives and the EssenceProposalService.
  *
  * Neither the Orchestrator nor its callers import peer files — all shared
  * contracts live here to prevent circular dependencies.
+ *
+ * M0-8A: ExchangeRecord moved to orientation-inference.ts (provider input type
+ * lives there; keeping ExchangeRecord here would create a circular dependency).
+ * Re-exported here for backwards compatibility with existing callers.
  */
 
 import type { OrientationDimensionKey } from './orientation';
-import type { SessionContext, OrientationProposalCandidate } from './orientation-inference';
+import type { SessionContext, OrientationProposalCandidate, ExchangeRecord } from './orientation-inference';
 import type { EssenceProfile } from './schema';
 
-// ── Exchange ───────────────────────────────────────────────────────────────────
-
-/**
- * Verbatim messages from one conversation turn.
- * No summarization — passed as-is to OrientationInferenceProvider.extractSignals().
- */
-export interface ExchangeRecord {
-  readonly userMessage: string;
-  readonly assistantResponse: string;
-}
+export type { ExchangeRecord };
 
 // ── Integration Context ────────────────────────────────────────────────────────
 
