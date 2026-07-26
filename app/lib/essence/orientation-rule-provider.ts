@@ -162,7 +162,7 @@ export class RuleBasedOrientationProvider implements OrientationInferenceProvide
         candidateValue:      rule.candidateValue,
         sourceObservationId: input.sourceObservationId,
         signalWeight:        RULE_SIGNAL_WEIGHT,
-        inferredBy:          this.agentName,
+        inferredBy:          `${this.agentName}/rule-based@1`,
         sessionId:           input.sessionId,
         inferredAt,
       });

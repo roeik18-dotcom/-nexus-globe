@@ -254,7 +254,7 @@ describe('RuleBasedOrientationProvider', () => {
     expect(s).toBeDefined();
     expect(s!.sourceObservationId).toBe('obs-77');
     expect(s!.sessionId).toBe('session-42');
-    expect(s!.inferredBy).toBe('merlin');
+    expect(s!.inferredBy).toBe('merlin/rule-based@1');
     expect(s!.signalWeight).toBe(1.0);
     expect(s!.inferredAt).toBe(NOW);
   });

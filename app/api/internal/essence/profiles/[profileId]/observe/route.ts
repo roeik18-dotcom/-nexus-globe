@@ -30,6 +30,8 @@ import { timingSafeEqual, randomUUID } from 'node:crypto';
 import { getRepository, _setRepository } from '@/app/lib/essence/server-repository';
 import { ACCESS_POLICIES } from '@/app/lib/essence/access';
 import { RuleBasedOrientationProvider } from '@/app/lib/essence/orientation-rule-provider';
+import { LLMOrientationProvider } from '@/app/lib/essence/orientation-llm-provider';
+import { CompositeOrientationProvider } from '@/app/lib/essence/orientation-composite-provider';
 import { OrientationInferenceOrchestrator } from '@/app/lib/essence/orientation-orchestrator';
 import { EssenceProposalService } from '@/app/lib/essence/proposal-service';
 import { PipelineRunner } from '@/app/lib/essence/pipeline-runner';
@@ -136,12 +138,19 @@ export async function POST(
     return Response.json({ error: 'Internal error' }, { status: 500 });
   }
 
+  // Assemble providers. LLM provider is included when ANTHROPIC_API_KEY is configured.
+  // Both providers degrade gracefully on failure — the composite is always safe to use.
+  const providers = [new RuleBasedOrientationProvider(actor)];
+  if (process.env.ANTHROPIC_API_KEY) {
+    providers.push(new LLMOrientationProvider(actor));
+  }
+
   // Get-or-create stateful per-session orchestrator.
   const orchestrator = getOrCreate(sessionId, () =>
     new OrientationInferenceOrchestrator(
-      new RuleBasedOrientationProvider('merlin'),
+      new CompositeOrientationProvider(providers),
       new EssenceProposalService(getRepository(), new PipelineRunner()),
-      'merlin',
+      actor,
     ),
   );
 
