@@ -34,7 +34,8 @@ import { LLMOrientationProvider } from '@/app/lib/essence/orientation-llm-provid
 import { CompositeOrientationProvider } from '@/app/lib/essence/orientation-composite-provider';
 import { OrientationInferenceOrchestrator } from '@/app/lib/essence/orientation-orchestrator';
 import { EssenceProposalService } from '@/app/lib/essence/proposal-service';
-import { PipelineRunner } from '@/app/lib/essence/pipeline-runner';
+import { PipelineRunner, systemClock } from '@/app/lib/essence/pipeline-runner';
+import { PhilosReviewConsumer } from '@/app/lib/essence/philos-review-consumer';
 import { getOrCreate, _clearRegistry } from '@/app/lib/essence/orientation-session-registry';
 import type { AgentName } from '@/app/lib/essence/access';
 import type { OrientationInferenceProvider } from '@/app/lib/essence/orientation-inference';
@@ -149,21 +150,27 @@ export async function POST(
     return Response.json({ error: 'Internal error' }, { status: 500 });
   }
 
-  // Assemble providers using the fixed Merlin identity (OBSERVE_ACTOR), not the auth header.
-  // LLM provider is included when ANTHROPIC_API_KEY is configured.
-  const providers: OrientationInferenceProvider[] = [new RuleBasedOrientationProvider(OBSERVE_ACTOR)];
-  if (process.env.ANTHROPIC_API_KEY) {
-    providers.push(new LLMOrientationProvider(OBSERVE_ACTOR));
-  }
-
   // Get-or-create stateful per-session orchestrator.
-  const orchestrator = getOrCreate(sessionId, () =>
-    new OrientationInferenceOrchestrator(
+  // Co-construct EssenceProposalService + PhilosReviewConsumer inside the factory so
+  // they share the same proposalRecords Map (M0-11A / I4).
+  // Provider list is also built inside the factory — config is session-scoped, not
+  // per-request, so it is safe to read env at factory-call time.
+  // Registry is process-scoped (no TTL eviction — see orientation-session-registry.ts TODO).
+  const orchestrator = getOrCreate(sessionId, () => {
+    const providers: OrientationInferenceProvider[] = [new RuleBasedOrientationProvider(OBSERVE_ACTOR)];
+    if (process.env.ANTHROPIC_API_KEY) {
+      providers.push(new LLMOrientationProvider(OBSERVE_ACTOR));
+    }
+    const svc = new EssenceProposalService(getRepository(), new PipelineRunner());
+    const philos = new PhilosReviewConsumer(svc);
+    return new OrientationInferenceOrchestrator(
       new CompositeOrientationProvider(providers),
-      new EssenceProposalService(getRepository(), new PipelineRunner()),
+      svc,
       OBSERVE_ACTOR,
-    ),
-  );
+      systemClock,
+      philos,
+    );
+  });
 
   // Run inference. On failure, return 500 — the observation write is already committed.
   // The Python caller (fire-and-forget) ignores non-2xx responses.

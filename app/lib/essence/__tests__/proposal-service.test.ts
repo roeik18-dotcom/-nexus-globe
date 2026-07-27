@@ -895,7 +895,7 @@ describe('EssenceProposalService — M0-10B: conflict resolution on supersession
 
 describe('EssenceProposalService — M0-10B: full audit chain reconstruction (B5)', () => {
   it('reconstructs the complete accepted orientation transition from persisted audit records', async () => {
-    const clock = makeClock(1_000_000);
+    const clock = makeClock(1_000_000) as ReturnType<typeof makeClock> & { advance(n: number): void };
     const repo = new InMemoryEssenceRepository();
     const svc = new EssenceProposalService(repo, new PipelineRunner(clock), clock);
     const philos = new PhilosReviewConsumer(svc, clock);
