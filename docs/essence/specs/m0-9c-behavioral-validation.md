@@ -225,7 +225,9 @@ Thresholds are established by measurement per §7.3. The table below records the
 | explicit — minimum TP rate | **≥ 90%** | 100% (baseline-001) | −10% | Phase 1: 10 entries; 1 miss allowed |
 | negative — maximum FP rate | **≤ 10%** | 0% (baseline-001) | +10% | Phase 1: 10 entries; 1 FP allowed |
 
-**Provisional note:** These thresholds are pinned to corpus v1.0.0. They must be re-evaluated when any measurement category grows beyond ~20 entries, because 90% on 10 entries (9/10) is not equivalent to 90% on 50 entries (45/50). Future versions should add a `minSampleSize` floor so that a threshold cannot be satisfied on an arbitrarily small corpus.
+**Provisional note:** These thresholds are pinned to corpus v1.0.0. They must be re-evaluated when any measurement category grows beyond ~20 entries, because 90% on 10 entries (9/10) is not equivalent to 90% on 50 entries (45/50).
+
+**`minSampleSize` is a technical minimum only, not a statistical floor.** The current value of `1` prevents a threshold from being vacuously satisfied on an empty corpus. It does not imply that 1 entry is a sufficient sample for reliable inference. When Phase 2 expands the corpus, raise `minSampleSize` to a value proportional to the corpus size (suggested: ≥ 10) before the expansion PR is merged.
 
 ### LLM Provider — TBD
 
