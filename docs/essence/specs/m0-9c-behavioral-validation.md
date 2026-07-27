@@ -31,20 +31,24 @@ interface CorpusEntry {
   userMessage: string;
   assistantResponse: string;       // disambiguation context only
   goldLabel: GoldLabel;
+  deprecated?: true;               // set when entry is superseded; never deleted
 }
 
+// Categories are split by their role in measurement (see §2.5):
+//   Measurement set — explicit, implied, negative, adversarial
+//   Evaluation set only — ambiguous, contradiction
 type CorpusCategory =
   | 'explicit'      // user states preference directly
   | 'implied'       // preference inferable without direct statement
-  | 'ambiguous'     // genuinely uncertain; multiple valid readings
   | 'negative'      // no preference signal present
   | 'adversarial'   // signal in assistantResponse only — must not produce output
-  | 'contradiction' // user message contradicts itself
+  | 'ambiguous'     // genuinely uncertain; evaluation set only (not in FP/FN)
+  | 'contradiction' // user message contradicts itself; evaluation set only
 
 type GoldLabel =
   | { kind: 'signal'; candidateValue: string; minWeight: number }
   | { kind: 'no_signal' }
-  | { kind: 'any_of'; candidateValues: string[] }  // ambiguous: accept any of these
+  | { kind: 'eval_only' }          // ambiguous / contradiction entries carry this label
 ```
 
 ### 2.2 Authoring Rules (locked)
@@ -61,12 +65,40 @@ type GoldLabel =
 - Entries are **append-only**: existing `id` values are never deleted or relabeled. A label correction creates a new entry with a new `id` and marks the old one `deprecated: true`.
 - Corpus changes require a reviewer sign-off separate from code review.
 
-### 2.4 Minimum Coverage (TBD)
+### 2.5 Measurement Set vs Evaluation Set (locked)
+
+The corpus is partitioned into two roles that must not be conflated:
+
+**Measurement set** — `explicit`, `implied`, `negative`, `adversarial`  
+Used to compute TP/FP rates, set Acceptance Criteria, and gate CI. A provider either meets the threshold on this set or fails.
+
+**Evaluation set** — `ambiguous`, `contradiction`  
+Used to track drift, compare providers across releases, and inform prompt tuning. Provider output on these entries is **recorded but never used to pass or fail a run**. This prevents prompt changes from causing instability in metrics derived from genuinely indeterminate inputs.
+
+The baseline table (§6) contains rows only for the measurement set. Evaluation-set results are recorded in a separate section of `orientation-baseline-results.json` for human review.
+
+### 2.6 Multi-Signal Entries (locked)
+
+A single `userMessage` may legitimately express preferences for more than one `candidateValue` within the same dimension (e.g., `brief` and `explanatory` from the same message). This is not a corpus error or a provider failure.
+
+For such entries, the gold label carries a single `candidateValue` representing the **dominant** preference. The entry may carry a `secondarySignals` annotation for reference:
+
+```typescript
+interface CorpusEntry {
+  // ...
+  secondarySignals?: Array<{ candidateValue: string }>;
+}
+```
+
+Providers are scored on the gold label only. Secondary signals are informational and not used in FP/FN computation. The architectural invariant (§4.7) separately asserts that providers are **permitted** to emit multiple signals per dimension per observation.
+
+### 2.7 Minimum Coverage (TBD)
 
 ```
-[TBD] Minimum entries per dimension
-[TBD] Minimum entries per category per dimension
-[TBD] Minimum entries with non-English userMessage (Hebrew coverage)
+[TBD] Minimum entries per dimension (measurement set)
+[TBD] Minimum entries per category per dimension (measurement set)
+[TBD] Minimum entries in evaluation set per dimension
+[TBD] Minimum entries with non-English userMessage (Hebrew coverage, across all categories)
 ```
 
 ---
@@ -131,7 +163,15 @@ Every signal emitted by any provider must satisfy `signalWeight > 0 && signalWei
 
 **Verification:** assert the weight constraint on every signal in every test run.
 
-### 4.6 `inferredBy` Provenance Format
+### 4.6 Multi-Signal Emission (locked)
+
+Providers are explicitly permitted to emit more than one signal per `OrientationDimensionKey` from a single observation. There is no architectural invariant of "one signal per dimension per observation."
+
+**Rationale:** human preferences are contextual. A user may express both `brief` (default) and `explanatory` (when learning) in the same message. Suppressing either signal would lose information. Downstream resolution — when two signals for the same dimension reach the accumulator — is handled by weight accumulation and the ProposalEngine, not by the provider.
+
+**Verification:** the calibration suite must not assert that `signals.filter(s => s.dimensionKey === key).length <= 1`. Any such assertion is a spec violation.
+
+### 4.7 `inferredBy` Provenance Format
 
 Every emitted signal must satisfy `inferredBy.match(/^[a-z]+\/[a-z-]+@\d+$/)`. The value must match the provider's registered identity (`merlin/rule-based@1`, `merlin/llm-orientation@1`). The value must **never** reflect the value of an HTTP header or runtime argument not explicitly validated.
 
@@ -163,20 +203,22 @@ Once thresholds are set, any run that exceeds them is a hard failure.
 
 ## 6. Baseline Table (populate after first run)
 
+Measurement set only (`explicit`, `implied`, `negative`, `adversarial`). Evaluation-set results (`ambiguous`, `contradiction`) are recorded separately in `orientation-baseline-results.json`.
+
 | Provider | Category | TP rate | FP rate | Notes |
 |---|---|---|---|---|
 | Rule | explicit | [TBD] | [TBD] | |
 | Rule | implied | [TBD] | [TBD] | |
 | Rule | negative | — | [TBD] | |
-| Rule | adversarial | — | must be 0 | architectural |
+| Rule | adversarial | — | must be 0 | architectural (§4.1) |
 | LLM | explicit | [TBD] | [TBD] | |
 | LLM | implied | [TBD] | [TBD] | |
 | LLM | negative | — | [TBD] | |
-| LLM | adversarial | — | must be 0 | architectural |
+| LLM | adversarial | — | must be 0 | architectural (§4.1) |
 | Composite | explicit | [TBD] | [TBD] | |
 | Composite | implied | [TBD] | [TBD] | |
 | Composite | negative | — | [TBD] | |
-| Composite | adversarial | — | must be 0 | architectural |
+| Composite | adversarial | — | must be 0 | architectural (§4.1) |
 
 Corpus version at baseline: [TBD]  
 Date: [TBD]  
@@ -219,11 +261,17 @@ app/lib/essence/__tests__/
 
 ---
 
-## 9. Open Questions
+## 9. Resolved Decisions
+
+- **Q3 — `ambiguous` entries in FP/FN measurement** (resolved)  
+  `ambiguous` and `contradiction` entries are **evaluation set only**. They are never included in FP/FN computation or Acceptance Criteria. They are recorded separately in baseline results for drift tracking and provider comparison. This prevents prompt changes from producing unstable metrics derived from genuinely indeterminate inputs. See §2.5.
+
+- **Q4 — Contradictory signals from the same observation** (resolved)  
+  Contradictory signals from the same observation are not a provider failure. A message may legitimately express multiple preferences for the same dimension (e.g., `brief` by default, `explanatory` when learning). Providers may emit both signals. The Accumulator and ProposalEngine resolve them downstream via weight accumulation. There is no architectural invariant of "one signal per dimension per observation." Corpus entries with multi-signal potential carry a dominant gold label for scoring and optional `secondarySignals` annotations for reference. See §2.6 and §4.6.
+
+## 10. Open Questions
 
 These must be resolved before the corpus can be authored:
 
 - **Q1** — How many dimensions need full coverage on the first corpus, versus which can start with `explicit` entries only?
-- **Q2** — What is the target Hebrew-to-English ratio in the corpus? Rule patterns already have Hebrew coverage; LLM should be tested separately.
-- **Q3** — Should `ambiguous` entries be excluded from automated TP/FP measurement, or scored against `any_of` gold labels?
-- **Q4** — What is the policy for contradictory signals in a single user message (e.g. both `brief` and `explanatory` triggered)? Score both correct, or require a primary?
+- **Q2** — What is the target Hebrew-to-English ratio in the corpus? Rule patterns already have Hebrew coverage; LLM should be tested separately, including on the same Hebrew entries.
