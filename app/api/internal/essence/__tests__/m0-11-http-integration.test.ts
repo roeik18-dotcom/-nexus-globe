@@ -94,6 +94,8 @@ function summaryReq(): Request {
  * Spy on PhilosReviewConsumer.prototype.consume to force an 'accept' decision.
  * Calls the real commitReviewedProposal + applyReviewDecision so the Interpretation
  * is actually committed to the repository — only the policy outcome is bypassed.
+ *
+ * TODO: Remove once integration corpus can naturally produce medium-confidence rule proposals.
  */
 function spyPhilosForceAccept(): void {
   vi.spyOn(PhilosReviewConsumer.prototype, 'consume').mockImplementation(
