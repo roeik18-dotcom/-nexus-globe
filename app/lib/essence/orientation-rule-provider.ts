@@ -109,7 +109,7 @@ const RULES: readonly Rule[] = [
   {
     dimensionKey:   'OrientationDecisionStyle',
     candidateValue: 'decisive',
-    pattern: /\b(?:just (?:decide|pick|choose)|what(?:'?s| is) (?:the )?best option|recommend (?:one|a single option)|which (?:one )?(?:would you|do you) (?:choose|recommend|pick))\b/i,
+    pattern: /מה הכי עדיף|מה הכי כדאי|\b(?:just (?:decide|pick|choose)|what(?:'?s| is) (?:the )?best option|recommend (?:one|a single option)|which (?:one )?(?:would you|do you) (?:choose|recommend|pick))\b/i,
   },
   {
     dimensionKey:   'OrientationDecisionStyle',

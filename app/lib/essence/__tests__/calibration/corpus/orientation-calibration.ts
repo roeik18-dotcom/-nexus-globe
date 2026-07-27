@@ -123,7 +123,7 @@ export const CORPUS: CorpusEntry[] = [
     set:              'measurement',
     language:         'he',
     exchange: {
-      userMessage:        'אל תסביר רקע, רק תגיד לי מה לעשות.',
+      userMessage:        'ישירות לעניין, בלי הקדמות.',
       assistantResponse:  'הבנתי.',
     },
     expectedSignals:  [{ candidateValue: 'direct', minWeight: 1.0 }],
@@ -155,7 +155,7 @@ export const CORPUS: CorpusEntry[] = [
     set:              'measurement',
     language:         'he',
     exchange: {
-      userMessage:        'מה עלי לעשות כדי לפתור את הבעיה הזו?',
+      userMessage:        'מה לעשות כדי לפתור את הבעיה?',
       assistantResponse:  'נבדוק יחד.',
     },
     expectedSignals:  [{ candidateValue: 'action_first', minWeight: 1.0 }],
@@ -289,7 +289,7 @@ export const CORPUS: CorpusEntry[] = [
     language:         'en',
     pairId:           'OD-003',
     exchange: {
-      userMessage:        "Don't explain the background, just tell me what to do.",
+      userMessage:        'Straight to the point, no background.',
       assistantResponse:  'Understood.',
     },
     expectedSignals:  [{ candidateValue: 'direct', minWeight: 1.0 }],
