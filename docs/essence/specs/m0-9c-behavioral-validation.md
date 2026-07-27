@@ -1,6 +1,6 @@
 # M0-9C — Behavioral Validation and Calibration Spec
 
-**Status:** Design spec fully locked. Performance thresholds TBD pending baseline run.  
+**Status:** Design spec fully locked. Rule Provider thresholds locked (provisional, corpusVersion 1.0.0). LLM and Composite thresholds TBD pending API key baseline run.  
 **Scope:** `LLMOrientationProvider`, `RuleBasedOrientationProvider`, `CompositeOrientationProvider`  
 **Invariants inherited from:** M0-9A (architecture), M0-9B (failure model, provenance)
 
@@ -212,25 +212,45 @@ Every emitted signal must satisfy `inferredBy.match(/^[a-z]+\/[a-z-]+@\d+$/)`. T
 
 ---
 
-## 5. Performance Requirements (TBD)
+## 5. Performance Requirements
 
-These thresholds are intentionally unset. They will be established after the first baseline run (§7) using measured data, not estimation.
+Thresholds are established by measurement per §7.3. The table below records the locked status of each threshold. Locked thresholds are enforced as CI hard failures in `orientation-calibration.test.ts` Block 11.
+
+**Threshold policy:** `CALIBRATION_THRESHOLDS` in `calibration-thresholds.ts`. Threshold policy version `1.0.0`, pinned to corpus version `1.0.0` (Phase 1 provisional — see note below).
+
+### Rule Provider — locked (provisional, v1.0.0)
+
+| Threshold | Value | Measured | Margin | Notes |
+|---|---|---|---|---|
+| explicit — minimum TP rate | **≥ 90%** | 100% (baseline-001) | −10% | Phase 1: 10 entries; 1 miss allowed |
+| negative — maximum FP rate | **≤ 10%** | 0% (baseline-001) | +10% | Phase 1: 10 entries; 1 FP allowed |
+
+**Provisional note:** These thresholds are pinned to corpus v1.0.0. They must be re-evaluated when any measurement category grows beyond ~20 entries, because 90% on 10 entries (9/10) is not equivalent to 90% on 50 entries (45/50). Future versions should add a `minSampleSize` floor so that a threshold cannot be satisfied on an arbitrarily small corpus.
+
+### LLM Provider — TBD
 
 ```
-[TBD] Rule provider — maximum false-positive rate (negative + adversarial entries)
-[TBD] Rule provider — maximum false-negative rate (explicit entries)
-[TBD] LLM provider — maximum false-positive rate (negative + adversarial entries)
-[TBD] LLM provider — maximum false-negative rate (explicit entries)
-[TBD] LLM provider — maximum false-negative rate (implied entries)
-[TBD] Composite — maximum false-positive rate
-[TBD] Composite — minimum true-positive rate on explicit entries
-[TBD] Minimum weight produced for explicit-category signals (Rule)
-[TBD] Minimum weight produced for explicit-category signals (LLM)
-[TBD] Calibration tolerance: maximum acceptable weight deviation across repeated calls
+[TBD] maximum false-positive rate (negative + adversarial entries)
+[TBD] maximum false-negative rate (explicit entries)
+[TBD] maximum false-negative rate (implied entries)
+[TBD] minimum weight for explicit-category signals
 ```
 
-Until thresholds are set, the calibration suite **logs** rates but does not **fail** on them.
-Once thresholds are set, any run that exceeds them is a hard failure.
+### Composite — TBD
+
+```
+[TBD] maximum false-positive rate
+[TBD] minimum true-positive rate on explicit entries
+[TBD] non-degradation verification (§4.4) — threshold implicit in architectural test
+```
+
+### Cross-provider — TBD
+
+```
+[TBD] calibration tolerance: maximum acceptable weight deviation across repeated LLM calls
+```
+
+Until LLM and Composite thresholds are set, the calibration suite **logs** rates but does not **fail** on them. Rule Provider gates are enforced immediately.
 
 ---
 
@@ -240,22 +260,22 @@ Measurement set only (`explicit`, `implied`, `negative`, `adversarial`). Evaluat
 
 | Provider | Category | TP rate | FP rate | Notes |
 |---|---|---|---|---|
-| Rule | explicit | [TBD] | [TBD] | |
-| Rule | implied | [TBD] | [TBD] | |
-| Rule | negative | — | [TBD] | |
-| Rule | adversarial | — | must be 0 | architectural (§4.1) |
-| LLM | explicit | [TBD] | [TBD] | |
+| Rule | explicit | **100.0%** (10/10) | 0.0% (0/10) | baseline-001 |
+| Rule | implied | [TBD] | [TBD] | no implied entries in Phase 1 corpus |
+| Rule | negative | — | **0.0%** (0/10) | baseline-001 |
+| Rule | adversarial | — | must be 0 | architectural (§4.1); no adversarial entries in Phase 1 |
+| LLM | explicit | [TBD] | [TBD] | pending ANTHROPIC_API_KEY run |
 | LLM | implied | [TBD] | [TBD] | |
 | LLM | negative | — | [TBD] | |
 | LLM | adversarial | — | must be 0 | architectural (§4.1) |
-| Composite | explicit | [TBD] | [TBD] | |
+| Composite | explicit | [TBD] | [TBD] | pending ANTHROPIC_API_KEY run |
 | Composite | implied | [TBD] | [TBD] | |
 | Composite | negative | — | [TBD] | |
 | Composite | adversarial | — | must be 0 | architectural (§4.1) |
 
-Corpus version at baseline: [TBD]  
-Date: [TBD]  
-Models: Rule `rule-based@1`, LLM `claude-haiku-4-5-20251001`
+Corpus version at baseline: **1.0.0**  
+Date: **2026-07-27** (baseline-001)  
+Models: Rule `rule-based@1`, LLM `claude-haiku-4-5-20251001` (LLM rows TBD)
 
 ---
 

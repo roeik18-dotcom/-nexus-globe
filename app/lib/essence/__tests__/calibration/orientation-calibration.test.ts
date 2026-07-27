@@ -4,7 +4,8 @@
  * Structural and architectural assertions for the orientation calibration corpus
  * and the RuleBasedOrientationProvider. Runs in CI without LLM API access.
  *
- * Does NOT perform TP/FP measurement — that is orientation-baseline.run.ts.
+ * Does NOT perform full TP/FP measurement — that is orientation-baseline.run.ts.
+ * Block 11 enforces the locked provisional CI gates from CALIBRATION_THRESHOLDS.
  *
  * Test blocks:
  *   1. Corpus schema validity
@@ -17,16 +18,19 @@
  *   8. Rule Provider corpus behavior (§4.1 provenance, §4.5 weight range)
  *   9. No content logging (§ content-logging policy)
  *  10. Rule Provider determinism (§4.2)
+ *  11. Provisional CI gates — Rule Provider TP/FP thresholds (§5, corpusVersion 1.0.0)
  */
 
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import {
   CORPUS,
+  CORPUS_VERSION,
   MEASUREMENT_CORPUS,
   EVALUATION_CORPUS,
   HEBREW_CORPUS,
 } from './corpus/orientation-calibration';
 import type { CorpusEntry } from './corpus/orientation-calibration';
+import { CALIBRATION_THRESHOLDS } from './calibration-thresholds';
 import { ORIENTATION_SCHEMA } from '../../orientation';
 import type { OrientationDimensionKey } from '../../orientation';
 import { RuleBasedOrientationProvider } from '../../orientation-rule-provider';
@@ -374,5 +378,65 @@ describe('10 · Rule Provider determinism', () => {
       expect(key(run2)).toEqual(key(run1));
       expect(key(run3)).toEqual(key(run1));
     }
+  });
+});
+
+// ── Block 11: Provisional CI gates — Rule Provider (§5, corpusVersion 1.0.0) ──
+//
+// These are the locked thresholds from CALIBRATION_THRESHOLDS. Failure here is
+// a hard CI regression, not a calibration warning. LLM and Composite gates are
+// TBD and do not appear in this block yet.
+//
+// NOTE: CALIBRATION_THRESHOLDS.corpusVersion must match CORPUS_VERSION. If they
+// diverge it means the corpus was updated without re-running the baseline — the
+// guard test at the bottom of this block catches that.
+
+describe('11 · provisional CI gates — Rule Provider', () => {
+  const provider = new RuleBasedOrientationProvider('merlin', FIXED_CLOCK);
+
+  it('CALIBRATION_THRESHOLDS.corpusVersion matches CORPUS_VERSION', () => {
+    expect(CALIBRATION_THRESHOLDS.corpusVersion).toBe(CORPUS_VERSION);
+  });
+
+  it('explicit TP rate meets minimum threshold (§5)', async () => {
+    const entries = MEASUREMENT_CORPUS.filter(e => e.category === 'explicit');
+    const { minTpRate, minSampleSize } = CALIBRATION_THRESHOLDS.rule.explicit;
+
+    expect(entries.length).toBeGreaterThanOrEqual(minSampleSize);
+
+    let tpCount = 0;
+    for (const entry of entries) {
+      const signals    = await provider.extractSignals(makeInput(entry), SHARED_PROFILE);
+      const weightMap  = new Map(
+        signals.filter(s => s.dimensionKey === entry.dimension)
+               .map(s => [s.candidateValue, s.signalWeight]),
+      );
+      const allMet = entry.expectedSignals.every(
+        es => (weightMap.get(es.candidateValue) ?? 0) >= es.minWeight,
+      );
+      if (allMet) tpCount++;
+    }
+
+    const tpRate = tpCount / entries.length;
+    expect(tpRate).toBeGreaterThanOrEqual(minTpRate);
+  });
+
+  it('negative FP rate meets maximum threshold (§5)', async () => {
+    const entries = MEASUREMENT_CORPUS.filter(e => e.category === 'negative');
+    const { maxFpRate, minSampleSize } = CALIBRATION_THRESHOLDS.rule.negative;
+
+    expect(entries.length).toBeGreaterThanOrEqual(minSampleSize);
+
+    let fpCount = 0;
+    for (const entry of entries) {
+      const signals   = await provider.extractSignals(makeInput(entry), SHARED_PROFILE);
+      const detected  = new Set(
+        signals.filter(s => s.dimensionKey === entry.dimension).map(s => s.candidateValue),
+      );
+      if (entry.forbiddenSignals.some(v => detected.has(v))) fpCount++;
+    }
+
+    const fpRate = fpCount / entries.length;
+    expect(fpRate).toBeLessThanOrEqual(maxFpRate);
   });
 });
