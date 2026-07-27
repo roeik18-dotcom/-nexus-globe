@@ -1,6 +1,6 @@
 # M0-10 — Write Completion & State Integrity
 
-**Status:** Design spec — M0-10A locked pending owner decision (§3.1). M0-10B locked. M0-10C deferred.  
+**Status:** Design spec — M0-10A locked (§3.1 owner decision confirmed). M0-10B locked. M0-10C deferred.  
 **Scope:** `pending_review` lifecycle, proposal state machine, audit chain, repository durability boundary  
 **Invariants inherited from:** M0-8C (write-before-inference), M0-9B (provenance identity)  
 **Depends on:** M0-9C (behavioral validation and CI gates locked)
@@ -114,129 +114,258 @@ P0 = blocks end-to-end write path. P1 = blocks audit integrity. P2 = deferred to
 
 **Goal:** every valid orientation proposal reaches an unambiguous terminal state.
 
-### 3.1 Architectural decision: `pending_review` owner
+### 3.1 `pending_review` owner — CONFIRMED (2026-07-27)
 
-This decision must be made before any M0-10A implementation begins.
+**Decision: Option 2 — Philos as background reviewer.**
 
-#### Three legitimate options
+Philos is the owner of the `pending_review` queue. His responsibility and its limits are locked:
 
-**Option 1 — Human reviewer**  
-Change orientation write policy (`requiresUserConfirmation = true` in the ontology) so proposals skip `queue_for_review` and go directly to `pending_user_confirmation`. The existing `confirmUpdate()` consumer handles the rest.  
-- Pros: no new consumer code; reuses the working `pending_user_confirmation` path; preserves Phase 1A invariant.  
-- Cons: every orientation inference requires explicit user confirmation — high friction; passive learning is blocked; user must manually confirm inferences Merlin derives automatically.
+| Philos IS | Philos IS NOT |
+|-----------|---------------|
+| The executor of a deterministic review policy | A new inference engine |
+| The owner of every `pending_review` transition | Capable of generating new evidence |
+| The author of an explainable, auditable decision | Capable of re-running orientation inference |
+| Working only on: existing ProposalDecision, Evidence, Policy | A replacement for the semantic pipeline |
 
-**Option 2 — Background reviewer (Philos)**  
-Keep `queue_for_review` for orientation. Add a `promotePendingReview()` API on `EssenceProposalService`. Philos (or a review pipeline triggered by Philos) evaluates queued proposals and promotes qualifying ones to `pending_user_confirmation` or archives disqualified ones. The promotion calls `confirmUpdate()` with a `UserAuthorizedActionContext` backed by Philos, not the original agent.  
-- Pros: clean separation of concerns (Merlin infers, Philos reviews, user confirms or profile auto-updates); existing `confirmUpdate()` consumer reused for the final step; Phase 1A invariant preserved for user-facing writes; opens natural path to automating Philos's policy in M0-10C.  
-- Cons: requires new API surface and a trigger mechanism for when Philos runs the review.
-
-**Option 3 — Policy engine (confidence-threshold auto-promotion)**  
-When an agent proposal's accumulated confidence meets a defined threshold (e.g., `accumulatedWeight ≥ 3.0`, `ConfidenceLevel ≥ 'medium'`) and no blocking conflicts exist, a privileged system actor promotes it directly to `accepted` without user confirmation. Requires a new actor type (e.g., `'policy_engine'`) or relaxation of the Phase 1A invariant for orientation nodes.  
-- Pros: lowest user friction; enables fully passive learning.  
-- Cons: relaxes Phase 1A invariant; introduces policy risk (automated writes to the human model without any human in the loop); harder to audit.
-
-#### Decision: Option 2 (Philos as background reviewer) — **REQUIRES EXPLICIT CONFIRMATION**
-
-**Recommendation:** Option 2. Rationale:
-
-- Phase 1A invariant ("no agent proposal reaches `accepted` without `UserAuthorizedActionContext`") is preserved. The `promotePendingReview()` call carries a Philos-issued context, not an agent context.
-- `confirmUpdate()` is already tested and functional. Option 2 adds only the promotion step, not a new write path.
-- Philos's promotion policy can start simple (promote when `accumulatedConfidence ≥ 'low'`, no blocking conflicts) and be tightened or automated in M0-10C without changing the write path architecture.
-- Option 1 blocks passive learning permanently without a phase boundary. Option 3 requires a policy decision about automated writes to the human model — that decision is not ready.
-
-**This decision must be confirmed before implementation.** The remainder of §3 assumes Option 2.
+Every Philos decision:
+- Is derived solely from fields already present on the `PendingEssenceProposal` record (evidence IDs, accumulated confidence, node ID, proposed content).
+- Records `{ decision, reason, reviewer='philos', reviewedAt, policyVersion }`.
+- Is idempotent (see §3.6).
 
 ---
 
-### 3.2 Proposal state machine (locked once §3.1 is confirmed)
+### 3.2 Proposal state machine (locked)
 
 ```
-                    ┌─────────────────────────────┐
-                    │         PROPOSAL             │
-                    │  (created by proposeUpdate)  │
-                    └──────────────┬──────────────┘
-                                   │ pipeline result
-                ┌──────────────────┼───────────────────┐
-                ↓                  ↓                   ↓
-         pending_review   pending_user_confirmation  rejected ──── terminal
-         (G5: must be      (stored in proposalRecords;  (structuredReject or
-          stored — see §3.3)  auto-expires after 24 h)  blocked_by_conflict)
-                │                  │
-      Philos review (NEW)    user action
-                │            (confirmUpdate / rejectUpdate)
-                ├── promote ──► pending_user_confirmation
-                │                  │
-                ├── archive ──►  rejected ──────────────── terminal
+                proposeUpdate()
+                    │
+                    ▼ pipeline result
+         ┌──────────┴──────────────┐
+         ↓                         ↓
+  pending_review             pending_user_confirmation
+  (Philos queue)             (user-visible; stored in proposalRecords)
+         │                         │
+  Philos Review Policy        user action
+  (§3.5 — deterministic)     (confirmUpdate / rejectUpdate)
+         │                         │
+    ┌────┼────────┬────┐            ├──► accepted ──────── terminal
+    ↓    ↓        ↓    ↓            │    (Interpretation written)
+ accept reject  req_  defer         └──► rejected ──────── terminal
+         │      user   │
+         │      conf   │ (non-terminal; TTL still applies)
+         ▼      │      └──► pending_review (deferCount++)
+      rejected  ▼
+      terminal  pending_user_confirmation
                 │
-                ↓ time passes (lazy check on access)
-             expired ────────────────────────────────── terminal
+                ├──► accepted ──────── terminal
+                │    (Interpretation written)
+                └──► rejected ──────── terminal
 
-        pending_user_confirmation
-                ↓ user confirms
-             accepted ──────────────────────────────── terminal
-             (Interpretation written, evolution entry appended)
-                ↓ user rejects
-             rejected ──────────────────────────────── terminal
+    ─────────────────────────────────────────────────────
+    expired (expiresAt < now, lazy-checked)  ─── terminal
+    ─────────────────────────────────────────────────────
 ```
 
-**Terminal states:** `accepted`, `rejected`, `expired`.  
-**Non-terminal:** `pending_review`, `pending_user_confirmation`.  
+**Terminal states (exactly four):** `accepted | rejected | expired | (user_rejected_after_confirmation)`.  
+For the `ProposalStatus` type, these map to: `'confirmed' | 'rejected' | 'expired'`.  
+`pending_user_confirmation` is non-terminal from the system's perspective; it is the terminal outcome of Philos's involvement — the user action phase is independent.
 
-No proposal transitions from `expired` → anything. Expiry is terminal even if the user later acts; a new inference cycle must produce a fresh proposal.
+**`ProposalStatus` extension** (breaking change to `api.ts`):
+
+```typescript
+// Before:
+export type ProposalStatus = 'pending' | 'confirmed' | 'rejected' | 'expired';
+
+// After:
+export type ProposalStatus =
+  | 'pending_review'              // in Philos queue; Philos-internal
+  | 'pending_user_confirmation'   // user-visible; awaiting user action
+  | 'confirmed'                   // Interpretation written
+  | 'rejected'                    // rejected (by Philos or user)
+  | 'expired';                    // expiresAt elapsed; terminal
+```
+
+Old `'pending'` value is removed. The two concrete pending states make the queue boundaries explicit and unambiguous.
+
+**TTL guarantee:** `defer` does NOT extend `expiresAt`. A deferred proposal expires on its original TTL. Philos must not defer a proposal indefinitely — if conditions for `accept`, `reject`, or `require_user_confirmation` are not met and the proposal nears expiry, the policy must produce a definitive decision before `expiresAt`.
 
 ---
 
-### 3.3 `pending_review` storage (fixes G5)
+### 3.3 `PendingEssenceProposal` extensions (fixes G5)
 
-`proposeUpdate()` currently stores a record in `proposalRecords` only for `pending_user_confirmation`. For M0-10A, it must also store a record for `pending_review`.
+Two new fields are required. Both are optional on the existing type (backward-compatible read; non-optional for new `pending_review` records):
 
-The record shape is the same `PendingEssenceProposal` type, with `status: 'pending_review'`. The distinction from `pending_user_confirmation`:
-- `confirmationToken` is present but not surfaced to the user — it is an internal handle for the Philos promotion step.
-- `proposalId` is the same value as `confirmationToken` (no change to the existing type).
+```typescript
+export interface PendingEssenceProposal {
+  // ... existing fields unchanged ...
 
-`getPendingProposals()` must return `pending_review` records to Philos (currently filtered to `status === 'pending'` which already includes them once stored). It must **not** return `pending_review` records to the requesting user via the standard confirmation flow — those are Philos-internal.
+  /**
+   * Accumulated confidence at the time of proposal creation.
+   * Populated for pending_review proposals from orientation inference.
+   * Used by Philos Review Policy (§3.5). null for other proposal types.
+   */
+  accumulatedConfidence: ConfidenceLevel | null;
 
-`EmissionTracker.syncTracker()` must treat confirmed `proposalId` values correctly for both statuses. After promotion (when a `pending_review` record is promoted to `pending_user_confirmation`), the tracker entry must be updated with the new status so future signal accumulation is not incorrectly suppressed.
+  /**
+   * Append-only audit log of every Philos review decision on this proposal.
+   * Empty for proposals that never entered pending_review.
+   * Each entry is immutable once appended.
+   */
+  reviewDecisions: PhilosReviewDecision[];
+}
+```
+
+The `reviewDecisions` array provides the full Philos audit trail per proposal. It is the source of truth for `why` a proposal transitioned — not an external log.
 
 ---
 
-### 3.4 `promotePendingReview()` API
-
-New method on `EssenceProposalService` (and added to `EssenceProposalAPI`):
+### 3.4 `PhilosReviewDecision` type (new)
 
 ```typescript
 /**
- * Promote a pending_review proposal to pending_user_confirmation.
- * Only callable by Philos (enforced via UserAuthorizedActionContext).
+ * A single decision made by the Philos Review Policy on a pending_review proposal.
+ * Appended to PendingEssenceProposal.reviewDecisions; never mutated after append.
  *
- * The promotion does NOT write an Interpretation. It moves the proposal
- * to pending_user_confirmation, which the user then confirms or rejects.
- *
- * @returns the confirmationToken the user needs to call confirmUpdate()
- * @throws if the proposal does not exist, is not in pending_review status,
- *         or the caller is not Philos
+ * Fields:
+ *   decision     — the policy outcome for this review pass
+ *   reason       — human-readable explanation, derivable from the policy rule that fired
+ *   reviewer     — always 'philos'; no other agent may create PhilosReviewDecision records
+ *   reviewedAt   — ISO 8601 timestamp of the policy evaluation
+ *   policyVersion — the version string of the Philos Review Policy that produced this decision
  */
-promotePendingReview(
-  profileId: string,
-  proposalId: string,
-  context: UserAuthorizedActionContext,
-): Promise<{ confirmationToken: string; expiresAt: string }>;
+export interface PhilosReviewDecision {
+  readonly decision: 'accept' | 'reject' | 'require_user_confirmation' | 'defer';
+  readonly reason: string;
+  readonly reviewer: 'philos';
+  readonly reviewedAt: string;      // ISO 8601
+  readonly policyVersion: string;   // e.g. '1.0'
+}
 ```
 
-The implementation transitions the `proposalRecords` entry from `status: 'pending_review'` to `status: 'pending'` (reusing the existing pending_user_confirmation path), preserving the existing `expiresAt` or resetting it to `now + 24h`.
+`PhilosReviewDecision` is defined in `api.ts`. It is distinct from `PipelineStageSummary` — the pipeline evaluated the proposal at creation time; the review decision evaluates whether to act on it.
 
 ---
 
-### 3.5 M0-10A deliverables
+### 3.5 Philos Review Policy v1.0 (locked)
+
+The policy is a pure, deterministic function of the fields present on `PendingEssenceProposal`. It receives no new evidence, no new signals, no profile reads beyond what is already encoded in the proposal record.
+
+**Policy version:** `'1.0'`  
+**Applies to:** proposals with `status: 'pending_review'` and orientation node IDs only.
+
+**Rules (evaluated in order; first match fires):**
+
+| Priority | Condition | Decision | Reason string |
+|----------|-----------|----------|---------------|
+| 0 | `expiresAt < now` | `expire` (not a policy decision; handled before policy runs) | — |
+| 1 | `accumulatedConfidence === null` | `reject` | `'no_confidence_record'` |
+| 2 | `accumulatedConfidence === 'speculative'` | `reject` | `'speculative_confidence'` |
+| 3 | `accumulatedConfidence === 'low'` | `require_user_confirmation` | `'low_confidence_requires_user'` |
+| 4 | `accumulatedConfidence === 'medium'` | `accept` | `'medium_confidence_auto_accepted'` |
+| 5 | `accumulatedConfidence === 'high'` | `accept` | `'high_confidence_auto_accepted'` |
+| 6 | `accumulatedConfidence === 'verified'` | `accept` | `'verified_confidence_auto_accepted'` |
+| 7 | (unreachable with current enum) | `defer` | `'policy_fallback_defer'` |
+
+**Effect of each decision:**
+
+- **`accept`** — Philos commits the already-pipeline-approved candidate directly. No pipeline re-run. The proposal's `proposedContent` and `evidenceObservationIds` are used to build and persist the `Interpretation` via `commitReviewedProposal()` (§3.7). Provenance: `source='agent_inference'`, `confidence=accumulatedConfidence`, `createdBy='philos'` (Philos as the committing actor, not the original proposing agent). `status` → `'confirmed'`.
+
+- **`reject`** — proposal `status` → `'rejected'`. No Interpretation written. `EmissionTracker` entry deleted so a future, better-evidenced proposal can be submitted.
+
+- **`require_user_confirmation`** — proposal `status` → `'pending_user_confirmation'`. The user sees this proposal via the standard confirmation flow. `EmissionTracker` entry updated with the real `proposalId` so `syncTracker()` can detect when the user acts.
+
+- **`defer`** — proposal `status` stays `'pending_review'`. `deferCount` incremented (tracked on the record). A `PhilosReviewDecision` entry is appended with `decision='defer'` and reason. The original `expiresAt` is NOT extended.
+
+**Policy upgrade:** when the policy version changes, the `policyVersion` field on all new `PhilosReviewDecision` records changes. Old decisions on existing proposals retain their original `policyVersion`. No backfill of existing decisions is required.
+
+---
+
+### 3.6 Idempotency invariant (locked)
+
+Philos's consumer (`PhilosReviewConsumer.consume()`) MUST be idempotent:
+
+> If `consume(proposalId)` is called when the proposal's most recent `reviewDecision.decision` is not `'defer'`, the method MUST return the existing decision without creating a new write, new `PhilosReviewDecision`, or new `EssenceEvolutionEntry`.
+
+Implementation:
+1. `consume()` reads `proposal.reviewDecisions.at(-1)`.
+2. If the last decision is non-`'defer'`, or `status` is already `'confirmed' | 'rejected' | 'expired'`, return early with the last decision (no-op).
+3. Otherwise, run the policy and append the new `PhilosReviewDecision`.
+
+Consequence: processing the same `pending_review` proposal twice produces at most one `EssenceEvolutionEntry` and one `Interpretation`.
+
+---
+
+### 3.7 `PhilosReviewConsumer` API and `commitReviewedProposal()`
+
+**New service class** `PhilosReviewConsumer` (separate from `EssenceProposalService`; reads from the same `proposalRecords` Map via `EssenceProposalAPI`):
+
+```typescript
+/**
+ * Owner of the pending_review queue. Applies Philos Review Policy to each
+ * queued proposal and executes the resulting decision.
+ *
+ * Stateless between calls — all state lives in proposalRecords.
+ * Idempotent: see §3.6.
+ */
+export class PhilosReviewConsumer {
+  constructor(
+    private readonly proposals: EssenceProposalAPI,
+    private readonly repo: EssenceRepository,
+    private readonly clock: Clock,
+    private readonly idGen: IdGenerator,
+    private readonly policyVersion: string = '1.0',
+  ) {}
+
+  /**
+   * Process all pending_review proposals for a profile.
+   * Returns one PhilosReviewDecision per proposal processed (including no-ops).
+   */
+  async consumeProfile(profileId: string): Promise<PhilosReviewDecision[]>;
+
+  /**
+   * Process a single pending_review proposal.
+   * Idempotent: returns the existing last decision if the proposal is not in defer state.
+   */
+  async consume(profileId: string, proposalId: string): Promise<PhilosReviewDecision>;
+}
+```
+
+**`commitReviewedProposal()`** — new private method on `EssenceProposalService`:
+
+```typescript
+/**
+ * Commit a proposal that Philos Review Policy accepted.
+ * Builds the Interpretation from the stored candidate, calls writeInterpretation(),
+ * and sets proposal.status = 'confirmed'.
+ *
+ * Does NOT re-run the pipeline. The proposal already passed the pipeline at creation.
+ * Provenance: source='agent_inference', createdBy='philos', confidence=accumulatedConfidence.
+ *
+ * @throws if proposal status is not 'pending_review', or profile not found.
+ */
+private async commitReviewedProposal(
+  proposal: PendingEssenceProposal,
+): Promise<Interpretation>;
+```
+
+This avoids re-running the 8-stage pipeline (already ran at proposal creation) while still calling `writeInterpretation()` so the `EssenceEvolutionEntry` and `archivedAt` mechanics are reused.
+
+---
+
+### 3.8 M0-10A deliverables
 
 | # | Deliverable | File(s) |
 |---|-------------|---------|
-| A1 | Store `pending_review` proposals in `proposalRecords` | `proposal-service.ts` |
-| A2 | `promotePendingReview()` method + interface entry | `proposal-service.ts`, `api.ts` |
-| A3 | `EmissionTracker` correctly handles promoted proposals | `orientation-orchestrator.ts` |
-| A4 | `getPendingProposals()` visibility rules for `pending_review` vs `pending_user_confirmation` | `proposal-service.ts` |
-| A5 | Unit tests: full state machine round-trip (pending_review → promotion → confirmed → Interpretation written) | `__tests__/proposal-service.test.ts` |
-| A6 | Update orientation integration tests to assert a complete write path exists | `__tests__/orientation-integration.test.ts` |
+| A1 | `ProposalStatus` expanded; `accumulatedConfidence` + `reviewDecisions` fields added to `PendingEssenceProposal` | `api.ts` |
+| A2 | `PhilosReviewDecision` type defined | `api.ts` |
+| A3 | Store `pending_review` proposals in `proposalRecords` with `accumulatedConfidence` populated from the `OrientationProposalCandidate` | `proposal-service.ts` |
+| A4 | `PhilosReviewConsumer` class with `consume()` + `consumeProfile()` | `philos-review-consumer.ts` (new file) |
+| A5 | `commitReviewedProposal()` on `EssenceProposalService` | `proposal-service.ts` |
+| A6 | `getPendingProposals()` visibility: `pending_review` visible to Philos only; `pending_user_confirmation` visible to proposing agent + Philos | `proposal-service.ts` |
+| A7 | `EmissionTracker.syncTracker()` handles `pending_review` status correctly; resets on `reject`; updates proposalId on `require_user_confirmation` | `orientation-orchestrator.ts` |
+| A8 | Unit tests: full state machine round-trip for each Philos decision | `__tests__/philos-review-consumer.test.ts` (new) |
+| A9 | Unit tests: idempotency invariant — double consume produces no duplicate writes | `__tests__/philos-review-consumer.test.ts` |
+| A10 | Integration test: Merlin inference → accumulate → propose → Philos accept → Interpretation in profile | `__tests__/orientation-integration.test.ts` |
 
 ---
 
@@ -387,9 +516,9 @@ The following features are explicitly out of scope for M0-10. They belong in M0-
 
 ## 8. Open questions (must be resolved before M0-10A implementation)
 
-| # | Question | Stakes |
-|---|----------|--------|
-| Q1 | Confirm §3.1 decision: Option 2 (Philos as reviewer)? | Blocks all of M0-10A |
-| Q2 | When does Philos run the review — on every `processExchange()` call, on a schedule, or triggered by the user session ending? | Determines trigger mechanism for `promotePendingReview()` |
-| Q3 | What is Philos's promotion policy — any non-speculative confidence, or a higher bar? | Determines how many proposals reach the user |
-| Q4 | Should `pending_review` records be visible to Philos only, or also surfaced to the user in a "proposed but unreviewed" state? | Determines `getPendingProposals()` visibility contract |
+| # | Question | Stakes | Status |
+|---|----------|--------|--------|
+| Q1 | Confirm §3.1 decision: Option 2 (Philos as reviewer)? | Blocks all of M0-10A | ✅ Confirmed 2026-07-27 |
+| Q2 | When does Philos run the review — on every `processExchange()` call, on a schedule, or triggered by the user session ending? | Determines trigger mechanism for `PhilosReviewConsumer.consumeProfile()` | Open |
+| Q3 | Max `deferCount` before Philos must produce a definitive decision? | Bounds proposal lifetime in `pending_review`; prevents TTL as the only termination mechanism | Open |
+| Q4 | Should `pending_review` records be visible to Philos only, or also surfaced to the user in a "proposed but unreviewed" state? | Determines `getPendingProposals()` visibility contract | ✅ Resolved: Philos-internal only. Users see `pending_user_confirmation` only. (§3.8 A6) |
