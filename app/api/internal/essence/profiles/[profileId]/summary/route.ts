@@ -91,7 +91,7 @@ export async function GET(
   }
 
   const { profileId } = await ctx.params;
-  const svc = new EssenceReadService(getRepository().asReadRepository());
+  const svc = new EssenceReadService(getRepository());
 
   try {
     const summary = await svc.getEssenceSummary(profileId, 'task_relevant', actor);

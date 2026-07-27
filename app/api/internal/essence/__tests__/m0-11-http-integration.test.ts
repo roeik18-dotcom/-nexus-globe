@@ -99,7 +99,7 @@ function summaryReq(): Request {
  */
 function spyPhilosForceAccept(): void {
   vi.spyOn(PhilosReviewConsumer.prototype, 'consume').mockImplementation(
-    async function (profileId: string, proposalId: string) {
+    async function (this: PhilosReviewConsumer, profileId: string, proposalId: string) {
       // Access the private proposals service via type erasure.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const svc = (this as any).proposals;
