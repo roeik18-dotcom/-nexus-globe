@@ -29,4 +29,8 @@ export class InMemoryEssenceProposalRepository implements EssenceProposalReposit
     }
     return results;
   }
+
+  async loadAllProposals(): Promise<PendingEssenceProposal[]> {
+    return [...this.records.values()];
+  }
 }

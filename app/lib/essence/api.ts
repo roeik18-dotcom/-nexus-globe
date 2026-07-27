@@ -389,6 +389,8 @@ export interface EssenceProposalRepository {
   loadProposal(proposalId: string): Promise<PendingEssenceProposal | undefined>;
   /** Load all proposals for a profile (any status). */
   loadProposalsByProfile(profileId: string): Promise<PendingEssenceProposal[]>;
+  /** Load all proposals across all profiles. Used by recovery on server startup (M0-14). */
+  loadAllProposals(): Promise<PendingEssenceProposal[]>;
 }
 
 // ── Sub-Interface: Classification ─────────────────────────────────────────────

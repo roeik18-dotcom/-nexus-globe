@@ -55,4 +55,8 @@ export class FileSystemEssenceProposalRepository implements EssenceProposalRepos
     const store = this.read();
     return Object.values(store).filter((p) => p.profileId === profileId);
   }
+
+  async loadAllProposals(): Promise<PendingEssenceProposal[]> {
+    return Object.values(this.read());
+  }
 }
