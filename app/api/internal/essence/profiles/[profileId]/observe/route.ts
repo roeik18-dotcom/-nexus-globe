@@ -37,6 +37,7 @@ import { EssenceProposalService } from '@/app/lib/essence/proposal-service';
 import { PipelineRunner } from '@/app/lib/essence/pipeline-runner';
 import { getOrCreate, _clearRegistry } from '@/app/lib/essence/orientation-session-registry';
 import type { AgentName } from '@/app/lib/essence/access';
+import type { OrientationInferenceProvider } from '@/app/lib/essence/orientation-inference';
 import type { OrientationInferenceReport } from '@/app/lib/essence/orientation-integration';
 
 // Re-export test helpers so tests can import from the route (mirroring summary/route.ts).
@@ -150,7 +151,7 @@ export async function POST(
 
   // Assemble providers using the fixed Merlin identity (OBSERVE_ACTOR), not the auth header.
   // LLM provider is included when ANTHROPIC_API_KEY is configured.
-  const providers = [new RuleBasedOrientationProvider(OBSERVE_ACTOR)];
+  const providers: OrientationInferenceProvider[] = [new RuleBasedOrientationProvider(OBSERVE_ACTOR)];
   if (process.env.ANTHROPIC_API_KEY) {
     providers.push(new LLMOrientationProvider(OBSERVE_ACTOR));
   }

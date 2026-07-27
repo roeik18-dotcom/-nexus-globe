@@ -129,12 +129,14 @@ export class LLMOrientationProvider implements OrientationInferenceProvider {
   private readonly model: string;
 
   /**
-   * @param agentName - Agent name embedded in the `inferredBy` field of each signal.
-   * @param debug     - When true, include reasoning in the tool schema (schema-level only;
-   *                    reasoning is never logged, persisted, or returned in any mode).
-   * @param client    - Anthropic client; defaults to `new Anthropic()` (uses ANTHROPIC_API_KEY).
-   * @param clock     - Injected clock; defaults to system clock.
-   * @param model     - Model override; defaults to claude-haiku-4-5-20251001.
+   * @param agentName   - Agent name embedded in the `inferredBy` field of each signal.
+   * @param debug       - When true, include reasoning in the tool schema (schema-level only;
+   *                      reasoning is never logged, persisted, or returned in any mode).
+   * @param client      - Anthropic client; defaults to `new Anthropic()` (uses ANTHROPIC_API_KEY).
+   * @param clock       - Injected clock; defaults to system clock.
+   * @param model       - Model override; defaults to claude-haiku-4-5-20251001.
+   * @param temperature - Sampling temperature. Omit to use the model default.
+   *                      Pass 0 for deterministic output (required by §4.2 baseline runs).
    */
   constructor(
     private readonly agentName: AgentName,
@@ -142,6 +144,7 @@ export class LLMOrientationProvider implements OrientationInferenceProvider {
     client?: Anthropic,
     private readonly clock: Clock = systemClock,
     model = DEFAULT_MODEL,
+    private readonly temperature?: number,
   ) {
     this.client = client ?? new Anthropic();
     this.model = model;
@@ -183,6 +186,7 @@ export class LLMOrientationProvider implements OrientationInferenceProvider {
     const response = await this.client.messages.create({
       model: this.model,
       max_tokens: MAX_TOKENS,
+      ...(this.temperature !== undefined && { temperature: this.temperature }),
       system: SYSTEM_PROMPT,
       tools: [
         {
