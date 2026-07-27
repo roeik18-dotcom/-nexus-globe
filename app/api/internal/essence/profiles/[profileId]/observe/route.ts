@@ -28,6 +28,7 @@
 
 import { timingSafeEqual, randomUUID } from 'node:crypto';
 import { getRepository, _setRepository } from '@/app/lib/essence/server-repository';
+import { getProposalRepository, _setProposalRepository } from '@/app/lib/essence/proposal-server-repository';
 import { ACCESS_POLICIES } from '@/app/lib/essence/access';
 import { RuleBasedOrientationProvider } from '@/app/lib/essence/orientation-rule-provider';
 import { LLMOrientationProvider } from '@/app/lib/essence/orientation-llm-provider';
@@ -42,7 +43,7 @@ import type { OrientationInferenceProvider } from '@/app/lib/essence/orientation
 import type { OrientationInferenceReport } from '@/app/lib/essence/orientation-integration';
 
 // Re-export test helpers so tests can import from the route (mirroring summary/route.ts).
-export { _setRepository, _clearRegistry };
+export { _setRepository, _setProposalRepository, _clearRegistry };
 
 const VALID_ACTORS = new Set<AgentName>(Object.keys(ACCESS_POLICIES) as AgentName[]);
 
@@ -152,7 +153,7 @@ export async function POST(
 
   // Get-or-create stateful per-session orchestrator.
   // Co-construct EssenceProposalService + PhilosReviewConsumer inside the factory so
-  // they share the same proposalRecords Map (M0-11A / I4).
+  // they share the same proposal repository instance (M0-11A / I4, updated M0-13C).
   // Provider list is also built inside the factory — config is session-scoped, not
   // per-request, so it is safe to read env at factory-call time.
   // Registry is process-scoped (no TTL eviction — see orientation-session-registry.ts TODO).
@@ -161,7 +162,7 @@ export async function POST(
     if (process.env.ANTHROPIC_API_KEY) {
       providers.push(new LLMOrientationProvider(OBSERVE_ACTOR));
     }
-    const svc = new EssenceProposalService(getRepository(), new PipelineRunner());
+    const svc = new EssenceProposalService(getRepository(), getProposalRepository(), new PipelineRunner());
     const philos = new PhilosReviewConsumer(svc);
     return new OrientationInferenceOrchestrator(
       new CompositeOrientationProvider(providers),

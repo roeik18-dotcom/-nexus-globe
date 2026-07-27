@@ -21,6 +21,7 @@ import { ACCESS_POLICIES, canAgentPropose } from './access';
 import type {
   EssencePhilosReviewAPI,
   EssenceProposalAPI,
+  EssenceProposalRepository,
   EssenceUserActionAPI,
   PendingEssenceProposal,
   PhilosReviewDecision,
@@ -43,10 +44,9 @@ export { type Clock };
 const LAYERS: EssenceLayer[] = ['core', 'aspirations', 'expression', 'identity'];
 
 export class EssenceProposalService implements EssenceProposalAPI, EssenceUserActionAPI, EssencePhilosReviewAPI {
-  private readonly proposalRecords = new Map<string, PendingEssenceProposal>();
-
   constructor(
     private readonly repo: EssenceRepository,
+    private readonly proposalRepo: EssenceProposalRepository,
     private readonly runner: EssencePipeline,
     private readonly clock: Clock = systemClock,
     private readonly idGen: IdGenerator = defaultIdGenerator,
@@ -151,7 +151,7 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
 
     if (output.result.status === 'pending_review') {
       const { proposalId, expiresAt } = output.result;
-      this.proposalRecords.set(proposalId, {
+      await this.proposalRepo.saveProposal({
         proposalId,
         profileId,
         nodeId: proposal.nodeId,
@@ -173,7 +173,7 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
 
     if (output.result.status === 'pending_user_confirmation') {
       const { confirmationToken, expiresAt } = output.result;
-      this.proposalRecords.set(confirmationToken, {
+      await this.proposalRepo.saveProposal({
         proposalId: confirmationToken,
         profileId,
         nodeId: proposal.nodeId,
@@ -201,7 +201,7 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     confirmationToken: string,
     context: UserAuthorizedActionContext,
   ): Promise<Interpretation> {
-    const record = this.proposalRecords.get(confirmationToken);
+    const record = await this.proposalRepo.loadProposal(confirmationToken);
     if (!record) throw new Error(`Unknown confirmation token: ${confirmationToken}`);
     if (record.profileId !== profileId) throw new Error('Profile ID mismatch');
 
@@ -218,6 +218,7 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
 
     if (new Date(record.expiresAt).getTime() < this.clock.now()) {
       record.status = 'expired';
+      await this.proposalRepo.saveProposal(record);
       throw new Error('Proposal has expired');
     }
 
@@ -243,6 +244,7 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
 
     record.status = 'confirmed';
     record.committedInterpretationId = interp.id;
+    await this.proposalRepo.saveProposal(record);
 
     return interp;
   }
@@ -253,7 +255,7 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     _context: UserAuthorizedActionContext,
     reason: string | null,
   ): Promise<{ rejected: true; recordedAt: string }> {
-    const record = this.proposalRecords.get(confirmationToken);
+    const record = await this.proposalRepo.loadProposal(confirmationToken);
     if (!record) throw new Error(`Unknown confirmation token: ${confirmationToken}`);
     if (record.profileId !== profileId) throw new Error('Profile ID mismatch');
 
@@ -267,6 +269,7 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
 
     record.status = 'rejected';
     if (reason) record.rejectionReason = reason;
+    await this.proposalRepo.saveProposal(record);
 
     return { rejected: true, recordedAt: new Date(this.clock.now()).toISOString() };
   }
@@ -363,12 +366,12 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     requestedBy: AgentName,
   ): Promise<PendingEssenceProposal[]> {
     const now = this.clock.now();
+    const all = await this.proposalRepo.loadProposalsByProfile(profileId);
     const result: PendingEssenceProposal[] = [];
-    for (const record of this.proposalRecords.values()) {
-      if (record.profileId !== profileId) continue;
+    for (const record of all) {
       if (record.status !== 'pending_review' && record.status !== 'pending_user_confirmation') continue;
       if (new Date(record.expiresAt).getTime() < now) {
-        record.status = 'expired';
+        // Lazy expiry — not persisted (accepted for M0-13).
         continue;
       }
       if (record.status === 'pending_review' && requestedBy !== 'philos') continue;
@@ -382,11 +385,12 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
 
   async getReviewQueue(profileId: string): Promise<PendingEssenceProposal[]> {
     const now = this.clock.now();
+    const all = await this.proposalRepo.loadProposalsByProfile(profileId);
     const result: PendingEssenceProposal[] = [];
-    for (const record of this.proposalRecords.values()) {
-      if (record.profileId !== profileId || record.status !== 'pending_review') continue;
+    for (const record of all) {
+      if (record.status !== 'pending_review') continue;
       if (new Date(record.expiresAt).getTime() < now) {
-        record.status = 'expired';
+        // Lazy expiry — not persisted (accepted for M0-13).
         continue;
       }
       result.push(record);
@@ -394,22 +398,23 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     return result;
   }
 
-  getProposalRecord(proposalId: string): PendingEssenceProposal | undefined {
-    return this.proposalRecords.get(proposalId);
+  async getProposalRecord(proposalId: string): Promise<PendingEssenceProposal | undefined> {
+    return this.proposalRepo.loadProposal(proposalId);
   }
 
-  applyReviewDecision(
+  async applyReviewDecision(
     proposalId: string,
     decision: PhilosReviewDecision,
     newStatus: ProposalStatus,
-  ): void {
-    const record = this.proposalRecords.get(proposalId);
+  ): Promise<void> {
+    const record = await this.proposalRepo.loadProposal(proposalId);
     if (!record) throw new Error(`Unknown proposalId: ${proposalId}`);
     record.reviewDecisions.push(decision);
     record.status = newStatus;
     if (decision.decision === 'defer') {
       record.deferCount += 1;
     }
+    await this.proposalRepo.saveProposal(record);
   }
 
   async commitReviewedProposal(proposal: PendingEssenceProposal): Promise<Interpretation> {
@@ -462,6 +467,7 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     await this.writeInterpretation(profile, interp, 'replace_single_value');
 
     proposal.committedInterpretationId = interp.id;
+    await this.proposalRepo.saveProposal(proposal);
     return interp;
   }
 

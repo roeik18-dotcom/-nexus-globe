@@ -26,6 +26,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { InMemoryEssenceRepository } from '@/app/lib/essence/in-memory-repository';
+import { InMemoryEssenceProposalRepository } from '@/app/lib/essence/in-memory-proposal-repository';
 import { PhilosReviewConsumer } from '@/app/lib/essence/philos-review-consumer';
 import { PHILOS_POLICY_VERSION } from '@/app/lib/essence/philos-review-consumer';
 
@@ -114,7 +115,7 @@ function spyPhilosForceAccept(): void {
         policyVersion: PHILOS_POLICY_VERSION,
       };
       await svc.commitReviewedProposal(proposal);
-      svc.applyReviewDecision(proposalId, decision, 'confirmed');
+      await svc.applyReviewDecision(proposalId, decision, 'confirmed');
       return decision;
     },
   );
@@ -130,8 +131,9 @@ beforeEach(async () => {
   vi.stubEnv('ANTHROPIC_API_KEY', '');
 
   sharedRepo = new InMemoryEssenceRepository();
+  const sharedProposalRepo = new InMemoryEssenceProposalRepository();
 
-  // Inject the same repository into all three routes so they share state.
+  // Inject the same repositories into all routes so they share state.
   const [pRoute, oRoute, sRoute] = await Promise.all([
     profilesRoute(),
     observeRoute(),
@@ -139,6 +141,7 @@ beforeEach(async () => {
   ]);
   pRoute._setRepository(sharedRepo);
   oRoute._setRepository(sharedRepo);
+  oRoute._setProposalRepository(sharedProposalRepo);
   (sRoute as { _setRepository?: (r: InMemoryEssenceRepository) => void })._setRepository?.(sharedRepo);
   oRoute._clearRegistry();
 });

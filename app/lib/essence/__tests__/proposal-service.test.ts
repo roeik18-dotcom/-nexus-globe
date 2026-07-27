@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { EssenceProposalService } from '../proposal-service';
 import { PipelineRunner } from '../pipeline-runner';
 import { InMemoryEssenceRepository } from '../in-memory-repository';
+import { InMemoryEssenceProposalRepository } from '../in-memory-proposal-repository';
 import type { UserAuthorizedActionContext, ProposedUpdate } from '../api';
 import type { Clock } from '../pipeline-runner';
 
@@ -25,9 +26,10 @@ function makeClock(ms: number): Clock {
 
 function makeService(clockMs?: number) {
   const repo = new InMemoryEssenceRepository();
+  const proposalRepo = new InMemoryEssenceProposalRepository();
   const clock = clockMs !== undefined ? makeClock(clockMs) : undefined;
   const runner = new PipelineRunner(clock);
-  const svc = new EssenceProposalService(repo, runner, clock);
+  const svc = new EssenceProposalService(repo, proposalRepo, runner, clock);
   return { repo, svc, clock };
 }
 
@@ -188,7 +190,7 @@ describe('EssenceProposalService — confirmUpdate', () => {
     const clock = makeClock(1000) as Clock & { advance: (n: number) => void };
     const repo = new InMemoryEssenceRepository();
     const runner = new PipelineRunner(clock);
-    const svc = new EssenceProposalService(repo, runner, clock);
+    const svc = new EssenceProposalService(repo, new InMemoryEssenceProposalRepository(), runner, clock);
     await repo.createProfile('u1');
 
     const result = await svc.proposeUpdate('u1', baseProposal(), null);
@@ -392,7 +394,7 @@ describe('EssenceProposalService — getPendingProposals', () => {
     const clock = makeClock(1000) as Clock & { advance: (n: number) => void };
     const repo = new InMemoryEssenceRepository();
     const runner = new PipelineRunner(clock);
-    const svc = new EssenceProposalService(repo, runner, clock);
+    const svc = new EssenceProposalService(repo, new InMemoryEssenceProposalRepository(), runner, clock);
     await repo.createProfile('u1');
 
     await svc.proposeUpdate('u1', baseProposal(), null);
@@ -693,7 +695,7 @@ describe('EssenceProposalService — M0-10B: previousInterpretationId (B3)', () 
   it('second write (replace_single_value): previousInterpretationId points to archived interp', async () => {
     const clock = makeClock(1_000_000) as ReturnType<typeof makeClock> & { advance(n: number): void };
     const repo = new InMemoryEssenceRepository();
-    const svc = new EssenceProposalService(repo, new PipelineRunner(clock), clock);
+    const svc = new EssenceProposalService(repo, new InMemoryEssenceProposalRepository(), new PipelineRunner(clock), clock);
     const philos = new PhilosReviewConsumer(svc, clock);
     await repo.createProfile('u1');
     await repo.appendObservation('u1', seedObs('obs-first'));
@@ -749,7 +751,7 @@ describe('EssenceProposalService — M0-10B: conflict resolution on supersession
   it('preference_shift conflict is resolved when superseded by a new orientation write', async () => {
     const clock = makeClock(1_000_000);
     const repo = new InMemoryEssenceRepository();
-    const svc = new EssenceProposalService(repo, new PipelineRunner(clock), clock);
+    const svc = new EssenceProposalService(repo, new InMemoryEssenceProposalRepository(), new PipelineRunner(clock), clock);
     const philos = new PhilosReviewConsumer(svc, clock);
     const profile = await repo.createProfile('u1');
 
@@ -822,7 +824,7 @@ describe('EssenceProposalService — M0-10B: conflict resolution on supersession
   it('unresolved_contradiction conflict is NOT auto-resolved on supersession', async () => {
     const clock = makeClock(1_000_000);
     const repo = new InMemoryEssenceRepository();
-    const svc = new EssenceProposalService(repo, new PipelineRunner(clock), clock);
+    const svc = new EssenceProposalService(repo, new InMemoryEssenceProposalRepository(), new PipelineRunner(clock), clock);
     const philos = new PhilosReviewConsumer(svc, clock);
     const profile = await repo.createProfile('u1');
 
@@ -897,7 +899,7 @@ describe('EssenceProposalService — M0-10B: full audit chain reconstruction (B5
   it('reconstructs the complete accepted orientation transition from persisted audit records', async () => {
     const clock = makeClock(1_000_000) as ReturnType<typeof makeClock> & { advance(n: number): void };
     const repo = new InMemoryEssenceRepository();
-    const svc = new EssenceProposalService(repo, new PipelineRunner(clock), clock);
+    const svc = new EssenceProposalService(repo, new InMemoryEssenceProposalRepository(), new PipelineRunner(clock), clock);
     const philos = new PhilosReviewConsumer(svc, clock);
     const profile = await repo.createProfile('u1');
 
@@ -973,7 +975,7 @@ describe('EssenceProposalService — M0-10B: full audit chain reconstruction (B5
     const proposalId = (result as { proposalId: string }).proposalId;
 
     // proposal is persisted before Philos runs
-    const proposalRecord = svc.getProposalRecord(proposalId);
+    const proposalRecord = await svc.getProposalRecord(proposalId);
     expect(proposalRecord).toBeDefined();
     expect(proposalRecord!.status).toBe('pending_review');
     expect(proposalRecord!.reviewDecisions).toHaveLength(0);
@@ -1024,7 +1026,7 @@ describe('EssenceProposalService — M0-10B: full audit chain reconstruction (B5
     expect(conflict!.resolutionNote).toMatch(interpB_id);
 
     // Proposal record holds the Philos review decision
-    const record = svc.getProposalRecord(proposalId);
+    const record = await svc.getProposalRecord(proposalId);
     expect(record!.status).toBe('confirmed');
     expect(record!.reviewDecisions).toHaveLength(1);
     expect(record!.reviewDecisions[0].decision).toBe('accept');
@@ -1068,6 +1070,6 @@ describe('EssenceProposalService — M0-10B: full audit chain reconstruction (B5
     expect(
       (profileAfterRepeat!.expression['OrientationCommunicationStyle'] ?? []).length
     ).toBe(allInterps.length);
-    expect(svc.getProposalRecord(proposalId)!.reviewDecisions).toHaveLength(1);
+    expect((await svc.getProposalRecord(proposalId))!.reviewDecisions).toHaveLength(1);
   });
 });

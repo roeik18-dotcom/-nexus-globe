@@ -10,6 +10,7 @@ import { PhilosReviewConsumer, MAX_DEFER_COUNT, PHILOS_POLICY_VERSION } from '..
 import { EssenceProposalService } from '../proposal-service';
 import { PipelineRunner } from '../pipeline-runner';
 import { InMemoryEssenceRepository } from '../in-memory-repository';
+import { InMemoryEssenceProposalRepository } from '../in-memory-proposal-repository';
 import type { Clock } from '../pipeline-runner';
 import type { ConfidenceLevel } from '../schema';
 
@@ -23,8 +24,9 @@ function makeClock(ms = Date.now()): Clock & { advance(n: number): void } {
 async function setupProfile(confidence: ConfidenceLevel | null = 'medium') {
   const clock = makeClock(1_000_000);
   const repo = new InMemoryEssenceRepository();
+  const proposalRepo = new InMemoryEssenceProposalRepository();
   const runner = new PipelineRunner(clock);
-  const svc = new EssenceProposalService(repo, runner, clock);
+  const svc = new EssenceProposalService(repo, proposalRepo, runner, clock);
   const philos = new PhilosReviewConsumer(svc, clock);
 
   // Create profile + seed an observation for evidence.
@@ -54,7 +56,7 @@ async function setupProfile(confidence: ConfidenceLevel | null = 'medium') {
   expect(result.status).toBe('pending_review');
   const proposalId = (result as { proposalId: string }).proposalId;
 
-  return { repo, svc, philos, clock, proposalId, profile };
+  return { repo, proposalRepo, svc, philos, clock, proposalId, profile };
 }
 
 // ── A8: State machine — one decision per confidence level ─────────────────────
@@ -82,7 +84,7 @@ describe('PhilosReviewConsumer — Philos Review Policy v1.0', () => {
     expect(decision.decision).toBe('require_user_confirmation');
     expect(decision.reason).toBe('low_confidence_requires_user');
 
-    const record = svc.getProposalRecord(proposalId);
+    const record = await svc.getProposalRecord(proposalId);
     expect(record?.status).toBe('pending_user_confirmation');
     expect(record?.reviewDecisions).toHaveLength(1);
     expect(record?.reviewDecisions[0].decision).toBe('require_user_confirmation');
@@ -94,7 +96,7 @@ describe('PhilosReviewConsumer — Philos Review Policy v1.0', () => {
     expect(decision.decision).toBe('accept');
     expect(decision.reason).toBe('medium_confidence_auto_accepted');
 
-    const record = svc.getProposalRecord(proposalId);
+    const record = await svc.getProposalRecord(proposalId);
     expect(record?.status).toBe('confirmed');
     expect(record?.committedInterpretationId).toBeDefined();
 
@@ -111,7 +113,7 @@ describe('PhilosReviewConsumer — Philos Review Policy v1.0', () => {
     const decision = await philos.consume('u1', proposalId);
     expect(decision.decision).toBe('accept');
     expect(decision.reason).toBe('high_confidence_auto_accepted');
-    expect(svc.getProposalRecord(proposalId)?.status).toBe('confirmed');
+    expect((await svc.getProposalRecord(proposalId))?.status).toBe('confirmed');
   });
 
   it('verified → accept(verified_confidence_auto_accepted)', async () => {
@@ -119,13 +121,13 @@ describe('PhilosReviewConsumer — Philos Review Policy v1.0', () => {
     const decision = await philos.consume('u1', proposalId);
     expect(decision.decision).toBe('accept');
     expect(decision.reason).toBe('verified_confidence_auto_accepted');
-    expect(svc.getProposalRecord(proposalId)?.status).toBe('confirmed');
+    expect((await svc.getProposalRecord(proposalId))?.status).toBe('confirmed');
   });
 
   it('reject sets reviewDecisions and proposal status', async () => {
     const { philos, svc, proposalId } = await setupProfile('speculative');
     await philos.consume('u1', proposalId);
-    const record = svc.getProposalRecord(proposalId);
+    const record = await svc.getProposalRecord(proposalId);
     expect(record?.status).toBe('rejected');
     expect(record?.reviewDecisions).toHaveLength(1);
     expect(record?.reviewDecisions[0].reviewer).toBe('philos');
@@ -148,21 +150,22 @@ describe('PhilosReviewConsumer — defer and max-defer', () => {
   it(`first defer (deferCount 0 → 1) is allowed; policy_fallback_defer fires`, async () => {
     // We can't normally reach the defer path via policy since all ConfidenceLevels are covered.
     // Instead test MAX_DEFER_COUNT guard: after deferCount >= MAX_DEFER_COUNT, reject overrides.
-    const { philos, svc, proposalId } = await setupProfile('medium');
-    // Manually set deferCount to MAX_DEFER_COUNT to simulate exhausted defer budget.
-    const record = svc.getProposalRecord(proposalId)!;
+    const { philos, proposalRepo, proposalId } = await setupProfile('medium');
+    // Manually set deferCount to MAX_DEFER_COUNT via the repository to simulate exhausted defer budget.
+    const record = (await proposalRepo.loadProposal(proposalId))!;
     record.deferCount = MAX_DEFER_COUNT;
+    await proposalRepo.saveProposal(record);
 
     const decision = await philos.consume('u1', proposalId);
     expect(decision.decision).toBe('reject');
     expect(decision.reason).toBe('review_policy_unresolved');
-    expect(svc.getProposalRecord(proposalId)?.status).toBe('rejected');
+    expect((await proposalRepo.loadProposal(proposalId))?.status).toBe('rejected');
   });
 
   it('deferCount increments when applyReviewDecision is called with defer', () => {
     const clock = makeClock();
     const repo = new InMemoryEssenceRepository();
-    const svc = new EssenceProposalService(repo, new PipelineRunner(clock), clock);
+    const svc = new EssenceProposalService(repo, new InMemoryEssenceProposalRepository(), new PipelineRunner(clock), clock);
     // Insert a fake pending_review record directly.
     const record = {
       proposalId: 'p1',
@@ -209,7 +212,7 @@ describe('PhilosReviewConsumer — idempotency', () => {
     const interpsAfter = (profileAfterSecond!.expression['OrientationCommunicationStyle'] ?? []);
     expect(interpsAfter.length).toBe(interpsBefore.length);
 
-    const record = svc.getProposalRecord(proposalId);
+    const record = await svc.getProposalRecord(proposalId);
     expect(record?.reviewDecisions).toHaveLength(1);
     expect(record?.status).toBe('confirmed');
   });
@@ -224,7 +227,7 @@ describe('PhilosReviewConsumer — idempotency', () => {
     expect(second.decision).toBe('reject');
     expect(second.reviewedAt).toBe(first.reviewedAt);
 
-    const record = svc.getProposalRecord(proposalId);
+    const record = await svc.getProposalRecord(proposalId);
     expect(record?.reviewDecisions).toHaveLength(1);
   });
 
@@ -237,7 +240,7 @@ describe('PhilosReviewConsumer — idempotency', () => {
     const second = await philos.consume('u1', proposalId);
     expect(second.decision).toBe('require_user_confirmation');
 
-    const record = svc.getProposalRecord(proposalId);
+    const record = await svc.getProposalRecord(proposalId);
     expect(record?.reviewDecisions).toHaveLength(1);
     expect(record?.status).toBe('pending_user_confirmation');
   });
@@ -246,7 +249,7 @@ describe('PhilosReviewConsumer — idempotency', () => {
     const clock = makeClock(1_000_000);
     const repo = new InMemoryEssenceRepository();
     const runner = new PipelineRunner(clock);
-    const svc = new EssenceProposalService(repo, runner, clock);
+    const svc = new EssenceProposalService(repo, new InMemoryEssenceProposalRepository(), runner, clock);
     const philos = new PhilosReviewConsumer(svc, clock);
 
     await repo.createProfile('u1');

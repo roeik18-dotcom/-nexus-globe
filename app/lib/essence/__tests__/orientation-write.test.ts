@@ -9,6 +9,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { EssenceProposalService } from '../proposal-service';
 import { EssenceReadService } from '../read-service';
 import { InMemoryEssenceRepository } from '../in-memory-repository';
+import { InMemoryEssenceProposalRepository } from '../in-memory-proposal-repository';
 import { PipelineRunner } from '../pipeline-runner';
 import type { EssencePipeline, PipelineRunnerInput, PipelineRunnerOutput } from '../pipeline-runner';
 import type { Interpretation } from '../schema';
@@ -78,7 +79,7 @@ describe('orientation write path — single-valued invariant', () => {
   beforeEach(async () => {
     repo = new InMemoryEssenceRepository();
     await repo.createProfile('u1');
-    svc = new EssenceProposalService(repo, new PipelineRunner());
+    svc = new EssenceProposalService(repo, new InMemoryEssenceProposalRepository(), new PipelineRunner());
   });
 
   it('correctItem with valid value creates one active interpretation', async () => {
@@ -254,7 +255,7 @@ describe('orientation write path — single-valued invariant', () => {
       },
     };
 
-    const badSvc = new EssenceProposalService(repo, fakePipeline);
+    const badSvc = new EssenceProposalService(repo, new InMemoryEssenceProposalRepository(), fakePipeline);
     await expect(
       badSvc.correctItem('u1', correction('Preferences', 'dark mode'), userCtx),
     ).rejects.toThrow("replace_single_value is only valid for orientation nodes; got 'Preferences'");

@@ -52,7 +52,7 @@ export class PhilosReviewConsumer {
    *   - Otherwise: evaluate policy and apply decision.
    */
   async consume(profileId: string, proposalId: string): Promise<PhilosReviewDecision> {
-    const proposal = this.proposals.getProposalRecord(proposalId);
+    const proposal = await this.proposals.getProposalRecord(proposalId);
     if (!proposal) throw new Error(`Unknown proposalId: ${proposalId}`);
     if (proposal.profileId !== profileId) throw new Error('Profile ID mismatch');
 
@@ -114,20 +114,20 @@ export class PhilosReviewConsumer {
       case 'accept': {
         // Commit the Interpretation first, then mark proposal confirmed.
         await this.proposals.commitReviewedProposal(proposal);
-        this.proposals.applyReviewDecision(proposal.proposalId, decision, 'confirmed');
+        await this.proposals.applyReviewDecision(proposal.proposalId, decision, 'confirmed');
         break;
       }
       case 'reject': {
-        this.proposals.applyReviewDecision(proposal.proposalId, decision, 'rejected');
+        await this.proposals.applyReviewDecision(proposal.proposalId, decision, 'rejected');
         break;
       }
       case 'require_user_confirmation': {
-        this.proposals.applyReviewDecision(proposal.proposalId, decision, 'pending_user_confirmation');
+        await this.proposals.applyReviewDecision(proposal.proposalId, decision, 'pending_user_confirmation');
         break;
       }
       case 'defer': {
         // Status stays pending_review; deferCount incremented inside applyReviewDecision.
-        this.proposals.applyReviewDecision(proposal.proposalId, decision, 'pending_review');
+        await this.proposals.applyReviewDecision(proposal.proposalId, decision, 'pending_review');
         break;
       }
     }

@@ -352,7 +352,7 @@ export interface EssencePhilosReviewAPI {
   /** Get all pending_review proposals for a profile (Philos-internal queue). */
   getReviewQueue(profileId: string): Promise<PendingEssenceProposal[]>;
   /** Get any proposal record by ID, regardless of status. Returns undefined if not found. */
-  getProposalRecord(proposalId: string): PendingEssenceProposal | undefined;
+  getProposalRecord(proposalId: string): Promise<PendingEssenceProposal | undefined>;
   /**
    * Append a Philos review decision and update the proposal's status and deferCount.
    * Caller is responsible for idempotency; this method always appends.
@@ -361,7 +361,7 @@ export interface EssencePhilosReviewAPI {
     proposalId: string,
     decision: PhilosReviewDecision,
     newStatus: ProposalStatus,
-  ): void;
+  ): Promise<void>;
   /**
    * Commit a Philos-accepted pending_review proposal directly to the profile.
    * Builds the Interpretation from stored fields; does NOT re-run the pipeline.
@@ -369,6 +369,26 @@ export interface EssencePhilosReviewAPI {
    * Sets proposal.status = 'confirmed' and proposal.committedInterpretationId.
    */
   commitReviewedProposal(proposal: PendingEssenceProposal): Promise<Interpretation>;
+}
+
+// ── Repository: Proposals ─────────────────────────────────────────────────────
+
+/**
+ * Storage abstraction for proposal lifecycle records (M0-13).
+ * Implemented by InMemoryEssenceProposalRepository (tests / dev) and
+ * FileSystemEssenceProposalRepository (durable single-process deployments).
+ *
+ * Invariants the repository must preserve:
+ *   P2 — reviewDecisions is append-only; never mutated in place (enforced by callers,
+ *         not asserted here — the repository stores whatever it is given).
+ */
+export interface EssenceProposalRepository {
+  /** Upsert a proposal record by proposalId. Creates on first call, overwrites on subsequent. */
+  saveProposal(proposal: PendingEssenceProposal): Promise<void>;
+  /** Load one proposal by ID. Returns undefined if not found. */
+  loadProposal(proposalId: string): Promise<PendingEssenceProposal | undefined>;
+  /** Load all proposals for a profile (any status). */
+  loadProposalsByProfile(profileId: string): Promise<PendingEssenceProposal[]>;
 }
 
 // ── Sub-Interface: Classification ─────────────────────────────────────────────

@@ -18,6 +18,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { InMemoryEssenceRepository } from '../in-memory-repository';
+import { InMemoryEssenceProposalRepository } from '../in-memory-proposal-repository';
 import { EssenceProposalService } from '../proposal-service';
 import { PipelineRunner } from '../pipeline-runner';
 import { OrientationInferenceOrchestrator } from '../orientation-orchestrator';
@@ -128,7 +129,7 @@ interface TestFixture {
 function buildFixture(): TestFixture {
   const repo        = new InMemoryEssenceRepository();
   const runner      = new PipelineRunner();
-  const proposalSvc = new EssenceProposalService(repo, runner);
+  const proposalSvc = new EssenceProposalService(repo, new InMemoryEssenceProposalRepository(), runner);
   const provider    = new StubOrientationProvider();
   const orchestrator = new OrientationInferenceOrchestrator(provider, proposalSvc, 'merlin');
   return { repo, proposalSvc, provider, orchestrator };

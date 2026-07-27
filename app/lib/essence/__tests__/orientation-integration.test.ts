@@ -16,6 +16,7 @@ import { EssenceProposalService } from '../proposal-service';
 import { PipelineRunner } from '../pipeline-runner';
 import { PhilosReviewConsumer } from '../philos-review-consumer';
 import { InMemoryEssenceRepository } from '../in-memory-repository';
+import { InMemoryEssenceProposalRepository } from '../in-memory-proposal-repository';
 import type { Observation } from '../schema';
 import type { Interpretation } from '../schema';
 
@@ -178,7 +179,7 @@ describe('M0-10A — end-to-end write path (A10)', () => {
   it('Merlin inference → proposeUpdate → Philos accept → Interpretation in profile', async () => {
     const repo = new InMemoryEssenceRepository();
     const runner = new PipelineRunner();
-    const svc = new EssenceProposalService(repo, runner);
+    const svc = new EssenceProposalService(repo, new InMemoryEssenceProposalRepository(), runner);
     const philos = new PhilosReviewConsumer(svc);
     const readSvc = new EssenceReadService(repo.asReadRepository());
 
@@ -229,7 +230,7 @@ describe('M0-10A — end-to-end write path (A10)', () => {
 
   it('Philos reject: Interpretation NOT written to profile', async () => {
     const repo = new InMemoryEssenceRepository();
-    const svc = new EssenceProposalService(repo, new PipelineRunner());
+    const svc = new EssenceProposalService(repo, new InMemoryEssenceProposalRepository(), new PipelineRunner());
     const philos = new PhilosReviewConsumer(svc);
 
     await repo.createProfile('u1');
@@ -257,7 +258,7 @@ describe('M0-10A — end-to-end write path (A10)', () => {
 
   it('Philos require_user_confirmation: proposal moves to pending_user_confirmation', async () => {
     const repo = new InMemoryEssenceRepository();
-    const svc = new EssenceProposalService(repo, new PipelineRunner());
+    const svc = new EssenceProposalService(repo, new InMemoryEssenceProposalRepository(), new PipelineRunner());
     const philos = new PhilosReviewConsumer(svc);
 
     await repo.createProfile('u1');
