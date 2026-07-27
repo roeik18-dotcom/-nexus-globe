@@ -1,6 +1,6 @@
 # M0-9C — Behavioral Validation and Calibration Spec
 
-**Status:** Architectural requirements locked. Performance thresholds TBD pending baseline run.  
+**Status:** Design spec fully locked. Performance thresholds TBD pending baseline run.  
 **Scope:** `LLMOrientationProvider`, `RuleBasedOrientationProvider`, `CompositeOrientationProvider`  
 **Invariants inherited from:** M0-9A (architecture), M0-9B (failure model, provenance)
 
@@ -28,9 +28,12 @@ interface CorpusEntry {
   id: string;                      // stable identifier, never reassigned
   dimension: OrientationDimensionKey;
   category: CorpusCategory;
+  language: 'he' | 'en';          // 'he' = reference; 'en' = parity subset
+  pairId?: string;                 // links an 'en' entry to its 'he' source (same goldLabel)
   userMessage: string;
   assistantResponse: string;       // disambiguation context only
   goldLabel: GoldLabel;
+  secondarySignals?: Array<{ candidateValue: string }>;
   deprecated?: true;               // set when entry is superseded; never deleted
 }
 
@@ -92,13 +95,27 @@ interface CorpusEntry {
 
 Providers are scored on the gold label only. Secondary signals are informational and not used in FP/FN computation. The architectural invariant (§4.7) separately asserts that providers are **permitted** to emit multiple signals per dimension per observation.
 
-### 2.7 Minimum Coverage (TBD)
+### 2.7 Dimension Coverage (locked)
+
+The v1 corpus **must** provide at least one `explicit` (Positive) and one `negative` entry for every `OrientationDimensionKey`. No dimension may be absent from the first corpus version.
+
+Density — number of entries per dimension beyond this floor — is incremental and may grow across corpus versions without structural changes. Coverage is not incremental: a corpus missing any dimension produces a baseline that cannot be compared to future baselines.
 
 ```
-[TBD] Minimum entries per dimension (measurement set)
-[TBD] Minimum entries per category per dimension (measurement set)
-[TBD] Minimum entries in evaluation set per dimension
-[TBD] Minimum entries with non-English userMessage (Hebrew coverage, across all categories)
+[TBD] Target entries per dimension beyond the mandatory floor (set after v1 baseline)
+[TBD] Minimum entries in evaluation set (ambiguous) per dimension
+```
+
+### 2.8 Language Coverage (locked)
+
+Hebrew is the reference language. All primary corpus entries are authored in Hebrew.
+
+English validation uses a **parity subset**: faithful translations of existing Hebrew corpus entries, not an independent corpus. The purpose is behavioral invariant verification, not linguistic accuracy measurement. A parity subset entry must share the same `dimension`, `category`, and `goldLabel` as its Hebrew source. It carries a `pairId` linking it to the source entry.
+
+Cross-language parity is evaluated by comparing provider behavior on the Hebrew entry and its English translation. A divergence in signal emission or weight between the pair indicates a language-sensitivity issue, not necessarily a performance regression.
+
+```
+[TBD] Minimum parity subset size (set after v1 baseline; not required to cover all entries)
 ```
 
 ---
@@ -269,9 +286,8 @@ app/lib/essence/__tests__/
 - **Q4 — Contradictory signals from the same observation** (resolved)  
   Contradictory signals from the same observation are not a provider failure. A message may legitimately express multiple preferences for the same dimension (e.g., `brief` by default, `explanatory` when learning). Providers may emit both signals. The Accumulator and ProposalEngine resolve them downstream via weight accumulation. There is no architectural invariant of "one signal per dimension per observation." Corpus entries with multi-signal potential carry a dominant gold label for scoring and optional `secondarySignals` annotations for reference. See §2.6 and §4.6.
 
-## 10. Open Questions
+- **Q1 — Dimension coverage in v1** (resolved)  
+  Full coverage from v1. Every `OrientationDimensionKey` must appear in the first corpus with at least one Positive (`explicit`) and one Negative entry. Corpus density is incremental; dimension coverage is not. A baseline missing any dimension cannot be compared to future baselines. See §2.7.
 
-These must be resolved before the corpus can be authored:
-
-- **Q1** — How many dimensions need full coverage on the first corpus, versus which can start with `explicit` entries only?
-- **Q2** — What is the target Hebrew-to-English ratio in the corpus? Rule patterns already have Hebrew coverage; LLM should be tested separately, including on the same Hebrew entries.
+- **Q2 — Hebrew / English language policy** (resolved)  
+  Hebrew is the reference language. The primary corpus is authored in Hebrew. English validation uses a parity subset of faithful translations of existing Hebrew entries, carrying the same `goldLabel` and linked via `pairId`. The goal is behavioral invariant verification across languages, not linguistic accuracy measurement. A divergence between a Hebrew entry and its English pair indicates language-sensitivity, not a performance regression. See §2.8.
