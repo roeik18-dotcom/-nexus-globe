@@ -890,3 +890,184 @@ describe('EssenceProposalService — M0-10B: conflict resolution on supersession
     }
   });
 });
+
+// ── M0-10B B5: Full audit chain reconstructable from persisted records ─────────
+
+describe('EssenceProposalService — M0-10B: full audit chain reconstruction (B5)', () => {
+  it('reconstructs the complete accepted orientation transition from persisted audit records', async () => {
+    const clock = makeClock(1_000_000);
+    const repo = new InMemoryEssenceRepository();
+    const svc = new EssenceProposalService(repo, new PipelineRunner(clock), clock);
+    const philos = new PhilosReviewConsumer(svc, clock);
+    const profile = await repo.createProfile('u1');
+
+    // ── Seed: interpretation A (active) + open preference_shift conflict ──────
+
+    const interpA_id = 'interp-A';
+    profile.expression['OrientationCommunicationStyle'] = [{
+      id: interpA_id,
+      version: 1,
+      nodeId: 'OrientationCommunicationStyle',
+      layer: 'expression',
+      stabilityClass: 'Adaptive',
+      content: 'direct',
+      observationIds: ['obs-A'],
+      confidence: 'high',
+      interpretationKind: 'probable_interpretation',
+      provenance: {
+        source: 'agent_inference',
+        confidence: 'high',
+        createdBy: 'merlin',
+        firstObservedAt: new Date(clock.now()).toISOString(),
+        lastConfirmedAt: new Date(clock.now()).toISOString(),
+        lastUpdatedAt: new Date(clock.now()).toISOString(),
+        evidenceIds: [],
+        conflictingInterpretationIds: [],
+      },
+      sensitivity: 'personal',
+      temporalKind: 'trait',
+      stateScope: null,
+      expiresAt: null,
+      archivedAt: null,
+      conflictIds: ['conflict-b5'],
+      evidenceStatus: 'referenced',
+    }];
+    profile.conflicts.push({
+      id: 'conflict-b5',
+      type: 'preference_shift',
+      detectedAt: new Date(clock.now()).toISOString(),
+      existingInterpretationIds: [interpA_id],
+      triggeringObservationId: 'obs-A',
+      resolvedAt: null,
+      resolution: null,
+      resolutionNote: null,
+    });
+    await repo.saveProfile(profile);
+
+    // ── Agent proposal: B ('collaborative') ──────────────────────────────────
+
+    clock.advance(500);
+    await repo.appendObservation('u1', {
+      id: 'obs-B',
+      source: 'agent_inference',
+      recordedBy: 'merlin',
+      content: 'user repeatedly chose collaborative framing',
+      sessionId: null,
+      observedAt: new Date(clock.now()).toISOString(),
+      evidenceIds: [],
+      correctsObservationId: null,
+    });
+
+    const proposedAt = new Date(clock.now()).toISOString();
+    const result = await svc.proposeUpdate('u1', {
+      nodeId: 'OrientationCommunicationStyle',
+      proposedContent: 'collaborative',
+      evidenceObservationIds: ['obs-B'],
+      proposedBy: 'merlin',
+      proposedAt,
+      rationale: 'user consistently chose collaborative framing over three exchanges',
+      accumulatedConfidence: 'high',
+    }, null);
+
+    expect(result.status).toBe('pending_review');
+    const proposalId = (result as { proposalId: string }).proposalId;
+
+    // proposal is persisted before Philos runs
+    const proposalRecord = svc.getProposalRecord(proposalId);
+    expect(proposalRecord).toBeDefined();
+    expect(proposalRecord!.status).toBe('pending_review');
+    expect(proposalRecord!.reviewDecisions).toHaveLength(0);
+
+    // ── Philos accepts ───────────────────────────────────────────────────────
+
+    clock.advance(10);
+    const decision = await philos.consume('u1', proposalId);
+    expect(decision.decision).toBe('accept');
+    expect(decision.reason).toBe('high_confidence_auto_accepted');
+    expect(decision.reviewer).toBe('philos');
+
+    // ── Reconstruct the full transition from persisted audit records ──────────
+
+    const finalProfile = await repo.getProfile('u1');
+    const allInterps = finalProfile!.expression['OrientationCommunicationStyle'] ?? [];
+
+    // Only B is non-archived
+    const active = allInterps.filter(i => !i.archivedAt);
+    expect(active).toHaveLength(1);
+    expect(active[0].content).toBe('collaborative');
+    const interpB_id = active[0].id;
+
+    // A is archived
+    const archivedA = allInterps.find(i => i.id === interpA_id);
+    expect(archivedA).toBeDefined();
+    expect(archivedA!.archivedAt).not.toBeNull();
+
+    // B was committed by Philos
+    expect(active[0].provenance.createdBy).toBe('philos');
+    expect(active[0].provenance.source).toBe('agent_inference');
+    expect(active[0].confidence).toBe('high');
+
+    // Evolution entry links A → B
+    expect(finalProfile!.evolution).toHaveLength(1);
+    const entry = finalProfile!.evolution[0];
+    expect(entry.nodeId).toBe('OrientationCommunicationStyle');
+    expect(entry.previousInterpretationId).toBe(interpA_id);
+    expect(entry.newInterpretationId).toBe(interpB_id);
+    expect(entry.agentName).toBe('philos');
+    expect(entry.triggeredBy).toBe('agent_inference');
+    expect(entry.timestamp).toBeDefined();
+
+    // preference_shift conflict resolved
+    const conflict = finalProfile!.conflicts.find(c => c.id === 'conflict-b5');
+    expect(conflict!.resolvedAt).not.toBeNull();
+    expect(conflict!.resolution).toBe('accepted_newer');
+    expect(conflict!.resolutionNote).toMatch(interpB_id);
+
+    // Proposal record holds the Philos review decision
+    const record = svc.getProposalRecord(proposalId);
+    expect(record!.status).toBe('confirmed');
+    expect(record!.reviewDecisions).toHaveLength(1);
+    expect(record!.reviewDecisions[0].decision).toBe('accept');
+    expect(record!.reviewDecisions[0].reviewer).toBe('philos');
+    expect(record!.committedInterpretationId).toBe(interpB_id);
+
+    // ── Reconstruction invariant: A → B derivable from evolution log alone ───
+    //
+    // Walk the log without relying on any orchestrator or in-flight state.
+    // This simulates an offline audit tool reading only the persisted profile.
+
+    const log = finalProfile!.evolution;
+    expect(log).toHaveLength(1);
+
+    const transition = log[0];
+    // Previous: look up by ID — must be archived
+    const prevInterp = allInterps.find(i => i.id === transition.previousInterpretationId);
+    expect(prevInterp).toBeDefined();
+    expect(prevInterp!.archivedAt).not.toBeNull();
+    expect(prevInterp!.content).toBe('direct');
+
+    // Next: look up by ID — must be active
+    const nextInterp = allInterps.find(i => i.id === transition.newInterpretationId);
+    expect(nextInterp).toBeDefined();
+    expect(nextInterp!.archivedAt).toBeNull();
+    expect(nextInterp!.content).toBe('collaborative');
+
+    // Ordering: the evolution entry.timestamp is at or after prev.archivedAt.
+    // (firstObservedAt records when evidence was observed — naturally before commit.)
+    expect(new Date(entry.timestamp).getTime())
+      .toBeGreaterThanOrEqual(new Date(prevInterp!.archivedAt!).getTime());
+
+    // ── Idempotency: double-consume adds no new Interpretation or evolution ───
+
+    const secondDecision = await philos.consume('u1', proposalId);
+    expect(secondDecision.decision).toBe('accept');
+    expect(secondDecision.reviewedAt).toBe(decision.reviewedAt);
+
+    const profileAfterRepeat = await repo.getProfile('u1');
+    expect(profileAfterRepeat!.evolution).toHaveLength(1);
+    expect(
+      (profileAfterRepeat!.expression['OrientationCommunicationStyle'] ?? []).length
+    ).toBe(allInterps.length);
+    expect(svc.getProposalRecord(proposalId)!.reviewDecisions).toHaveLength(1);
+  });
+});
