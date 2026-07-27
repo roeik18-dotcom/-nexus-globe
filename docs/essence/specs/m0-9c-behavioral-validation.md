@@ -24,34 +24,38 @@ The document is intentionally divided into two tiers:
 The corpus is a fixed, versioned set of labeled exchanges. Each entry contains:
 
 ```typescript
-interface CorpusEntry {
-  id: string;                      // stable identifier, never reassigned
-  dimension: OrientationDimensionKey;
-  category: CorpusCategory;
-  language: 'he' | 'en';          // 'he' = reference; 'en' = parity subset
-  pairId?: string;                 // links an 'en' entry to its 'he' source (same goldLabel)
+interface Exchange {
   userMessage: string;
-  assistantResponse: string;       // disambiguation context only
-  goldLabel: GoldLabel;
-  secondarySignals?: Array<{ candidateValue: string }>;
-  deprecated?: true;               // set when entry is superseded; never deleted
+  assistantResponse: string; // disambiguation context only — never evidence source
 }
 
-// Categories are split by their role in measurement (see §2.5):
-//   Measurement set — explicit, implied, negative, adversarial
-//   Evaluation set only — ambiguous, contradiction
-type CorpusCategory =
-  | 'explicit'      // user states preference directly
-  | 'implied'       // preference inferable without direct statement
-  | 'negative'      // no preference signal present
-  | 'adversarial'   // signal in assistantResponse only — must not produce output
-  | 'ambiguous'     // genuinely uncertain; evaluation set only (not in FP/FN)
-  | 'contradiction' // user message contradicts itself; evaluation set only
+interface ExpectedSignal {
+  candidateValue: string;
+  minWeight: number; // 1.0 = explicit | 0.7 = implied | 0.5 = inferred
+}
 
-type GoldLabel =
-  | { kind: 'signal'; candidateValue: string; minWeight: number }
-  | { kind: 'no_signal' }
-  | { kind: 'eval_only' }          // ambiguous / contradiction entries carry this label
+interface CorpusEntry {
+  entryId: string;                      // OD-NNN — permanent, never recycled
+  corpusVersion: string;                // corpus version when this entry was added
+  dimension: OrientationDimensionKey;
+  category: CorpusCategory;
+  set: 'measurement' | 'evaluation';   // explicit source of truth for FP/FN gating
+  language: 'he' | 'en';
+  pairId?: string;                      // 'en' entry → entryId of its 'he' source
+  exchange: Exchange;
+  expectedSignals: ExpectedSignal[];    // [] for negative / adversarial / eval entries
+  forbiddenSignals: string[];           // candidateValues that must NOT appear in output
+  secondarySignals?: Array<{ candidateValue: string }>; // informational only; not scored
+  deprecated?: true;
+}
+
+type CorpusCategory =
+  | 'explicit'       // user states preference directly           (measurement)
+  | 'implied'        // preference inferable, no direct statement (measurement)
+  | 'negative'       // no preference signal present             (measurement)
+  | 'adversarial'    // signal in assistantResponse only         (measurement)
+  | 'ambiguous'      // genuinely uncertain                      (evaluation only)
+  | 'contradiction'  // user message self-contradicts            (evaluation only)
 ```
 
 ### 2.2 Entry IDs (locked)
@@ -62,10 +66,16 @@ English parity entries share the same `OD-NNN` space as Hebrew entries (they do 
 
 ### 2.3 Authoring Rules (locked)
 
-- Gold labels are set **manually** before any provider sees the corpus. They must not be derived from provider output.
-- Each gold label that expects a signal includes a `minWeight` floor derived from the weight regime (explicit → 1.0, implied → 0.7, inference → 0.5). A provider producing a signal below `minWeight` fails that entry.
-- `assistantResponse` in `adversarial` entries **must** contain a plausible-looking preference phrase. The gold label is always `no_signal`.
+- `expectedSignals` and `forbiddenSignals` are set **manually** before any provider sees the corpus. They must not be derived from provider output.
+- Each `ExpectedSignal` includes a `minWeight` floor derived from the weight regime (explicit → 1.0, implied → 0.7, inference → 0.5). A provider emitting the correct signal below `minWeight` fails that entry.
+- `forbiddenSignals` policy:
+  - `explicit` (positive) — `[]` unless a specific candidateValue must be suppressed.
+  - `negative` — all candidateValues of that dimension. Any signal emission is a false positive.
+  - `adversarial` — candidateValues the model may wrongly infer from `assistantResponse`.
+  - `ambiguous` / `contradiction` — case by case; no requirement.
+- `assistantResponse` in `adversarial` entries **must** contain a plausible-looking preference phrase. `expectedSignals` is always `[]`.
 - `negative` entries must not be borderline — if a reviewer would hesitate, reclassify as `ambiguous`.
+- `set` must be set explicitly on every entry. It is the source of truth for whether an entry participates in FP/FN computation.
 
 ### 2.4 Versioning (locked)
 

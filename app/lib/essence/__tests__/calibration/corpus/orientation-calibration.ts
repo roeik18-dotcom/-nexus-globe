@@ -4,280 +4,409 @@
  * Versioned, append-only set of labeled exchanges for behavioral validation.
  * See docs/essence/specs/m0-9c-behavioral-validation.md for authoring rules.
  *
- * ID convention: OD-NNN (sequential, permanent, never recycled).
- * Deprecated entries keep their ID and carry deprecated: true.
+ * ID convention : OD-NNN — sequential, permanent, never recycled.
+ *                 Deprecated entries keep their ID and carry deprecated: true.
+ * Language      : 'he' entries are the reference corpus.
+ *                 'en' entries are parity translations, linked via pairId.
+ * set field     : explicit source of truth for FP/FN gating.
+ *                 'measurement' — participates in TP/FP/FN computation and CI.
+ *                 'evaluation'  — recorded for drift tracking; never fails a run.
  *
- * Language: 'he' entries are the reference corpus.
- *           'en' entries are parity translations, linked via pairId.
+ * forbiddenSignals policy (§2.3 of the spec):
+ *   explicit (positive)  → [] unless a specific value must be suppressed
+ *   negative             → allValues(dimension) — any emission is a false positive
+ *   adversarial          → values the model may wrongly infer from assistantResponse
+ *   ambiguous/eval_only  → case by case
  *
  * Current phase: Phase 1 — Golden Corpus (minimum viable baseline).
- *   OD-001 – OD-010  Hebrew reference entries (one Positive + one Negative per dimension)
- *   OD-011 – OD-020  English parity translations
+ *   OD-001 – OD-010  Hebrew reference (one Positive + one Negative per dimension)
+ *   OD-011 – OD-020  English parity translations (pairId → Hebrew source)
  */
 
 import type { OrientationDimensionKey } from '../../../orientation';
+import { ORIENTATION_SCHEMA } from '../../../orientation';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 export type CorpusCategory =
-  | 'explicit'      // user states preference directly (measurement set — Positive)
-  | 'implied'       // inferable without direct statement (measurement set — Positive)
-  | 'negative'      // no preference signal present (measurement set — Negative)
-  | 'adversarial'   // signal in assistantResponse only; must never yield output (measurement set)
-  | 'ambiguous'     // genuinely uncertain (evaluation set only — not in FP/FN)
-  | 'contradiction'; // user message self-contradicts (evaluation set only)
+  | 'explicit'       // user states preference directly           (measurement)
+  | 'implied'        // preference inferable, no direct statement (measurement)
+  | 'negative'       // no preference signal present             (measurement)
+  | 'adversarial'    // signal in assistantResponse only         (measurement)
+  | 'ambiguous'      // genuinely uncertain                      (evaluation only)
+  | 'contradiction'; // user message self-contradicts            (evaluation only)
 
-export type GoldLabel =
-  | { kind: 'signal'; candidateValue: string; minWeight: number }
-  | { kind: 'no_signal' }
-  | { kind: 'eval_only' }; // ambiguous / contradiction: recorded but not scored
+export interface ExpectedSignal {
+  candidateValue: string;
+  minWeight: number; // 1.0 = explicit | 0.7 = implied | 0.5 = inferred
+}
+
+export interface Exchange {
+  userMessage: string;
+  assistantResponse: string; // disambiguation context only — never an evidence source
+}
 
 export interface CorpusEntry {
-  id: string;
+  entryId: string;                      // OD-NNN — permanent, never recycled
+  corpusVersion: string;                // corpus version when this entry was added
   dimension: OrientationDimensionKey;
   category: CorpusCategory;
+  set: 'measurement' | 'evaluation';   // explicit; source of truth for FP/FN gating
   language: 'he' | 'en';
-  pairId?: string;          // 'en' entry → ID of the 'he' source entry
-  userMessage: string;
-  assistantResponse: string; // disambiguation context only; never the evidence source
-  goldLabel: GoldLabel;
-  secondarySignals?: Array<{ candidateValue: string }>; // informational only, not scored
+  pairId?: string;                      // 'en' entry → entryId of its 'he' source
+  exchange: Exchange;
+  expectedSignals: ExpectedSignal[];    // [] for negative / adversarial / eval entries
+  forbiddenSignals: string[];           // candidateValues that must NOT appear in output
+  secondarySignals?: Array<{ candidateValue: string }>; // informational only; not scored
   deprecated?: true;
 }
 
-// ── Corpus version ─────────────────────────────────────────────────────────────
+// ── Version ────────────────────────────────────────────────────────────────────
 
 export const CORPUS_VERSION = '1.0.0';
 
-// ── Phase 1 — Golden Corpus ────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+// Returns all candidateValues for a dimension. Used to populate forbiddenSignals
+// on negative entries: any signal emission on a negative entry is a false positive.
+function allValues(dim: OrientationDimensionKey): string[] {
+  return [...ORIENTATION_SCHEMA[dim]];
+}
+
+// ── Corpus ─────────────────────────────────────────────────────────────────────
 //
-// One explicit Positive + one Negative per dimension, Hebrew reference first.
-// English parity translations follow (OD-011 – OD-020).
+// Entries are append-only. Never delete or renumber an existing entry.
+// To supersede, add a new entry and set deprecated: true on the old one.
 
 export const CORPUS: CorpusEntry[] = [
 
   // ── OrientationResponseDepth ────────────────────────────────────────────────
+  // values: brief | balanced | explanatory
 
   {
-    id:                'OD-001',
-    dimension:         'OrientationResponseDepth',
-    category:          'explicit',
-    language:          'he',
-    userMessage:       'תסביר לי בקצרה מה זה למידת מכונה.',
-    assistantResponse: 'בשמחה.',
-    goldLabel:         { kind: 'signal', candidateValue: 'brief', minWeight: 1.0 },
+    entryId:          'OD-001',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationResponseDepth',
+    category:         'explicit',
+    set:              'measurement',
+    language:         'he',
+    exchange: {
+      userMessage:        'תסביר לי בקצרה מה זה למידת מכונה.',
+      assistantResponse:  'בשמחה.',
+    },
+    expectedSignals:  [{ candidateValue: 'brief', minWeight: 1.0 }],
+    forbiddenSignals: [],
   },
   {
-    id:                'OD-002',
-    dimension:         'OrientationResponseDepth',
-    category:          'negative',
-    language:          'he',
-    userMessage:       'מה זה למידת מכונה?',
-    assistantResponse: 'זו טכנולוגיה מרתקת.',
-    goldLabel:         { kind: 'no_signal' },
+    entryId:          'OD-002',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationResponseDepth',
+    category:         'negative',
+    set:              'measurement',
+    language:         'he',
+    exchange: {
+      userMessage:        'מה זה למידת מכונה?',
+      assistantResponse:  'זו טכנולוגיה מרתקת.',
+    },
+    expectedSignals:  [],
+    forbiddenSignals: allValues('OrientationResponseDepth'),
   },
 
   // ── OrientationCommunicationStyle ───────────────────────────────────────────
+  // values: direct | exploratory | collaborative
 
   {
-    id:                'OD-003',
-    dimension:         'OrientationCommunicationStyle',
-    category:          'explicit',
-    language:          'he',
-    userMessage:       'אל תסביר רקע, רק תגיד לי מה לעשות.',
-    assistantResponse: 'הבנתי.',
-    goldLabel:         { kind: 'signal', candidateValue: 'direct', minWeight: 1.0 },
+    entryId:          'OD-003',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationCommunicationStyle',
+    category:         'explicit',
+    set:              'measurement',
+    language:         'he',
+    exchange: {
+      userMessage:        'אל תסביר רקע, רק תגיד לי מה לעשות.',
+      assistantResponse:  'הבנתי.',
+    },
+    expectedSignals:  [{ candidateValue: 'direct', minWeight: 1.0 }],
+    forbiddenSignals: [],
   },
   {
-    id:                'OD-004',
-    dimension:         'OrientationCommunicationStyle',
-    category:          'negative',
-    language:          'he',
-    userMessage:       'איך עובד React?',
-    assistantResponse: 'React היא ספריית JavaScript.',
-    goldLabel:         { kind: 'no_signal' },
+    entryId:          'OD-004',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationCommunicationStyle',
+    category:         'negative',
+    set:              'measurement',
+    language:         'he',
+    exchange: {
+      userMessage:        'איך עובד React?',
+      assistantResponse:  'React היא ספריית JavaScript.',
+    },
+    expectedSignals:  [],
+    forbiddenSignals: allValues('OrientationCommunicationStyle'),
   },
 
   // ── OrientationTaskFraming ──────────────────────────────────────────────────
+  // values: action_first | context_first | options_first
 
   {
-    id:                'OD-005',
-    dimension:         'OrientationTaskFraming',
-    category:          'explicit',
-    language:          'he',
-    userMessage:       'מה עלי לעשות כדי לפתור את הבעיה הזו?',
-    assistantResponse: 'נבדוק יחד.',
-    goldLabel:         { kind: 'signal', candidateValue: 'action_first', minWeight: 1.0 },
+    entryId:          'OD-005',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationTaskFraming',
+    category:         'explicit',
+    set:              'measurement',
+    language:         'he',
+    exchange: {
+      userMessage:        'מה עלי לעשות כדי לפתור את הבעיה הזו?',
+      assistantResponse:  'נבדוק יחד.',
+    },
+    expectedSignals:  [{ candidateValue: 'action_first', minWeight: 1.0 }],
+    forbiddenSignals: [],
   },
   {
-    id:                'OD-006',
-    dimension:         'OrientationTaskFraming',
-    category:          'negative',
-    language:          'he',
-    userMessage:       'אני נתקל בבעיה ב-deployment.',
-    assistantResponse: 'אשמח לעזור.',
-    goldLabel:         { kind: 'no_signal' },
+    entryId:          'OD-006',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationTaskFraming',
+    category:         'negative',
+    set:              'measurement',
+    language:         'he',
+    exchange: {
+      userMessage:        'אני נתקל בבעיה ב-deployment.',
+      assistantResponse:  'אשמח לעזור.',
+    },
+    expectedSignals:  [],
+    forbiddenSignals: allValues('OrientationTaskFraming'),
   },
 
   // ── OrientationDecisionStyle ────────────────────────────────────────────────
+  // values: decisive | comparative | deliberative
 
   {
-    id:                'OD-007',
-    dimension:         'OrientationDecisionStyle',
-    category:          'explicit',
-    language:          'he',
-    userMessage:       'מה הכי עדיף לי לבחור?',
-    assistantResponse: 'תלוי בכמה גורמים.',
-    goldLabel:         { kind: 'signal', candidateValue: 'decisive', minWeight: 1.0 },
+    entryId:          'OD-007',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationDecisionStyle',
+    category:         'explicit',
+    set:              'measurement',
+    language:         'he',
+    exchange: {
+      userMessage:        'מה הכי עדיף לי לבחור?',
+      assistantResponse:  'תלוי בכמה גורמים.',
+    },
+    expectedSignals:  [{ candidateValue: 'decisive', minWeight: 1.0 }],
+    forbiddenSignals: [],
   },
   {
-    id:                'OD-008',
-    dimension:         'OrientationDecisionStyle',
-    category:          'negative',
-    language:          'he',
-    userMessage:       'יש לי שתי אפשרויות לבחירה.',
-    assistantResponse: 'שתיהן נשמעות סבירות.',
-    goldLabel:         { kind: 'no_signal' },
+    entryId:          'OD-008',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationDecisionStyle',
+    category:         'negative',
+    set:              'measurement',
+    language:         'he',
+    exchange: {
+      userMessage:        'יש לי שתי אפשרויות לבחירה.',
+      assistantResponse:  'שתיהן נשמעות סבירות.',
+    },
+    expectedSignals:  [],
+    forbiddenSignals: allValues('OrientationDecisionStyle'),
   },
 
   // ── OrientationTaskCadence ──────────────────────────────────────────────────
+  // values: single_step | phased | continuous
 
   {
-    id:                'OD-009',
-    dimension:         'OrientationTaskCadence',
-    category:          'explicit',
-    language:          'he',
-    userMessage:       'תסביר לי את זה שלב אחר שלב.',
-    assistantResponse: 'בשמחה.',
-    goldLabel:         { kind: 'signal', candidateValue: 'phased', minWeight: 1.0 },
+    entryId:          'OD-009',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationTaskCadence',
+    category:         'explicit',
+    set:              'measurement',
+    language:         'he',
+    exchange: {
+      userMessage:        'תסביר לי את זה שלב אחר שלב.',
+      assistantResponse:  'בשמחה.',
+    },
+    expectedSignals:  [{ candidateValue: 'phased', minWeight: 1.0 }],
+    forbiddenSignals: [],
   },
   {
-    id:                'OD-010',
-    dimension:         'OrientationTaskCadence',
-    category:          'negative',
-    language:          'he',
-    userMessage:       'תעזור לי ללמוד את הנושא הזה.',
-    assistantResponse: 'בשמחה.',
-    goldLabel:         { kind: 'no_signal' },
+    entryId:          'OD-010',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationTaskCadence',
+    category:         'negative',
+    set:              'measurement',
+    language:         'he',
+    exchange: {
+      userMessage:        'תעזור לי ללמוד את הנושא הזה.',
+      assistantResponse:  'בשמחה.',
+    },
+    expectedSignals:  [],
+    forbiddenSignals: allValues('OrientationTaskCadence'),
   },
 
-  // ── English parity subset (Phase 1) ────────────────────────────────────────
+  // ── English parity subset — Phase 1 ────────────────────────────────────────
   //
-  // Faithful translations of OD-001 – OD-010.
-  // Same dimension, category, and goldLabel as the Hebrew source.
-  // Divergence in provider output between a pair → language-sensitivity, not regression.
+  // Faithful translations of OD-001 – OD-010. Same dimension, category, set,
+  // and expectedSignals / forbiddenSignals as the Hebrew source.
+  // pairId links each entry to its Hebrew counterpart.
+  //
+  // Purpose: behavioral invariant verification across languages, not
+  // linguistic accuracy measurement. A divergence between a Hebrew entry
+  // and its English pair indicates language-sensitivity, not regression.
 
   {
-    id:                'OD-011',
-    dimension:         'OrientationResponseDepth',
-    category:          'explicit',
-    language:          'en',
-    pairId:            'OD-001',
-    userMessage:       'Explain briefly what machine learning is.',
-    assistantResponse: 'Sure.',
-    goldLabel:         { kind: 'signal', candidateValue: 'brief', minWeight: 1.0 },
+    entryId:          'OD-011',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationResponseDepth',
+    category:         'explicit',
+    set:              'measurement',
+    language:         'en',
+    pairId:           'OD-001',
+    exchange: {
+      userMessage:        'Explain briefly what machine learning is.',
+      assistantResponse:  'Sure.',
+    },
+    expectedSignals:  [{ candidateValue: 'brief', minWeight: 1.0 }],
+    forbiddenSignals: [],
   },
   {
-    id:                'OD-012',
-    dimension:         'OrientationResponseDepth',
-    category:          'negative',
-    language:          'en',
-    pairId:            'OD-002',
-    userMessage:       'What is machine learning?',
-    assistantResponse: 'It\'s a fascinating technology.',
-    goldLabel:         { kind: 'no_signal' },
+    entryId:          'OD-012',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationResponseDepth',
+    category:         'negative',
+    set:              'measurement',
+    language:         'en',
+    pairId:           'OD-002',
+    exchange: {
+      userMessage:        'What is machine learning?',
+      assistantResponse:  "It's a fascinating technology.",
+    },
+    expectedSignals:  [],
+    forbiddenSignals: allValues('OrientationResponseDepth'),
   },
   {
-    id:                'OD-013',
-    dimension:         'OrientationCommunicationStyle',
-    category:          'explicit',
-    language:          'en',
-    pairId:            'OD-003',
-    userMessage:       'Don\'t explain the background, just tell me what to do.',
-    assistantResponse: 'Understood.',
-    goldLabel:         { kind: 'signal', candidateValue: 'direct', minWeight: 1.0 },
+    entryId:          'OD-013',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationCommunicationStyle',
+    category:         'explicit',
+    set:              'measurement',
+    language:         'en',
+    pairId:           'OD-003',
+    exchange: {
+      userMessage:        "Don't explain the background, just tell me what to do.",
+      assistantResponse:  'Understood.',
+    },
+    expectedSignals:  [{ candidateValue: 'direct', minWeight: 1.0 }],
+    forbiddenSignals: [],
   },
   {
-    id:                'OD-014',
-    dimension:         'OrientationCommunicationStyle',
-    category:          'negative',
-    language:          'en',
-    pairId:            'OD-004',
-    userMessage:       'How does React work?',
-    assistantResponse: 'React is a JavaScript library.',
-    goldLabel:         { kind: 'no_signal' },
+    entryId:          'OD-014',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationCommunicationStyle',
+    category:         'negative',
+    set:              'measurement',
+    language:         'en',
+    pairId:           'OD-004',
+    exchange: {
+      userMessage:        'How does React work?',
+      assistantResponse:  'React is a JavaScript library.',
+    },
+    expectedSignals:  [],
+    forbiddenSignals: allValues('OrientationCommunicationStyle'),
   },
   {
-    id:                'OD-015',
-    dimension:         'OrientationTaskFraming',
-    category:          'explicit',
-    language:          'en',
-    pairId:            'OD-005',
-    userMessage:       'What should I do to solve this problem?',
-    assistantResponse: 'Let\'s look at it together.',
-    goldLabel:         { kind: 'signal', candidateValue: 'action_first', minWeight: 1.0 },
+    entryId:          'OD-015',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationTaskFraming',
+    category:         'explicit',
+    set:              'measurement',
+    language:         'en',
+    pairId:           'OD-005',
+    exchange: {
+      userMessage:        'What should I do to solve this problem?',
+      assistantResponse:  "Let's look at it together.",
+    },
+    expectedSignals:  [{ candidateValue: 'action_first', minWeight: 1.0 }],
+    forbiddenSignals: [],
   },
   {
-    id:                'OD-016',
-    dimension:         'OrientationTaskFraming',
-    category:          'negative',
-    language:          'en',
-    pairId:            'OD-006',
-    userMessage:       'I\'m running into an issue with the deployment.',
-    assistantResponse: 'Happy to help.',
-    goldLabel:         { kind: 'no_signal' },
+    entryId:          'OD-016',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationTaskFraming',
+    category:         'negative',
+    set:              'measurement',
+    language:         'en',
+    pairId:           'OD-006',
+    exchange: {
+      userMessage:        "I'm running into an issue with the deployment.",
+      assistantResponse:  'Happy to help.',
+    },
+    expectedSignals:  [],
+    forbiddenSignals: allValues('OrientationTaskFraming'),
   },
   {
-    id:                'OD-017',
-    dimension:         'OrientationDecisionStyle',
-    category:          'explicit',
-    language:          'en',
-    pairId:            'OD-007',
-    userMessage:       'What\'s the best option for me to choose?',
-    assistantResponse: 'It depends on a few factors.',
-    goldLabel:         { kind: 'signal', candidateValue: 'decisive', minWeight: 1.0 },
+    entryId:          'OD-017',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationDecisionStyle',
+    category:         'explicit',
+    set:              'measurement',
+    language:         'en',
+    pairId:           'OD-007',
+    exchange: {
+      userMessage:        "What's the best option for me to choose?",
+      assistantResponse:  'It depends on a few factors.',
+    },
+    expectedSignals:  [{ candidateValue: 'decisive', minWeight: 1.0 }],
+    forbiddenSignals: [],
   },
   {
-    id:                'OD-018',
-    dimension:         'OrientationDecisionStyle',
-    category:          'negative',
-    language:          'en',
-    pairId:            'OD-008',
-    userMessage:       'I have two options to choose from.',
-    assistantResponse: 'Both sound reasonable.',
-    goldLabel:         { kind: 'no_signal' },
+    entryId:          'OD-018',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationDecisionStyle',
+    category:         'negative',
+    set:              'measurement',
+    language:         'en',
+    pairId:           'OD-008',
+    exchange: {
+      userMessage:        'I have two options to choose from.',
+      assistantResponse:  'Both sound reasonable.',
+    },
+    expectedSignals:  [],
+    forbiddenSignals: allValues('OrientationDecisionStyle'),
   },
   {
-    id:                'OD-019',
-    dimension:         'OrientationTaskCadence',
-    category:          'explicit',
-    language:          'en',
-    pairId:            'OD-009',
-    userMessage:       'Walk me through this step by step.',
-    assistantResponse: 'Sure.',
-    goldLabel:         { kind: 'signal', candidateValue: 'phased', minWeight: 1.0 },
+    entryId:          'OD-019',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationTaskCadence',
+    category:         'explicit',
+    set:              'measurement',
+    language:         'en',
+    pairId:           'OD-009',
+    exchange: {
+      userMessage:        'Walk me through this step by step.',
+      assistantResponse:  'Sure.',
+    },
+    expectedSignals:  [{ candidateValue: 'phased', minWeight: 1.0 }],
+    forbiddenSignals: [],
   },
   {
-    id:                'OD-020',
-    dimension:         'OrientationTaskCadence',
-    category:          'negative',
-    language:          'en',
-    pairId:            'OD-010',
-    userMessage:       'Help me learn this topic.',
-    assistantResponse: 'Sure.',
-    goldLabel:         { kind: 'no_signal' },
+    entryId:          'OD-020',
+    corpusVersion:    '1.0.0',
+    dimension:        'OrientationTaskCadence',
+    category:         'negative',
+    set:              'measurement',
+    language:         'en',
+    pairId:           'OD-010',
+    exchange: {
+      userMessage:        'Help me learn this topic.',
+      assistantResponse:  'Sure.',
+    },
+    expectedSignals:  [],
+    forbiddenSignals: allValues('OrientationTaskCadence'),
   },
 ];
 
 // ── Derived views ──────────────────────────────────────────────────────────────
+//
+// `set` is the source of truth. These views filter on it directly.
 
-export const MEASUREMENT_CORPUS = CORPUS.filter(
-  e => !e.deprecated && e.category !== 'ambiguous' && e.category !== 'contradiction',
-);
-
-export const EVALUATION_CORPUS = CORPUS.filter(
-  e => !e.deprecated && (e.category === 'ambiguous' || e.category === 'contradiction'),
-);
-
-export const HEBREW_CORPUS = CORPUS.filter(e => !e.deprecated && e.language === 'he');
-export const ENGLISH_PARITY = CORPUS.filter(e => !e.deprecated && e.language === 'en');
+export const MEASUREMENT_CORPUS = CORPUS.filter(e => !e.deprecated && e.set === 'measurement');
+export const EVALUATION_CORPUS  = CORPUS.filter(e => !e.deprecated && e.set === 'evaluation');
+export const HEBREW_CORPUS      = CORPUS.filter(e => !e.deprecated && e.language === 'he');
+export const ENGLISH_PARITY     = CORPUS.filter(e => !e.deprecated && e.language === 'en');
