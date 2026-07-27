@@ -3,7 +3,7 @@
  * M0-9C4 — Baseline Runner
  *
  * Runs Rule, LLM, and Composite providers against MEASUREMENT_CORPUS and
- * EVALUATION_CORPUS, records per-entry results to orientation-baseline-results.json,
+ * EVALUATION_CORPUS, records per-entry results to a versioned snapshot file,
  * and prints the §6 table to stdout.
  *
  * Run:
@@ -14,14 +14,16 @@
  *   - Without it, only the Rule Provider is evaluated and the JSON records
  *     llm/composite as null.
  *
+ * Output:
+ *   baselines/corpus-{version}/baseline-NNN.json  (alongside this file)
+ *   Each run creates a new file — existing baselines are never overwritten.
+ *
  * Does NOT enforce numeric thresholds — thresholds are set in M0-9C5 after
  * the first baseline run.
- *
- * Output: orientation-baseline-results.json (alongside this file)
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import { writeFileSync } from 'fs';
+import { writeFileSync, mkdirSync, readdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import {
   CORPUS_VERSION,
@@ -37,76 +39,126 @@ import type { OrientationInferenceInput } from '../../orientation-inference';
 import { createEmptyEssenceProfile } from '../../schema';
 import type { EssenceProfile } from '../../schema';
 
-// ── Constants ──────────────────────────────────────────────────────────────────
+// ── Identity constants ─────────────────────────────────────────────────────────
 
-const LLM_MODEL       = 'claude-haiku-4-5-20251001';
-const LLM_TEMPERATURE = 0;
-const RULE_INFERRED_BY = 'merlin/rule-based@1';
-const LLM_INFERRED_BY  = 'merlin/llm-orientation@1';
+const RULE_PROVIDER_ID              = 'merlin/rule-based';
+const RULE_PROVIDER_VERSION         = '1';
+const RULE_INFERENCE_POLICY_VERSION = '1';
 
-const OUTPUT_PATH = join(__dirname, 'orientation-baseline-results.json');
+const LLM_PROVIDER_ID              = 'merlin/llm-orientation';
+const LLM_PROVIDER_VERSION         = '1';
+const LLM_INFERENCE_POLICY_VERSION = '1';
+const LLM_MODEL                    = 'claude-haiku-4-5-20251001';
+const LLM_TEMPERATURE              = 0;
+
+// ── Output path ────────────────────────────────────────────────────────────────
+
+function resolveOutputPath(corpusVersion: string): string {
+  const dir = join(__dirname, 'baselines', `corpus-${corpusVersion}`);
+  mkdirSync(dir, { recursive: true });
+
+  let n = 1;
+  while (existsSync(join(dir, `baseline-${String(n).padStart(3, '0')}.json`))) {
+    n++;
+  }
+  return join(dir, `baseline-${String(n).padStart(3, '0')}.json`);
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
+interface RuleProviderMeta {
+  providerId:              string;
+  providerVersion:         string;
+  inferencePolicyVersion:  string;
+}
+
+interface LLMProviderMeta extends RuleProviderMeta {
+  model:       string;
+  temperature: number;
+}
+
+interface CompositeMeta {
+  memberProviderIds: string[];
+}
+
 interface EmittedSignal {
-  dimensionKey: string;
+  dimensionKey:   string;
   candidateValue: string;
-  signalWeight: number;
-  inferredBy: string;
+  signalWeight:   number;
+  inferredBy:     string;
 }
 
 interface EntryResult {
-  entryId: string;
-  dimension: string;
-  category: string;
-  language: string;
-  set: string;
+  entryId:        string;
+  dimension:      string;
+  category:       string;
+  language:       string;
+  set:            string;
   emittedSignals: EmittedSignal[];
-  isTP: boolean | null;
-  isFP: boolean;
-  tpDetail: { expected: string[]; detected: string[]; missing: string[] } | null;
-  fpDetail: { forbidden: string[]; detected: string[] };
+  isTP:           boolean | null;
+  isFP:           boolean;
+  tpDetail:       { expected: string[]; detected: string[]; missing: string[] } | null;
+  fpDetail:       { forbidden: string[]; detected: string[] };
 }
 
 interface CategoryRate {
-  tpRate: number | null;
-  fpRate: number | null;
-  tpNumerator: number;
+  tpRate:        number | null;
+  fpRate:        number | null;
+  tpNumerator:   number;
   tpDenominator: number;
-  fpNumerator: number;
+  fpNumerator:   number;
   fpDenominator: number;
 }
 
 interface ProviderResult {
   entries: EntryResult[];
-  rates: Record<string, CategoryRate>;
+  rates:   Record<string, CategoryRate>;
+}
+
+interface MeasurementSummary {
+  corpusSize:  number;
+  byProvider: Record<string, Record<string, {
+    tpRate:  number | null;
+    tpCount: number;
+    total:   number;
+    fpRate:  number | null;
+    fpCount: number;
+  }>>;
+}
+
+interface EvaluationSummary {
+  corpusSize: number;
+  note?:      string;
 }
 
 interface BaselineResults {
   metadata: {
-    generatedAt: string;
+    generatedAt:  string;
     corpusVersion: string;
     providers: {
-      rule: { inferredBy: string };
-      llm: { inferredBy: string; model: string; temperature: number } | null;
-      composite: { providers: string[] } | null;
+      rule:      RuleProviderMeta;
+      llm:       LLMProviderMeta | null;
+      composite: CompositeMeta   | null;
     };
   };
+  measurementSummary: MeasurementSummary;
+  evaluationSummary:  EvaluationSummary;
   measurement: {
-    rule: ProviderResult;
-    llm: ProviderResult | null;
+    rule:      ProviderResult;
+    llm:       ProviderResult | null;
     composite: ProviderResult | null;
   };
   evaluation: {
-    rule: { entries: EntryResult[] };
-    llm: { entries: EntryResult[] } | null;
+    rule:      { entries: EntryResult[] };
+    llm:       { entries: EntryResult[] } | null;
     composite: { entries: EntryResult[] } | null;
   };
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-const PROFILE: Readonly<EssenceProfile> = createEmptyEssenceProfile('baseline') as Readonly<EssenceProfile>;
+const PROFILE: Readonly<EssenceProfile> =
+  createEmptyEssenceProfile('baseline') as Readonly<EssenceProfile>;
 
 function makeInput(entry: CorpusEntry): OrientationInferenceInput {
   return {
@@ -128,19 +180,19 @@ function toEmittedSignal(s: OrientationSignal): EmittedSignal {
 
 function evaluateEntry(entry: CorpusEntry, emitted: OrientationSignal[]): EntryResult {
   const dimensionSignals = emitted.filter(s => s.dimensionKey === entry.dimension);
-  const detectedValues = new Set(dimensionSignals.map(s => s.candidateValue));
+  const detectedValues   = new Set(dimensionSignals.map(s => s.candidateValue));
 
-  // TP: all expectedSignals detected with weight >= minWeight
-  let isTP: boolean | null = null;
+  let isTP: boolean | null           = null;
   let tpDetail: EntryResult['tpDetail'] = null;
+
   if (entry.expectedSignals.length > 0) {
-    const detectedWeightMap = new Map<string, number>(
+    const weightMap = new Map<string, number>(
       dimensionSignals.map(s => [s.candidateValue, s.signalWeight]),
     );
     const missing = entry.expectedSignals.filter(
-      es => (detectedWeightMap.get(es.candidateValue) ?? 0) < es.minWeight,
+      es => (weightMap.get(es.candidateValue) ?? 0) < es.minWeight,
     );
-    isTP = missing.length === 0;
+    isTP     = missing.length === 0;
     tpDetail = {
       expected: entry.expectedSignals.map(es => es.candidateValue),
       detected: [...detectedValues],
@@ -148,21 +200,19 @@ function evaluateEntry(entry: CorpusEntry, emitted: OrientationSignal[]): EntryR
     };
   }
 
-  // FP: any forbiddenSignal detected for this dimension
   const forbiddenDetected = entry.forbiddenSignals.filter(v => detectedValues.has(v));
-  const isFP = forbiddenDetected.length > 0;
 
   return {
-    entryId:       entry.entryId,
-    dimension:     entry.dimension,
-    category:      entry.category,
-    language:      entry.language,
-    set:           entry.set,
+    entryId:        entry.entryId,
+    dimension:      entry.dimension,
+    category:       entry.category,
+    language:       entry.language,
+    set:            entry.set,
     emittedSignals: emitted.map(toEmittedSignal),
     isTP,
-    isFP,
+    isFP:           forbiddenDetected.length > 0,
     tpDetail,
-    fpDetail: { forbidden: entry.forbiddenSignals, detected: forbiddenDetected },
+    fpDetail:       { forbidden: entry.forbiddenSignals, detected: forbiddenDetected },
   };
 }
 
@@ -178,7 +228,7 @@ function computeRates(entries: EntryResult[]): Record<string, CategoryRate> {
 
     rates[cat] = {
       tpRate:        tpEligible.length > 0 ? tpCount / tpEligible.length : null,
-      fpRate:        catEntries.length > 0 ? fpCount / catEntries.length : null,
+      fpRate:        catEntries.length  > 0 ? fpCount / catEntries.length  : null,
       tpNumerator:   tpCount,
       tpDenominator: tpEligible.length,
       fpNumerator:   fpCount,
@@ -187,6 +237,28 @@ function computeRates(entries: EntryResult[]): Record<string, CategoryRate> {
   }
 
   return rates;
+}
+
+function buildMeasurementSummary(
+  results: BaselineResults['measurement'],
+): MeasurementSummary {
+  const byProvider: MeasurementSummary['byProvider'] = {};
+
+  for (const [key, pResult] of Object.entries(results) as [string, ProviderResult | null][]) {
+    if (!pResult) continue;
+    byProvider[key] = {};
+    for (const [cat, r] of Object.entries(pResult.rates)) {
+      byProvider[key]![cat] = {
+        tpRate:  r.tpRate,
+        tpCount: r.tpNumerator,
+        total:   r.tpDenominator,
+        fpRate:  r.fpRate,
+        fpCount: r.fpNumerator,
+      };
+    }
+  }
+
+  return { corpusSize: MEASUREMENT_CORPUS.length, byProvider };
 }
 
 async function runProvider(
@@ -202,8 +274,8 @@ async function runProvider(
       const signals = await provider.extractSignals(makeInput(entry), PROFILE);
       const result  = evaluateEntry(entry, signals);
       results.push(result);
-      const tp = result.isTP === null ? '—' : result.isTP ? 'TP' : 'miss';
-      const fp = result.isFP ? 'FP' : 'ok';
+      const tp = result.isTP === null ? '—' : result.isTP ? 'TP✓' : 'miss✗';
+      const fp = result.isFP ? 'FP✗' : 'ok';
       console.log(` ${tp} / ${fp}`);
     } catch (err) {
       console.log(` ERROR: ${(err as Error).message}`);
@@ -216,54 +288,58 @@ async function runProvider(
 
 // ── Table printer ──────────────────────────────────────────────────────────────
 
-function fmt(rate: number | null, denominator: number): string {
-  if (rate === null || denominator === 0) return '—';
-  return `${(rate * 100).toFixed(1)}% (${Math.round(rate * denominator)}/${denominator})`;
-}
-
 const RATE_CATEGORIES = ['explicit', 'implied', 'negative', 'adversarial'] as const;
 
+function fmtRate(rate: number | null, num: number, den: number): string {
+  if (rate === null || den === 0) return '—';
+  return `${(rate * 100).toFixed(1)}% (${num}/${den})`;
+}
+
 function printTable(results: BaselineResults): void {
-  const col = (v: string, w: number) => v.padEnd(w);
+  const W = { p: 10, c: 11, r: 22, f: 22 };
+  const hr = `|${'-'.repeat(W.p + 2)}|${'-'.repeat(W.c + 2)}|${'-'.repeat(W.r + 2)}|${'-'.repeat(W.f + 2)}|`;
+  const hd = `| ${'Provider'.padEnd(W.p)} | ${'Category'.padEnd(W.c)} | ${'TP rate'.padEnd(W.r)} | ${'FP rate'.padEnd(W.f)} |`;
 
-  console.log('\n## §6 Baseline Table');
-  console.log('');
-  console.log(`| ${'Provider'.padEnd(10)} | ${'Category'.padEnd(11)} | ${'TP rate'.padEnd(20)} | ${'FP rate'.padEnd(20)} |`);
-  console.log(`|${''.padEnd(12, '-')}|${''.padEnd(13, '-')}|${''.padEnd(22, '-')}|${''.padEnd(22, '-')}|`);
+  console.log('\n## §6 Baseline Table\n');
+  console.log(hd);
+  console.log(hr);
 
-  const rows: Array<{ provider: string; key: keyof typeof results.measurement }> = [
-    { provider: 'Rule',      key: 'rule' },
-    { provider: 'LLM',       key: 'llm' },
-    { provider: 'Composite', key: 'composite' },
+  const rows: Array<{ label: string; key: keyof BaselineResults['measurement'] }> = [
+    { label: 'Rule',      key: 'rule' },
+    { label: 'LLM',       key: 'llm' },
+    { label: 'Composite', key: 'composite' },
   ];
 
-  for (const { provider, key } of rows) {
-    const provResult = results.measurement[key];
-    if (provResult === null) {
-      for (const cat of RATE_CATEGORIES) {
-        console.log(`| ${col(provider, 10)} | ${col(cat, 11)} | ${'(skipped)'.padEnd(20)} | ${'(skipped)'.padEnd(20)} |`);
-      }
-      continue;
-    }
+  for (const { label, key } of rows) {
+    const pResult = results.measurement[key];
     for (const cat of RATE_CATEGORIES) {
-      const r = provResult.rates[cat];
-      if (!r) {
-        console.log(`| ${col(provider, 10)} | ${col(cat, 11)} | ${'—'.padEnd(20)} | ${'—'.padEnd(20)} |`);
+      if (!pResult) {
+        console.log(`| ${label.padEnd(W.p)} | ${cat.padEnd(W.c)} | ${'(skipped)'.padEnd(W.r)} | ${'(skipped)'.padEnd(W.f)} |`);
         continue;
       }
-      const tpStr = cat === 'adversarial' ? '—' : fmt(r.tpRate, r.tpDenominator);
+      const r = pResult.rates[cat];
+      if (!r) {
+        console.log(`| ${label.padEnd(W.p)} | ${cat.padEnd(W.c)} | ${'—'.padEnd(W.r)} | ${'—'.padEnd(W.f)} |`);
+        continue;
+      }
+      const tpStr = cat === 'negative' || cat === 'adversarial'
+        ? '—'
+        : fmtRate(r.tpRate, r.tpNumerator, r.tpDenominator);
       const fpStr = cat === 'adversarial' && r.fpNumerator === 0
-        ? `0.0% — architectural ✓`
-        : fmt(r.fpRate, r.fpDenominator);
-      console.log(`| ${col(provider, 10)} | ${col(cat, 11)} | ${col(tpStr, 20)} | ${col(fpStr, 20)} |`);
+        ? '0.0% — architectural ✓'
+        : fmtRate(r.fpRate, r.fpNumerator, r.fpDenominator);
+      console.log(`| ${label.padEnd(W.p)} | ${cat.padEnd(W.c)} | ${tpStr.padEnd(W.r)} | ${fpStr.padEnd(W.f)} |`);
     }
   }
 
   console.log('');
-  console.log(`Corpus version: ${results.metadata.corpusVersion}`);
-  console.log(`Generated:      ${results.metadata.generatedAt}`);
+  console.log(`Corpus version : ${results.metadata.corpusVersion}`);
+  console.log(`Generated      : ${results.metadata.generatedAt}`);
   if (results.metadata.providers.llm) {
-    console.log(`LLM model:      ${results.metadata.providers.llm.model} (temperature=${results.metadata.providers.llm.temperature})`);
+    const llm = results.metadata.providers.llm;
+    console.log(`LLM            : ${llm.model} (temperature=${llm.temperature})`);
+  } else {
+    console.log('LLM            : (not run — ANTHROPIC_API_KEY not set)');
   }
 }
 
@@ -271,29 +347,29 @@ function printTable(results: BaselineResults): void {
 
 async function main(): Promise<void> {
   console.log('M0-9C4 Baseline Runner');
-  console.log(`Corpus: v${CORPUS_VERSION}, ${MEASUREMENT_CORPUS.length} measurement / ${EVALUATION_CORPUS.length} evaluation entries`);
+  console.log(`Corpus: v${CORPUS_VERSION}  |  ${MEASUREMENT_CORPUS.length} measurement / ${EVALUATION_CORPUS.length} evaluation entries`);
 
   const apiKey = process.env['ANTHROPIC_API_KEY'];
   const hasLLM = !!apiKey;
 
   if (!hasLLM) {
-    console.log('\nWARNING: ANTHROPIC_API_KEY not set. LLM and Composite providers will be skipped.');
+    console.log('\nWARNING: ANTHROPIC_API_KEY not set. LLM and Composite providers skipped.');
   }
 
   // ── Build providers ──────────────────────────────────────────────────────────
 
   const ruleProvider = new RuleBasedOrientationProvider('merlin');
 
-  let llmProvider:       LLMOrientationProvider | null       = null;
+  let llmProvider:       LLMOrientationProvider       | null = null;
   let compositeProvider: CompositeOrientationProvider | null = null;
 
   if (hasLLM) {
     const client = new Anthropic({ apiKey });
     llmProvider  = new LLMOrientationProvider(
       'merlin',
-      false,            // debug: false for production-equivalent conditions
+      false,        // debug off — production-equivalent conditions
       client,
-      undefined,        // use system clock
+      undefined,    // system clock
       LLM_MODEL,
       LLM_TEMPERATURE,
     );
@@ -302,9 +378,9 @@ async function main(): Promise<void> {
 
   // ── Run measurement corpus ───────────────────────────────────────────────────
 
-  console.log('\n── Measurement Corpus ──────────────────────────────────────────────────────');
+  console.log('\n── Measurement Corpus ───────────────────────────────────────────────────────\n');
 
-  console.log('\nRule Provider:');
+  console.log('Rule Provider:');
   const ruleEntries = await runProvider('rule', ruleProvider, MEASUREMENT_CORPUS);
 
   let llmEntries:       EntryResult[] | null = null;
@@ -322,14 +398,14 @@ async function main(): Promise<void> {
 
   // ── Run evaluation corpus ────────────────────────────────────────────────────
 
-  let evalRuleEntries:       EntryResult[] = [];
-  let evalLLMEntries:        EntryResult[] | null = null;
-  let evalCompositeEntries:  EntryResult[] | null = null;
+  let evalRuleEntries:      EntryResult[]      = [];
+  let evalLLMEntries:       EntryResult[] | null = null;
+  let evalCompositeEntries: EntryResult[] | null = null;
 
   if (EVALUATION_CORPUS.length > 0) {
-    console.log('\n── Evaluation Corpus ───────────────────────────────────────────────────────');
+    console.log('\n── Evaluation Corpus ────────────────────────────────────────────────────────\n');
 
-    console.log('\nRule Provider:');
+    console.log('Rule Provider:');
     evalRuleEntries = await runProvider('rule', ruleProvider, EVALUATION_CORPUS);
 
     if (llmProvider) {
@@ -342,30 +418,47 @@ async function main(): Promise<void> {
       evalCompositeEntries = await runProvider('composite', compositeProvider, EVALUATION_CORPUS);
     }
   } else {
-    console.log('\n(Evaluation corpus is empty — no ambiguous/contradiction entries in Phase 1)');
+    console.log('\n(Evaluation corpus empty — no ambiguous/contradiction entries in Phase 1)');
   }
 
-  // ── Assemble results ─────────────────────────────────────────────────────────
+  // ── Assemble ─────────────────────────────────────────────────────────────────
+
+  const measurementBlock = {
+    rule:      { entries: ruleEntries,       rates: computeRates(ruleEntries) },
+    llm:       llmEntries       ? { entries: llmEntries,       rates: computeRates(llmEntries) }       : null,
+    composite: compositeEntries ? { entries: compositeEntries, rates: computeRates(compositeEntries) } : null,
+  };
 
   const results: BaselineResults = {
     metadata: {
       generatedAt:   new Date().toISOString(),
       corpusVersion: CORPUS_VERSION,
       providers: {
-        rule: { inferredBy: RULE_INFERRED_BY },
-        llm:  hasLLM
-          ? { inferredBy: LLM_INFERRED_BY, model: LLM_MODEL, temperature: LLM_TEMPERATURE }
+        rule: {
+          providerId:             RULE_PROVIDER_ID,
+          providerVersion:        RULE_PROVIDER_VERSION,
+          inferencePolicyVersion: RULE_INFERENCE_POLICY_VERSION,
+        },
+        llm: hasLLM
+          ? {
+              providerId:             LLM_PROVIDER_ID,
+              providerVersion:        LLM_PROVIDER_VERSION,
+              inferencePolicyVersion: LLM_INFERENCE_POLICY_VERSION,
+              model:                  LLM_MODEL,
+              temperature:            LLM_TEMPERATURE,
+            }
           : null,
         composite: hasLLM
-          ? { providers: [RULE_INFERRED_BY, LLM_INFERRED_BY] }
+          ? { memberProviderIds: [RULE_PROVIDER_ID, LLM_PROVIDER_ID] }
           : null,
       },
     },
-    measurement: {
-      rule:      { entries: ruleEntries,      rates: computeRates(ruleEntries) },
-      llm:       llmEntries      ? { entries: llmEntries,      rates: computeRates(llmEntries) }      : null,
-      composite: compositeEntries ? { entries: compositeEntries, rates: computeRates(compositeEntries) } : null,
+    measurementSummary: buildMeasurementSummary(measurementBlock),
+    evaluationSummary:  {
+      corpusSize: EVALUATION_CORPUS.length,
+      ...(EVALUATION_CORPUS.length === 0 && { note: 'No evaluation entries in Phase 1 corpus' }),
     },
+    measurement: measurementBlock,
     evaluation: {
       rule:      { entries: evalRuleEntries },
       llm:       evalLLMEntries      ? { entries: evalLLMEntries }      : null,
@@ -373,12 +466,13 @@ async function main(): Promise<void> {
     },
   };
 
-  // ── Write JSON ───────────────────────────────────────────────────────────────
+  // ── Write ─────────────────────────────────────────────────────────────────────
 
-  writeFileSync(OUTPUT_PATH, JSON.stringify(results, null, 2), 'utf8');
-  console.log(`\nResults written to: ${OUTPUT_PATH}`);
+  const outputPath = resolveOutputPath(CORPUS_VERSION);
+  writeFileSync(outputPath, JSON.stringify(results, null, 2), 'utf8');
+  console.log(`\nSnapshot written: ${outputPath}`);
 
-  // ── Print §6 table ───────────────────────────────────────────────────────────
+  // ── Print §6 table ────────────────────────────────────────────────────────────
 
   printTable(results);
 }

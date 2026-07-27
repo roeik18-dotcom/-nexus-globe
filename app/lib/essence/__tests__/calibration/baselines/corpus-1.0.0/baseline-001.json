@@ -1,0 +1,569 @@
+{
+  "metadata": {
+    "generatedAt": "2026-07-27T08:15:42.688Z",
+    "corpusVersion": "1.0.0",
+    "providers": {
+      "rule": {
+        "providerId": "merlin/rule-based",
+        "providerVersion": "1",
+        "inferencePolicyVersion": "1"
+      },
+      "llm": null,
+      "composite": null
+    }
+  },
+  "measurementSummary": {
+    "corpusSize": 20,
+    "byProvider": {
+      "rule": {
+        "explicit": {
+          "tpRate": 1,
+          "tpCount": 10,
+          "total": 10,
+          "fpRate": 0,
+          "fpCount": 0
+        },
+        "negative": {
+          "tpRate": null,
+          "tpCount": 0,
+          "total": 0,
+          "fpRate": 0,
+          "fpCount": 0
+        }
+      }
+    }
+  },
+  "evaluationSummary": {
+    "corpusSize": 0,
+    "note": "No evaluation entries in Phase 1 corpus"
+  },
+  "measurement": {
+    "rule": {
+      "entries": [
+        {
+          "entryId": "OD-001",
+          "dimension": "OrientationResponseDepth",
+          "category": "explicit",
+          "language": "he",
+          "set": "measurement",
+          "emittedSignals": [
+            {
+              "dimensionKey": "OrientationResponseDepth",
+              "candidateValue": "brief",
+              "signalWeight": 1,
+              "inferredBy": "merlin/rule-based@1"
+            }
+          ],
+          "isTP": true,
+          "isFP": false,
+          "tpDetail": {
+            "expected": [
+              "brief"
+            ],
+            "detected": [
+              "brief"
+            ],
+            "missing": []
+          },
+          "fpDetail": {
+            "forbidden": [],
+            "detected": []
+          }
+        },
+        {
+          "entryId": "OD-002",
+          "dimension": "OrientationResponseDepth",
+          "category": "negative",
+          "language": "he",
+          "set": "measurement",
+          "emittedSignals": [],
+          "isTP": null,
+          "isFP": false,
+          "tpDetail": null,
+          "fpDetail": {
+            "forbidden": [
+              "brief",
+              "balanced",
+              "explanatory"
+            ],
+            "detected": []
+          }
+        },
+        {
+          "entryId": "OD-003",
+          "dimension": "OrientationCommunicationStyle",
+          "category": "explicit",
+          "language": "he",
+          "set": "measurement",
+          "emittedSignals": [
+            {
+              "dimensionKey": "OrientationCommunicationStyle",
+              "candidateValue": "direct",
+              "signalWeight": 1,
+              "inferredBy": "merlin/rule-based@1"
+            }
+          ],
+          "isTP": true,
+          "isFP": false,
+          "tpDetail": {
+            "expected": [
+              "direct"
+            ],
+            "detected": [
+              "direct"
+            ],
+            "missing": []
+          },
+          "fpDetail": {
+            "forbidden": [],
+            "detected": []
+          }
+        },
+        {
+          "entryId": "OD-004",
+          "dimension": "OrientationCommunicationStyle",
+          "category": "negative",
+          "language": "he",
+          "set": "measurement",
+          "emittedSignals": [],
+          "isTP": null,
+          "isFP": false,
+          "tpDetail": null,
+          "fpDetail": {
+            "forbidden": [
+              "direct",
+              "exploratory",
+              "collaborative"
+            ],
+            "detected": []
+          }
+        },
+        {
+          "entryId": "OD-005",
+          "dimension": "OrientationTaskFraming",
+          "category": "explicit",
+          "language": "he",
+          "set": "measurement",
+          "emittedSignals": [
+            {
+              "dimensionKey": "OrientationTaskFraming",
+              "candidateValue": "action_first",
+              "signalWeight": 1,
+              "inferredBy": "merlin/rule-based@1"
+            }
+          ],
+          "isTP": true,
+          "isFP": false,
+          "tpDetail": {
+            "expected": [
+              "action_first"
+            ],
+            "detected": [
+              "action_first"
+            ],
+            "missing": []
+          },
+          "fpDetail": {
+            "forbidden": [],
+            "detected": []
+          }
+        },
+        {
+          "entryId": "OD-006",
+          "dimension": "OrientationTaskFraming",
+          "category": "negative",
+          "language": "he",
+          "set": "measurement",
+          "emittedSignals": [],
+          "isTP": null,
+          "isFP": false,
+          "tpDetail": null,
+          "fpDetail": {
+            "forbidden": [
+              "action_first",
+              "context_first",
+              "options_first"
+            ],
+            "detected": []
+          }
+        },
+        {
+          "entryId": "OD-007",
+          "dimension": "OrientationDecisionStyle",
+          "category": "explicit",
+          "language": "he",
+          "set": "measurement",
+          "emittedSignals": [
+            {
+              "dimensionKey": "OrientationDecisionStyle",
+              "candidateValue": "decisive",
+              "signalWeight": 1,
+              "inferredBy": "merlin/rule-based@1"
+            }
+          ],
+          "isTP": true,
+          "isFP": false,
+          "tpDetail": {
+            "expected": [
+              "decisive"
+            ],
+            "detected": [
+              "decisive"
+            ],
+            "missing": []
+          },
+          "fpDetail": {
+            "forbidden": [],
+            "detected": []
+          }
+        },
+        {
+          "entryId": "OD-008",
+          "dimension": "OrientationDecisionStyle",
+          "category": "negative",
+          "language": "he",
+          "set": "measurement",
+          "emittedSignals": [],
+          "isTP": null,
+          "isFP": false,
+          "tpDetail": null,
+          "fpDetail": {
+            "forbidden": [
+              "decisive",
+              "comparative",
+              "deliberative"
+            ],
+            "detected": []
+          }
+        },
+        {
+          "entryId": "OD-009",
+          "dimension": "OrientationTaskCadence",
+          "category": "explicit",
+          "language": "he",
+          "set": "measurement",
+          "emittedSignals": [
+            {
+              "dimensionKey": "OrientationTaskCadence",
+              "candidateValue": "phased",
+              "signalWeight": 1,
+              "inferredBy": "merlin/rule-based@1"
+            }
+          ],
+          "isTP": true,
+          "isFP": false,
+          "tpDetail": {
+            "expected": [
+              "phased"
+            ],
+            "detected": [
+              "phased"
+            ],
+            "missing": []
+          },
+          "fpDetail": {
+            "forbidden": [],
+            "detected": []
+          }
+        },
+        {
+          "entryId": "OD-010",
+          "dimension": "OrientationTaskCadence",
+          "category": "negative",
+          "language": "he",
+          "set": "measurement",
+          "emittedSignals": [],
+          "isTP": null,
+          "isFP": false,
+          "tpDetail": null,
+          "fpDetail": {
+            "forbidden": [
+              "single_step",
+              "phased",
+              "continuous"
+            ],
+            "detected": []
+          }
+        },
+        {
+          "entryId": "OD-011",
+          "dimension": "OrientationResponseDepth",
+          "category": "explicit",
+          "language": "en",
+          "set": "measurement",
+          "emittedSignals": [
+            {
+              "dimensionKey": "OrientationResponseDepth",
+              "candidateValue": "brief",
+              "signalWeight": 1,
+              "inferredBy": "merlin/rule-based@1"
+            }
+          ],
+          "isTP": true,
+          "isFP": false,
+          "tpDetail": {
+            "expected": [
+              "brief"
+            ],
+            "detected": [
+              "brief"
+            ],
+            "missing": []
+          },
+          "fpDetail": {
+            "forbidden": [],
+            "detected": []
+          }
+        },
+        {
+          "entryId": "OD-012",
+          "dimension": "OrientationResponseDepth",
+          "category": "negative",
+          "language": "en",
+          "set": "measurement",
+          "emittedSignals": [],
+          "isTP": null,
+          "isFP": false,
+          "tpDetail": null,
+          "fpDetail": {
+            "forbidden": [
+              "brief",
+              "balanced",
+              "explanatory"
+            ],
+            "detected": []
+          }
+        },
+        {
+          "entryId": "OD-013",
+          "dimension": "OrientationCommunicationStyle",
+          "category": "explicit",
+          "language": "en",
+          "set": "measurement",
+          "emittedSignals": [
+            {
+              "dimensionKey": "OrientationCommunicationStyle",
+              "candidateValue": "direct",
+              "signalWeight": 1,
+              "inferredBy": "merlin/rule-based@1"
+            }
+          ],
+          "isTP": true,
+          "isFP": false,
+          "tpDetail": {
+            "expected": [
+              "direct"
+            ],
+            "detected": [
+              "direct"
+            ],
+            "missing": []
+          },
+          "fpDetail": {
+            "forbidden": [],
+            "detected": []
+          }
+        },
+        {
+          "entryId": "OD-014",
+          "dimension": "OrientationCommunicationStyle",
+          "category": "negative",
+          "language": "en",
+          "set": "measurement",
+          "emittedSignals": [],
+          "isTP": null,
+          "isFP": false,
+          "tpDetail": null,
+          "fpDetail": {
+            "forbidden": [
+              "direct",
+              "exploratory",
+              "collaborative"
+            ],
+            "detected": []
+          }
+        },
+        {
+          "entryId": "OD-015",
+          "dimension": "OrientationTaskFraming",
+          "category": "explicit",
+          "language": "en",
+          "set": "measurement",
+          "emittedSignals": [
+            {
+              "dimensionKey": "OrientationTaskFraming",
+              "candidateValue": "action_first",
+              "signalWeight": 1,
+              "inferredBy": "merlin/rule-based@1"
+            }
+          ],
+          "isTP": true,
+          "isFP": false,
+          "tpDetail": {
+            "expected": [
+              "action_first"
+            ],
+            "detected": [
+              "action_first"
+            ],
+            "missing": []
+          },
+          "fpDetail": {
+            "forbidden": [],
+            "detected": []
+          }
+        },
+        {
+          "entryId": "OD-016",
+          "dimension": "OrientationTaskFraming",
+          "category": "negative",
+          "language": "en",
+          "set": "measurement",
+          "emittedSignals": [],
+          "isTP": null,
+          "isFP": false,
+          "tpDetail": null,
+          "fpDetail": {
+            "forbidden": [
+              "action_first",
+              "context_first",
+              "options_first"
+            ],
+            "detected": []
+          }
+        },
+        {
+          "entryId": "OD-017",
+          "dimension": "OrientationDecisionStyle",
+          "category": "explicit",
+          "language": "en",
+          "set": "measurement",
+          "emittedSignals": [
+            {
+              "dimensionKey": "OrientationDecisionStyle",
+              "candidateValue": "decisive",
+              "signalWeight": 1,
+              "inferredBy": "merlin/rule-based@1"
+            }
+          ],
+          "isTP": true,
+          "isFP": false,
+          "tpDetail": {
+            "expected": [
+              "decisive"
+            ],
+            "detected": [
+              "decisive"
+            ],
+            "missing": []
+          },
+          "fpDetail": {
+            "forbidden": [],
+            "detected": []
+          }
+        },
+        {
+          "entryId": "OD-018",
+          "dimension": "OrientationDecisionStyle",
+          "category": "negative",
+          "language": "en",
+          "set": "measurement",
+          "emittedSignals": [],
+          "isTP": null,
+          "isFP": false,
+          "tpDetail": null,
+          "fpDetail": {
+            "forbidden": [
+              "decisive",
+              "comparative",
+              "deliberative"
+            ],
+            "detected": []
+          }
+        },
+        {
+          "entryId": "OD-019",
+          "dimension": "OrientationTaskCadence",
+          "category": "explicit",
+          "language": "en",
+          "set": "measurement",
+          "emittedSignals": [
+            {
+              "dimensionKey": "OrientationResponseDepth",
+              "candidateValue": "explanatory",
+              "signalWeight": 1,
+              "inferredBy": "merlin/rule-based@1"
+            },
+            {
+              "dimensionKey": "OrientationTaskCadence",
+              "candidateValue": "phased",
+              "signalWeight": 1,
+              "inferredBy": "merlin/rule-based@1"
+            }
+          ],
+          "isTP": true,
+          "isFP": false,
+          "tpDetail": {
+            "expected": [
+              "phased"
+            ],
+            "detected": [
+              "phased"
+            ],
+            "missing": []
+          },
+          "fpDetail": {
+            "forbidden": [],
+            "detected": []
+          }
+        },
+        {
+          "entryId": "OD-020",
+          "dimension": "OrientationTaskCadence",
+          "category": "negative",
+          "language": "en",
+          "set": "measurement",
+          "emittedSignals": [],
+          "isTP": null,
+          "isFP": false,
+          "tpDetail": null,
+          "fpDetail": {
+            "forbidden": [
+              "single_step",
+              "phased",
+              "continuous"
+            ],
+            "detected": []
+          }
+        }
+      ],
+      "rates": {
+        "explicit": {
+          "tpRate": 1,
+          "fpRate": 0,
+          "tpNumerator": 10,
+          "tpDenominator": 10,
+          "fpNumerator": 0,
+          "fpDenominator": 10
+        },
+        "negative": {
+          "tpRate": null,
+          "fpRate": 0,
+          "tpNumerator": 0,
+          "tpDenominator": 0,
+          "fpNumerator": 0,
+          "fpDenominator": 10
+        }
+      }
+    },
+    "llm": null,
+    "composite": null
+  },
+  "evaluation": {
+    "rule": {
+      "entries": []
+    },
+    "llm": null,
+    "composite": null
+  }
+}
