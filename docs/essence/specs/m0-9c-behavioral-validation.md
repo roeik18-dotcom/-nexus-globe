@@ -54,14 +54,20 @@ type GoldLabel =
   | { kind: 'eval_only' }          // ambiguous / contradiction entries carry this label
 ```
 
-### 2.2 Authoring Rules (locked)
+### 2.2 Entry IDs (locked)
+
+Entry IDs use the format `OD-NNN` (zero-padded three digits, e.g. `OD-001`). IDs are assigned sequentially and permanently. A deprecated entry keeps its ID forever — IDs are never recycled. Historical baseline reports reference entries by ID; recycling would corrupt comparisons.
+
+English parity entries share the same `OD-NNN` space as Hebrew entries (they do not have a separate counter). The `pairId` field on an English entry references its Hebrew source ID.
+
+### 2.3 Authoring Rules (locked)
 
 - Gold labels are set **manually** before any provider sees the corpus. They must not be derived from provider output.
 - Each gold label that expects a signal includes a `minWeight` floor derived from the weight regime (explicit → 1.0, implied → 0.7, inference → 0.5). A provider producing a signal below `minWeight` fails that entry.
 - `assistantResponse` in `adversarial` entries **must** contain a plausible-looking preference phrase. The gold label is always `no_signal`.
 - `negative` entries must not be borderline — if a reviewer would hesitate, reclassify as `ambiguous`.
 
-### 2.3 Versioning (locked)
+### 2.4 Versioning (locked)
 
 - The corpus lives at `app/lib/essence/__tests__/corpus/orientation-calibration.ts`.
 - Each entry carries a `version` field; the file carries a `CORPUS_VERSION` constant.
@@ -243,19 +249,41 @@ Models: Rule `rule-based@1`, LLM `claude-haiku-4-5-20251001`
 
 ---
 
-## 7. Methodology: How Thresholds Get Set
+## 7. Corpus Build Phases
 
-Performance thresholds are set by the following process — never by estimation.
+The corpus is built in three phases. Phase 1 produces the first runnable baseline; Phases 2 and 3 expand density without breaking comparability.
 
-1. **Build corpus** — author entries across all dimensions and categories with manual gold labels.
-2. **Run Rule alone** — record TP/FP rates per category.
-3. **Run LLM alone** — record TP/FP rates per category at `temperature: 0`.
-4. **Run Composite** — record TP/FP rates and verify §4.4 (non-degradation).
-5. **Fill §6 baseline table.**
-6. **Propose thresholds** — set each threshold as `measured_rate + tolerance_margin` (margin is an explicit editorial choice, justified in the PR).
-7. **Lock thresholds** — merge the update to this document. From this point forward, any run that exceeds a threshold is a CI failure.
+### Phase 1 — Golden Corpus (minimum viable baseline)
 
-Steps 1–5 must be completed before any threshold is written. Proposed thresholds from step 6 require explicit reviewer sign-off.
+One `explicit` Positive and one `negative` entry per `OrientationDimensionKey`, all in Hebrew. With five dimensions this yields ten Hebrew entries. English parity entries are created immediately after as faithful translations linked via `pairId`.
+
+Goal: a runnable, comparable baseline — not a large corpus. A minimal corpus with reliable gold labels is more valuable than a large corpus with uncertain ones.
+
+### Phase 2 — Dimension Completion
+
+For each dimension, add the remaining categories systematically:
+
+| Category | Role |
+|---|---|
+| `implied` Positive | measurement set |
+| `adversarial` | measurement set (provenance invariant) |
+| `ambiguous` | evaluation set only |
+| `contradiction` / multi-signal | evaluation set only |
+
+Each dimension reaches a consistent structure. All additions are backward-compatible (existing IDs unchanged).
+
+### Phase 3 — Baseline and Threshold Locking
+
+Performance thresholds are set by measurement, never by estimation:
+
+1. **Run Rule alone** — record TP/FP rates per category.
+2. **Run LLM alone** — record TP/FP rates per category at `temperature: 0`.
+3. **Run Composite** — record TP/FP rates and verify §4.5 (non-degradation).
+4. **Fill §6 baseline table.**
+5. **Propose thresholds** — set each threshold as `measured_rate + tolerance_margin` (margin is an explicit editorial choice, justified in the PR).
+6. **Lock thresholds** — merge the update to this document. From this point forward, any run that exceeds a threshold is a CI failure.
+
+Steps 1–4 must be completed before any threshold is written. Proposed thresholds from step 5 require explicit reviewer sign-off.
 
 ---
 
