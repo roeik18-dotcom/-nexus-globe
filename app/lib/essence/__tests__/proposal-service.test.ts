@@ -645,3 +645,248 @@ describe('EssenceProposalService — Observation immutability', () => {
     expect(after?.observations.length).toBe(obsCountBefore);
   });
 });
+
+// ── M0-10B: Audit integrity ────────────────────────────────────────────────────
+
+import { PhilosReviewConsumer } from '../philos-review-consumer';
+import type { Observation } from '../schema';
+
+function seedObs(id: string): Observation {
+  return {
+    id,
+    source: 'agent_inference',
+    recordedBy: 'merlin',
+    content: 'seed',
+    sessionId: null,
+    observedAt: new Date().toISOString(),
+    evidenceIds: [],
+    correctsObservationId: null,
+  };
+}
+
+describe('EssenceProposalService — M0-10B: previousInterpretationId (B3)', () => {
+  it('first write to an empty node: previousInterpretationId is null', async () => {
+    const { repo, svc } = makeService();
+    await repo.createProfile('u1');
+    await repo.appendObservation('u1', seedObs('obs-b3a'));
+    const philos = new PhilosReviewConsumer(svc);
+
+    const result = await svc.proposeUpdate('u1', {
+      nodeId: 'OrientationCommunicationStyle',
+      proposedContent: 'direct',
+      evidenceObservationIds: ['obs-b3a'],
+      proposedBy: 'merlin',
+      proposedAt: new Date().toISOString(),
+      rationale: 'test',
+      accumulatedConfidence: 'high',
+    }, null);
+    expect(result.status).toBe('pending_review');
+    await philos.consume('u1', (result as any).proposalId);
+
+    const profile = await repo.getProfile('u1');
+    const entry = profile!.evolution[0];
+    expect(entry).toBeDefined();
+    expect(entry.previousInterpretationId).toBeNull();
+    expect(entry.newInterpretationId).toBeDefined();
+  });
+
+  it('second write (replace_single_value): previousInterpretationId points to archived interp', async () => {
+    const clock = makeClock(1_000_000) as ReturnType<typeof makeClock> & { advance(n: number): void };
+    const repo = new InMemoryEssenceRepository();
+    const svc = new EssenceProposalService(repo, new PipelineRunner(clock), clock);
+    const philos = new PhilosReviewConsumer(svc, clock);
+    await repo.createProfile('u1');
+    await repo.appendObservation('u1', seedObs('obs-first'));
+    await repo.appendObservation('u1', seedObs('obs-second'));
+
+    // First proposal: writes 'direct'
+    const r1 = await svc.proposeUpdate('u1', {
+      nodeId: 'OrientationCommunicationStyle',
+      proposedContent: 'direct',
+      evidenceObservationIds: ['obs-first'],
+      proposedBy: 'merlin',
+      proposedAt: new Date(clock.now()).toISOString(),
+      rationale: 'first',
+      accumulatedConfidence: 'high',
+    }, null);
+    expect(r1.status).toBe('pending_review');
+    await philos.consume('u1', (r1 as any).proposalId);
+
+    const afterFirst = await repo.getProfile('u1');
+    const firstInterpId = afterFirst!.evolution[0].newInterpretationId;
+
+    // Second proposal: should archive 'direct', write 'exploratory'
+    clock.advance(1000);
+    const r2 = await svc.proposeUpdate('u1', {
+      nodeId: 'OrientationCommunicationStyle',
+      proposedContent: 'exploratory',
+      evidenceObservationIds: ['obs-second'],
+      proposedBy: 'merlin',
+      proposedAt: new Date(clock.now()).toISOString(),
+      rationale: 'second',
+      accumulatedConfidence: 'high',
+    }, null);
+    expect(r2.status).toBe('pending_review');
+    await philos.consume('u1', (r2 as any).proposalId);
+
+    const afterSecond = await repo.getProfile('u1');
+    const secondEntry = afterSecond!.evolution[1];
+    expect(secondEntry.previousInterpretationId).toBe(firstInterpId);
+    expect(secondEntry.newInterpretationId).not.toBe(firstInterpId);
+
+    // First interpretation should be archived.
+    const allInterps = afterSecond!.expression['OrientationCommunicationStyle'] ?? [];
+    const archived = allInterps.find(i => i.id === firstInterpId);
+    expect(archived?.archivedAt).not.toBeNull();
+
+    // Second interpretation should be active.
+    const active = allInterps.find(i => !i.archivedAt);
+    expect(active?.content).toBe('exploratory');
+  });
+});
+
+describe('EssenceProposalService — M0-10B: conflict resolution on supersession (B4)', () => {
+  it('preference_shift conflict is resolved when superseded by a new orientation write', async () => {
+    const clock = makeClock(1_000_000);
+    const repo = new InMemoryEssenceRepository();
+    const svc = new EssenceProposalService(repo, new PipelineRunner(clock), clock);
+    const philos = new PhilosReviewConsumer(svc, clock);
+    const profile = await repo.createProfile('u1');
+
+    // Seed an active interpretation for the orientation node.
+    const firstInterpId = 'existing-orient-interp';
+    profile.expression['OrientationCommunicationStyle'] = [{
+      id: firstInterpId,
+      version: 1,
+      nodeId: 'OrientationCommunicationStyle',
+      layer: 'expression',
+      stabilityClass: 'Adaptive',
+      content: 'direct',
+      observationIds: [],
+      confidence: 'medium',
+      interpretationKind: 'probable_interpretation',
+      provenance: {
+        source: 'agent_inference',
+        confidence: 'medium',
+        createdBy: 'merlin',
+        firstObservedAt: new Date(clock.now()).toISOString(),
+        lastConfirmedAt: new Date(clock.now()).toISOString(),
+        lastUpdatedAt: new Date(clock.now()).toISOString(),
+        evidenceIds: [],
+        conflictingInterpretationIds: [],
+      },
+      sensitivity: 'personal',
+      temporalKind: 'trait',
+      stateScope: null,
+      expiresAt: null,
+      archivedAt: null,
+      conflictIds: [],
+      evidenceStatus: 'unavailable',
+    }];
+    // Seed an open preference_shift conflict referencing the existing interpretation.
+    profile.conflicts.push({
+      id: 'conflict-prefer-shift',
+      type: 'preference_shift',
+      detectedAt: new Date(clock.now()).toISOString(),
+      existingInterpretationIds: [firstInterpId],
+      triggeringObservationId: 'obs-trigger',
+      resolvedAt: null,
+      resolution: null,
+      resolutionNote: null,
+    });
+    await repo.saveProfile(profile);
+
+    await repo.appendObservation('u1', seedObs('obs-new'));
+
+    // Propose new value — should supersede 'direct' and resolve the conflict.
+    const result = await svc.proposeUpdate('u1', {
+      nodeId: 'OrientationCommunicationStyle',
+      proposedContent: 'collaborative',
+      evidenceObservationIds: ['obs-new'],
+      proposedBy: 'merlin',
+      proposedAt: new Date(clock.now()).toISOString(),
+      rationale: 'test conflict resolution',
+      accumulatedConfidence: 'high',
+    }, null);
+    expect(result.status).toBe('pending_review');
+    await philos.consume('u1', (result as any).proposalId);
+
+    const updated = await repo.getProfile('u1');
+    const conflict = updated!.conflicts.find(c => c.id === 'conflict-prefer-shift');
+    expect(conflict).toBeDefined();
+    expect(conflict!.resolvedAt).not.toBeNull();
+    expect(conflict!.resolution).toBe('accepted_newer');
+    expect(conflict!.resolutionNote).toMatch(/Superseded by interpretation/);
+  });
+
+  it('unresolved_contradiction conflict is NOT auto-resolved on supersession', async () => {
+    const clock = makeClock(1_000_000);
+    const repo = new InMemoryEssenceRepository();
+    const svc = new EssenceProposalService(repo, new PipelineRunner(clock), clock);
+    const philos = new PhilosReviewConsumer(svc, clock);
+    const profile = await repo.createProfile('u1');
+
+    const firstInterpId = 'existing-orient-contra';
+    profile.expression['OrientationCommunicationStyle'] = [{
+      id: firstInterpId,
+      version: 1,
+      nodeId: 'OrientationCommunicationStyle',
+      layer: 'expression',
+      stabilityClass: 'Adaptive',
+      content: 'direct',
+      observationIds: [],
+      confidence: 'medium',
+      interpretationKind: 'probable_interpretation',
+      provenance: {
+        source: 'agent_inference',
+        confidence: 'medium',
+        createdBy: 'merlin',
+        firstObservedAt: new Date(clock.now()).toISOString(),
+        lastConfirmedAt: new Date(clock.now()).toISOString(),
+        lastUpdatedAt: new Date(clock.now()).toISOString(),
+        evidenceIds: [],
+        conflictingInterpretationIds: [],
+      },
+      sensitivity: 'personal',
+      temporalKind: 'trait',
+      stateScope: null,
+      expiresAt: null,
+      archivedAt: null,
+      conflictIds: [],
+      evidenceStatus: 'unavailable',
+    }];
+    profile.conflicts.push({
+      id: 'conflict-contradiction',
+      type: 'unresolved_contradiction',
+      detectedAt: new Date(clock.now()).toISOString(),
+      existingInterpretationIds: [firstInterpId],
+      triggeringObservationId: 'obs-trigger',
+      resolvedAt: null,
+      resolution: null,
+      resolutionNote: null,
+    });
+    await repo.saveProfile(profile);
+    await repo.appendObservation('u1', seedObs('obs-new2'));
+
+    const result = await svc.proposeUpdate('u1', {
+      nodeId: 'OrientationCommunicationStyle',
+      proposedContent: 'collaborative',
+      evidenceObservationIds: ['obs-new2'],
+      proposedBy: 'merlin',
+      proposedAt: new Date(clock.now()).toISOString(),
+      rationale: 'test',
+      accumulatedConfidence: 'high',
+    }, null);
+    // Wait — an unresolved_contradiction would block the proposal if severity===requires_user.
+    // But orientation nodes always produce 'auto_resolvable' conflicts.
+    // Since unresolved_contradiction is injected directly into profile.conflicts (not produced
+    // by the pipeline), it won't affect the pipeline. The write will proceed.
+    // The key assertion is that the unresolved_contradiction conflict is NOT resolved.
+    if (result.status === 'pending_review') {
+      await philos.consume('u1', (result as any).proposalId);
+      const updated = await repo.getProfile('u1');
+      const conflict = updated!.conflicts.find(c => c.id === 'conflict-contradiction');
+      expect(conflict!.resolvedAt).toBeNull();
+    }
+  });
+});

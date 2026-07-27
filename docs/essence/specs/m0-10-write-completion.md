@@ -514,11 +514,30 @@ The following features are explicitly out of scope for M0-10. They belong in M0-
 
 ---
 
-## 8. Open questions (must be resolved before M0-10A implementation)
+## 8. Open questions (resolved)
 
 | # | Question | Stakes | Status |
 |---|----------|--------|--------|
 | Q1 | Confirm §3.1 decision: Option 2 (Philos as reviewer)? | Blocks all of M0-10A | ✅ Confirmed 2026-07-27 |
-| Q2 | When does Philos run the review — on every `processExchange()` call, on a schedule, or triggered by the user session ending? | Determines trigger mechanism for `PhilosReviewConsumer.consumeProfile()` | Open |
-| Q3 | Max `deferCount` before Philos must produce a definitive decision? | Bounds proposal lifetime in `pending_review`; prevents TTL as the only termination mechanism | Open |
+| Q2 | When does Philos run the review — on every `processExchange()` call, on a schedule, or triggered by the user session ending? | Determines trigger mechanism for `PhilosReviewConsumer.consumeProfile()` | ✅ Resolved 2026-07-27: per-exchange |
+| Q3 | Max `deferCount` before Philos must produce a definitive decision? | Bounds proposal lifetime in `pending_review`; prevents TTL as the only termination mechanism | ✅ Resolved 2026-07-27: `MAX_DEFER_COUNT = 1` |
 | Q4 | Should `pending_review` records be visible to Philos only, or also surfaced to the user in a "proposed but unreviewed" state? | Determines `getPendingProposals()` visibility contract | ✅ Resolved: Philos-internal only. Users see `pending_user_confirmation` only. (§3.8 A6) |
+
+### Q2 detail — per-exchange trigger
+
+Philos runs immediately after `pending_review` is persisted, in the same execution flow but as a distinct step. The execution sequence is:
+
+```
+inference → accumulation → proposal → pending_review persisted → PhilosReviewConsumer.consume(proposalId) → terminal state / pending_user_confirmation
+```
+
+**Failure handling:** if Philos throws after `pending_review` is persisted, the error must NOT propagate as a 500. Log a diagnostic warning and leave the proposal in `pending_review` for retry on the next exchange. The observation and proposal are already durably committed.
+
+### Q3 detail — maxDeferCount = 1
+
+`MAX_DEFER_COUNT = 1`. Invariant: if policy would fire `defer` and `deferCount >= MAX_DEFER_COUNT`, override with `reject(reason='review_policy_unresolved')`.
+
+- First consume: `deferCount = 0` → policy may fire `defer` → `deferCount` incremented to 1.
+- Second consume: `deferCount = 1 >= MAX_DEFER_COUNT` → reject immediately, no policy run.
+
+`defer` never extends `expiresAt`. Idempotency check must verify proposal status AND last `reviewDecision.decision` (not just whether `reviewDecisions` is non-empty).

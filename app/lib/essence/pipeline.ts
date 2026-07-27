@@ -188,7 +188,10 @@ export type PipelineResult =
       status: 'pending_review';
       candidateInterpretation: CandidateInterpretation;
       writePolicy: WritePolicy;
+      /** Stable ID for this proposal — same token used for pending_user_confirmation if Philos escalates. */
+      proposalId: string;
       queuedAt: string;
+      expiresAt: string;
     }
   | {
       status: 'rejected';

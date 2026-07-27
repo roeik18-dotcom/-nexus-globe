@@ -19,9 +19,12 @@ import type {
 import type { AgentName } from './access';
 import { ACCESS_POLICIES, canAgentPropose } from './access';
 import type {
+  EssencePhilosReviewAPI,
   EssenceProposalAPI,
   EssenceUserActionAPI,
   PendingEssenceProposal,
+  PhilosReviewDecision,
+  ProposalStatus,
   ProposedUpdate,
   UserCorrection,
   EvidencePackage,
@@ -39,7 +42,7 @@ export { type Clock };
 
 const LAYERS: EssenceLayer[] = ['core', 'aspirations', 'expression', 'identity'];
 
-export class EssenceProposalService implements EssenceProposalAPI, EssenceUserActionAPI {
+export class EssenceProposalService implements EssenceProposalAPI, EssenceUserActionAPI, EssencePhilosReviewAPI {
   private readonly proposalRecords = new Map<string, PendingEssenceProposal>();
 
   constructor(
@@ -143,9 +146,33 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
       }
     }
 
+    const evidenceStatus = allEvidenceIds.length > 0 ? 'referenced' : 'unavailable';
+    const proposedAt = new Date(this.clock.now()).toISOString();
+
+    if (output.result.status === 'pending_review') {
+      const { proposalId, expiresAt } = output.result;
+      this.proposalRecords.set(proposalId, {
+        proposalId,
+        profileId,
+        nodeId: proposal.nodeId,
+        layer: node!.layer,
+        proposedContent: proposal.proposedContent,
+        proposedBy: proposal.proposedBy,
+        evidenceStatus,
+        proposedAt,
+        expiresAt,
+        status: 'pending_review',
+        conflictsWith: [],
+        pipelineStages: output.stages,
+        accumulatedConfidence: proposal.accumulatedConfidence ?? null,
+        reviewDecisions: [],
+        deferCount: 0,
+        evidenceObservationIds: allEvidenceIds,
+      });
+    }
+
     if (output.result.status === 'pending_user_confirmation') {
       const { confirmationToken, expiresAt } = output.result;
-      const evidenceStatus = allEvidenceIds.length > 0 ? 'referenced' : 'unavailable';
       this.proposalRecords.set(confirmationToken, {
         proposalId: confirmationToken,
         profileId,
@@ -154,11 +181,15 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
         proposedContent: proposal.proposedContent,
         proposedBy: proposal.proposedBy,
         evidenceStatus,
-        proposedAt: new Date(this.clock.now()).toISOString(),
+        proposedAt,
         expiresAt,
-        status: 'pending',
+        status: 'pending_user_confirmation',
         conflictsWith: [],
         pipelineStages: output.stages,
+        accumulatedConfidence: proposal.accumulatedConfidence ?? null,
+        reviewDecisions: [],
+        deferCount: 0,
+        evidenceObservationIds: allEvidenceIds,
       });
     }
 
@@ -183,6 +214,7 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     }
 
     if (record.status === 'rejected') throw new Error('Cannot confirm a rejected proposal');
+    if (record.status === 'pending_review') throw new Error('Cannot confirm a proposal that is still pending_review; Philos has not acted yet');
 
     if (new Date(record.expiresAt).getTime() < this.clock.now()) {
       record.status = 'expired';
@@ -318,7 +350,13 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
 
   /**
    * Returns pending proposals visible to the requesting agent.
-   * Agents see only their own proposals; Philos sees all.
+   *
+   * Visibility rules:
+   *   - pending_review: Philos only (Philos-internal queue).
+   *   - pending_user_confirmation: the proposing agent + Philos.
+   *
+   * Cross-agent isolation: agents see only their own pending_user_confirmation proposals.
+   * Philos sees all proposals in both pending states.
    */
   async getPendingProposals(
     profileId: string,
@@ -327,16 +365,104 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     const now = this.clock.now();
     const result: PendingEssenceProposal[] = [];
     for (const record of this.proposalRecords.values()) {
-      if (record.profileId !== profileId || record.status !== 'pending') continue;
+      if (record.profileId !== profileId) continue;
+      if (record.status !== 'pending_review' && record.status !== 'pending_user_confirmation') continue;
       if (new Date(record.expiresAt).getTime() < now) {
         record.status = 'expired';
         continue;
       }
-      // Cross-agent isolation: agents see only their own proposals unless they're Philos.
-      if (requestedBy !== 'philos' && record.proposedBy !== requestedBy) continue;
+      if (record.status === 'pending_review' && requestedBy !== 'philos') continue;
+      if (record.status === 'pending_user_confirmation' && requestedBy !== 'philos' && record.proposedBy !== requestedBy) continue;
       result.push(record);
     }
     return result;
+  }
+
+  // ── EssencePhilosReviewAPI ─────────────────────────────────────────────────
+
+  async getReviewQueue(profileId: string): Promise<PendingEssenceProposal[]> {
+    const now = this.clock.now();
+    const result: PendingEssenceProposal[] = [];
+    for (const record of this.proposalRecords.values()) {
+      if (record.profileId !== profileId || record.status !== 'pending_review') continue;
+      if (new Date(record.expiresAt).getTime() < now) {
+        record.status = 'expired';
+        continue;
+      }
+      result.push(record);
+    }
+    return result;
+  }
+
+  getProposalRecord(proposalId: string): PendingEssenceProposal | undefined {
+    return this.proposalRecords.get(proposalId);
+  }
+
+  applyReviewDecision(
+    proposalId: string,
+    decision: PhilosReviewDecision,
+    newStatus: ProposalStatus,
+  ): void {
+    const record = this.proposalRecords.get(proposalId);
+    if (!record) throw new Error(`Unknown proposalId: ${proposalId}`);
+    record.reviewDecisions.push(decision);
+    record.status = newStatus;
+    if (decision.decision === 'defer') {
+      record.deferCount += 1;
+    }
+  }
+
+  async commitReviewedProposal(proposal: PendingEssenceProposal): Promise<Interpretation> {
+    if (proposal.status !== 'pending_review') {
+      throw new Error(`commitReviewedProposal: expected pending_review, got ${proposal.status}`);
+    }
+    if (proposal.accumulatedConfidence === null || proposal.accumulatedConfidence === undefined) {
+      throw new Error(`commitReviewedProposal: accumulatedConfidence is null for proposal ${proposal.proposalId}`);
+    }
+
+    const profile = await this.repo.getProfile(proposal.profileId);
+    if (!profile) throw new Error(`Profile not found: ${proposal.profileId}`);
+
+    const node = getEssenceNode(proposal.nodeId);
+    if (!node) throw new Error(`Unknown nodeId: ${proposal.nodeId}`);
+
+    const now = new Date(this.clock.now()).toISOString();
+    const confidence = proposal.accumulatedConfidence;
+    const evidenceIds = Array.from(proposal.evidenceObservationIds);
+
+    const interp: Interpretation = {
+      id: this.idGen.nextId('interp'),
+      version: 1,
+      nodeId: proposal.nodeId,
+      layer: node.layer,
+      stabilityClass: node.stabilityClass,
+      content: proposal.proposedContent,
+      observationIds: evidenceIds,
+      confidence,
+      interpretationKind: 'probable_interpretation',
+      provenance: {
+        source: 'agent_inference',
+        confidence,
+        createdBy: 'philos',
+        firstObservedAt: proposal.proposedAt,
+        lastConfirmedAt: now,
+        lastUpdatedAt: now,
+        evidenceIds,
+        conflictingInterpretationIds: [],
+      },
+      sensitivity: 'personal',
+      temporalKind: 'trait',
+      stateScope: null,
+      expiresAt: null,
+      archivedAt: null,
+      conflictIds: [],
+      evidenceStatus: proposal.evidenceStatus,
+    };
+
+    await this.writeInterpretation(profile, interp, 'replace_single_value');
+
+    proposal.committedInterpretationId = interp.id;
+    return interp;
   }
 
   // ── Private helpers ────────────────────────────────────────────────────────
@@ -349,26 +475,43 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     if (writeDisposition === 'replace_single_value' && !isOrientationNode(interp.nodeId)) {
       throw new Error(`replace_single_value is only valid for orientation nodes; got '${interp.nodeId}'`);
     }
+
+    const now = new Date(this.clock.now()).toISOString();
+    let previousInterpretationId: string | null = null;
+    let additionalArchivedNote: string | null = null;
+
     if (writeDisposition === 'replace_single_value') {
       const layerData = profile[interp.layer] as Record<string, Interpretation[]>;
+      // Capture IDs before archiving so previousInterpretationId is non-null when a prior existed.
+      const activeIds = (layerData[interp.nodeId] ?? [])
+        .filter(p => !p.archivedAt)
+        .map(p => p.id);
+      previousInterpretationId = activeIds[0] ?? null;
+      if (activeIds.length > 1) {
+        additionalArchivedNote = `Additional archived: ${activeIds.slice(1).join(', ')}`;
+      }
       for (const prev of layerData[interp.nodeId] ?? []) {
-        if (!prev.archivedAt) archiveInterpretation(profile, prev.id, this.clock);
+        if (!prev.archivedAt) archiveInterpretation(profile, prev.id, this.clock, now);
+      }
+      // Resolve open preference_shift conflicts that referenced the archived interpretations.
+      for (const archivedId of activeIds) {
+        resolveConflictsForArchived(profile, archivedId, interp.id, now);
       }
     }
+
     const layerData = profile[interp.layer] as Record<string, Interpretation[]>;
     if (!layerData[interp.nodeId]) layerData[interp.nodeId] = [];
     layerData[interp.nodeId].push(interp);
 
-    const now = new Date(this.clock.now()).toISOString();
     const entry: EssenceEvolutionEntry = {
       id: this.idGen.nextId('evo'),
       nodeId: interp.nodeId,
-      previousInterpretationId: null,
+      previousInterpretationId,
       newInterpretationId: interp.id,
       triggeredBy: interp.provenance.source,
       agentName: interp.provenance.createdBy,
       timestamp: now,
-      note: null,
+      note: additionalArchivedNote,
     };
     profile.evolution.push(entry);
     profile.updatedAt = now;
@@ -429,6 +572,29 @@ function archiveInterpretation(
         return;
       }
     }
+  }
+}
+
+/**
+ * Resolve open preference_shift conflicts whose existingInterpretationIds contain
+ * the archived interpretation. Called after replace_single_value writes.
+ * Only resolves 'preference_shift' severity — unresolved contradictions remain open.
+ */
+function resolveConflictsForArchived(
+  profile: EssenceProfile,
+  archivedId: string,
+  newInterpId: string,
+  now: string,
+): void {
+  for (const conflict of profile.conflicts) {
+    if (conflict.resolvedAt !== null) continue;
+    if (!conflict.existingInterpretationIds.includes(archivedId)) continue;
+    // Only auto-resolve preference_shift conflicts; others require user action.
+    if (conflict.type !== 'preference_shift') continue;
+    (conflict as { resolvedAt: string | null }).resolvedAt = now;
+    (conflict as { resolution: string | null }).resolution = 'accepted_newer';
+    (conflict as { resolutionNote: string | null }).resolutionNote =
+      `Superseded by interpretation ${newInterpId}`;
   }
 }
 

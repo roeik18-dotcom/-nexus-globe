@@ -1,5 +1,5 @@
 /**
- * Essence · Orientation Inference Orchestrator (M0-7B)
+ * Essence · Orientation Inference Orchestrator (M0-10A)
  *
  * Stateful integration component that drives the orientation inference cycle
  * for one logical session. Owns:
@@ -8,23 +8,20 @@
  *   - EmissionTracker: prevents duplicate proposal submission within a process lifetime
  *   - OrientationProposalContext assembly from tracker + profile active value
  *   - proposeUpdate() submission to EssenceProposalService
+ *   - per-exchange Philos review trigger (PhilosReviewConsumer.consume())
  *
  * Does NOT own:
  *   - signal extraction (OrientationInferenceProvider)
  *   - proposal evaluation logic (OrientationProposalEngine, stateless)
- *   - any write to Essence other than via proposeUpdate()
+ *   - any write to Essence other than via proposeUpdate() → Philos → commitReviewedProposal()
  *   - any read from EssenceRepository directly
  *
- * M0-7B limitation — EmissionTracker for 'pending_review' proposals:
- *   Orientation node proposals (agent + evidence) always produce 'pending_review'
- *   from the pipeline. These proposals are NOT recorded in EssenceProposalService's
- *   proposalRecords and are NOT returned by getPendingProposals(). The tracker
- *   therefore stores them with proposalId === null and cannot automatically reset
- *   them when the review queue processes the proposal. Suppression for these entries
- *   lifts only on process restart (when the accumulator and tracker are both reset).
- *
- *   'pending_user_confirmation' proposals (proposalId !== null) are tracked with
- *   their real proposalId and reset automatically when they leave getPendingProposals().
+ * EmissionTracker state after Philos review:
+ *   - accept/reject       → entry deleted (suppression lifted)
+ *   - require_user_conf   → entry updated with real proposalId; reset by syncTracker()
+ *                           when the user acts
+ *   - defer               → entry stays with proposalId: null (suppression maintained)
+ *   - Philos error        → entry stays with proposalId: null; proposal retried next exchange
  */
 
 import type { EssenceProfile } from './schema';
@@ -37,6 +34,8 @@ import type { OrientationDimensionKey } from './orientation';
 import type { Clock } from './pipeline-runner';
 import { systemClock } from './pipeline-runner';
 import type { PipelineResult } from './pipeline';
+import type { PhilosReviewDecision } from './api';
+import type { PhilosReviewConsumer } from './philos-review-consumer';
 import type {
   OrientationIntegrationContext,
   OrientationDimensionResult,
@@ -76,6 +75,7 @@ export class OrientationInferenceOrchestrator implements OrientationInferenceOrc
     private readonly proposalService: EssenceProposalAPI,
     private readonly agentName: AgentName,
     private readonly clock: Clock = systemClock,
+    private readonly philos: PhilosReviewConsumer | null = null,
   ) {
     this.accumulator = new OrientationEvidenceAccumulator(clock);
     this.engine = new OrientationProposalEngine(clock);
@@ -183,11 +183,20 @@ export class OrientationInferenceOrchestrator implements OrientationInferenceOrc
         proposedBy:               this.agentName,
         proposedAt:               decision.candidate.proposedAt,
         rationale:                decision.candidate.rationale,
+        accumulatedConfidence:    decision.candidate.accumulatedConfidence,
       },
       null,
     );
 
-    this.updateTracker(key, pipelineResult, winner.accumulatedWeight);
+    // For non-pending_review outcomes, update tracker immediately.
+    if (pipelineResult.status !== 'pending_review') {
+      this.updateTracker(key, pipelineResult, winner.accumulatedWeight);
+    } else {
+      // pending_review: set tracker entry with null proposalId (suppresses re-proposal).
+      // Then trigger Philos synchronously — failure must not propagate.
+      this.tracker.set(key, { proposalId: null, emittedWeight: winner.accumulatedWeight });
+      await this.runPhilosReview(key, pipelineResult.proposalId, profileId, winner.accumulatedWeight);
+    }
 
     return {
       dimensionKey,
@@ -195,6 +204,58 @@ export class OrientationInferenceOrchestrator implements OrientationInferenceOrc
       candidate: decision.candidate,
       pipelineStatus: pipelineResult.status,
     };
+  }
+
+  /**
+   * Invoke Philos review for a pending_review proposal.
+   * Updates the tracker based on the Philos decision.
+   * Any exception is caught, logged, and swallowed — the proposal is left
+   * in pending_review for retry on the next exchange.
+   */
+  private async runPhilosReview(
+    trackerKey: string,
+    proposalId: string,
+    profileId: string,
+    emittedWeight: number,
+  ): Promise<void> {
+    if (!this.philos) return;
+    try {
+      const decision = await this.philos.consume(profileId, proposalId);
+      this.updateTrackerAfterPhilos(trackerKey, proposalId, decision, emittedWeight);
+    } catch (err) {
+      // Non-fatal: proposal stays in pending_review. Will be retried on next exchange.
+      console.warn(
+        `[OrientationOrchestrator] Philos review failed for proposal ${proposalId}; ` +
+        'leaving in pending_review for retry.',
+        err,
+      );
+    }
+  }
+
+  /**
+   * Update the tracker after a Philos review decision.
+   *   accept/reject            → delete entry (suppression lifted; new evidence can propose)
+   *   require_user_confirmation → update with real proposalId (syncTracker will reset on resolution)
+   *   defer                    → leave entry as-is (proposalId: null, suppression maintained)
+   */
+  private updateTrackerAfterPhilos(
+    key: string,
+    proposalId: string,
+    decision: PhilosReviewDecision,
+    emittedWeight: number,
+  ): void {
+    switch (decision.decision) {
+      case 'accept':
+      case 'reject':
+        this.tracker.delete(key);
+        break;
+      case 'require_user_confirmation':
+        this.tracker.set(key, { proposalId, emittedWeight });
+        break;
+      case 'defer':
+        // Tracker stays with proposalId: null — suppression maintained for this dimension.
+        break;
+    }
   }
 
   /** Return the content of the active (non-archived) interpretation for this dimension, if any. */

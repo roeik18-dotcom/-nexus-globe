@@ -106,6 +106,12 @@ export interface ProposedUpdate {
   proposedBy: AgentName;
   proposedAt: string; // ISO 8601
   rationale: string;
+  /**
+   * Accumulated confidence from the orientation evidence accumulator.
+   * Only populated when the proposal comes from orientation inference.
+   * Used by Philos Review Policy to determine the review decision.
+   */
+  accumulatedConfidence?: ConfidenceLevel | null;
 }
 
 /**
@@ -157,7 +163,24 @@ export interface EvidencePackage {
 
 // ── Proposal Lifecycle ─────────────────────────────────────────────────────────
 
-export type ProposalStatus = 'pending' | 'confirmed' | 'rejected' | 'expired';
+export type ProposalStatus =
+  | 'pending_review'              // in Philos queue; Philos-internal
+  | 'pending_user_confirmation'   // user-visible; awaiting user action
+  | 'confirmed'                   // Interpretation written
+  | 'rejected'                    // rejected (by Philos or user)
+  | 'expired';                    // expiresAt elapsed; terminal
+
+/**
+ * A single decision made by the Philos Review Policy on a pending_review proposal.
+ * Appended to PendingEssenceProposal.reviewDecisions; never mutated after append.
+ */
+export interface PhilosReviewDecision {
+  readonly decision: 'accept' | 'reject' | 'require_user_confirmation' | 'defer';
+  readonly reason: string;
+  readonly reviewer: 'philos';
+  readonly reviewedAt: string;    // ISO 8601
+  readonly policyVersion: string; // e.g. '1.0'
+}
 
 /**
  * A pending or terminal proposal record.
@@ -180,6 +203,22 @@ export interface PendingEssenceProposal {
   pipelineStages: PipelineStageSummary[];
   committedInterpretationId?: string;
   rejectionReason?: string;
+  /**
+   * Accumulated confidence at proposal creation time.
+   * Populated for pending_review proposals from orientation inference.
+   * Used by Philos Review Policy. null for proposals that do not come
+   * from the orientation accumulator.
+   */
+  accumulatedConfidence: ConfidenceLevel | null;
+  /**
+   * Append-only audit log of every Philos review decision on this proposal.
+   * Empty for proposals that never entered pending_review.
+   */
+  reviewDecisions: PhilosReviewDecision[];
+  /** Number of times this proposal has been deferred by Philos. */
+  deferCount: number;
+  /** The observation IDs that contributed to this proposal's evidence. */
+  readonly evidenceObservationIds: readonly string[];
 }
 
 // ── Sub-Interface: Read ────────────────────────────────────────────────────────
@@ -304,6 +343,32 @@ export interface EssenceUserActionAPI {
     archivedBy: AgentName,
     reason: string,
   ): Promise<{ archived: true; evolutionEntryId: string }>;
+}
+
+// ── Sub-Interface: Philos Review ──────────────────────────────────────────────
+
+/** Implemented by EssenceProposalService. Used by PhilosReviewConsumer. */
+export interface EssencePhilosReviewAPI {
+  /** Get all pending_review proposals for a profile (Philos-internal queue). */
+  getReviewQueue(profileId: string): Promise<PendingEssenceProposal[]>;
+  /** Get any proposal record by ID, regardless of status. Returns undefined if not found. */
+  getProposalRecord(proposalId: string): PendingEssenceProposal | undefined;
+  /**
+   * Append a Philos review decision and update the proposal's status and deferCount.
+   * Caller is responsible for idempotency; this method always appends.
+   */
+  applyReviewDecision(
+    proposalId: string,
+    decision: PhilosReviewDecision,
+    newStatus: ProposalStatus,
+  ): void;
+  /**
+   * Commit a Philos-accepted pending_review proposal directly to the profile.
+   * Builds the Interpretation from stored fields; does NOT re-run the pipeline.
+   * Provenance: source='agent_inference', createdBy='philos', confidence=accumulatedConfidence.
+   * Sets proposal.status = 'confirmed' and proposal.committedInterpretationId.
+   */
+  commitReviewedProposal(proposal: PendingEssenceProposal): Promise<Interpretation>;
 }
 
 // ── Sub-Interface: Classification ─────────────────────────────────────────────
