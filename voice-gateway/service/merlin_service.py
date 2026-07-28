@@ -390,6 +390,25 @@ async def record_utterance(
     return buf.getvalue()
 
 
+# ── TTS debug helper ──────────────────────────────────────────────────────────
+
+_TTS_DEBUG_PATH = Path("/tmp/merlin_tts_test.mp3")
+
+def _debug_save_tts(data: bytes, label: str = "") -> None:
+    """Write TTS bytes to a stable path and log diagnostics."""
+    try:
+        _TTS_DEBUG_PATH.write_bytes(data)
+        exists = _TTS_DEBUG_PATH.exists()
+        size   = _TTS_DEBUG_PATH.stat().st_size if exists else -1
+    except OSError as e:
+        logger.warning("tts_debug[%s]: write failed: %s", label, e)
+        return
+    logger.info(
+        "tts_debug[%s]: saved=%s  bytes=%d  size_on_disk=%d  hex16=%s",
+        label, _TTS_DEBUG_PATH, len(data), size, data[:16].hex(),
+    )
+
+
 # ── Streaming response with barge-in ─────────────────────────────────────────
 
 async def stream_response(
@@ -448,6 +467,7 @@ async def stream_response(
             if sentence and not barged_in.is_set():
                 logger.info("stream_response: TTS synthesize (%d chars)", len(sentence))
                 audio_bytes = await tts.synthesize(sentence)
+                _debug_save_tts(audio_bytes, label="chunk")
                 logger.info("stream_response: TTS done (%d bytes)", len(audio_bytes))
                 if not barged_in.is_set():
                     logger.info("stream_response: playback start")
@@ -459,6 +479,7 @@ async def stream_response(
             if remainder:
                 logger.info("stream_response: TTS remainder (%d chars)", len(remainder))
                 audio_bytes = await tts.synthesize(remainder)
+                _debug_save_tts(audio_bytes, label="remainder")
                 logger.info("stream_response: TTS remainder done (%d bytes)", len(audio_bytes))
                 if not barged_in.is_set():
                     logger.info("stream_response: playback remainder start")
