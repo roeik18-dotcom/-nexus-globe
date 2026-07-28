@@ -32,8 +32,11 @@ load_dotenv(_ROOT / ".env")
 
 from app.audio.sentence import SentenceBuffer
 from app.config import settings
+from app.memory import MemoryStore, extract_memories
 from app.router import build_orchestrator, build_stt, build_tts
 from service.wake_trigger import WakeTrigger
+
+_MEMORY_FILE = _ROOT / "memory" / "relationship" / "memories.json"
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -198,11 +201,11 @@ async def stream_response(
     player: AudioPlayer,
     transcript: str,
     session_id: str,
-) -> bool:
+) -> tuple[bool, str]:
     """
     Stream LLM → TTS while monitoring the mic for barge-in.
 
-    Returns True if the user interrupted, False if completed normally.
+    Returns (interrupted, full_response_text).
     """
     loop        = asyncio.get_running_loop()
     barged_flag = threading.Event()    # set from audio thread
@@ -255,16 +258,26 @@ async def stream_response(
         "Merlin: %s",
         full_response[:120] + ("…" if len(full_response) > 120 else ""),
     )
-    return barged_in.is_set()
+    return barged_in.is_set(), full_response
 
 
 # ── Conversation session ──────────────────────────────────────────────────────
+
+_MEMORY_REVIEW_PHRASES = {
+    "what do you remember",
+    "show me your memory",
+    "what do you know about me",
+    "מה אתה זוכר",       # Hebrew
+    "מה אתה יודע עליי",  # Hebrew
+}
+
 
 async def run_conversation_session(
     adapter,
     stt,
     tts,
     player: AudioPlayer,
+    store: MemoryStore,
     session_id: str,
 ) -> None:
     """
@@ -272,6 +285,7 @@ async def run_conversation_session(
 
     Stays awake after each response. Returns to standby after
     CONVERSATION_TIMEOUT seconds of silence with no new speech.
+    After each turn, memory extraction runs as a background task.
     """
     while True:
         logger.info("Listening… (%.0fs timeout)", CONVERSATION_TIMEOUT)
@@ -287,11 +301,53 @@ async def run_conversation_session(
 
         logger.info("You: %s", transcript)
 
-        interrupted = await stream_response(adapter, tts, player, transcript, session_id)
+        # Memory review voice command
+        if any(phrase in transcript.lower() for phrase in _MEMORY_REVIEW_PHRASES):
+            review_text = _format_memory_review(store)
+            audio_bytes = await tts.synthesize(review_text)
+            await player.play(audio_bytes)
+            continue
+
+        interrupted, response_text = await stream_response(
+            adapter, tts, player, transcript, session_id
+        )
+
+        # Background memory extraction — runs after response, invisible to user
+        if response_text and settings.anthropic_api_key:
+            asyncio.create_task(
+                _extract_background(transcript, response_text, store, settings.anthropic_api_key)
+            )
 
         if interrupted:
             logger.info("Barge-in detected — listening for next utterance")
-            await asyncio.sleep(0.2)   # brief gap before re-recording
+            await asyncio.sleep(0.2)
+
+
+async def _extract_background(
+    user_text: str,
+    merlin_text: str,
+    store: MemoryStore,
+    api_key: str,
+) -> None:
+    """Run memory extraction as a fire-and-forget background task."""
+    try:
+        new_memories = await extract_memories(user_text, merlin_text, store, api_key)
+        if new_memories:
+            logger.info("Background extraction: %d memory/memories written", len(new_memories))
+    except Exception:
+        logger.debug("Background extraction failed silently", exc_info=True)
+
+
+def _format_memory_review(store: MemoryStore) -> str:
+    """Format top memories as a short spoken summary."""
+    mems = store.for_context(max_items=10)
+    if not mems:
+        return "I don't have any stored memories about you yet. Tell me about yourself and I'll remember."
+
+    lines = ["Here's what I remember about you:"]
+    for m in mems[:8]:
+        lines.append(f"{m.key.replace('_', ' ')}: {m.value}")
+    return " ".join(lines)
 
 
 # ── Main service loop ─────────────────────────────────────────────────────────
@@ -303,17 +359,19 @@ async def main() -> None:
     stt        = build_stt()
     tts        = build_tts()
     player     = AudioPlayer()
+    store      = MemoryStore(_MEMORY_FILE)
     trigger    = WakeTrigger(openai_api_key=settings.openai_api_key)
     session_id = "merlin-bg"
 
     wake_modes = "keyword('merlin') + double-clap" if settings.openai_api_key else "double-clap only"
+    mem_count  = len(store.all())
     logger.info(
-        "Ready. Adapter=%s STT=%s TTS=%s | wake=%s | conversation_timeout=%.0fs",
+        "Ready. Adapter=%s STT=%s TTS=%s | wake=%s | memories=%d",
         adapter.__class__.__name__,
         stt.__class__.__name__,
         tts.__class__.__name__,
         wake_modes,
-        CONVERSATION_TIMEOUT,
+        mem_count,
     )
 
     retry_delay = 2.0
@@ -324,7 +382,7 @@ async def main() -> None:
             await player.chime()
             retry_delay = 2.0
 
-            await run_conversation_session(adapter, stt, tts, player, session_id)
+            await run_conversation_session(adapter, stt, tts, player, store, session_id)
 
         except KeyboardInterrupt:
             logger.info("Interrupted — shutting down")

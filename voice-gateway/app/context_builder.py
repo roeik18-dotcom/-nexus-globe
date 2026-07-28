@@ -110,6 +110,61 @@ class EssenceContextLayer:
         return self._block  # Already formatted with provenance by essence_context.py
 
 
+_RELATIONSHIP_MEMORY_FILE = Path(__file__).parent.parent / "memory" / "relationship" / "memories.json"
+_IMPORTANCE_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+
+
+class RelationshipMemoryLayer:
+    """Injects relationship memories into the system prompt.
+
+    Self-loading: reads memory/relationship/memories.json on every render so
+    memories written by the background extractor appear in the next turn
+    without any change to the ContextBuilder interface.
+    """
+
+    _MAX_ITEMS = 20
+
+    def render(self) -> str:
+        if not _RELATIONSHIP_MEMORY_FILE.exists():
+            return ""
+        try:
+            data    = json.loads(_RELATIONSHIP_MEMORY_FILE.read_text(encoding="utf-8"))
+            raw     = data.get("memories", [])
+        except Exception:
+            return ""
+
+        if not raw:
+            return ""
+
+        ranked = sorted(raw, key=lambda m: (
+            _IMPORTANCE_RANK.get(m.get("importance", "medium"), 2),
+            m.get("last_used", ""),
+        ), reverse=False)
+
+        # Always include critical/high; pad with medium if space allows
+        top = [m for m in ranked if m.get("importance") in ("critical", "high")]
+        if len(top) < self._MAX_ITEMS:
+            medium = [m for m in ranked if m.get("importance") == "medium"]
+            top += medium[: self._MAX_ITEMS - len(top)]
+        top = top[: self._MAX_ITEMS]
+
+        # Group by tier/category for readability
+        groups: dict[str, list[str]] = {}
+        for m in top:
+            label = f"{m.get('tier','personal')}/{m.get('category','fact')}"
+            groups.setdefault(label, []).append(
+                f"  - {m['key']}: {m['value']}"
+            )
+
+        lines = ["## What I know about you (relationship memory)\n"]
+        for label, items in groups.items():
+            lines.append(f"**{label}**")
+            lines.extend(items)
+            lines.append("")
+
+        return "\n".join(lines).strip()
+
+
 class ContextBuilder:
     def __init__(self, layers: list) -> None:
         self._layers = layers
@@ -132,6 +187,7 @@ class ContextBuilder:
             BaseIdentityLayer(persona),
             PersonaLayer(persona),
             PersistentMemoryLayer(recall_result=recall_result, persona=persona),
+            RelationshipMemoryLayer(),
             SessionSummaryLayer(summary),
             CurrentTaskLayer(task),
             ToolMemoryLayer(tool_memory or []),
