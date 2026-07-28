@@ -133,6 +133,27 @@ class KeywordBuffer:
 
     # ── audio callback path (runs on the PortAudio thread) ───────────────────
 
+    def drain_pending(self) -> list[np.ndarray]:
+        """
+        Return and clear any chunks buffered since the last Whisper flush.
+
+        Called immediately after the wake event fires (while the stream is still
+        open so the last callback frames are included).  Audio accumulated during
+        Whisper's network round-trip is the most likely start of the user's
+        command and must not be discarded when the wake InputStream closes.
+        """
+        chunks, self._chunks = self._chunks, []
+        had_speech, self._in_speech = self._in_speech, False
+        if had_speech and chunks:
+            duration_s = sum(len(c) for c in chunks) / self._mic_sr
+            logger.info(
+                "drain_pending: returning %d chunks (%.2fs) from post-keyword buffer",
+                len(chunks), duration_s,
+            )
+        else:
+            logger.info("drain_pending: no post-keyword speech buffered (%d chunks)", len(chunks))
+        return chunks
+
     def feed(self, pcm: np.ndarray, rms: float) -> None:
         now = time.monotonic()
 
@@ -330,16 +351,25 @@ class WakeTrigger:
         self._api_key = openai_api_key
         self._keyword = keyword
 
-    async def wait(self) -> None:
-        """Block until a keyword or double clap is detected."""
+    async def wait(self) -> list[np.ndarray]:
+        """Block until a keyword or double clap is detected.
+
+        Returns any audio chunks buffered after the keyword utterance ended
+        (accumulated during Whisper's network latency).  These are the most
+        likely start of the user's command and should be passed to
+        record_utterance() as a prefill so they are not silently dropped.
+        """
         loop = asyncio.get_running_loop()
         # Run the blocking mic-listen in a thread-pool thread so the asyncio
         # event loop stays idle (releasing the GIL) and PortAudio's C callback
         # thread can acquire it without contention.
-        await loop.run_in_executor(None, self._wait_blocking)
+        return await loop.run_in_executor(None, self._wait_blocking)
 
-    def _wait_blocking(self) -> None:
-        """Open the mic stream and block until a wake event fires."""
+    def _wait_blocking(self) -> list[np.ndarray]:
+        """Open the mic stream and block until a wake event fires.
+
+        Returns any post-keyword audio chunks (see drain_pending).
+        """
         _mic_sanity_check()
 
         import sys
@@ -451,4 +481,14 @@ class WakeTrigger:
             event.wait()
             logger.info("=== event.wait() returned — wake fired ===")
 
-        logger.info("=== InputStream closed — _wait_blocking returning ===")
+            # Drain BEFORE the with-block exits so the callback can still add
+            # frames during the drain itself (stream is still live here).
+            pending: list[np.ndarray] = []
+            if kw_box[0] is not None:
+                pending = kw_box[0].drain_pending()
+
+        logger.info(
+            "=== InputStream closed — _wait_blocking returning (%d pending chunks) ===",
+            len(pending),
+        )
+        return pending

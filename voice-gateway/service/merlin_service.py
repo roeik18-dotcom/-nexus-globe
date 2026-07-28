@@ -126,7 +126,10 @@ class AudioPlayer:
 
 # ── Recording ─────────────────────────────────────────────────────────────────
 
-async def record_utterance(max_initial_silence: float | None = None) -> bytes:
+async def record_utterance(
+    max_initial_silence: float | None = None,
+    prefill: list[np.ndarray] | None = None,
+) -> bytes:
     """
     Record from the mic until VAD-detected silence.
 
@@ -134,6 +137,11 @@ async def record_utterance(max_initial_silence: float | None = None) -> bytes:
     then resamples to SAMPLE_RATE (16 kHz) before returning.  This avoids the
     silent-stream bug on multi-channel devices (e.g. RME Babyface) that do not
     support 16 kHz or single-channel input.
+
+    prefill: mono float32 chunks at native sample rate captured during the
+             wake→record transition gap (returned by WakeTrigger.wait()).
+             Prepended before the InputStream opens so command audio spoken
+             while Whisper was processing the keyword is not lost.
 
     Returns WAV bytes (16 kHz mono int16), or b"" on timeout / no speech.
     """
@@ -233,6 +241,42 @@ async def record_utterance(max_initial_silence: float | None = None) -> bytes:
         loop.call_soon_threadsafe(done.set_result, None)
 
     threading.Thread(target=_watcher, daemon=True).start()
+
+    # ── Prefill: replay audio captured during the wake→record gap ─────────────
+    # These chunks were buffered by KeywordBuffer while Whisper was processing
+    # the keyword.  They are at native sample rate (same as what the InputStream
+    # below will open at) and contain the most likely start of the user's command.
+    if prefill:
+        _t0 = time.monotonic()
+        logger.info(
+            "record_utterance: processing %d prefill chunks from wake stage",
+            len(prefill),
+        )
+        for _chunk in prefill:
+            _rms = float(np.sqrt(np.mean(_chunk ** 2)))
+            if not speech_on[0]:
+                if _rms >= SILENCE_RMS:
+                    speech_on[0]    = True
+                    t_speech_on[0]  = _t0
+                    t_last_voice[0] = _t0
+                    logger.info("record_utterance: VAD on (prefill)  rms=%.4f", _rms)
+            else:
+                if _rms >= SILENCE_RMS:
+                    t_last_voice[0] = _t0
+            if speech_on[0]:
+                chunks.append(_chunk.copy())
+        if speech_on[0]:
+            logger.info(
+                "record_utterance: prefill contained speech (%d chunks buffered)",
+                len(chunks),
+            )
+        else:
+            logger.info(
+                "record_utterance: prefill silent (threshold=%.5f) — "
+                "listening for speech from InputStream",
+                SILENCE_RMS,
+            )
+    # ──────────────────────────────────────────────────────────────────────────
 
     logger.info("[rec] sd.query_devices():\n%s", sd.query_devices())
     logger.info("[rec] sd.default.device     = %s", sd.default.device)
@@ -412,6 +456,7 @@ async def run_conversation_session(
     player: AudioPlayer,
     store: MemoryStore,
     session_id: str,
+    prefill: list[np.ndarray] | None = None,
 ) -> None:
     """
     Multi-turn conversation loop.
@@ -419,11 +464,19 @@ async def run_conversation_session(
     Stays awake after each response. Returns to standby after
     CONVERSATION_TIMEOUT seconds of silence with no new speech.
     After each turn, memory extraction runs as a background task.
+
+    prefill: post-keyword audio from WakeTrigger; passed only on the first
+             turn so command audio spoken during Whisper's latency is not lost.
     """
     logger.info("PIPELINE_STARTED_SUCCESSFULLY")
+    first_prefill = prefill
     while True:
         logger.info("Listening… (%.0fs timeout)", CONVERSATION_TIMEOUT)
-        audio = await record_utterance(max_initial_silence=CONVERSATION_TIMEOUT)
+        audio = await record_utterance(
+            max_initial_silence=CONVERSATION_TIMEOUT,
+            prefill=first_prefill,
+        )
+        first_prefill = None   # prefill is consumed on the first turn only
         logger.info("record_utterance: returned %d bytes", len(audio))
 
         if not audio:
@@ -518,13 +571,15 @@ async def main() -> None:
 
     while True:
         try:
-            await trigger.wait()
-            logger.info("WAKE_HANDLER_ENTERED")
+            pending = await trigger.wait()
+            logger.info("WAKE_HANDLER_ENTERED  pending_chunks=%d", len(pending))
             await player.chime()
             retry_delay = 2.0
 
             logger.info("STARTING_ASSISTANT_PIPELINE")
-            await run_conversation_session(adapter, stt, tts, player, store, session_id)
+            await run_conversation_session(
+                adapter, stt, tts, player, store, session_id, prefill=pending
+            )
 
         except KeyboardInterrupt:
             logger.info("Interrupted — shutting down")
