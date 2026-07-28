@@ -166,10 +166,19 @@ async def record_utterance(max_initial_silence: float | None = None) -> bytes:
         # heartbeat: log on first call and every 2 s while waiting for speech
         if _cb_count[0] == 1 or (now - _cb_last_hb[0]) >= 2.0:
             _cb_last_hb[0] = now
-            logger.info(
-                "record_utterance: cb #%d  rms=%.5f  threshold=%.5f  speech=%s  elapsed=%.1fs",
-                _cb_count[0], rms, SILENCE_RMS, speech_on[0], now - t_start,
-            )
+            if arr.ndim > 1:
+                ch_rms_str = "  ".join(f"{i}:{v:.5f}" for i, v in enumerate(ch_rms))
+                logger.info(
+                    "record_utterance: cb #%d  active_ch=%d  rms=%.5f  threshold=%.5f"
+                    "  speech=%s  elapsed=%.1fs  ch_rms=[%s]",
+                    _cb_count[0], active_ch, rms, SILENCE_RMS,
+                    speech_on[0], now - t_start, ch_rms_str,
+                )
+            else:
+                logger.info(
+                    "record_utterance: cb #%d  rms=%.5f  threshold=%.5f  speech=%s  elapsed=%.1fs",
+                    _cb_count[0], rms, SILENCE_RMS, speech_on[0], now - t_start,
+                )
 
         if not speech_on[0]:
             if rms >= SILENCE_RMS:
@@ -208,6 +217,7 @@ async def record_utterance(max_initial_silence: float | None = None) -> bytes:
 
     threading.Thread(target=_watcher, daemon=True).start()
 
+    dev_info = sd.query_devices(kind="input")
     with sd.InputStream(
         samplerate=None,
         channels=None,
@@ -216,8 +226,8 @@ async def record_utterance(max_initial_silence: float | None = None) -> bytes:
     ) as stream:
         native_sr = int(stream.samplerate)
         logger.info(
-            "record_utterance: stream open — native_sr=%d channels=%d blocksize=%d",
-            native_sr, stream.channels, stream.blocksize,
+            "record_utterance: stream open — device=%r native_sr=%d channels=%d blocksize=%d",
+            dev_info.get("name"), native_sr, stream.channels, stream.blocksize,
         )
 
         # Watchdog: warn if PortAudio hasn't called the callback within 1 s.
