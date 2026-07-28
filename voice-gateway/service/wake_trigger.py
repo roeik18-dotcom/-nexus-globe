@@ -276,8 +276,19 @@ def _mic_sanity_check() -> None:
 
     logger.info("[sanity] === starting mic sanity check ===")
 
+    _sc_first = [True]
+
     def _cb(indata, frames, t, status):
-        logger.info("[sanity] max=%.6f", np.max(np.abs(indata)))
+        if _sc_first[0]:
+            _sc_first[0] = False
+            ch_rms = np.sqrt(np.mean(indata ** 2, axis=0))
+            active = int(np.argmax(ch_rms))
+            logger.info(
+                "[sanity] first_frame  active_ch=%d  ch_rms=[%s]",
+                active,
+                "  ".join(f"{i}:{v:.4f}" for i, v in enumerate(ch_rms)),
+            )
+        logger.info("[sanity] max=%.6f", float(np.max(np.abs(indata))))
 
     with sd.InputStream(callback=_cb):
         logger.info("[sanity] stream open — sd.sleep(10 000 ms)")
@@ -343,21 +354,21 @@ class WakeTrigger:
                 _cb_count[0] += 1
                 now = time.monotonic()
 
+                # pick the loudest channel so 13 silent channels don't dilute the RMS
+                ch_rms_arr = np.sqrt(np.mean(indata ** 2, axis=0))
+                active_ch = int(np.argmax(ch_rms_arr))
+                pcm = indata[:, active_ch].astype(np.float32)
+                rms = float(ch_rms_arr[active_ch])
+
                 if _cb_count[0] == 1 or now - _cb_last_log[0] >= 1.0:
                     _cb_last_log[0] = now
-                    n_ch = indata.shape[1]
-                    ch_rms = [float(np.sqrt(np.mean(indata[:, ch] ** 2))) for ch in range(n_ch)]
-                    active_ch = int(np.argmax(ch_rms))
                     logger.info(
                         "[pt1-cb] #%d shape=%s  indata_max=%.5f  active_ch=%d  ch_rms=[%s]",
                         _cb_count[0], indata.shape,
                         float(np.abs(indata).max()),
                         active_ch,
-                        "  ".join(f"{i}:{v:.4f}" for i, v in enumerate(ch_rms)),
+                        "  ".join(f"{i}:{v:.4f}" for i, v in enumerate(ch_rms_arr)),
                     )
-
-                pcm = indata.mean(axis=1).astype(np.float32)
-                rms = float(np.sqrt(np.mean(pcm ** 2)))
                 clap.feed(rms, now)
                 kw = kw_box[0]
                 if kw:
