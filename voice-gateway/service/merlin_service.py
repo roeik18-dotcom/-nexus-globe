@@ -166,18 +166,23 @@ async def record_utterance(max_initial_silence: float | None = None) -> bytes:
         # heartbeat: log on first call and every 2 s while waiting for speech
         if _cb_count[0] == 1 or (now - _cb_last_hb[0]) >= 2.0:
             _cb_last_hb[0] = now
+            indata_max = float(np.max(np.abs(indata)))
             if arr.ndim > 1:
                 ch_rms_str = "  ".join(f"{i}:{v:.5f}" for i, v in enumerate(ch_rms))
                 logger.info(
-                    "record_utterance: cb #%d  active_ch=%d  rms=%.5f  threshold=%.5f"
-                    "  speech=%s  elapsed=%.1fs  ch_rms=[%s]",
-                    _cb_count[0], active_ch, rms, SILENCE_RMS,
+                    "[rec] cb #%d  shape=%s  indata_max=%.5f"
+                    "  active_ch=%d  rms=%.5f  threshold=%.5f"
+                    "  speech=%s  elapsed=%.1fs\n        ch_rms=[%s]",
+                    _cb_count[0], indata.shape, indata_max,
+                    active_ch, rms, SILENCE_RMS,
                     speech_on[0], now - t_start, ch_rms_str,
                 )
             else:
                 logger.info(
-                    "record_utterance: cb #%d  rms=%.5f  threshold=%.5f  speech=%s  elapsed=%.1fs",
-                    _cb_count[0], rms, SILENCE_RMS, speech_on[0], now - t_start,
+                    "[rec] cb #%d  shape=%s  indata_max=%.5f"
+                    "  rms=%.5f  threshold=%.5f  speech=%s  elapsed=%.1fs",
+                    _cb_count[0], indata.shape, indata_max,
+                    rms, SILENCE_RMS, speech_on[0], now - t_start,
                 )
 
         if not speech_on[0]:
@@ -217,7 +222,11 @@ async def record_utterance(max_initial_silence: float | None = None) -> bytes:
 
     threading.Thread(target=_watcher, daemon=True).start()
 
-    dev_info = sd.query_devices(kind="input")
+    logger.info("[rec] sd.query_devices():\n%s", sd.query_devices())
+    logger.info("[rec] sd.default.device     = %s", sd.default.device)
+    logger.info("[rec] sd.default.samplerate = %s", sd.default.samplerate)
+    logger.info("[rec] sd.default.channels   = %s", sd.default.channels)
+
     with sd.InputStream(
         samplerate=None,
         channels=None,
@@ -226,8 +235,8 @@ async def record_utterance(max_initial_silence: float | None = None) -> bytes:
     ) as stream:
         native_sr = int(stream.samplerate)
         logger.info(
-            "record_utterance: stream open — device=%r native_sr=%d channels=%d blocksize=%d",
-            dev_info.get("name"), native_sr, stream.channels, stream.blocksize,
+            "[rec] stream open — device=%r sr=%d ch=%d blocksize=%d dtype=float32",
+            stream.device, native_sr, stream.channels, stream.blocksize,
         )
 
         # Watchdog: warn if PortAudio hasn't called the callback within 1 s.
