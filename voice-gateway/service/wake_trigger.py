@@ -265,22 +265,14 @@ class WakeTrigger:
             id(_mod) if _mod else -1,
         )
 
-        event = threading.Event()
+        logger.info("sd.query_devices():\n%s", sd.query_devices())
+        logger.info("sd.default.device    = %s", sd.default.device)
+        logger.info("sd.default.channels  = %s", sd.default.channels)
+        logger.info("sd.default.samplerate= %s", sd.default.samplerate)
 
-        mic_sr     = _query_mic_rate()
-        chunk_size = int(mic_sr * CHUNK_MS / 1000)
-
-        clap = ClapDetector(on_double_clap=event)
-        kw   = (
-            KeywordBuffer(event, self._api_key, self._keyword, mic_sr=mic_sr)
-            if self._api_key
-            else None
-        )
-
-        if kw:
-            logger.info("Wake modes: keyword('%s') + double-clap (mic_sr=%d)", self._keyword, mic_sr)
-        else:
-            logger.info("Wake mode: double-clap only (no OpenAI key)")
+        event    = threading.Event()
+        clap     = ClapDetector(on_double_clap=event)
+        kw_box   = [None]   # filled after stream opens so we have the real sr
 
         _cb_count    = [0]
         _cb_last_log = [0.0]
@@ -304,28 +296,43 @@ class WakeTrigger:
                 pcm = indata[:, 0].astype(np.float32)
                 rms = float(np.sqrt(np.mean(pcm ** 2)))
                 clap.feed(rms, now)
+                kw = kw_box[0]
                 if kw:
                     kw.feed(pcm, rms)
             except Exception:
                 logger.exception("exception inside _callback (frame #%d)", _cb_count[0])
 
         logger.info(
-            "=== opening InputStream === id(callback)=%d  callback repr=%r",
-            id(_callback), _callback,
+            "=== opening InputStream (device=None samplerate=None channels=None) === id(callback)=%d",
+            id(_callback),
         )
         with sd.InputStream(
-            samplerate=mic_sr,
-            channels=1,
+            device=None,
+            samplerate=None,
+            channels=None,
             dtype=np.float32,
-            blocksize=chunk_size,
             callback=_callback,
         ) as stream:
+            actual_sr = int(stream.samplerate)
             logger.info(
-                "=== InputStream open === device=%r sr=%d blocksize=%d active=%s",
-                stream.device, stream.samplerate, stream.blocksize, stream.active,
+                "=== InputStream open === device=%r sr=%d channels=%d blocksize=%d active=%s",
+                stream.device, actual_sr, stream.channels, stream.blocksize, stream.active,
             )
+
+            # Build KeywordBuffer now that we know the real sample rate
+            if self._api_key:
+                kw_box[0] = KeywordBuffer(
+                    event, self._api_key, self._keyword, mic_sr=actual_sr,
+                )
+                logger.info(
+                    "Wake modes: keyword('%s') + double-clap (mic_sr=%d)",
+                    self._keyword, actual_sr,
+                )
+            else:
+                logger.info("Wake mode: double-clap only (no OpenAI key, mic_sr=%d)", actual_sr)
+
             logger.info("=== calling event.wait() — stream is live ===")
-            event.wait()  # blocking — holds the stream open until wake fires
+            event.wait()
             logger.info("=== event.wait() returned — wake fired ===")
 
         logger.info("=== InputStream closed — _wait_blocking returning ===")
