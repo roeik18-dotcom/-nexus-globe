@@ -37,7 +37,7 @@ CLAP_GAP_MIN_S       = 0.05
 DOUBLE_CLAP_WINDOW_S = 1.0
 
 # ── Keyword parameters ────────────────────────────────────────────────────────
-VAD_THRESHOLD  = 0.002    # RMS above this = speech (tuned for RME Babyface; speech ~0.001–0.007)
+from service.vad_config import SPEECH_RMS_THRESHOLD as VAD_THRESHOLD  # shared with merlin_service
 SPEECH_MIN_S   = 0.3      # minimum speech length before transcribing
 SILENCE_END_S  = 0.6      # silence this long ends the utterance
 MAX_BUFFER_S   = 4.0      # hard cap: transcribe even if silence never arrives
