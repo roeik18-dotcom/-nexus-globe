@@ -47,6 +47,7 @@ from dotenv import load_dotenv
 load_dotenv(_ROOT / ".env")
 
 from app.audio.sentence import SentenceBuffer
+from app.config import settings
 from app.router import build_orchestrator, build_stt, build_tts
 from service.wake_trigger import WakeTrigger
 
@@ -180,26 +181,50 @@ async def run_turn(
 
 # ── Main service loop ─────────────────────────────────────────────────────────
 
+_CHIME = "/System/Library/Sounds/Tink.aiff"
+
+
+async def _play_chime() -> None:
+    """Play a brief system sound to acknowledge the wake trigger."""
+    await asyncio.get_running_loop().run_in_executor(
+        None,
+        lambda: subprocess.run(
+            ["afplay", _CHIME],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        ),
+    )
+
+
 async def main() -> None:
     logger.info("Merlin service starting…")
 
-    adapter = build_orchestrator()
-    stt     = build_stt()
-    tts     = build_tts()
-    trigger = WakeTrigger()
+    adapter    = build_orchestrator()
+    stt        = build_stt()
+    tts        = build_tts()
+    trigger    = WakeTrigger(openai_api_key=settings.openai_api_key)
     session_id = "merlin-bg"
 
+    wake_modes = "keyword('merlin') + double-clap" if settings.openai_api_key else "double-clap only"
     logger.info(
-        "Ready. Adapter=%s STT=%s TTS=%s — waiting for double clap.",
+        "Ready. Adapter=%s STT=%s TTS=%s | wake=%s",
         adapter.__class__.__name__,
         stt.__class__.__name__,
         tts.__class__.__name__,
+        wake_modes,
     )
+
+    retry_delay = 2.0
 
     while True:
         try:
-            # Phase 1: low-power listening for wake trigger
+            # Phase 1: low-power listening (mic closed between turns)
             await trigger.wait()
+
+            # Acknowledge wake before recording
+            await _play_chime()
+            retry_delay = 2.0
 
             # Phase 2: full conversation turn
             await run_turn(adapter, stt, tts, session_id)
@@ -208,8 +233,9 @@ async def main() -> None:
             logger.info("Interrupted — shutting down")
             break
         except Exception:
-            logger.exception("Error in turn — sleeping 2s then returning to listen")
-            await asyncio.sleep(2.0)
+            logger.exception("Error in turn — retrying in %.0fs", retry_delay)
+            await asyncio.sleep(retry_delay)
+            retry_delay = min(retry_delay * 2, 60.0)
 
 
 if __name__ == "__main__":
