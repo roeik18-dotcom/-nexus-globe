@@ -1,15 +1,25 @@
 /**
  * M0 Checkpoint — Two remaining acceptance criteria before M0 is declared COMPLETE.
  *
- * C3 — Crash mid-consume transaction boundary
- *   A crash after commitReviewedProposal() but before applyReviewDecision() must not
- *   leave the system in an inconsistent state. After recovery:
- *     - exactly one active Interpretation for the orientation node
- *     - proposal reaches 'confirmed' terminal status
+ * C3 — Crash recovery preserves domain invariants through idempotent replay
+ *   Transactional atomicity is intentionally out of scope for M0.
  *
- *   Safety comes from the replace_single_value write disposition: a second commit
- *   archives the first Interpretation and writes a fresh one, so the active-
- *   interpretation invariant is preserved regardless of how many times we retry.
+ *   What is guaranteed:
+ *     - Invariant safety: at most one active Interpretation per orientation node
+ *     - Retry safety: re-running consume() after a crash is always safe
+ *     - Eventual consistency under retry: repeated recovery converges to a
+ *       correct terminal state
+ *
+ *   What is NOT guaranteed (and not required for M0):
+ *     - Atomic commit (profile write and proposal write are two separate files)
+ *     - Exactly-once semantics (a crash produces a visible archived artifact)
+ *     - Transaction boundary (no rollback on partial failure)
+ *
+ *   Mechanism: replace_single_value archives the Interpretation from any prior
+ *   (crashed) commit on retry, so the single-valued invariant is preserved
+ *   regardless of the crash point. When transactional atomicity is added in the
+ *   future (SQLite/Postgres), the existing idempotency invariants remain valid —
+ *   the transaction layer adds exactly-once on top, not instead.
  *
  * C4 — Cold-start performance with a large proposal store
  *   loadAllProposals() on a FileSystemEssenceProposalRepository containing
