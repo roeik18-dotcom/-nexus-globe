@@ -52,7 +52,7 @@ CHANNELS    = 1
 BLOCK_SIZE  = 512
 
 # ── VAD (recording) ───────────────────────────────────────────────────────────
-SILENCE_RMS  = 0.018   # normalized RMS below this = silence
+SILENCE_RMS  = 0.003   # normalized RMS below this = silence (tuned for RME Babyface: floor ~0.0005)
 SILENCE_S    = 0.8     # 0.8 s trailing silence ends an utterance
 MAX_RECORD_S = 30
 
