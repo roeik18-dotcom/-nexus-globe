@@ -14,11 +14,14 @@
 import type { ConfidenceLevel } from './schema';
 import type {
   EssencePhilosReviewAPI,
+  EssenceTimelineRepository,
   PendingEssenceProposal,
   PhilosReviewDecision,
 } from './api';
-import type { Clock } from './pipeline-runner';
-import { systemClock } from './pipeline-runner';
+import type { Clock, IdGenerator } from './pipeline-runner';
+import { systemClock, defaultIdGenerator } from './pipeline-runner';
+import { TIMELINE_SCHEMA_VERSION } from './timeline';
+import { noopTimelineRepository } from './in-memory-timeline-repository';
 
 export const PHILOS_POLICY_VERSION = '1.0';
 export const MAX_DEFER_COUNT = 1;
@@ -27,6 +30,8 @@ export class PhilosReviewConsumer {
   constructor(
     private readonly proposals: EssencePhilosReviewAPI,
     private readonly clock: Clock = systemClock,
+    private readonly timelineRepo: EssenceTimelineRepository = noopTimelineRepository,
+    private readonly idGen: IdGenerator = defaultIdGenerator,
   ) {}
 
   /**
@@ -110,24 +115,148 @@ export class PhilosReviewConsumer {
     proposal: PendingEssenceProposal,
     decision: PhilosReviewDecision,
   ): Promise<PhilosReviewDecision> {
+    const now = new Date(this.clock.now()).toISOString();
     switch (decision.decision) {
       case 'accept': {
-        // Commit the Interpretation first, then mark proposal confirmed.
+        // Commit the Interpretation first (emits interpretation_committed), then mark confirmed.
+        // review_decided fires after all effects — interpretation_committed precedes it in timeline.
         await this.proposals.commitReviewedProposal(proposal);
         await this.proposals.applyReviewDecision(proposal.proposalId, decision, 'confirmed');
+        await this.timelineRepo.append({
+          id: this.idGen.nextId('tevt'),
+          schemaVersion: TIMELINE_SCHEMA_VERSION,
+          eventType: 'review_decided',
+          occurredAt: now,
+          profileId: proposal.profileId,
+          nodeId: proposal.nodeId,
+          proposalId: proposal.proposalId,
+          interpretationId: proposal.committedInterpretationId ?? null,
+          observationId: null,
+          causationEventId: null,
+          payload: {
+            eventType: 'review_decided',
+            proposalId: proposal.proposalId,
+            decision: decision.decision,
+            reason: decision.reason,
+            reviewer: decision.reviewer,
+            policyVersion: decision.policyVersion,
+            newStatus: 'confirmed',
+          },
+        });
         break;
       }
       case 'reject': {
         await this.proposals.applyReviewDecision(proposal.proposalId, decision, 'rejected');
+        const reviewEventId = this.idGen.nextId('tevt');
+        await this.timelineRepo.append({
+          id: reviewEventId,
+          schemaVersion: TIMELINE_SCHEMA_VERSION,
+          eventType: 'review_decided',
+          occurredAt: now,
+          profileId: proposal.profileId,
+          nodeId: proposal.nodeId,
+          proposalId: proposal.proposalId,
+          interpretationId: null,
+          observationId: null,
+          causationEventId: null,
+          payload: {
+            eventType: 'review_decided',
+            proposalId: proposal.proposalId,
+            decision: decision.decision,
+            reason: decision.reason,
+            reviewer: decision.reviewer,
+            policyVersion: decision.policyVersion,
+            newStatus: 'rejected',
+          },
+        });
+        await this.timelineRepo.append({
+          id: this.idGen.nextId('tevt'),
+          schemaVersion: TIMELINE_SCHEMA_VERSION,
+          eventType: 'proposal_rejected',
+          occurredAt: now,
+          profileId: proposal.profileId,
+          nodeId: proposal.nodeId,
+          proposalId: proposal.proposalId,
+          interpretationId: null,
+          observationId: null,
+          causationEventId: reviewEventId,
+          payload: {
+            eventType: 'proposal_rejected',
+            proposalId: proposal.proposalId,
+            reason: decision.reason,
+            rejectedBy: 'philos',
+          },
+        });
         break;
       }
       case 'require_user_confirmation': {
         await this.proposals.applyReviewDecision(proposal.proposalId, decision, 'pending_user_confirmation');
+        const reviewEventId = this.idGen.nextId('tevt');
+        await this.timelineRepo.append({
+          id: reviewEventId,
+          schemaVersion: TIMELINE_SCHEMA_VERSION,
+          eventType: 'review_decided',
+          occurredAt: now,
+          profileId: proposal.profileId,
+          nodeId: proposal.nodeId,
+          proposalId: proposal.proposalId,
+          interpretationId: null,
+          observationId: null,
+          causationEventId: null,
+          payload: {
+            eventType: 'review_decided',
+            proposalId: proposal.proposalId,
+            decision: decision.decision,
+            reason: decision.reason,
+            reviewer: decision.reviewer,
+            policyVersion: decision.policyVersion,
+            newStatus: 'pending_user_confirmation',
+          },
+        });
+        await this.timelineRepo.append({
+          id: this.idGen.nextId('tevt'),
+          schemaVersion: TIMELINE_SCHEMA_VERSION,
+          eventType: 'user_confirmation_required',
+          occurredAt: now,
+          profileId: proposal.profileId,
+          nodeId: proposal.nodeId,
+          proposalId: proposal.proposalId,
+          interpretationId: null,
+          observationId: null,
+          causationEventId: reviewEventId,
+          payload: {
+            eventType: 'user_confirmation_required',
+            proposalId: proposal.proposalId,
+            proposedContent: proposal.proposedContent,
+            reason: decision.reason,
+          },
+        });
         break;
       }
       case 'defer': {
         // Status stays pending_review; deferCount incremented inside applyReviewDecision.
         await this.proposals.applyReviewDecision(proposal.proposalId, decision, 'pending_review');
+        await this.timelineRepo.append({
+          id: this.idGen.nextId('tevt'),
+          schemaVersion: TIMELINE_SCHEMA_VERSION,
+          eventType: 'review_decided',
+          occurredAt: now,
+          profileId: proposal.profileId,
+          nodeId: proposal.nodeId,
+          proposalId: proposal.proposalId,
+          interpretationId: null,
+          observationId: null,
+          causationEventId: null,
+          payload: {
+            eventType: 'review_decided',
+            proposalId: proposal.proposalId,
+            decision: decision.decision,
+            reason: decision.reason,
+            reviewer: decision.reviewer,
+            policyVersion: decision.policyVersion,
+            newStatus: 'pending_review',
+          },
+        });
         break;
       }
     }

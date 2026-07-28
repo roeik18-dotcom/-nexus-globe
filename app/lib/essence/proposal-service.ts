@@ -22,6 +22,7 @@ import type {
   EssencePhilosReviewAPI,
   EssenceProposalAPI,
   EssenceProposalRepository,
+  EssenceTimelineRepository,
   EssenceUserActionAPI,
   PendingEssenceProposal,
   PhilosReviewDecision,
@@ -34,6 +35,8 @@ import type { PipelineResult } from './pipeline';
 import type { EssenceRepository } from './repository';
 import type { EssencePipeline, Clock, IdGenerator } from './pipeline-runner';
 import { systemClock, defaultIdGenerator } from './pipeline-runner';
+import { TIMELINE_SCHEMA_VERSION } from './timeline';
+import { noopTimelineRepository } from './in-memory-timeline-repository';
 import type { UserAuthorizedActionContext } from './actor';
 import { actorLabel } from './actor';
 import { findInterpretation } from './interpretation-utils';
@@ -50,6 +53,7 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     private readonly runner: EssencePipeline,
     private readonly clock: Clock = systemClock,
     private readonly idGen: IdGenerator = defaultIdGenerator,
+    private readonly timelineRepo: EssenceTimelineRepository = noopTimelineRepository,
   ) {}
 
   async proposeUpdate(
@@ -110,6 +114,21 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     const obs = buildProposalObservation(proposal, this.clock, this.idGen);
     await this.repo.appendObservation(profileId, obs);
 
+    const obsEventId = this.idGen.nextId('tevt');
+    await this.timelineRepo.append({
+      id: obsEventId,
+      schemaVersion: TIMELINE_SCHEMA_VERSION,
+      eventType: 'observation_received',
+      occurredAt: new Date(this.clock.now()).toISOString(),
+      profileId,
+      nodeId: proposal.nodeId,
+      proposalId: null,
+      interpretationId: null,
+      observationId: obs.id,
+      causationEventId: null,
+      payload: { eventType: 'observation_received', observationId: obs.id, source: obs.source, recordedBy: obs.recordedBy },
+    });
+
     // Merge and deduplicate validated Essence Observation IDs.
     const allEvidenceIds = [...new Set(allCandidateObsIds)];
 
@@ -169,6 +188,26 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
         deferCount: 0,
         evidenceObservationIds: allEvidenceIds,
       });
+      await this.timelineRepo.append({
+        id: this.idGen.nextId('tevt'),
+        schemaVersion: TIMELINE_SCHEMA_VERSION,
+        eventType: 'proposal_created',
+        occurredAt: proposedAt,
+        profileId,
+        nodeId: proposal.nodeId,
+        proposalId,
+        interpretationId: null,
+        observationId: obs.id,
+        causationEventId: obsEventId,
+        payload: {
+          eventType: 'proposal_created',
+          proposalId,
+          proposedContent: proposal.proposedContent,
+          proposedBy: proposal.proposedBy,
+          accumulatedConfidence: proposal.accumulatedConfidence ?? null,
+          evidenceObservationIds: allEvidenceIds,
+        },
+      });
     }
 
     if (output.result.status === 'pending_user_confirmation') {
@@ -190,6 +229,45 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
         reviewDecisions: [],
         deferCount: 0,
         evidenceObservationIds: allEvidenceIds,
+      });
+      const propEventId = this.idGen.nextId('tevt');
+      await this.timelineRepo.append({
+        id: propEventId,
+        schemaVersion: TIMELINE_SCHEMA_VERSION,
+        eventType: 'proposal_created',
+        occurredAt: proposedAt,
+        profileId,
+        nodeId: proposal.nodeId,
+        proposalId: confirmationToken,
+        interpretationId: null,
+        observationId: obs.id,
+        causationEventId: obsEventId,
+        payload: {
+          eventType: 'proposal_created',
+          proposalId: confirmationToken,
+          proposedContent: proposal.proposedContent,
+          proposedBy: proposal.proposedBy,
+          accumulatedConfidence: proposal.accumulatedConfidence ?? null,
+          evidenceObservationIds: allEvidenceIds,
+        },
+      });
+      await this.timelineRepo.append({
+        id: this.idGen.nextId('tevt'),
+        schemaVersion: TIMELINE_SCHEMA_VERSION,
+        eventType: 'user_confirmation_required',
+        occurredAt: new Date(this.clock.now()).toISOString(),
+        profileId,
+        nodeId: proposal.nodeId,
+        proposalId: confirmationToken,
+        interpretationId: null,
+        observationId: null,
+        causationEventId: propEventId,
+        payload: {
+          eventType: 'user_confirmation_required',
+          proposalId: confirmationToken,
+          proposedContent: proposal.proposedContent,
+          reason: 'low_confidence_requires_user',
+        },
       });
     }
 
@@ -219,6 +297,19 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     if (new Date(record.expiresAt).getTime() < this.clock.now()) {
       record.status = 'expired';
       await this.proposalRepo.saveProposal(record);
+      await this.timelineRepo.append({
+        id: this.idGen.nextId('tevt'),
+        schemaVersion: TIMELINE_SCHEMA_VERSION,
+        eventType: 'proposal_expired',
+        occurredAt: new Date(this.clock.now()).toISOString(),
+        profileId,
+        nodeId: record.nodeId,
+        proposalId: confirmationToken,
+        interpretationId: null,
+        observationId: null,
+        causationEventId: null,
+        payload: { eventType: 'proposal_expired', proposalId: confirmationToken, expiredAt: record.expiresAt },
+      });
       throw new Error('Proposal has expired');
     }
 
@@ -240,7 +331,7 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     }
 
     const interp = output.result.interpretation;
-    await this.writeInterpretation(profile, interp, output.result.writeDisposition);
+    await this.writeInterpretation(profile, interp, output.result.writeDisposition, confirmationToken);
 
     record.status = 'confirmed';
     record.committedInterpretationId = interp.id;
@@ -271,7 +362,27 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     if (reason) record.rejectionReason = reason;
     await this.proposalRepo.saveProposal(record);
 
-    return { rejected: true, recordedAt: new Date(this.clock.now()).toISOString() };
+    const recordedAt = new Date(this.clock.now()).toISOString();
+    await this.timelineRepo.append({
+      id: this.idGen.nextId('tevt'),
+      schemaVersion: TIMELINE_SCHEMA_VERSION,
+      eventType: 'proposal_rejected',
+      occurredAt: recordedAt,
+      profileId,
+      nodeId: record.nodeId,
+      proposalId: confirmationToken,
+      interpretationId: null,
+      observationId: null,
+      causationEventId: null,
+      payload: {
+        eventType: 'proposal_rejected',
+        proposalId: confirmationToken,
+        reason: reason ?? 'user_rejected',
+        rejectedBy: 'user',
+      },
+    });
+
+    return { rejected: true, recordedAt };
   }
 
   async correctItem(
@@ -287,6 +398,21 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     // Persist backing observation (source: user_correction, actor: user).
     const obs = buildCorrectionObservation(correction, this.clock, this.idGen);
     await this.repo.appendObservation(profileId, obs);
+
+    const obsEventId = this.idGen.nextId('tevt');
+    await this.timelineRepo.append({
+      id: obsEventId,
+      schemaVersion: TIMELINE_SCHEMA_VERSION,
+      eventType: 'observation_received',
+      occurredAt: new Date(this.clock.now()).toISOString(),
+      profileId,
+      nodeId: correction.nodeId,
+      proposalId: null,
+      interpretationId: null,
+      observationId: obs.id,
+      causationEventId: null,
+      payload: { eventType: 'observation_received', observationId: obs.id, source: obs.source, recordedBy: obs.recordedBy },
+    });
 
     // Get fresh profile (includes the new observation).
     const profile = await this.repo.getProfile(profileId);
@@ -305,12 +431,12 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     if (output.result.status === 'accepted') {
       const interp = output.result.interpretation;
       if (output.result.writeDisposition === 'replace_single_value') {
-        await this.writeInterpretation(profile, interp, 'replace_single_value');
+        await this.writeInterpretation(profile, interp, 'replace_single_value', null, obsEventId);
       } else {
         if (correction.targetInterpretationId) {
           archiveInterpretation(profile, correction.targetInterpretationId, this.clock);
         }
-        await this.writeInterpretation(profile, interp, 'append');
+        await this.writeInterpretation(profile, interp, 'append', null, obsEventId);
       }
     }
 
@@ -464,7 +590,7 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
       evidenceStatus: proposal.evidenceStatus,
     };
 
-    await this.writeInterpretation(profile, interp, 'replace_single_value');
+    await this.writeInterpretation(profile, interp, 'replace_single_value', proposal.proposalId);
 
     proposal.committedInterpretationId = interp.id;
     await this.proposalRepo.saveProposal(proposal);
@@ -477,6 +603,8 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     profile: EssenceProfile,
     interp: Interpretation,
     writeDisposition: 'append' | 'replace_single_value',
+    proposalId: string | null = null,
+    causationEventId: string | null = null,
   ): Promise<void> {
     if (writeDisposition === 'replace_single_value' && !isOrientationNode(interp.nodeId)) {
       throw new Error(`replace_single_value is only valid for orientation nodes; got '${interp.nodeId}'`);
@@ -522,6 +650,28 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     profile.evolution.push(entry);
     profile.updatedAt = now;
     await this.repo.saveProfile(profile);
+
+    await this.timelineRepo.append({
+      id: this.idGen.nextId('tevt'),
+      schemaVersion: TIMELINE_SCHEMA_VERSION,
+      eventType: 'interpretation_committed',
+      occurredAt: now,
+      profileId: profile.profileId,
+      nodeId: interp.nodeId,
+      proposalId,
+      interpretationId: interp.id,
+      observationId: null,
+      causationEventId,
+      payload: {
+        eventType: 'interpretation_committed',
+        proposalId,
+        interpretationId: interp.id,
+        content: interp.content,
+        confidence: interp.confidence,
+        committedBy: interp.provenance.createdBy,
+        previousInterpretationId,
+      },
+    });
   }
 }
 

@@ -44,6 +44,7 @@ function makeEvent(
     proposalId: null,
     interpretationId: null,
     observationId: null,
+    causationEventId: null,
     ...overrides,
   };
 }

@@ -14,10 +14,12 @@
  * Errors from individual proposal processing are logged and do not abort the run.
  */
 
-import type { EssenceProposalRepository } from './api';
+import type { EssenceProposalRepository, EssenceTimelineRepository } from './api';
 import type { PhilosReviewConsumer } from './philos-review-consumer';
-import type { Clock } from './pipeline-runner';
-import { systemClock } from './pipeline-runner';
+import type { Clock, IdGenerator } from './pipeline-runner';
+import { systemClock, defaultIdGenerator } from './pipeline-runner';
+import { TIMELINE_SCHEMA_VERSION } from './timeline';
+import { noopTimelineRepository } from './in-memory-timeline-repository';
 
 export interface RecoveryReport {
   scanned: number;
@@ -31,6 +33,8 @@ export class EssenceRecoveryRunner {
     private readonly proposalRepo: EssenceProposalRepository,
     private readonly philos: PhilosReviewConsumer,
     private readonly clock: Clock = systemClock,
+    private readonly timelineRepo: EssenceTimelineRepository = noopTimelineRepository,
+    private readonly idGen: IdGenerator = defaultIdGenerator,
   ) {}
 
   async run(): Promise<RecoveryReport> {
@@ -52,6 +56,19 @@ export class EssenceRecoveryRunner {
       if (new Date(proposal.expiresAt).getTime() < now) {
         (proposal as { status: string }).status = 'expired';
         await this.proposalRepo.saveProposal(proposal);
+        await this.timelineRepo.append({
+          id: this.idGen.nextId('tevt'),
+          schemaVersion: TIMELINE_SCHEMA_VERSION,
+          eventType: 'proposal_expired',
+          occurredAt: new Date(now).toISOString(),
+          profileId: proposal.profileId,
+          nodeId: proposal.nodeId,
+          proposalId: proposal.proposalId,
+          interpretationId: null,
+          observationId: null,
+          causationEventId: null,
+          payload: { eventType: 'proposal_expired', proposalId: proposal.proposalId, expiredAt: proposal.expiresAt },
+        });
         report.expired += 1;
         continue;
       }

@@ -69,7 +69,8 @@ export interface ReviewDecidedPayload {
 
 export interface InterpretationCommittedPayload {
   readonly eventType: 'interpretation_committed';
-  readonly proposalId: string;
+  /** null for direct user corrections that bypass the proposal system. */
+  readonly proposalId: string | null;
   readonly interpretationId: string;
   readonly content: string;
   readonly confidence: ConfidenceLevel;
@@ -133,5 +134,11 @@ export interface EssenceTimelineEvent {
   readonly proposalId: string | null;
   readonly interpretationId: string | null;
   readonly observationId: string | null;
+  /**
+   * ID of the timeline event that directly caused this one, when known.
+   * null at workflow entry points and across async boundaries where the
+   * causal event ID is not available without protocol changes.
+   */
+  readonly causationEventId: string | null;
   readonly payload: EssenceTimelinePayload;
 }
