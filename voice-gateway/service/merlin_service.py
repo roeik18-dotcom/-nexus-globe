@@ -81,22 +81,56 @@ class AudioPlayer:
     # ── internal sync play (runs in executor thread) ──────────────────────────
 
     def _play_sync(self, data: bytes) -> None:
-        suffix = ".aiff" if data[:4] == b"FORM" else ".mp3"
+        magic  = data[:4]
+        suffix = ".aiff" if magic == b"FORM" else ".mp3"
+        if magic == b"FORM":
+            fmt = "aiff"
+        elif magic[:3] == b"ID3" or (len(magic) >= 2 and magic[0] == 0xFF and (magic[1] & 0xE0) == 0xE0):
+            fmt = "mp3"
+        else:
+            fmt = f"unknown(0x{magic.hex()})"
+
+        # Save a copy so the file can be tested with afplay manually after the fact.
+        _DEBUG_PATH = Path("/tmp/merlin_tts_test") .with_suffix(suffix)
+        try:
+            _DEBUG_PATH.write_bytes(data)
+        except OSError as e:
+            logger.warning("playback: could not save debug copy: %s", e)
+
+        logger.info(
+            "playback: fmt=%s  bytes=%d  magic=0x%s  debug=%s",
+            fmt, len(data), magic.hex(), _DEBUG_PATH,
+        )
+
         with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
             f.write(data)
             self._tmp = Path(f.name)
+
+        stderr_file = tempfile.NamedTemporaryFile(delete=False, suffix=".stderr")
+        _stderr_path = Path(stderr_file.name)
+        stderr_file.close()
         try:
             self._proc = subprocess.Popen(
                 ["afplay", str(self._tmp)],
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stderr=open(_stderr_path, "wb"),
             )
             self._proc.wait()
+            rc = self._proc.returncode
+            stderr_bytes = _stderr_path.read_bytes()
+            logger.info(
+                "afplay: exit=%d  stderr=%r",
+                rc, stderr_bytes[:300] if stderr_bytes else b"",
+            )
         except (FileNotFoundError, OSError) as e:
             logger.warning("afplay error: %s", e)
         finally:
             if self._tmp:
                 self._tmp.unlink(missing_ok=True)
+            try:
+                _stderr_path.unlink(missing_ok=True)
+            except OSError:
+                pass
             self._tmp  = None
             self._proc = None
 
