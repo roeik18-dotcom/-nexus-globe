@@ -157,17 +157,32 @@ class KeywordBuffer:
     def feed(self, pcm: np.ndarray, rms: float) -> None:
         now = time.monotonic()
 
-        # heartbeat
         self._frame_count += 1
         if rms > self._peak_rms:
             self._peak_rms = rms
-        if self._frame_count % _LOG_INTERVAL_FRAMES == 0:
-            # [POINT 4] rms is the value passed in from _callback — log it alongside peak
+
+        # heartbeat every 50 frames (≈ 1 s at 20 ms blocks)
+        if self._frame_count % 50 == 0:
             logger.info(
-                "VAD heartbeat — peak_rms=%.4f  last_rms=%.4f  threshold=%.4f  in_speech=%s  queue=%d",
-                self._peak_rms, rms, VAD_THRESHOLD, self._in_speech, self._inq.qsize(),
+                "VAD heartbeat — frame=%d  peak_rms=%.6f  cur_rms=%.6f"
+                "  threshold=%.6f  ratio=%.1f%%  in_speech=%s  queue=%d"
+                "  pcm_dtype=%s  pcm_max=%.6f",
+                self._frame_count, self._peak_rms, rms,
+                VAD_THRESHOLD, rms / VAD_THRESHOLD * 100 if VAD_THRESHOLD else 0,
+                self._in_speech, self._inq.qsize(),
+                pcm.dtype, float(np.abs(pcm).max()),
             )
             self._peak_rms = 0.0
+
+        # per-frame trace when signal is at least 5 % of threshold
+        if rms >= VAD_THRESHOLD * 0.05:
+            logger.info(
+                "[vad-near] frame=%d  rms=%.6f  threshold=%.6f  ratio=%.1f%%"
+                "  pcm_dtype=%s  pcm_min=%.6f  pcm_max=%.6f  in_speech=%s",
+                self._frame_count, rms, VAD_THRESHOLD, rms / VAD_THRESHOLD * 100,
+                pcm.dtype, float(pcm.min()), float(np.abs(pcm).max()),
+                self._in_speech,
+            )
 
         if rms >= VAD_THRESHOLD:
             if not self._in_speech:
@@ -222,13 +237,14 @@ class KeywordBuffer:
             "VAD flush — speech_duration=%.2fs"
             "  rms_before_resample=%.5f  max_before=%.5f"
             "  rms_after_resample=%.5f  max_after=%.5f"
-            "  (mic_sr=%d→%d)  queue=%d",
+            "  (mic_sr=%d→%d)  audio_dtype=%s  samples=%d",
             duration_s,
             rms_before, max_before,
             rms_after, max_after,
-            self._mic_sr, WHISPER_SR, self._inq.qsize() + 1,
+            self._mic_sr, WHISPER_SR, audio.dtype, len(audio),
         )
         self._inq.put(audio)
+        logger.info("ENQUEUE — queue_depth=%d  samples=%d", self._inq.qsize(), len(audio))
 
     # ── inference thread ──────────────────────────────────────────────────────
 
@@ -248,15 +264,15 @@ class KeywordBuffer:
             return
 
         while True:
-            audio = self._inq.get()   # already a single resampled np.ndarray
+            audio = self._inq.get()
+            logger.info(
+                "DEQUEUE — samples=%d  dtype=%s  min=%.6f  max=%.6f  rms=%.6f  queue_depth=%d",
+                len(audio), audio.dtype,
+                float(audio.min()), float(np.abs(audio).max()),
+                float(np.sqrt(np.mean(audio ** 2))),
+                self._inq.qsize(),
+            )
             try:
-                # [POINT 3] max immediately after queue.get
-                rms_after = float(np.sqrt(np.mean(audio ** 2)))
-                logger.info(
-                    "[pt3-infer] max_after_get=%.5f  rms_after_get=%.5f  samples=%d",
-                    float(np.max(np.abs(audio))), rms_after, len(audio),
-                )
-
                 duration_s = len(audio) / WHISPER_SR
                 buf        = io.BytesIO()
                 wavfile.write(buf, WHISPER_SR, audio)
@@ -409,33 +425,44 @@ class WakeTrigger:
                 _cb_count[0] += 1
                 now = time.monotonic()
 
-                # pick the loudest channel so 13 silent channels don't dilute the RMS
-                ch_rms_arr = np.sqrt(np.mean(indata ** 2, axis=0))
-                active_ch = int(np.argmax(ch_rms_arr))
-                pcm = indata[:, active_ch].astype(np.float32)
-                rms = float(ch_rms_arr[active_ch])
+                # ── channel selection (safe for both 1-D and N-D indata) ──────────
+                raw_max = float(np.abs(indata).max())
+                raw_min = float(indata.min())
+                # Promote 1-D (mono) to 2-D so the rest of the logic is uniform.
+                # Without this, indata[:, active_ch] throws IndexError on mono
+                # devices and silently skips kw.feed() every frame.
+                indata_2d = indata[:, np.newaxis] if indata.ndim == 1 else indata
+                ch_rms_arr = np.sqrt(np.mean(indata_2d.astype(np.float32) ** 2, axis=0))
+                ch_max_arr = np.abs(indata_2d).max(axis=0)
+                active_ch  = int(np.argmax(ch_rms_arr))
+                pcm        = indata_2d[:, active_ch].astype(np.float32)
+                rms        = float(ch_rms_arr[active_ch])
+                ch_str     = "  ".join(f"{i}:rms={v:.6f},peak={p:.6f}"
+                                       for i, (v, p) in enumerate(zip(ch_rms_arr, ch_max_arr)))
 
-                if _cb_count[0] == 1 or now - _cb_last_log[0] >= 1.0:
+                # ── periodic full-channel log (every 0.2 s) ───────────────────────
+                if _cb_count[0] == 1 or now - _cb_last_log[0] >= 0.2:
                     _cb_last_log[0] = now
-                    if _cb_count[0] == 1:
-                        # First frame: full dtype + raw sample range before any processing
-                        logger.info(
-                            "[cb-frame1] indata.dtype=%s  shape=%s  raw_min=%.6f  raw_max=%.6f"
-                            "  indata_max=%.5f  active_ch=%d  ch_rms=[%s]",
-                            indata.dtype, indata.shape,
-                            float(indata.min()), float(indata.max()),
-                            float(np.abs(indata).max()),
-                            active_ch,
-                            "  ".join(f"{i}:{v:.4f}" for i, v in enumerate(ch_rms_arr)),
-                        )
-                    else:
-                        logger.info(
-                            "[pt1-cb] #%d shape=%s  indata_max=%.5f  active_ch=%d  ch_rms=[%s]",
-                            _cb_count[0], indata.shape,
-                            float(np.abs(indata).max()),
-                            active_ch,
-                            "  ".join(f"{i}:{v:.4f}" for i, v in enumerate(ch_rms_arr)),
-                        )
+                    logger.info(
+                        "[cb] #%d  dtype=%s  shape=%s  raw_min=%.6f  raw_max=%.6f"
+                        "  active_ch=%d  active_rms=%.6f  threshold=%.6f"
+                        "  ch=[%s]",
+                        _cb_count[0], indata.dtype, indata.shape, raw_min, raw_max,
+                        active_ch, rms, VAD_THRESHOLD, ch_str,
+                    )
+
+                # ── per-frame VAD trace: every frame above 5 % of threshold,
+                #    plus a heartbeat every 25 frames so silence is also visible ──
+                above = rms >= VAD_THRESHOLD
+                if above or _cb_count[0] % 25 == 0:
+                    logger.info(
+                        "[vad-frame] #%d  dtype=%s  raw_max=%.6f"
+                        "  active_ch=%d  rms=%.6f  threshold=%.6f  %s",
+                        _cb_count[0], indata.dtype, raw_max,
+                        active_ch, rms, VAD_THRESHOLD,
+                        "SPEECH" if above else "silence",
+                    )
+
                 clap.feed(rms, now)
                 kw = kw_box[0]
                 if kw:
@@ -497,7 +524,8 @@ class WakeTrigger:
             pending = kw_box[0].drain_pending()
 
         logger.info(
-            "=== InputStream closed — _wait_blocking returning (%d pending chunks) ===",
+            "=== _wait_blocking RETURN === pending_chunks=%d  total_pending_samples=%d",
             len(pending),
+            sum(len(c) for c in pending),
         )
         return pending
