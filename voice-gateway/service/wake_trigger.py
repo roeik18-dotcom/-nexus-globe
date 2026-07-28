@@ -112,7 +112,9 @@ class KeywordBuffer:
     ):
         self._trigger  = trigger
         self._api_key  = openai_api_key
-        self._keyword  = keyword.lower()
+        # Match both the English keyword and its Hebrew transliteration so
+        # Whisper transcribing Hebrew speech ("מרלין") also fires the trigger.
+        self._keywords = frozenset({keyword.lower(), "מרלין"})
         self._mic_sr   = mic_sr
 
         self._chunks: list[np.ndarray] = []
@@ -231,10 +233,13 @@ class KeywordBuffer:
                 logger.info("Whisper ← %.2fs audio (samples=%d)", duration_s, len(audio))
                 result = client.audio.transcriptions.create(model="whisper-1", file=buf)
                 text   = result.text.lower()
-                logger.info("keyword scan: %r", text)
+                logger.info("TRANSCRIPT=%r", text)
 
-                if self._keyword in text:
-                    logger.info("'%s' detected — waking Merlin", self._keyword)
+                wake_match = any(kw in text for kw in self._keywords)
+                logger.info("WAKE_MATCH=%s  keywords=%s", wake_match, self._keywords)
+
+                if wake_match:
+                    logger.info("keyword detected — waking Merlin")
                     self._trigger.set()
             except Exception:
                 logger.warning("keyword inference error", exc_info=True)

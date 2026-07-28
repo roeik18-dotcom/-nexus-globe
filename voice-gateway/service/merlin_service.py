@@ -287,6 +287,7 @@ async def run_conversation_session(
     CONVERSATION_TIMEOUT seconds of silence with no new speech.
     After each turn, memory extraction runs as a background task.
     """
+    logger.info("PIPELINE_STARTED_SUCCESSFULLY")
     while True:
         logger.info("Listening… (%.0fs timeout)", CONVERSATION_TIMEOUT)
         audio = await record_utterance(max_initial_silence=CONVERSATION_TIMEOUT)
@@ -379,9 +380,11 @@ async def main() -> None:
     while True:
         try:
             await trigger.wait()
+            logger.info("WAKE_HANDLER_ENTERED")
             await player.chime()
             retry_delay = 2.0
 
+            logger.info("STARTING_ASSISTANT_PIPELINE")
             await run_conversation_session(adapter, stt, tts, player, store, session_id)
 
         except KeyboardInterrupt:
