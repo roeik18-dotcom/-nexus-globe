@@ -138,9 +138,10 @@ class KeywordBuffer:
         if rms > self._peak_rms:
             self._peak_rms = rms
         if self._frame_count % _LOG_INTERVAL_FRAMES == 0:
+            # [POINT 4] rms is the value passed in from _callback — log it alongside peak
             logger.info(
-                "VAD heartbeat — peak_rms=%.4f threshold=%.4f in_speech=%s queue=%d",
-                self._peak_rms, VAD_THRESHOLD, self._in_speech, self._inq.qsize(),
+                "VAD heartbeat — peak_rms=%.4f  last_rms=%.4f  threshold=%.4f  in_speech=%s  queue=%d",
+                self._peak_rms, rms, VAD_THRESHOLD, self._in_speech, self._inq.qsize(),
             )
             self._peak_rms = 0.0
 
@@ -186,9 +187,11 @@ class KeywordBuffer:
             g     = gcd(self._mic_sr, WHISPER_SR)
             audio = resample_poly(audio, WHISPER_SR // g, self._mic_sr // g).astype(np.float32)
 
+        # [POINT 2] max of the audio array immediately before queue.put
         logger.info(
-            "VAD flush — %.2fs (mic_sr=%d→whisper_sr=%d) → queue depth=%d",
-            duration_s, self._mic_sr, WHISPER_SR, self._inq.qsize() + 1,
+            "[pt2-flush] %.2fs  max_before_put=%.5f  (mic_sr=%d→whisper_sr=%d)  queue_depth=%d",
+            duration_s, float(np.max(np.abs(audio))),
+            self._mic_sr, WHISPER_SR, self._inq.qsize() + 1,
         )
         self._inq.put(audio)
 
@@ -212,6 +215,13 @@ class KeywordBuffer:
         while True:
             audio = self._inq.get()   # already a single resampled np.ndarray
             try:
+                # [POINT 3] max immediately after queue.get
+                rms_after = float(np.sqrt(np.mean(audio ** 2)))
+                logger.info(
+                    "[pt3-infer] max_after_get=%.5f  rms_after_get=%.5f  samples=%d",
+                    float(np.max(np.abs(audio))), rms_after, len(audio),
+                )
+
                 duration_s = len(audio) / WHISPER_SR
                 buf        = io.BytesIO()
                 wavfile.write(buf, WHISPER_SR, audio)
@@ -306,10 +316,12 @@ class WakeTrigger:
 
                 if _cb_count[0] == 1 or now - _cb_last_log[0] >= 1.0:
                     _cb_last_log[0] = now
+                    # [POINT 1] all-channel max vs channel-0 max
                     logger.info(
-                        "callback #%d — shape=%s dtype=%s max=%.5f",
-                        _cb_count[0], indata.shape, indata.dtype,
+                        "[pt1-cb] #%d shape=%s  indata_max=%.5f  ch0_max=%.5f",
+                        _cb_count[0], indata.shape,
                         float(np.abs(indata).max()),
+                        float(np.abs(indata[:, 0]).max()),
                     )
 
                 pcm = indata[:, 0].astype(np.float32)
