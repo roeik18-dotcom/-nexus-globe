@@ -351,6 +351,11 @@ class WakeTrigger:
         self._api_key = openai_api_key
         self._keyword = keyword
         self._sanity_done = False   # run _mic_sanity_check only on first wake
+        print(
+            f"[WakeTrigger] __init__ id={id(self)}  sanity_done=False"
+            f"  api_key={'set' if openai_api_key else 'MISSING'}",
+            flush=True,
+        )
 
     async def wait(self) -> list[np.ndarray]:
         """Block until a keyword or double clap is detected.
