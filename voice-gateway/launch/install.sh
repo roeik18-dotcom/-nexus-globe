@@ -114,6 +114,9 @@ cat > "$PLIST_DEST" << PLIST
     <key>WorkingDirectory</key>
     <string>${VOICE_GATEWAY}</string>
 
+    <key>ProcessType</key>
+    <string>Interactive</string>
+
     <key>RunAtLoad</key>
     <true/>
 
