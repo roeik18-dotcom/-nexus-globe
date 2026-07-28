@@ -248,8 +248,14 @@ class WakeTrigger:
 
     async def wait(self) -> None:
         """Block until a keyword or double clap is detected."""
-        loop  = asyncio.get_running_loop()
-        done  = loop.create_future()
+        loop = asyncio.get_running_loop()
+        # Run the blocking mic-listen in a thread-pool thread so the asyncio
+        # event loop stays idle (releasing the GIL) and PortAudio's C callback
+        # thread can acquire it without contention.
+        await loop.run_in_executor(None, self._wait_blocking)
+
+    def _wait_blocking(self) -> None:
+        """Open the mic stream and block until a wake event fires."""
         event = threading.Event()
 
         mic_sr     = _query_mic_rate()
@@ -267,8 +273,8 @@ class WakeTrigger:
         else:
             logger.info("Wake mode: double-clap only (no OpenAI key)")
 
-        _cb_count     = [0]
-        _cb_last_log  = [0.0]
+        _cb_count    = [0]
+        _cb_last_log = [0.0]
 
         def _callback(indata: np.ndarray, frames: int, time_info, status) -> None:
             try:
@@ -278,7 +284,6 @@ class WakeTrigger:
                 _cb_count[0] += 1
                 now = time.monotonic()
 
-                # Log on first frame and every second after that
                 if _cb_count[0] == 1 or now - _cb_last_log[0] >= 1.0:
                     _cb_last_log[0] = now
                     logger.info(
@@ -295,12 +300,6 @@ class WakeTrigger:
             except Exception:
                 logger.exception("exception inside _callback (frame #%d)", _cb_count[0])
 
-        def _watcher() -> None:
-            event.wait()
-            loop.call_soon_threadsafe(done.set_result, None)
-
-        threading.Thread(target=_watcher, daemon=True).start()
-
         with sd.InputStream(
             samplerate=mic_sr,
             channels=1,
@@ -309,7 +308,9 @@ class WakeTrigger:
             callback=_callback,
         ) as stream:
             logger.info(
-                "InputStream open — device=%r sr=%d blocksize=%d",
-                stream.device, stream.samplerate, stream.blocksize,
+                "InputStream open — device=%r sr=%d blocksize=%d active=%s",
+                stream.device, stream.samplerate, stream.blocksize, stream.active,
             )
-            await done
+            event.wait()  # blocking — holds the stream open until wake fires
+
+        logger.info("Wake event received — stream closed")
