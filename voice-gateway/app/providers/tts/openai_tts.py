@@ -22,6 +22,7 @@ class OpenAITTS:
             voice=settings.openai_tts_voice,
             input=text,
             response_format="mp3",
+            speed=settings.openai_tts_speed,
         )
 
         audio = response.content

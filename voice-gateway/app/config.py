@@ -24,8 +24,9 @@ class Settings(BaseSettings):
 
     stt_provider: str = "whisper"
     tts_provider: str = "openai"
-    openai_tts_voice: str = "nova"
+    openai_tts_voice: str = "onyx"
     openai_tts_model: str = "tts-1-hd"
+    openai_tts_speed: float = 1.15
     adapter: str = "claude"
 
     # ── ElevenLabs TTS ────────────────────────────────────────────────────────
