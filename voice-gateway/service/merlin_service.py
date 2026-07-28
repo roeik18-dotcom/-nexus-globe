@@ -10,13 +10,11 @@ Run via LaunchAgent (no terminal required). See launch/install.sh.
 """
 
 import asyncio
-import inspect
 import io
 import logging
 import os
 import subprocess
 import sys
-import tempfile
 import threading
 import time
 from pathlib import Path
@@ -77,70 +75,30 @@ _CHIME = "/System/Library/Sounds/Tink.aiff"
 
 # ── Interruptible audio player ────────────────────────────────────────────────
 
+_TTS_SR = 24_000   # OpenAI TTS PCM sample rate (signed int16, mono)
+
+
 class AudioPlayer:
-    """Plays audio via afplay. interrupt() stops it immediately (barge-in)."""
+    """Plays TTS PCM audio via sounddevice. interrupt() stops it immediately."""
 
     def __init__(self) -> None:
-        self._proc: subprocess.Popen | None = None
-        self._tmp:  Path | None             = None
-
-    # ── internal sync play (runs in executor thread) ──────────────────────────
+        self._interrupted = threading.Event()
 
     def _play_sync(self, data: bytes) -> None:
-        magic  = data[:4]
-        suffix = ".aiff" if magic == b"FORM" else ".mp3"
-        if magic == b"FORM":
-            fmt = "aiff"
-        elif magic[:3] == b"ID3" or (len(magic) >= 2 and magic[0] == 0xFF and (magic[1] & 0xE0) == 0xE0):
-            fmt = "mp3"
-        else:
-            fmt = f"unknown(0x{magic.hex()})"
-
-        # Save a copy so the file can be tested with afplay manually after the fact.
-        _DEBUG_PATH = Path("/tmp/merlin_tts_test") .with_suffix(suffix)
-        try:
-            _DEBUG_PATH.write_bytes(data)
-        except OSError as e:
-            logger.warning("playback: could not save debug copy: %s", e)
-
+        arr = np.frombuffer(data, dtype=np.int16).astype(np.float32) / 32768.0
+        duration = len(arr) / _TTS_SR
+        peak = float(np.max(np.abs(arr))) if arr.size else 0.0
+        rms  = float(np.sqrt(np.mean(arr ** 2))) if arr.size else 0.0
         logger.info(
-            "playback: fmt=%s  bytes=%d  magic=0x%s  debug=%s",
-            fmt, len(data), magic.hex(), _DEBUG_PATH,
+            "playback: pcm  bytes=%d  samples=%d  sr=%d  duration=%.2fs  peak=%.4f  rms=%.4f",
+            len(data), len(arr), _TTS_SR, duration, peak, rms,
         )
-
-        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
-            f.write(data)
-            self._tmp = Path(f.name)
-
-        stderr_file = tempfile.NamedTemporaryFile(delete=False, suffix=".stderr")
-        _stderr_path = Path(stderr_file.name)
-        stderr_file.close()
+        self._interrupted.clear()
         try:
-            self._proc = subprocess.Popen(
-                ["afplay", str(self._tmp)],
-                stdout=subprocess.DEVNULL,
-                stderr=open(_stderr_path, "wb"),
-            )
-            self._proc.wait()
-            rc = self._proc.returncode
-            stderr_bytes = _stderr_path.read_bytes()
-            logger.info(
-                "afplay: exit=%d  stderr=%r",
-                rc, stderr_bytes[:300] if stderr_bytes else b"",
-            )
-        except (FileNotFoundError, OSError) as e:
-            logger.warning("afplay error: %s", e)
-        finally:
-            if self._tmp:
-                self._tmp.unlink(missing_ok=True)
-            try:
-                _stderr_path.unlink(missing_ok=True)
-            except OSError:
-                pass
-            self._tmp  = None
-            self._proc = None
-
-    # ── public async interface ────────────────────────────────────────────────
+            sd.play(arr, samplerate=_TTS_SR)
+            sd.wait()
+        except Exception as e:
+            logger.warning("playback error: %s", e)
 
     async def play(self, data: bytes) -> None:
         if data:
@@ -159,9 +117,8 @@ class AudioPlayer:
 
     def interrupt(self) -> None:
         """Called from the audio callback thread — must be lock-free."""
-        proc = self._proc
-        if proc and proc.poll() is None:
-            proc.terminate()
+        self._interrupted.set()
+        sd.stop()
 
 
 # ── Recording ─────────────────────────────────────────────────────────────────
@@ -396,26 +353,6 @@ async def record_utterance(
     return buf.getvalue()
 
 
-# ── TTS debug helper ──────────────────────────────────────────────────────────
-
-_TTS_DEBUG_PATH = Path("/tmp/merlin_tts_test.mp3")
-
-def _debug_save_tts(data: bytes, label: str = "") -> None:
-    """Write TTS bytes to a stable path and log diagnostics."""
-    logger.info("ENTER _debug_save_tts  label=%s  bytes=%d", label, len(data))
-    try:
-        _TTS_DEBUG_PATH.write_bytes(data)
-        exists = _TTS_DEBUG_PATH.exists()
-        size   = _TTS_DEBUG_PATH.stat().st_size if exists else -1
-    except OSError as e:
-        logger.warning("tts_debug[%s]: write failed: %s", label, e)
-        return
-    logger.info(
-        "tts_debug[%s]: saved=%s  bytes=%d  size_on_disk=%d  hex16=%s",
-        label, _TTS_DEBUG_PATH, len(data), size, data[:16].hex(),
-    )
-
-
 # ── Streaming response with barge-in ─────────────────────────────────────────
 
 async def stream_response(
@@ -458,7 +395,6 @@ async def stream_response(
     buf           = SentenceBuffer(first_min_chars=30)
     full_response = ""
 
-    logger.info("stream_response: BEFORE InputStream open")
     try:
         _barge_stream = sd.InputStream(
             samplerate=None,
@@ -468,37 +404,27 @@ async def stream_response(
             callback=_barge_callback,
         )
     except Exception as _exc:
-        logger.error("stream_response: InputStream OPEN FAILED: %s", _exc, exc_info=True)
+        logger.error("stream_response: InputStream open failed: %s", _exc, exc_info=True)
         raise
 
     with _barge_stream:
-        logger.info("stream_response: InputStream open — LLM streaming start")
+        logger.info("stream_response: LLM streaming start")
         async for chunk in adapter.respond(transcript, session_id=session_id):
             if barged_in.is_set():
                 break
             full_response += chunk
             sentence = buf.push(chunk)
             if sentence and not barged_in.is_set():
-                logger.info("stream_response: PRE synthesize chunk (%d chars)", len(sentence))
                 audio_bytes = await tts.synthesize(sentence)
-                logger.info("stream_response: POST synthesize chunk (%d bytes)", len(audio_bytes))
-                _debug_save_tts(audio_bytes, label="chunk")
                 if not barged_in.is_set():
-                    logger.info("stream_response: PRE play chunk")
                     await player.play(audio_bytes)
-                    logger.info("stream_response: POST play chunk")
 
         if not barged_in.is_set():
             remainder = buf.flush()
             if remainder:
-                logger.info("stream_response: PRE synthesize remainder (%d chars)", len(remainder))
                 audio_bytes = await tts.synthesize(remainder)
-                logger.info("stream_response: POST synthesize remainder (%d bytes)", len(audio_bytes))
-                _debug_save_tts(audio_bytes, label="remainder")
                 if not barged_in.is_set():
-                    logger.info("stream_response: PRE play remainder")
                     await player.play(audio_bytes)
-                    logger.info("stream_response: POST play remainder")
 
     logger.info(
         "Merlin: %s",
@@ -563,13 +489,7 @@ async def run_conversation_session(
         # Memory review voice command
         if any(phrase in transcript.lower() for phrase in _MEMORY_REVIEW_PHRASES):
             review_text = _format_memory_review(store)
-            logger.info("memory review: PRE synthesize")
-            audio_bytes = await tts.synthesize(review_text)
-            logger.info("memory review: POST synthesize (%d bytes)", len(audio_bytes))
-            _debug_save_tts(audio_bytes, label="memory_review")
-            logger.info("memory review: PRE play")
-            await player.play(audio_bytes)
-            logger.info("memory review: POST play")
+            await player.play(await tts.synthesize(review_text))
             continue
 
         logger.info("LLM+TTS: starting stream_response")
@@ -628,15 +548,7 @@ async def main() -> None:
         ).strip()
     except Exception:
         _git_sha = "unknown"
-    logger.info(
-        "IDENTITY  pid=%d  __file__=%s  git=%s"
-        "  stream_response_src=%s  _debug_save_tts_src=%s",
-        os.getpid(),
-        __file__,
-        _git_sha,
-        inspect.getsourcefile(stream_response),
-        inspect.getsourcefile(_debug_save_tts),
-    )
+    logger.info("IDENTITY  pid=%d  __file__=%s  git=%s", os.getpid(), __file__, _git_sha)
     logger.info("Merlin service starting…")
 
     adapter    = build_orchestrator()
