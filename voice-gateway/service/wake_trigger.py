@@ -230,6 +230,23 @@ class KeywordBuffer:
                 logger.warning("keyword inference error", exc_info=True)
 
 
+def _mic_sanity_check() -> None:
+    """
+    Minimal mic test — identical to the standalone script that is known to work.
+    No VAD, no queue, no Whisper, no resampling, no threading, no event logic.
+    """
+    logger.info("[sanity] === starting mic sanity check ===")
+
+    def _cb(indata, frames, t, status):
+        logger.info("[sanity] max=%.6f", np.max(np.abs(indata)))
+
+    with sd.InputStream(callback=_cb):
+        logger.info("[sanity] stream open — sd.sleep(10 000 ms)")
+        sd.sleep(10_000)
+
+    logger.info("[sanity] === mic sanity check done ===")
+
+
 class WakeTrigger:
     """
     Async wake trigger combining 'Hi Merlin' keyword and double-clap detection.
@@ -256,6 +273,8 @@ class WakeTrigger:
 
     def _wait_blocking(self) -> None:
         """Open the mic stream and block until a wake event fires."""
+        _mic_sanity_check()
+
         import sys
         _mod = sys.modules.get(__name__)
         logger.info(
