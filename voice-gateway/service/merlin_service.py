@@ -53,6 +53,7 @@ BLOCK_SIZE  = 512
 
 # ── VAD (recording) ───────────────────────────────────────────────────────────
 from service.vad_config import SPEECH_RMS_THRESHOLD as SILENCE_RMS  # shared with wake_trigger
+logger.info("merlin_service: SILENCE_RMS=%.4f (source: service.vad_config)", SILENCE_RMS)
 SILENCE_S    = 0.8     # 0.8 s trailing silence ends an utterance
 MAX_RECORD_S = 30
 
