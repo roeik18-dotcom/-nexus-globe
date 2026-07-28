@@ -128,43 +128,61 @@ async def record_utterance(max_initial_silence: float | None = None) -> bytes:
     """
     Record from the mic until VAD-detected silence.
 
-    max_initial_silence: if set and no speech begins within this many seconds,
-    returns b"" so the caller knows nothing was said (conversation timeout).
+    Opens at the device's native sample rate and selects the loudest channel,
+    then resamples to SAMPLE_RATE (16 kHz) before returning.  This avoids the
+    silent-stream bug on multi-channel devices (e.g. RME Babyface) that do not
+    support 16 kHz or single-channel input.
 
-    Returns WAV bytes (16 kHz mono int16), or b"" on timeout.
+    Returns WAV bytes (16 kHz mono int16), or b"" on timeout / no speech.
     """
-    chunks: list[np.ndarray] = []
-    silence_blocks = 0
-    total_blocks   = 0
-    initial_blocks = 0
-    speech_started = False
+    from math import gcd as _gcd
+    from scipy.signal import resample_poly as _resample_poly
 
-    max_sil_blks  = int(SILENCE_S    * SAMPLE_RATE / BLOCK_SIZE)
-    max_tot_blks  = int(MAX_RECORD_S * SAMPLE_RATE / BLOCK_SIZE)
-    max_init_blks = (
-        int(max_initial_silence * SAMPLE_RATE / BLOCK_SIZE)
-        if max_initial_silence is not None else None
-    )
+    chunks: list[np.ndarray] = []
     stop = threading.Event()
 
+    t_start      = time.monotonic()
+    t_speech_on  = [0.0]
+    t_last_voice = [0.0]
+    speech_on    = [False]
+
     def _callback(indata: np.ndarray, frames: int, time_info, status) -> None:
-        nonlocal silence_blocks, total_blocks, initial_blocks, speech_started
-        chunks.append(indata.copy())
-        rms = float(np.sqrt(np.mean(indata.astype(np.float32) ** 2)))
+        now = time.monotonic()
 
-        if rms >= SILENCE_RMS:
-            speech_started = True
+        # loudest-channel RMS (handles multi-channel devices like RME Babyface)
+        arr = indata.astype(np.float32)
+        if arr.ndim == 1:
+            pcm = arr
+            rms = float(np.sqrt(np.mean(pcm ** 2)))
+        else:
+            ch_rms    = np.sqrt(np.mean(arr ** 2, axis=0))
+            active_ch = int(np.argmax(ch_rms))
+            pcm       = arr[:, active_ch]
+            rms       = float(ch_rms[active_ch])
 
-        if not speech_started:
-            initial_blocks += 1
-            if max_init_blks and initial_blocks >= max_init_blks:
+        if not speech_on[0]:
+            if rms >= SILENCE_RMS:
+                speech_on[0]    = True
+                t_speech_on[0]  = now
+                t_last_voice[0] = now
+                logger.info("record_utterance: VAD on  rms=%.4f", rms)
+            elif max_initial_silence and (now - t_start) >= max_initial_silence:
+                stop.set()
+                return
+        else:
+            if rms >= SILENCE_RMS:
+                t_last_voice[0] = now
+            silence_s = now - t_last_voice[0]
+            total_s   = now - t_speech_on[0]
+            if silence_s >= SILENCE_S or total_s >= MAX_RECORD_S:
+                logger.info(
+                    "record_utterance: VAD off  silence=%.2fs total=%.2fs",
+                    silence_s, total_s,
+                )
                 stop.set()
                 return
 
-        silence_blocks  = silence_blocks + 1 if rms < SILENCE_RMS else 0
-        total_blocks   += 1
-        if silence_blocks >= max_sil_blks or total_blocks >= max_tot_blks:
-            stop.set()
+        chunks.append(pcm.copy())
 
     loop = asyncio.get_running_loop()
     done = loop.create_future()
@@ -176,20 +194,45 @@ async def record_utterance(max_initial_silence: float | None = None) -> bytes:
     threading.Thread(target=_watcher, daemon=True).start()
 
     with sd.InputStream(
-        samplerate=SAMPLE_RATE,
-        channels=CHANNELS,
-        dtype=np.int16,
-        blocksize=BLOCK_SIZE,
+        samplerate=None,
+        channels=None,
+        dtype=np.float32,
         callback=_callback,
-    ):
+    ) as stream:
+        native_sr = int(stream.samplerate)
+        logger.info(
+            "record_utterance: stream open — native_sr=%d channels=%d blocksize=%d",
+            native_sr, stream.channels, stream.blocksize,
+        )
         await done
 
-    if not speech_started:
+    if not speech_on[0]:
+        logger.info(
+            "record_utterance: no speech in %.1fs — returning to standby",
+            max_initial_silence or 0,
+        )
         return b""
 
-    audio = np.concatenate(chunks, axis=0) if chunks else np.zeros((0, CHANNELS), dtype=np.int16)
-    buf   = io.BytesIO()
-    wavfile.write(buf, SAMPLE_RATE, audio)
+    if not chunks:
+        return b""
+
+    audio = np.concatenate(chunks)
+    logger.info(
+        "record_utterance: captured %.2fs (native_sr=%d samples=%d)",
+        len(audio) / native_sr, native_sr, len(audio),
+    )
+
+    if native_sr != SAMPLE_RATE:
+        g     = _gcd(native_sr, SAMPLE_RATE)
+        audio = _resample_poly(audio, SAMPLE_RATE // g, native_sr // g).astype(np.float32)
+        logger.info(
+            "record_utterance: resampled %d→%d Hz samples=%d",
+            native_sr, SAMPLE_RATE, len(audio),
+        )
+
+    audio_i16 = (np.clip(audio, -1.0, 1.0) * 32767).astype(np.int16)
+    buf = io.BytesIO()
+    wavfile.write(buf, SAMPLE_RATE, audio_i16)
     return buf.getvalue()
 
 
@@ -217,7 +260,12 @@ async def stream_response(
         nonlocal barge_count
         if barged_flag.is_set() or time.monotonic() < grace_until:
             return
-        rms = float(np.sqrt(np.mean(indata[:, 0].astype(np.float32) ** 2)))
+        arr = indata.astype(np.float32)
+        if arr.ndim == 1:
+            rms = float(np.sqrt(np.mean(arr ** 2)))
+        else:
+            ch_rms = np.sqrt(np.mean(arr ** 2, axis=0))
+            rms    = float(ch_rms[int(np.argmax(ch_rms))])
         if rms > BARGE_IN_RMS:
             barge_count += 1
             if barge_count >= BARGE_IN_FRAMES:
@@ -231,28 +279,37 @@ async def stream_response(
     full_response = ""
 
     with sd.InputStream(
-        samplerate=SAMPLE_RATE,
-        channels=1,
+        samplerate=None,
+        channels=None,
         dtype=np.float32,
         blocksize=320,      # 20 ms chunks for low-latency barge detection
         callback=_barge_callback,
     ):
+        logger.info("stream_response: LLM streaming start")
         async for chunk in adapter.respond(transcript, session_id=session_id):
             if barged_in.is_set():
                 break
             full_response += chunk
             sentence = buf.push(chunk)
             if sentence and not barged_in.is_set():
+                logger.info("stream_response: TTS synthesize (%d chars)", len(sentence))
                 audio_bytes = await tts.synthesize(sentence)
+                logger.info("stream_response: TTS done (%d bytes)", len(audio_bytes))
                 if not barged_in.is_set():
+                    logger.info("stream_response: playback start")
                     await player.play(audio_bytes)
+                    logger.info("stream_response: playback done")
 
         if not barged_in.is_set():
             remainder = buf.flush()
             if remainder:
+                logger.info("stream_response: TTS remainder (%d chars)", len(remainder))
                 audio_bytes = await tts.synthesize(remainder)
+                logger.info("stream_response: TTS remainder done (%d bytes)", len(audio_bytes))
                 if not barged_in.is_set():
+                    logger.info("stream_response: playback remainder start")
                     await player.play(audio_bytes)
+                    logger.info("stream_response: playback remainder done")
 
     logger.info(
         "Merlin: %s",
@@ -291,12 +348,15 @@ async def run_conversation_session(
     while True:
         logger.info("Listening… (%.0fs timeout)", CONVERSATION_TIMEOUT)
         audio = await record_utterance(max_initial_silence=CONVERSATION_TIMEOUT)
+        logger.info("record_utterance: returned %d bytes", len(audio))
 
         if not audio:
             logger.info("No speech — returning to standby")
             return
 
+        logger.info("STT: transcribing %d bytes", len(audio))
         transcript = await stt.transcribe(audio)
+        logger.info("STT: transcript=%r", transcript)
         if not transcript.strip():
             continue
 
@@ -305,13 +365,16 @@ async def run_conversation_session(
         # Memory review voice command
         if any(phrase in transcript.lower() for phrase in _MEMORY_REVIEW_PHRASES):
             review_text = _format_memory_review(store)
+            logger.info("memory review: synthesizing response")
             audio_bytes = await tts.synthesize(review_text)
             await player.play(audio_bytes)
             continue
 
+        logger.info("LLM+TTS: starting stream_response")
         interrupted, response_text = await stream_response(
             adapter, tts, player, transcript, session_id
         )
+        logger.info("LLM+TTS: done — interrupted=%s response_len=%d", interrupted, len(response_text))
 
         # Background memory extraction — runs after response, invisible to user
         if response_text and settings.anthropic_api_key:
