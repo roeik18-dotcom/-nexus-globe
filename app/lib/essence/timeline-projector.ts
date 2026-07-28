@@ -26,7 +26,7 @@ import { TIMELINE_SCHEMA_VERSION } from './timeline';
 import { getEssenceNode } from './ontology';
 import type { EssenceProfile, EssenceEvolutionEntry, Interpretation } from './schema';
 import type { EssenceLayer } from './ontology';
-import type { EssenceTimelineEvent, InterpretationCommittedPayload } from './timeline';
+import type { EssenceTimelineEvent, InterpretationCommittedPayload, InterpretationArchivedPayload } from './timeline';
 import type { EssenceTimelineRepository } from './api';
 import type { EssenceRepository } from './repository';
 
@@ -59,6 +59,7 @@ const KNOWN_EVENT_TYPES = new Set<string>([
   'proposal_created',
   'review_decided',
   'interpretation_committed',
+  'interpretation_archived',
   'proposal_rejected',
   'proposal_expired',
   'user_confirmation_required',
@@ -207,8 +208,11 @@ export class EssenceTimelineProjector {
           `EssenceTimelineProjector: unknown eventType '${event.eventType}' in event ${event.id}`,
         );
       }
-      if (event.eventType !== 'interpretation_committed') continue;
-      this.applyInterpretationCommitted(profile, event);
+      if (event.eventType === 'interpretation_committed') {
+        this.applyInterpretationCommitted(profile, event);
+      } else if (event.eventType === 'interpretation_archived') {
+        this.applyInterpretationArchived(profile, event);
+      }
     }
 
     return profile;
@@ -238,6 +242,10 @@ export class EssenceTimelineProjector {
       archiveInProfile(profile, payload.previousInterpretationId, now);
     }
 
+    const source = payload.source ?? 'agent_inference';
+    const observationIds = payload.observationIds ? [...payload.observationIds] : [];
+    const evidenceStatus = (payload.evidenceStatus ?? (observationIds.length > 0 ? 'referenced' : 'unavailable')) as Interpretation['evidenceStatus'];
+
     const interp: Interpretation = {
       id: payload.interpretationId,
       version: 1,
@@ -245,17 +253,17 @@ export class EssenceTimelineProjector {
       layer,
       stabilityClass: node.stabilityClass,
       content: payload.content,
-      observationIds: [],
+      observationIds,
       confidence: payload.confidence,
       interpretationKind: 'probable_interpretation',
       provenance: {
-        source: 'agent_inference',
+        source,
         confidence: payload.confidence,
         createdBy: payload.committedBy,
         firstObservedAt: now,
         lastConfirmedAt: now,
         lastUpdatedAt: now,
-        evidenceIds: [],
+        evidenceIds: observationIds,
         conflictingInterpretationIds: [],
       },
       sensitivity: 'personal',
@@ -264,7 +272,7 @@ export class EssenceTimelineProjector {
       expiresAt: null,
       archivedAt: null,
       conflictIds: [],
-      evidenceStatus: 'referenced',
+      evidenceStatus,
     };
 
     const layerData = profile[layer] as Record<string, Interpretation[]>;
@@ -278,10 +286,30 @@ export class EssenceTimelineProjector {
       nodeId,
       previousInterpretationId: payload.previousInterpretationId,
       newInterpretationId: payload.interpretationId,
-      triggeredBy: 'agent_inference',
+      triggeredBy: source,
       agentName: payload.committedBy,
       timestamp: now,
       note: null,
+    };
+    profile.evolution.push(evoEntry);
+  }
+
+  private applyInterpretationArchived(profile: EssenceProfile, event: EssenceTimelineEvent): void {
+    const payload = event.payload as InterpretationArchivedPayload;
+    const nodeId = event.nodeId ?? payload.interpretationId;
+    const now = event.occurredAt;
+
+    archiveInProfile(profile, payload.interpretationId, now);
+
+    const evoEntry: EssenceEvolutionEntry = {
+      id: `proj_${event.id}`,
+      nodeId,
+      previousInterpretationId: payload.interpretationId,
+      newInterpretationId: payload.interpretationId,
+      triggeredBy: 'agent_inference',
+      agentName: payload.archivedBy,
+      timestamp: now,
+      note: payload.reason,
     };
     profile.evolution.push(evoEntry);
   }

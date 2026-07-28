@@ -11,7 +11,6 @@ import type { EssenceLayer } from './ontology';
 import { getEssenceNode } from './ontology';
 import type {
   Conflict,
-  EssenceEvolutionEntry,
   EssenceProfile,
   Interpretation,
   Observation,
@@ -36,9 +35,9 @@ import type { EssenceRepository } from './repository';
 import type { EssencePipeline, Clock, IdGenerator } from './pipeline-runner';
 import { systemClock, defaultIdGenerator } from './pipeline-runner';
 import { TIMELINE_SCHEMA_VERSION } from './timeline';
-import { noopTimelineRepository } from './in-memory-timeline-repository';
+import { InMemoryEssenceTimelineRepository } from './in-memory-timeline-repository';
+import { EssenceTimelineProjector } from './timeline-projector';
 import type { UserAuthorizedActionContext } from './actor';
-import { actorLabel } from './actor';
 import { findInterpretation } from './interpretation-utils';
 import { isOrientationNode } from './orientation';
 
@@ -47,14 +46,18 @@ export { type Clock };
 const LAYERS: EssenceLayer[] = ['core', 'aspirations', 'expression', 'identity'];
 
 export class EssenceProposalService implements EssenceProposalAPI, EssenceUserActionAPI, EssencePhilosReviewAPI {
+  private readonly _projector: EssenceTimelineProjector;
+
   constructor(
     private readonly repo: EssenceRepository,
     private readonly proposalRepo: EssenceProposalRepository,
     private readonly runner: EssencePipeline,
     private readonly clock: Clock = systemClock,
     private readonly idGen: IdGenerator = defaultIdGenerator,
-    private readonly timelineRepo: EssenceTimelineRepository = noopTimelineRepository,
-  ) {}
+    private readonly timelineRepo: EssenceTimelineRepository = new InMemoryEssenceTimelineRepository(),
+  ) {
+    this._projector = new EssenceTimelineProjector(repo, timelineRepo);
+  }
 
   async proposeUpdate(
     profileId: string,
@@ -433,10 +436,30 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
       if (output.result.writeDisposition === 'replace_single_value') {
         await this.writeInterpretation(profile, interp, 'replace_single_value', null, obsEventId);
       } else {
+        let archiveEventId: string | null = null;
         if (correction.targetInterpretationId) {
-          archiveInterpretation(profile, correction.targetInterpretationId, this.clock);
+          const archNodeId = getInterpretationNodeId(profile, correction.targetInterpretationId) ?? correction.targetInterpretationId;
+          archiveEventId = this.idGen.nextId('tevt');
+          await this.timelineRepo.append({
+            id: archiveEventId,
+            schemaVersion: TIMELINE_SCHEMA_VERSION,
+            eventType: 'interpretation_archived',
+            occurredAt: new Date(this.clock.now()).toISOString(),
+            profileId,
+            nodeId: archNodeId,
+            proposalId: null,
+            interpretationId: correction.targetInterpretationId,
+            observationId: null,
+            causationEventId: obsEventId,
+            payload: {
+              eventType: 'interpretation_archived',
+              interpretationId: correction.targetInterpretationId,
+              archivedBy: 'user',
+              reason: 'user_correction',
+            },
+          });
         }
-        await this.writeInterpretation(profile, interp, 'append', null, obsEventId);
+        await this.writeInterpretation(profile, interp, 'append', null, archiveEventId ?? obsEventId);
       }
     }
 
@@ -455,26 +478,37 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
     const profile = await this.repo.getProfile(profileId);
     if (!profile) throw new Error(`Profile not found: ${profileId}`);
 
-    const archivedAt = new Date(this.clock.now()).toISOString();
-    archiveInterpretation(profile, interpretationId, this.clock, archivedAt);
-
     const nodeId = getInterpretationNodeId(profile, interpretationId) ?? interpretationId;
-    const entryId = this.idGen.nextId('evo');
-    const entry: EssenceEvolutionEntry = {
-      id: entryId,
-      nodeId,
-      previousInterpretationId: interpretationId,
-      newInterpretationId: interpretationId,
-      triggeredBy: 'agent_inference',
-      agentName: archivedBy,
-      timestamp: archivedAt,
-      note: reason,
-    };
-    profile.evolution.push(entry);
-    profile.updatedAt = archivedAt;
-    await this.repo.saveProfile(profile);
+    const archivedAt = new Date(this.clock.now()).toISOString();
+    const eventId = this.idGen.nextId('tevt');
 
-    return { archived: true, evolutionEntryId: entryId };
+    await this.timelineRepo.append({
+      id: eventId,
+      schemaVersion: TIMELINE_SCHEMA_VERSION,
+      eventType: 'interpretation_archived',
+      occurredAt: archivedAt,
+      profileId,
+      nodeId,
+      proposalId: null,
+      interpretationId,
+      observationId: null,
+      causationEventId: null,
+      payload: {
+        eventType: 'interpretation_archived',
+        interpretationId,
+        archivedBy,
+        reason,
+      },
+    });
+
+    const projected = await this._projector.rebuildProfile(profileId);
+    const merged = this.mergeProjectionIntoProfile(profile, projected);
+    // Fallback for pre-timeline interpretations: ensure the interpretation is archived
+    // in the merged profile even if the projector could not find it (no prior timeline event).
+    archiveInterpretation(merged, interpretationId, this.clock, archivedAt);
+    await this.repo.saveProfile(merged);
+
+    return { archived: true, evolutionEntryId: `proj_${eventId}` };
   }
 
   /**
@@ -612,44 +646,19 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
 
     const now = new Date(this.clock.now()).toISOString();
     let previousInterpretationId: string | null = null;
-    let additionalArchivedNote: string | null = null;
+    let preTimelineActiveIds: string[] = [];
 
     if (writeDisposition === 'replace_single_value') {
       const layerData = profile[interp.layer] as Record<string, Interpretation[]>;
-      // Capture IDs before archiving so previousInterpretationId is non-null when a prior existed.
-      const activeIds = (layerData[interp.nodeId] ?? [])
+      preTimelineActiveIds = (layerData[interp.nodeId] ?? [])
         .filter(p => !p.archivedAt)
         .map(p => p.id);
-      previousInterpretationId = activeIds[0] ?? null;
-      if (activeIds.length > 1) {
-        additionalArchivedNote = `Additional archived: ${activeIds.slice(1).join(', ')}`;
-      }
-      for (const prev of layerData[interp.nodeId] ?? []) {
-        if (!prev.archivedAt) archiveInterpretation(profile, prev.id, this.clock, now);
-      }
-      // Resolve open preference_shift conflicts that referenced the archived interpretations.
-      for (const archivedId of activeIds) {
+      previousInterpretationId = preTimelineActiveIds[0] ?? null;
+      // Resolve preference_shift conflicts on the stored profile before projecting.
+      for (const archivedId of preTimelineActiveIds) {
         resolveConflictsForArchived(profile, archivedId, interp.id, now);
       }
     }
-
-    const layerData = profile[interp.layer] as Record<string, Interpretation[]>;
-    if (!layerData[interp.nodeId]) layerData[interp.nodeId] = [];
-    layerData[interp.nodeId].push(interp);
-
-    const entry: EssenceEvolutionEntry = {
-      id: this.idGen.nextId('evo'),
-      nodeId: interp.nodeId,
-      previousInterpretationId,
-      newInterpretationId: interp.id,
-      triggeredBy: interp.provenance.source,
-      agentName: interp.provenance.createdBy,
-      timestamp: now,
-      note: additionalArchivedNote,
-    };
-    profile.evolution.push(entry);
-    profile.updatedAt = now;
-    await this.repo.saveProfile(profile);
 
     await this.timelineRepo.append({
       id: this.idGen.nextId('tevt'),
@@ -670,8 +679,61 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
         confidence: interp.confidence,
         committedBy: interp.provenance.createdBy,
         previousInterpretationId,
+        observationIds: interp.observationIds,
+        source: interp.provenance.source,
+        evidenceStatus: interp.evidenceStatus,
       },
     });
+
+    const projected = await this._projector.rebuildProfile(profile.profileId);
+    const merged = this.mergeProjectionIntoProfile(profile, projected);
+
+    // Post-merge: reinstate and archive pre-timeline active interpretations that
+    // were supposed to be replaced but aren't in the projected profile (because
+    // they predate the timeline). The projector can only archive what it knows
+    // about; interpretations not yet in the timeline are handled here.
+    if (preTimelineActiveIds.length > 0) {
+      const mergedLayer = merged[interp.layer] as Record<string, Interpretation[]>;
+      const mergedInterps = mergedLayer[interp.nodeId] ?? [];
+      const mergedIdSet = new Set(mergedInterps.map(i => i.id));
+      const storedLayer = profile[interp.layer] as Record<string, Interpretation[]>;
+      const preTimelineArchived: Interpretation[] = [];
+      for (const id of preTimelineActiveIds) {
+        if (!mergedIdSet.has(id)) {
+          const found = (storedLayer[interp.nodeId] ?? []).find(i => i.id === id);
+          if (found) preTimelineArchived.push({ ...found, archivedAt: now });
+        }
+      }
+      if (preTimelineArchived.length > 0) {
+        mergedLayer[interp.nodeId] = [...preTimelineArchived, ...mergedInterps];
+      }
+    }
+
+    await this.repo.saveProfile(merged);
+  }
+
+  private mergeProjectionIntoProfile(
+    stored: EssenceProfile,
+    projected: EssenceProfile,
+  ): EssenceProfile {
+    // evolution[] is entirely owned by the Timeline projection.
+    const merged: EssenceProfile = { ...stored, evolution: projected.evolution };
+
+    // For each interpretation layer, replace only the nodes that appear in the
+    // projection (nodes with at least one timeline event). Nodes absent from the
+    // projection retain their stored data — backward-compatible with pre-timeline
+    // data and test fixtures that seed directly into the profile store.
+    for (const layer of LAYERS) {
+      const storedLayer = { ...(stored[layer] as Record<string, Interpretation[]>) };
+      const projLayer = projected[layer] as Record<string, Interpretation[]>;
+      for (const nodeId of Object.keys(projLayer)) {
+        storedLayer[nodeId] = projLayer[nodeId];
+      }
+      (merged[layer] as Record<string, Interpretation[]>) = storedLayer;
+    }
+
+    if (projected.updatedAt) merged.updatedAt = projected.updatedAt;
+    return merged;
   }
 }
 

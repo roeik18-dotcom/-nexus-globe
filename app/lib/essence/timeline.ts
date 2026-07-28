@@ -1,5 +1,5 @@
 /**
- * Essence · Timeline Domain Model (M1-1A)
+ * Essence · Timeline Domain Model (M1-1A / M1-1E)
  *
  * The Essence Timeline is the authoritative append-only history of every
  * meaningful write in the Essence system.
@@ -9,11 +9,15 @@
  *   profile.evolution[] is a derived read projection, rebuilt by replay.
  *   No component may write to evolution[] except the Timeline projector.
  *
+ * H2 invariant:
+ *   Events are never edited or deleted. Corrections are new events.
+ *
  * Event type taxonomy:
  *   observation_received         — a raw signal was recorded for a profile
  *   proposal_created             — an agent submitted a proposed Essence update
  *   review_decided               — Philos made a review decision on a proposal
  *   interpretation_committed     — a reviewed proposal was committed to the profile
+ *   interpretation_archived      — an interpretation was archived (M1-1E)
  *   proposal_rejected            — Philos or policy permanently rejected a proposal
  *   proposal_expired             — a proposal's TTL elapsed before it was acted on
  *   user_confirmation_required   — Philos deferred a proposal to the user
@@ -35,6 +39,7 @@ export type EssenceTimelineEventType =
   | 'proposal_created'
   | 'review_decided'
   | 'interpretation_committed'
+  | 'interpretation_archived'
   | 'proposal_rejected'
   | 'proposal_expired'
   | 'user_confirmation_required';
@@ -77,6 +82,20 @@ export interface InterpretationCommittedPayload {
   readonly committedBy: string;
   /** The interpretation that was archived when this one was written, if any. */
   readonly previousInterpretationId: string | null;
+  /** Observation IDs backing this interpretation (M1-1E: enables full replay). */
+  readonly observationIds?: readonly string[];
+  /** Provenance source of this interpretation (M1-1E). */
+  readonly source?: ObservationSource;
+  /** Evidence status at commit time (M1-1E). */
+  readonly evidenceStatus?: string;
+}
+
+/** Emitted when an interpretation is explicitly archived (M1-1E). */
+export interface InterpretationArchivedPayload {
+  readonly eventType: 'interpretation_archived';
+  readonly interpretationId: string;
+  readonly archivedBy: string;
+  readonly reason: string;
 }
 
 export interface ProposalRejectedPayload {
@@ -105,6 +124,7 @@ export type EssenceTimelinePayload =
   | ProposalCreatedPayload
   | ReviewDecidedPayload
   | InterpretationCommittedPayload
+  | InterpretationArchivedPayload
   | ProposalRejectedPayload
   | ProposalExpiredPayload
   | UserConfirmationRequiredPayload;

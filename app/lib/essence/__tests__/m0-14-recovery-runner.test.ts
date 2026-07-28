@@ -356,6 +356,7 @@ describe('M0-14 (R4): report counts are accurate for a mixed proposal set', () =
       accumulatedConfidence: 'high',
       reviewDecisions: [],
       deferCount: 0,
+      evidenceObservationIds: [],
     });
 
     const instB = freshInstances();
@@ -420,6 +421,7 @@ describe('M0-14 (R5): error in one proposal does not abort recovery run', () => 
       accumulatedConfidence: 'high',
       reviewDecisions: [],
       deferCount: 0,
+      evidenceObservationIds: [],
     });
 
     const report = await runner.run();

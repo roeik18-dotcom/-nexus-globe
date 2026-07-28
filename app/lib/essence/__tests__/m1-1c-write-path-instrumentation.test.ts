@@ -770,6 +770,7 @@ describe('M1-1C C5: failure policy — timeline append failure fails the busines
       async loadByProfile(_p) { return []; },
       async loadByProposal(_p) { return []; },
       async loadByInterpretation(_i) { return []; },
+      async loadAll() { return []; },
     };
   }
 
