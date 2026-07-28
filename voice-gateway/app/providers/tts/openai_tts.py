@@ -26,5 +26,6 @@ class OpenAITTS:
         )
 
         audio = response.content
-        logger.debug("openai_tts synthesized %d chars → %d bytes", len(text), len(audio))
+        logger.info("openai_tts voice=%s speed=%.2f %d chars → %d bytes",
+                    settings.openai_tts_voice, settings.openai_tts_speed, len(text), len(audio))
         return audio
