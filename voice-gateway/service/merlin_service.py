@@ -53,7 +53,8 @@ BLOCK_SIZE  = 512
 
 # ── VAD (recording) ───────────────────────────────────────────────────────────
 from service.vad_config import SPEECH_RMS_THRESHOLD as SILENCE_RMS  # shared with wake_trigger
-logger.info("merlin_service: SILENCE_RMS=%.4f (source: service.vad_config)", SILENCE_RMS)
+# print() survives before logging handlers are wired up
+print(f"[merlin_service] SILENCE_RMS={SILENCE_RMS:.5f} loaded from service.vad_config", flush=True)
 SILENCE_S    = 0.8     # 0.8 s trailing silence ends an utterance
 MAX_RECORD_S = 30
 
@@ -138,6 +139,11 @@ async def record_utterance(max_initial_silence: float | None = None) -> bytes:
     """
     from math import gcd as _gcd
     from scipy.signal import resample_poly as _resample_poly
+
+    logger.info(
+        "record_utterance: SILENCE_RMS=%.5f id(SILENCE_RMS)=%d (should equal SPEECH_RMS_THRESHOLD from vad_config)",
+        SILENCE_RMS, id(SILENCE_RMS),
+    )
 
     chunks: list[np.ndarray] = []
     stop = threading.Event()

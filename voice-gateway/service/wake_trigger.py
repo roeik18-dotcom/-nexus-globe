@@ -38,7 +38,7 @@ DOUBLE_CLAP_WINDOW_S = 1.0
 
 # ── Keyword parameters ────────────────────────────────────────────────────────
 from service.vad_config import SPEECH_RMS_THRESHOLD as VAD_THRESHOLD  # shared with merlin_service
-logger.info("wake_trigger: VAD_THRESHOLD=%.4f (source: service.vad_config)", VAD_THRESHOLD)
+print(f"[wake_trigger] VAD_THRESHOLD={VAD_THRESHOLD:.5f} loaded from service.vad_config", flush=True)
 SPEECH_MIN_S   = 0.3      # minimum speech length before transcribing
 SILENCE_END_S  = 0.6      # silence this long ends the utterance
 MAX_BUFFER_S   = 4.0      # hard cap: transcribe even if silence never arrives
