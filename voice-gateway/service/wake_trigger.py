@@ -37,7 +37,7 @@ CLAP_GAP_MIN_S       = 0.05
 DOUBLE_CLAP_WINDOW_S = 1.0
 
 # ── Keyword parameters ────────────────────────────────────────────────────────
-VAD_THRESHOLD  = 0.008    # RMS above this = speech (tuned for RME Babyface ~0.010 peak)
+VAD_THRESHOLD  = 0.002    # RMS above this = speech (tuned for RME Babyface; speech ~0.001–0.007)
 SPEECH_MIN_S   = 0.3      # minimum speech length before transcribing
 SILENCE_END_S  = 0.6      # silence this long ends the utterance
 MAX_BUFFER_S   = 4.0      # hard cap: transcribe even if silence never arrives
@@ -152,7 +152,10 @@ class KeywordBuffer:
                 self._in_speech    = True
                 self._speech_start = now
                 self._chunks       = []
-                logger.info("VAD on  — rms=%.4f", rms)
+                logger.info(
+                    "VAD on  — rms=%.4f  wake_vad_threshold=%.4f  speech_start=%.3f",
+                    rms, VAD_THRESHOLD, self._speech_start,
+                )
             self._chunks.append(pcm.copy())
             self._last_speech = now
         else:
@@ -191,7 +194,7 @@ class KeywordBuffer:
 
         # [POINT 2] max of the audio array immediately before queue.put
         logger.info(
-            "[pt2-flush] %.2fs  max_before_put=%.5f  (mic_sr=%d→whisper_sr=%d)  queue_depth=%d",
+            "VAD flush — speech_duration=%.2fs  max=%.5f  (mic_sr=%d→%d)  queue=%d",
             duration_s, float(np.max(np.abs(audio))),
             self._mic_sr, WHISPER_SR, self._inq.qsize() + 1,
         )
@@ -233,7 +236,7 @@ class KeywordBuffer:
                 logger.info("Whisper ← %.2fs audio (samples=%d)", duration_s, len(audio))
                 result = client.audio.transcriptions.create(model="whisper-1", file=buf)
                 text   = result.text.lower()
-                logger.info("TRANSCRIPT=%r", text)
+                logger.info("WAKE_TRANSCRIPT=%r  speech_duration=%.2fs", text, duration_s)
 
                 wake_match = any(kw in text for kw in self._keywords)
                 logger.info("WAKE_MATCH=%s  keywords=%s", wake_match, self._keywords)
