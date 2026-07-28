@@ -120,6 +120,13 @@ def build_stt():
 
 def build_tts():
     name = settings.tts_provider
+    if name == "elevenlabs":
+        if not settings.elevenlabs_api_key:
+            raise ValueError(
+                "ELEVENLABS_API_KEY is missing — required for TTS_PROVIDER=elevenlabs"
+            )
+        from app.providers.tts.elevenlabs_tts import ElevenLabsTTS
+        return ElevenLabsTTS()
     if name == "openai":
         if _missing_key(settings.openai_api_key):
             logger.warning("OPENAI_API_KEY not set — falling back to MockTTS (latency only)")

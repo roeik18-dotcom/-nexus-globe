@@ -25,7 +25,13 @@ class Settings(BaseSettings):
     stt_provider: str = "whisper"
     tts_provider: str = "openai"
     openai_tts_voice: str = "nova"
+    openai_tts_model: str = "tts-1-hd"
     adapter: str = "claude"
+
+    # ── ElevenLabs TTS ────────────────────────────────────────────────────────
+    elevenlabs_api_key: str = ""
+    elevenlabs_voice_id: str = "JBFqnCBsd6RMkjVDRZzb"   # George — deep, British
+    elevenlabs_model: str = "eleven_turbo_v2_5"           # fast + multilingual
 
     claude_model: str = "claude-opus-4-8"
     persona: Literal["jarvis", "philos", "merlin"] = "jarvis"

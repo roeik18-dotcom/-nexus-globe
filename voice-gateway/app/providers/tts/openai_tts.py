@@ -18,7 +18,7 @@ class OpenAITTS:
             return b""
 
         response = await self._client.audio.speech.create(
-            model="tts-1",
+            model=settings.openai_tts_model,
             voice=settings.openai_tts_voice,
             input=text,
             response_format="mp3",
