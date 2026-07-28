@@ -29,10 +29,13 @@ CLAP_GAP_MIN_S       = 0.05
 DOUBLE_CLAP_WINDOW_S = 1.0
 
 # ── Keyword parameters ────────────────────────────────────────────────────────
-VAD_THRESHOLD  = 0.015    # RMS above this = speech
+VAD_THRESHOLD  = 0.008    # RMS above this = speech (tuned for RME Babyface low-gain output)
 SPEECH_MIN_S   = 0.3      # minimum speech length before transcribing
 SILENCE_END_S  = 0.6      # silence this long ends the utterance
 MAX_BUFFER_S   = 4.0      # hard limit: transcribe even if no trailing silence
+
+# ── Diagnostic telemetry ──────────────────────────────────────────────────────
+_LOG_INTERVAL_FRAMES = 250   # log RMS heartbeat every ~5 s (250 × 20 ms)
 
 
 class ClapDetector:
@@ -88,17 +91,31 @@ class KeywordBuffer:
         self._speech_start = 0.0
         self._last_speech  = 0.0
         self._inq: queue.Queue = queue.Queue()
+        self._frame_count = 0
+        self._peak_rms    = 0.0
 
         threading.Thread(target=self._inference_loop, daemon=True).start()
 
     def feed(self, pcm: np.ndarray, rms: float) -> None:
         now = time.monotonic()
 
+        # ── heartbeat telemetry ───────────────────────────────────────────────
+        self._frame_count += 1
+        if rms > self._peak_rms:
+            self._peak_rms = rms
+        if self._frame_count % _LOG_INTERVAL_FRAMES == 0:
+            logger.info(
+                "VAD heartbeat — peak_rms=%.4f threshold=%.4f in_speech=%s queue=%d",
+                self._peak_rms, VAD_THRESHOLD, self._in_speech, self._inq.qsize(),
+            )
+            self._peak_rms = 0.0
+
         if rms >= VAD_THRESHOLD:
             if not self._in_speech:
                 self._in_speech    = True
                 self._speech_start = now
                 self._chunks       = []
+                logger.info("VAD on  — rms=%.4f", rms)
             self._chunks.append(pcm.copy())
             self._last_speech = now
         else:
@@ -112,7 +129,7 @@ class KeywordBuffer:
                     if speech_s >= SPEECH_MIN_S:
                         self._flush()
                     else:
-                        # Too short to be a real utterance; discard.
+                        logger.info("VAD off — utterance too short (%.2fs < %.2fs), discarded", speech_s, SPEECH_MIN_S)
                         self._in_speech = False
                         self._chunks    = []
                 elif total_s >= MAX_BUFFER_S:
@@ -122,6 +139,8 @@ class KeywordBuffer:
         self._in_speech = False
         chunks, self._chunks = self._chunks, []
         if chunks:
+            duration_s = len(chunks) * CHUNK_SIZE / SAMPLE_RATE
+            logger.info("VAD flush — %.2fs of audio → Whisper queue (depth=%d)", duration_s, self._inq.qsize() + 1)
             self._inq.put(chunks)
 
     def _inference_loop(self) -> None:
@@ -139,12 +158,14 @@ class KeywordBuffer:
         while True:
             chunks = self._inq.get()
             try:
-                audio = np.concatenate(chunks, axis=0)
-                buf   = io.BytesIO()
+                audio      = np.concatenate(chunks, axis=0)
+                duration_s = len(audio) / SAMPLE_RATE
+                buf        = io.BytesIO()
                 wavfile.write(buf, SAMPLE_RATE, audio)
                 buf.seek(0)
                 buf.name = "audio.wav"
 
+                logger.info("Whisper ← %.2fs audio (samples=%d)", duration_s, len(audio))
                 result = client.audio.transcriptions.create(model="whisper-1", file=buf)
                 text   = result.text.lower()
                 logger.info("keyword scan: %r", text)
@@ -210,5 +231,9 @@ class WakeTrigger:
             dtype=np.float32,
             blocksize=CHUNK_SIZE,
             callback=_callback,
-        ):
+        ) as stream:
+            logger.info(
+                "InputStream open — device=%r sr=%d blocksize=%d",
+                stream.device, stream.samplerate, stream.blocksize,
+            )
             await done
