@@ -267,15 +267,33 @@ class WakeTrigger:
         else:
             logger.info("Wake mode: double-clap only (no OpenAI key)")
 
+        _cb_count     = [0]
+        _cb_last_log  = [0.0]
+
         def _callback(indata: np.ndarray, frames: int, time_info, status) -> None:
-            if status:
-                logger.warning("InputStream status: %s", status)
-            pcm = indata[:, 0].astype(np.float32)
-            rms = float(np.sqrt(np.mean(pcm ** 2)))
-            now = time.monotonic()
-            clap.feed(rms, now)
-            if kw:
-                kw.feed(pcm, rms)
+            try:
+                if status:
+                    logger.warning("InputStream status: %s", status)
+
+                _cb_count[0] += 1
+                now = time.monotonic()
+
+                # Log on first frame and every second after that
+                if _cb_count[0] == 1 or now - _cb_last_log[0] >= 1.0:
+                    _cb_last_log[0] = now
+                    logger.info(
+                        "callback #%d — shape=%s dtype=%s max=%.5f",
+                        _cb_count[0], indata.shape, indata.dtype,
+                        float(np.abs(indata).max()),
+                    )
+
+                pcm = indata[:, 0].astype(np.float32)
+                rms = float(np.sqrt(np.mean(pcm ** 2)))
+                clap.feed(rms, now)
+                if kw:
+                    kw.feed(pcm, rms)
+            except Exception:
+                logger.exception("exception inside _callback (frame #%d)", _cb_count[0])
 
         def _watcher() -> None:
             event.wait()
