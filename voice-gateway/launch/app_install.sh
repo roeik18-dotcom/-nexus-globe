@@ -4,30 +4,30 @@
 # WHY NOT install.sh?
 # ───────────────────
 # install.sh sets ProgramArguments to [python3, merlin_service.py].
-# When launchd spawns python3 directly, macOS TCC sees no bundle ID in the
-# responsible-process chain and delivers silence from CoreAudio.
+# When launchd spawns python3 directly, TCC has no bundle ID in the
+# responsible-process chain → CoreAudio delivers silence.
 #
-# This script sets ProgramArguments to [Merlin.app/Contents/MacOS/Merlin],
-# so macOS assigns CFBundleIdentifier=com.merlin.voice as the responsible
-# client — the same bundle that received the microphone grant when you ran
-# `open Merlin.app` and clicked Allow.
+# This script sets ProgramArguments to [Merlin.app/Contents/MacOS/Merlin].
+# macOS attributes the process to CFBundleIdentifier=com.merlin.voice, which
+# was granted microphone access when you ran `open Merlin.app` and clicked Allow.
+# The compiled launcher reads MERLIN_PYTHON and MERLIN_SERVICE from env vars
+# (set in EnvironmentVariables below) and execs python3.
 #
-# PREREQUISITES
-# ─────────────
-#   1. build_app.sh  — builds ~/Applications/Merlin.app
-#   2. open ~/Applications/Merlin.app  — user clicks Allow in TCC dialog
-#   3. check_tcc.sh  — confirms com.merlin.voice has auth_value=2
+# PREREQUISITES — run in order:
+#   1. ./launch/build_app.sh
+#   2. open ~/Applications/Merlin.app   → click Allow
+#   3. ./launch/check_tcc.sh            → confirm auth_value=2
+#   4. ./launch/app_install.sh          (this script)
 #
 # USAGE
-# ─────
-#   cd voice-gateway
-#   ./launch/app_install.sh
+#   cd voice-gateway && ./launch/app_install.sh
 
 set -uo pipefail
 
 VOICE_GATEWAY="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_DIR="$HOME/Applications/Merlin.app"
 EXEC="$APP_DIR/Contents/MacOS/Merlin"
+SERVICE="$VOICE_GATEWAY/service/merlin_service.py"
 LABEL="com.merlin.voice"
 PLIST_DEST="$HOME/Library/LaunchAgents/$LABEL.plist"
 LOG_DIR="$HOME/Library/Logs/Merlin"
@@ -43,7 +43,7 @@ err()  { echo "  $FAIL  $1" >&2; }
 die()  { err "$1"; exit 1; }
 
 
-# ── Step 1: Verify Merlin.app exists ─────────────────────────────────────────
+# ── Step 1: Verify Merlin.app ─────────────────────────────────────────────────
 
 step "Step 1 — Merlin.app"
 
@@ -52,9 +52,29 @@ Run first:  $VOICE_GATEWAY/launch/build_app.sh"
 ok "Merlin.app found: $EXEC"
 
 
-# ── Step 2: Check .env ────────────────────────────────────────────────────────
+# ── Step 2: Find Python ───────────────────────────────────────────────────────
 
-step "Step 2 — .env"
+step "Step 2 — Python"
+
+PYTHON=""
+for candidate in \
+    "$VOICE_GATEWAY/.venv/bin/python3" \
+    "/opt/homebrew/bin/python3" \
+    "/usr/local/bin/python3" \
+    "$(command -v python3 2>/dev/null || true)"; do
+  if [[ -n "$candidate" && -x "$candidate" ]]; then
+    PYTHON="$candidate"
+    break
+  fi
+done
+
+[[ -n "$PYTHON" ]] || die "Python 3 not found."
+ok "Python: $PYTHON"
+
+
+# ── Step 3: Check .env ────────────────────────────────────────────────────────
+
+step "Step 3 — .env"
 
 if [[ ! -f "$VOICE_GATEWAY/.env" ]]; then
   die ".env not found. Run from voice-gateway/:
@@ -71,22 +91,20 @@ if ! grep -qE '^ANTHROPIC_API_KEY=.+' "$VOICE_GATEWAY/.env"; then
 fi
 
 
-# ── Step 3: Create log directory ──────────────────────────────────────────────
+# ── Step 4: Log directory ─────────────────────────────────────────────────────
 
-step "Step 3 — Log directory"
+step "Step 4 — Log directory"
 
 mkdir -p "$LOG_DIR"
 ok "Log directory: $LOG_DIR"
 
 
-# ── Step 4: Write plist ───────────────────────────────────────────────────────
+# ── Step 5: Write plist ───────────────────────────────────────────────────────
 
-step "Step 4 — LaunchAgent plist"
+step "Step 5 — LaunchAgent plist"
 
 mkdir -p "$HOME/Library/LaunchAgents"
 
-# ProgramArguments points at the app bundle executable, NOT python3 directly.
-# This is what makes macOS assign com.merlin.voice as the TCC responsible client.
 cat > "$PLIST_DEST" << PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -95,6 +113,11 @@ cat > "$PLIST_DEST" << PLIST
     <key>Label</key>
     <string>${LABEL}</string>
 
+    <!--
+      ProgramArguments points at the compiled Mach-O inside the app bundle.
+      macOS attributes the process to com.merlin.voice (the TCC-granted bundle).
+      The C launcher reads MERLIN_PYTHON and MERLIN_SERVICE from env and execs python3.
+    -->
     <key>ProgramArguments</key>
     <array>
         <string>${EXEC}</string>
@@ -127,6 +150,11 @@ cat > "$PLIST_DEST" << PLIST
         <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
         <key>HOME</key>
         <string>${HOME}</string>
+        <!-- consumed by the compiled C launcher in Merlin.app/Contents/MacOS/Merlin -->
+        <key>MERLIN_PYTHON</key>
+        <string>${PYTHON}</string>
+        <key>MERLIN_SERVICE</key>
+        <string>${SERVICE}</string>
     </dict>
 </dict>
 </plist>
@@ -134,11 +162,13 @@ PLIST
 
 ok "Plist written: $PLIST_DEST"
 ok "ProgramArguments → $EXEC"
+ok "MERLIN_PYTHON → $PYTHON"
+ok "MERLIN_SERVICE → $SERVICE"
 
 
-# ── Step 5: (Re)register the agent ───────────────────────────────────────────
+# ── Step 6: (Re)register the agent ───────────────────────────────────────────
 
-step "Step 5 — LaunchAgent registration"
+step "Step 6 — LaunchAgent registration"
 
 launchctl bootout "$GUI_DOMAIN" "$PLIST_DEST" 2>/dev/null || true
 sleep 1
@@ -152,9 +182,9 @@ else
 fi
 
 
-# ── Step 6: Wait for process ──────────────────────────────────────────────────
+# ── Step 7: Wait for process ──────────────────────────────────────────────────
 
-step "Step 6 — Process startup"
+step "Step 7 — Process startup"
 
 echo "  Waiting for service to start (up to 15 s)…"
 pid=""
@@ -176,29 +206,39 @@ else
 fi
 
 
-# ── Step 7: Verify audio in log ──────────────────────────────────────────────
+# ── Step 8: Audio sanity in log ───────────────────────────────────────────────
 
-step "Step 7 — Audio sanity (wait up to 15 s for [sanity] lines)"
+step "Step 8 — Audio sanity (wait up to 20 s for [sanity] lines)"
 
-for i in $(seq 1 15); do
-  if grep -q '\[sanity\]' "$LOG_FILE" 2>/dev/null; then
+for i in $(seq 1 20); do
+  if grep -q '\[sanity\] max=' "$LOG_FILE" 2>/dev/null; then
     break
   fi
   sleep 1
-  printf "  [%d/15]\r" "$i"
+  printf "  [%d/20]\r" "$i"
 done
 echo
 
 if grep -q '\[sanity\] max=' "$LOG_FILE" 2>/dev/null; then
   echo "  Recent [sanity] max= lines:"
   grep '\[sanity\] max=' "$LOG_FILE" | tail -5 | sed 's/^/    /'
-  peak=$(grep '\[sanity\] max=' "$LOG_FILE" | awk -F'max=' '{print $2}' | sort -rn | head -1)
-  if [[ "${peak%%.*}" -gt 0 ]] 2>/dev/null; then
-    ok "Audio received! peak=$peak — TCC grant is working"
+  # Check if any sample is non-zero
+  if grep '\[sanity\] max=' "$LOG_FILE" | grep -qv 'max=0.000000'; then
+    ok "Audio received — TCC grant is working!"
   else
-    err "Audio is still zero (peak=$peak)"
-    echo "  Check that you have run: open \"$APP_DIR\" and clicked Allow"
-    echo "  Then verify: $VOICE_GATEWAY/launch/check_tcc.sh"
+    err "Audio is still zero"
+    echo
+    echo "  Possible causes:"
+    echo "  a) You did not click Allow when you ran: open \"$APP_DIR\""
+    echo "     Fix: open \"$APP_DIR\" and click Allow, then: launchctl kickstart -k $GUI_DOMAIN/$LABEL"
+    echo
+    echo "  b) TCC grant was not saved — verify:"
+    echo "     $VOICE_GATEWAY/launch/check_tcc.sh"
+    echo
+    echo "  c) The build used the shell-script fallback (clang was missing):"
+    echo "     file \"$EXEC\""
+    echo "     If it says 'shell script', install Xcode CLT: xcode-select --install"
+    echo "     Then rebuild: ./launch/build_app.sh"
   fi
 else
   err "No [sanity] lines in log yet — check $LOG_FILE manually"
@@ -213,7 +253,7 @@ tail -20 "$LOG_FILE" 2>/dev/null | sed 's/^/  /' || true
 
 echo
 echo "══════════════════════════════════════════════════════════════"
-echo "  LaunchAgent reinstalled (ProgramArguments → Merlin.app)."
+echo "  LaunchAgent reinstalled → Merlin.app"
 echo
 echo "  Monitor:  tail -f $LOG_FILE"
 echo "  Status:   launchctl list $LABEL"

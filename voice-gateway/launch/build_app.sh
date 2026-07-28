@@ -3,30 +3,28 @@
 #
 # WHY THIS EXISTS
 # ───────────────
-# macOS TCC (Transparency, Consent, and Control) grants microphone access per
-# *responsible process*.  When launchd spawns python3 directly there is no bundle
-# ID in the process ancestry, so CoreAudio delivers silence regardless of
-# ProcessType.  An app bundle with CFBundleIdentifier + NSMicrophoneUsageDescription
-# causes macOS to prompt the user for microphone permission on first launch.  That
-# grant is then stored in TCC.db for the bundle ID and applies to every subsequent
-# launch — including from the LaunchAgent.
+# macOS TCC grants microphone access per *responsible process*.  When launchd
+# spawns python3 directly there is no bundle ID in the process ancestry, so
+# CoreAudio delivers silence.  A compiled Mach-O inside an app bundle lets
+# macOS attribute the mic request to CFBundleIdentifier=com.merlin.voice.
+# That grant persists across all future launches — including from the LaunchAgent.
 #
 # WHAT IT BUILDS
 # ──────────────
 #   ~/Applications/Merlin.app/
 #     Contents/
-#       Info.plist             — bundle metadata + mic permission string
+#       Info.plist       — bundle metadata + NSMicrophoneUsageDescription
 #       MacOS/
-#         Merlin               — executable: sets PATH/HOME then execs python3 service
-#       Resources/             — (empty, required by macOS)
+#         Merlin         — compiled Mach-O launcher (reads env vars, execs python3)
+#       Resources/
 #
 # USAGE
 # ─────
 #   cd voice-gateway
-#   ./launch/build_app.sh          # builds the app
-#   open ~/Applications/Merlin.app # FIRST TIME: grant mic access in the dialog
-#                                  # then Ctrl+C once dialog is done
-#   ./launch/app_install.sh        # reinstalls LaunchAgent pointing at the app
+#   ./launch/build_app.sh
+#   open ~/Applications/Merlin.app   # triggers mic permission dialog → click Allow
+#   ./launch/check_tcc.sh            # confirm com.merlin.voice auth_value=2
+#   ./launch/app_install.sh          # reinstall LaunchAgent pointing at the app
 
 set -uo pipefail
 
@@ -101,7 +99,7 @@ cat > "$CONTENTS/Info.plist" << PLIST
     <key>LSUIElement</key>
     <true/>
 
-    <!-- required key that triggers the macOS microphone permission dialog -->
+    <!-- triggers the macOS microphone permission dialog on first launch -->
     <key>NSMicrophoneUsageDescription</key>
     <string>Merlin needs microphone access to listen for the wake word "Hi Merlin".</string>
 </dict>
@@ -111,23 +109,61 @@ PLIST
 ok "Info.plist written (bundle ID: $BUNDLE_ID)"
 
 
-# ── Step 4: Write executable ─────────────────────────────────────────────────
+# ── Step 4: Compiled launcher ─────────────────────────────────────────────────
+#
+# A compiled Mach-O binary is definitively attributed to the app bundle by the
+# macOS kernel.  A shell script is ambiguous.  We compile a tiny C launcher
+# that reads MERLIN_PYTHON and MERLIN_SERVICE from the environment (set by the
+# LaunchAgent plist) and execs python3 with those arguments.
 
-step "Step 4 — Executable"
+step "Step 4 — Launcher binary"
 
 EXEC="$CONTENTS/MacOS/Merlin"
+C_SRC="$CONTENTS/MacOS/launcher.c"
 
-cat > "$EXEC" << SCRIPT
+cat > "$C_SRC" << 'C'
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+
+int main(void) {
+    const char *py  = getenv("MERLIN_PYTHON");
+    const char *svc = getenv("MERLIN_SERVICE");
+    if (!py || !svc) {
+        fprintf(stderr, "[Merlin] MERLIN_PYTHON and MERLIN_SERVICE must be set\n");
+        return 1;
+    }
+    char *argv[] = {(char *)py, (char *)svc, (char *)0};
+    execv(py, argv);
+    perror("[Merlin] execv failed");
+    return 1;
+}
+C
+
+COMPILED=0
+if command -v clang &>/dev/null; then
+    if clang -O2 -o "$EXEC" "$C_SRC" 2>&1; then
+        rm -f "$C_SRC"
+        ok "Compiled Mach-O launcher: $EXEC"
+        COMPILED=1
+    else
+        err "clang compile failed — falling back to shell script"
+    fi
+else
+    err "clang not found (install Xcode Command Line Tools: xcode-select --install)"
+    err "Falling back to shell script launcher (less reliable for TCC attribution)"
+fi
+
+if [[ "$COMPILED" -eq 0 ]]; then
+    rm -f "$C_SRC"
+    cat > "$EXEC" << SCRIPT
 #!/usr/bin/env bash
-# Merlin.app launcher — runs inside the bundle's process context so macOS
-# assigns com.merlin.voice as the responsible client for TCC checks.
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
-export HOME="${HOME}"
-exec "${PYTHON}" "${SERVICE}"
+exec "\${MERLIN_PYTHON}" "\${MERLIN_SERVICE}"
 SCRIPT
+    ok "Shell script launcher written (fallback): $EXEC"
+fi
 
 chmod +x "$EXEC"
-ok "Executable written: $EXEC"
 
 
 # ── Step 5: Ad-hoc code signing ──────────────────────────────────────────────
@@ -135,22 +171,22 @@ ok "Executable written: $EXEC"
 step "Step 5 — Code signing"
 
 if command -v codesign &>/dev/null; then
-  if codesign --sign - --force --deep "$APP_DIR" 2>&1; then
-    ok "Ad-hoc signed: $APP_DIR"
-  else
-    err "codesign returned non-zero — continuing anyway (may still work on older macOS)"
-  fi
+    if codesign --sign - --force --deep "$APP_DIR" 2>&1; then
+        ok "Ad-hoc signed: $APP_DIR"
+    else
+        err "codesign returned non-zero — continuing anyway"
+    fi
 else
-  err "codesign not found — skipping signing (will only work if SIP is disabled)"
+    err "codesign not found"
 fi
 
 
-# ── Step 6: Quarantine removal ───────────────────────────────────────────────
+# ── Step 6: Remove quarantine ─────────────────────────────────────────────────
 
 step "Step 6 — Remove quarantine attribute"
 
 xattr -rd com.apple.quarantine "$APP_DIR" 2>/dev/null || true
-ok "Quarantine attribute cleared"
+ok "Quarantine cleared"
 
 
 # ── Done ─────────────────────────────────────────────────────────────────────
@@ -159,19 +195,17 @@ echo
 echo "══════════════════════════════════════════════════════════════"
 echo "  Merlin.app built at: $APP_DIR"
 echo
-echo "  NEXT STEPS:"
+echo "  NEXT STEPS — run in order:"
 echo
-echo "  1. Run the app ONCE to trigger the microphone permission prompt:"
+echo "  1. Launch the app ONCE to trigger the mic permission dialog:"
 echo "       open \"$APP_DIR\""
-echo "     Click ALLOW in the macOS dialog."
-echo "     The app will start the voice service — press Ctrl+C after granting."
+echo "     macOS will ask: 'Merlin wants to access the microphone' → click ALLOW."
+echo "     The service will start in the background."
 echo
 echo "  2. Verify the TCC grant was stored:"
 echo "       $VOICE_GATEWAY/launch/check_tcc.sh"
-echo "     You should see $BUNDLE_ID with auth_value=2 (allowed)."
+echo "     Look for: com.merlin.voice  auth_value=2"
 echo
-echo "  3. Install the LaunchAgent pointing at this app:"
+echo "  3. Reinstall the LaunchAgent pointing at this app:"
 echo "       cd $VOICE_GATEWAY && ./launch/app_install.sh"
-echo
-echo "  Say 'Hi Merlin' or double-clap to wake."
 echo "══════════════════════════════════════════════════════════════"
