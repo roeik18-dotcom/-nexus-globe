@@ -204,8 +204,8 @@ class KeywordBuffer:
             import openai
             client = openai.OpenAI(api_key=self._api_key)
             logger.info(
-                "Keyword inference thread ready (model=whisper-1, keyword=%r, mic_sr=%d→%d)",
-                self._keyword, self._mic_sr, WHISPER_SR,
+                "Keyword inference thread ready (model=whisper-1, keywords=%s, mic_sr=%d→%d)",
+                self._keywords, self._mic_sr, WHISPER_SR,
             )
         except Exception:
             logger.error(
