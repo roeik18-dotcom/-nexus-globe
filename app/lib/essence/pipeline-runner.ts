@@ -52,11 +52,12 @@ export interface IdGenerator {
   nextId(prefix: string): string;
 }
 
+let _idSeq = 0;
 export const defaultIdGenerator: IdGenerator = {
   nextId(prefix: string): string {
     const ts = Date.now().toString(36);
-    const rand = Math.random().toString(36).slice(2, 8);
-    return `${prefix}_${ts}_${rand}`;
+    const seq = (++_idSeq).toString(36).padStart(6, '0');
+    return `${prefix}_${ts}_${seq}`;
   },
 };
 

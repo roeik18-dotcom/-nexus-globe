@@ -33,6 +33,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { FileSystemEssenceRepository } from '../../essence-fs-repository';
 import { FileSystemEssenceProposalRepository } from '../../essence-proposal-fs-repository';
+import { FileSystemEssenceTimelineRepository } from '../../essence-timeline-fs-repository';
 import { EssenceProposalService } from '../proposal-service';
 import { PhilosReviewConsumer } from '../philos-review-consumer';
 import { EssenceRecoveryRunner } from '../recovery-runner';
@@ -60,7 +61,8 @@ afterEach(() => {
 function freshInstances() {
   const repo = new FileSystemEssenceRepository(dataDir);
   const proposalRepo = new FileSystemEssenceProposalRepository(dataDir);
-  const svc = new EssenceProposalService(repo, proposalRepo, new PipelineRunner());
+  const timeline = new FileSystemEssenceTimelineRepository(dataDir);
+  const svc = new EssenceProposalService(repo, proposalRepo, new PipelineRunner(), undefined, undefined, timeline);
   const philos = new PhilosReviewConsumer(svc);
   const runner = new EssenceRecoveryRunner(proposalRepo, philos);
   return { repo, proposalRepo, svc, philos, runner };

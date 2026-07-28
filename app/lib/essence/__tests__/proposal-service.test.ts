@@ -302,52 +302,29 @@ describe('EssenceProposalService — correctItem', () => {
 
   it('correction archives the targeted interpretation', async () => {
     const { repo, svc } = makeService();
-    const profile = await repo.createProfile('u1');
-    profile.expression['Preferences'] = [{
-      id: 'old-interp',
-      version: 1,
-      nodeId: 'Preferences',
-      layer: 'expression',
-      stabilityClass: 'Adaptive',
-      content: 'dark mode',
-      observationIds: [],
-      confidence: 'medium',
-      interpretationKind: 'probable_interpretation',
-      provenance: {
-        source: 'agent_inference',
-        confidence: 'medium',
-        createdBy: 'merlin',
-        firstObservedAt: new Date().toISOString(),
-        lastConfirmedAt: new Date().toISOString(),
-        lastUpdatedAt: new Date().toISOString(),
-        evidenceIds: [],
-        conflictingInterpretationIds: [],
-      },
-      sensitivity: 'personal',
-      temporalKind: 'trait',
-      stateScope: null,
-      expiresAt: null,
-      archivedAt: null,
-      conflictIds: [],
-      evidenceStatus: 'unavailable',
-    }];
-    await repo.saveProfile(profile);
+    await repo.createProfile('u1');
 
+    // Create the interpretation via the API (so it exists in the timeline).
     await svc.correctItem(
       'u1',
-      {
-        nodeId: 'Preferences',
-        targetInterpretationId: 'old-interp',
-        correctedContent: 'light mode',
-        correctedAt: new Date().toISOString(),
-        note: null,
-      },
+      { nodeId: 'Preferences', targetInterpretationId: null, correctedContent: 'dark mode', correctedAt: new Date().toISOString(), note: null },
+      USER_CTX,
+    );
+
+    const profileWithOld = await repo.getProfile('u1');
+    const oldInterpId = (profileWithOld!.expression['Preferences'] ?? []).find(i => !i.archivedAt)!.id;
+
+    // Archive it with a targeted correction.
+    await svc.correctItem(
+      'u1',
+      { nodeId: 'Preferences', targetInterpretationId: oldInterpId, correctedContent: 'light mode', correctedAt: new Date().toISOString(), note: null },
       USER_CTX,
     );
 
     const updated = await repo.getProfile('u1');
-    const old = updated?.expression['Preferences'].find(i => i.id === 'old-interp');
-    expect(old?.archivedAt).not.toBeNull();
+    const old = updated?.expression['Preferences']?.find(i => i.id === oldInterpId);
+    expect(old).toBeDefined();
+    expect(old!.archivedAt).not.toBeNull();
   });
 });
 
@@ -651,6 +628,7 @@ describe('EssenceProposalService — Observation immutability', () => {
 // ── M0-10B: Audit integrity ────────────────────────────────────────────────────
 
 import { PhilosReviewConsumer } from '../philos-review-consumer';
+import { InMemoryEssenceTimelineRepository } from '../in-memory-timeline-repository';
 import type { Observation } from '../schema';
 
 function seedObs(id: string): Observation {
@@ -899,42 +877,34 @@ describe('EssenceProposalService — M0-10B: full audit chain reconstruction (B5
   it('reconstructs the complete accepted orientation transition from persisted audit records', async () => {
     const clock = makeClock(1_000_000) as ReturnType<typeof makeClock> & { advance(n: number): void };
     const repo = new InMemoryEssenceRepository();
-    const svc = new EssenceProposalService(repo, new InMemoryEssenceProposalRepository(), new PipelineRunner(clock), clock);
-    const philos = new PhilosReviewConsumer(svc, clock);
-    const profile = await repo.createProfile('u1');
+    const timeline = new InMemoryEssenceTimelineRepository();
+    const svc = new EssenceProposalService(repo, new InMemoryEssenceProposalRepository(), new PipelineRunner(clock), clock, undefined, timeline);
+    const philos = new PhilosReviewConsumer(svc, clock, timeline);
+    await repo.createProfile('u1');
 
-    // ── Seed: interpretation A (active) + open preference_shift conflict ──────
+    // ── Create interpretation A via the API so it is in the timeline ──────────
 
-    const interpA_id = 'interp-A';
-    profile.expression['OrientationCommunicationStyle'] = [{
-      id: interpA_id,
-      version: 1,
+    await repo.appendObservation('u1', seedObs('obs-A'));
+    const resultA = await svc.proposeUpdate('u1', {
       nodeId: 'OrientationCommunicationStyle',
-      layer: 'expression',
-      stabilityClass: 'Adaptive',
-      content: 'direct',
-      observationIds: ['obs-A'],
-      confidence: 'high',
-      interpretationKind: 'probable_interpretation',
-      provenance: {
-        source: 'agent_inference',
-        confidence: 'high',
-        createdBy: 'merlin',
-        firstObservedAt: new Date(clock.now()).toISOString(),
-        lastConfirmedAt: new Date(clock.now()).toISOString(),
-        lastUpdatedAt: new Date(clock.now()).toISOString(),
-        evidenceIds: [],
-        conflictingInterpretationIds: [],
-      },
-      sensitivity: 'personal',
-      temporalKind: 'trait',
-      stateScope: null,
-      expiresAt: null,
-      archivedAt: null,
-      conflictIds: ['conflict-b5'],
-      evidenceStatus: 'referenced',
-    }];
-    profile.conflicts.push({
+      proposedContent: 'direct',
+      evidenceObservationIds: ['obs-A'],
+      proposedBy: 'merlin',
+      proposedAt: new Date(clock.now()).toISOString(),
+      rationale: 'first write',
+      accumulatedConfidence: 'high',
+    }, null);
+    expect(resultA.status).toBe('pending_review');
+    clock.advance(100);
+    await philos.consume('u1', (resultA as { proposalId: string }).proposalId);
+
+    const profileAfterA = await repo.getProfile('u1');
+    const interpA_id = (profileAfterA!.expression['OrientationCommunicationStyle'] ?? []).find(i => !i.archivedAt)!.id;
+
+    // Inject the preference_shift conflict that is the subject of the audit test.
+    const activeA = profileAfterA!.expression['OrientationCommunicationStyle']!.find(i => i.id === interpA_id)!;
+    (activeA.conflictIds as string[]).push('conflict-b5');
+    profileAfterA!.conflicts.push({
       id: 'conflict-b5',
       type: 'preference_shift',
       detectedAt: new Date(clock.now()).toISOString(),
@@ -944,7 +914,7 @@ describe('EssenceProposalService — M0-10B: full audit chain reconstruction (B5
       resolution: null,
       resolutionNote: null,
     });
-    await repo.saveProfile(profile);
+    await repo.saveProfile(profileAfterA!);
 
     // ── Agent proposal: B ('collaborative') ──────────────────────────────────
 
@@ -1009,9 +979,9 @@ describe('EssenceProposalService — M0-10B: full audit chain reconstruction (B5
     expect(active[0].provenance.source).toBe('agent_inference');
     expect(active[0].confidence).toBe('high');
 
-    // Evolution entry links A → B
-    expect(finalProfile!.evolution).toHaveLength(1);
-    const entry = finalProfile!.evolution[0];
+    // Evolution entry links A → B (entry[0] is A's own creation; entry[1] is the A→B transition)
+    expect(finalProfile!.evolution).toHaveLength(2);
+    const entry = finalProfile!.evolution[1];
     expect(entry.nodeId).toBe('OrientationCommunicationStyle');
     expect(entry.previousInterpretationId).toBe(interpA_id);
     expect(entry.newInterpretationId).toBe(interpB_id);
@@ -1039,9 +1009,9 @@ describe('EssenceProposalService — M0-10B: full audit chain reconstruction (B5
     // This simulates an offline audit tool reading only the persisted profile.
 
     const log = finalProfile!.evolution;
-    expect(log).toHaveLength(1);
+    expect(log).toHaveLength(2);
 
-    const transition = log[0];
+    const transition = log[1];
     // Previous: look up by ID — must be archived
     const prevInterp = allInterps.find(i => i.id === transition.previousInterpretationId);
     expect(prevInterp).toBeDefined();
@@ -1066,7 +1036,7 @@ describe('EssenceProposalService — M0-10B: full audit chain reconstruction (B5
     expect(secondDecision.reviewedAt).toBe(decision.reviewedAt);
 
     const profileAfterRepeat = await repo.getProfile('u1');
-    expect(profileAfterRepeat!.evolution).toHaveLength(1);
+    expect(profileAfterRepeat!.evolution).toHaveLength(2);
     expect(
       (profileAfterRepeat!.expression['OrientationCommunicationStyle'] ?? []).length
     ).toBe(allInterps.length);

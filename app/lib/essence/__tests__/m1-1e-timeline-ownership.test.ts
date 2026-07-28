@@ -314,47 +314,18 @@ describe('M1-1E E6: node-level merge preserves pre-timeline nodes', () => {
   });
 });
 
-// ── E7: replace_single_value archives pre-timeline actives ───────────────────
+// ── E7: replace_single_value archives previous timeline-owned actives ─────────
 
-describe('M1-1E E7: replace_single_value correctly archives pre-timeline active interpretations', () => {
-  it('single pre-timeline active is archived when replace_single_value writes a new one', async () => {
+describe('M1-1E E7: replace_single_value correctly archives previous active interpretations', () => {
+  it('API-created active is archived when replace_single_value writes a new one', async () => {
     const { svc, philos, clock, repo } = await makeStack();
 
-    // Seed a pre-timeline active interpretation for OrientationCommunicationStyle.
-    const profile = await repo.getProfile('u1');
-    profile!.expression['OrientationCommunicationStyle'] = [{
-      id: 'legacy-interp',
-      version: 1,
-      nodeId: 'OrientationCommunicationStyle',
-      layer: 'expression',
-      stabilityClass: 'Adaptive',
-      content: 'direct',
-      observationIds: [],
-      confidence: 'high',
-      interpretationKind: 'probable_interpretation',
-      provenance: {
-        source: 'agent_inference',
-        confidence: 'high',
-        createdBy: 'seed',
-        firstObservedAt: new Date(clock.now()).toISOString(),
-        lastConfirmedAt: new Date(clock.now()).toISOString(),
-        lastUpdatedAt: new Date(clock.now()).toISOString(),
-        evidenceIds: [],
-        conflictingInterpretationIds: [],
-      },
-      sensitivity: 'personal',
-      temporalKind: 'trait',
-      stateScope: null,
-      expiresAt: null,
-      archivedAt: null,
-      conflictIds: [],
-      evidenceStatus: 'unavailable',
-    }];
-    await repo.saveProfile(profile!);
+    // First write: 'direct' via timeline.
+    await proposeAndAccept(svc, philos, clock, repo, 'OrientationCommunicationStyle', 'direct', 'obs-1');
 
-    // Philos commits a new interpretation via the timeline.
+    // Second write: 'collaborative' should archive 'direct'.
     clock.advance(100);
-    await proposeAndAccept(svc, philos, clock, repo, 'OrientationCommunicationStyle', 'collaborative', 'obs-1');
+    await proposeAndAccept(svc, philos, clock, repo, 'OrientationCommunicationStyle', 'collaborative', 'obs-2');
 
     const stored = await repo.getProfile('u1');
     const all = stored!.expression['OrientationCommunicationStyle'] ?? [];
@@ -365,46 +336,30 @@ describe('M1-1E E7: replace_single_value correctly archives pre-timeline active 
     expect(active).toHaveLength(1);
     expect(active[0].content).toBe('collaborative');
     expect(archived).toHaveLength(1);
-    expect(archived[0].id).toBe('legacy-interp');
+    expect(archived[0].content).toBe('direct');
   });
 
-  it('multiple pre-timeline actives are all archived on replace_single_value write', async () => {
+  it('multiple sequential writes produce correct archiving chain', async () => {
     const { svc, clock, repo } = await makeStack();
 
-    const profile = await repo.getProfile('u1');
-    const makeInterp = (id: string, content: string) => ({
-      id,
-      version: 1 as const,
+    // Three sequential correctItem calls: each archives the previous active.
+    clock.advance(100);
+    await svc.correctItem('u1', {
       nodeId: 'OrientationResponseDepth',
-      layer: 'expression' as const,
-      stabilityClass: 'Adaptive' as const,
-      content,
-      observationIds: [] as string[],
-      confidence: 'high' as const,
-      interpretationKind: 'probable_interpretation' as const,
-      provenance: {
-        source: 'agent_inference' as const,
-        confidence: 'high' as const,
-        createdBy: 'seed',
-        firstObservedAt: new Date(clock.now()).toISOString(),
-        lastConfirmedAt: new Date(clock.now()).toISOString(),
-        lastUpdatedAt: new Date(clock.now()).toISOString(),
-        evidenceIds: [] as string[],
-        conflictingInterpretationIds: [] as string[],
-      },
-      sensitivity: 'personal' as const,
-      temporalKind: 'trait' as const,
-      stateScope: null,
-      expiresAt: null,
-      archivedAt: null,
-      conflictIds: [] as string[],
-      evidenceStatus: 'unavailable' as const,
-    });
-    profile!.expression['OrientationResponseDepth'] = [
-      makeInterp('i1', 'brief'),
-      makeInterp('i2', 'balanced'),
-    ];
-    await repo.saveProfile(profile!);
+      correctedContent: 'brief',
+      correctedAt: new Date(clock.now()).toISOString(),
+      targetInterpretationId: null,
+      targetObservationId: null,
+    }, { userId: 'u1', requestedAt: new Date(clock.now()).toISOString() });
+
+    clock.advance(100);
+    await svc.correctItem('u1', {
+      nodeId: 'OrientationResponseDepth',
+      correctedContent: 'balanced',
+      correctedAt: new Date(clock.now()).toISOString(),
+      targetInterpretationId: null,
+      targetObservationId: null,
+    }, { userId: 'u1', requestedAt: new Date(clock.now()).toISOString() });
 
     clock.advance(100);
     await svc.correctItem('u1', {
@@ -462,55 +417,31 @@ describe('M1-1E E8: sequential writes accumulate in evolution[]', () => {
   });
 });
 
-// ── E9: archiveItem fallback for pre-timeline interpretations ─────────────────
+// ── E9: archiveItem on an API-created interpretation ─────────────────────────
 
-describe('M1-1E E9: archiveItem correctly archives pre-timeline interpretations', () => {
-  it('archiveItem archives an interpretation that predates the timeline', async () => {
-    const { svc, clock, repo, projector } = await makeStack();
+describe('M1-1E E9: archiveItem correctly archives a timeline-owned interpretation', () => {
+  it('archiveItem archives an interpretation created via the write path', async () => {
+    const { svc, philos, clock, repo, projector } = await makeStack();
+
+    // Create the interpretation via the API so it is in the timeline.
+    await proposeAndAccept(svc, philos, clock, repo, 'OrientationCommunicationStyle', 'direct', 'obs-1');
 
     const profile = await repo.getProfile('u1');
-    profile!.expression['OrientationCommunicationStyle'] = [{
-      id: 'pre-timeline-id',
-      version: 1,
-      nodeId: 'OrientationCommunicationStyle',
-      layer: 'expression',
-      stabilityClass: 'Adaptive',
-      content: 'direct',
-      observationIds: [],
-      confidence: 'high',
-      interpretationKind: 'probable_interpretation',
-      provenance: {
-        source: 'agent_inference',
-        confidence: 'high',
-        createdBy: 'seed',
-        firstObservedAt: new Date(clock.now()).toISOString(),
-        lastConfirmedAt: new Date(clock.now()).toISOString(),
-        lastUpdatedAt: new Date(clock.now()).toISOString(),
-        evidenceIds: [],
-        conflictingInterpretationIds: [],
-      },
-      sensitivity: 'personal',
-      temporalKind: 'trait',
-      stateScope: null,
-      expiresAt: null,
-      archivedAt: null,
-      conflictIds: [],
-      evidenceStatus: 'unavailable',
-    }];
-    await repo.saveProfile(profile!);
+    const interpId = Object.values(profile!.expression).flat().find(i => !i.archivedAt)!.id;
 
     clock.advance(100);
-    const result = await svc.archiveItem('u1', 'pre-timeline-id', 'philos', 'manual archive');
+    const result = await svc.archiveItem('u1', interpId, 'philos', 'manual archive');
 
     expect(result.archived).toBe(true);
     expect(result.evolutionEntryId).toMatch(/^proj_/);
 
     const stored = await repo.getProfile('u1');
-    const interp = stored!.expression['OrientationCommunicationStyle']?.find(i => i.id === 'pre-timeline-id');
-    expect(interp?.archivedAt).not.toBeNull();
+    const interp = stored!.expression['OrientationCommunicationStyle']?.find(i => i.id === interpId);
+    expect(interp).toBeDefined();
+    expect(interp!.archivedAt).not.toBeNull();
 
-    // archiveItem succeeded and wrote a timeline event (confirmed by the evolutionEntryId shape).
-    // verifyProjection is not asserted here because the pre-timeline interp is in the stored
-    // profile but not in the projected profile — that divergence is the expected pre-timeline state.
+    // Timeline is the source of truth — verifyProjection confirms stored matches projected.
+    const report = await projector.verifyProjection('u1');
+    expect(report.match).toBe(true);
   });
 });

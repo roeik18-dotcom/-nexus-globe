@@ -1,5 +1,5 @@
 /**
- * Essence · Timeline Projector (M1-1D)
+ * Essence · Timeline Projector (M1-1D / M1-1F)
  *
  * Deterministic, idempotent replay of EssenceTimelineEvents into profile read-state.
  *
@@ -13,6 +13,11 @@
  *   - Only interpretation_committed events produce profile mutations
  *   - Idempotent: same event set → same output profile regardless of call count
  *
+ * M1-1F additions:
+ *   - computeProjectionFingerprint: deterministic hash of derivable fields
+ *   - Snapshot-aware rebuildProfile: loads delta events from a valid snapshot
+ *   - saveSnapshot: captures a projection checkpoint in the snapshot repository
+ *
  * rebuildProfile / rebuildAllProfiles return projected profiles without saving.
  * Callers who want to persist the rebuild must call profileRepo.saveProfile themselves.
  *
@@ -24,11 +29,13 @@
 import { createEmptyEssenceProfile } from './schema';
 import { TIMELINE_SCHEMA_VERSION } from './timeline';
 import { getEssenceNode } from './ontology';
+import { PROJECTOR_VERSION } from './snapshot';
 import type { EssenceProfile, EssenceEvolutionEntry, Interpretation } from './schema';
 import type { EssenceLayer } from './ontology';
 import type { EssenceTimelineEvent, InterpretationCommittedPayload, InterpretationArchivedPayload } from './timeline';
 import type { EssenceTimelineRepository } from './api';
 import type { EssenceRepository } from './repository';
+import type { EssenceProfileSnapshot, EssenceSnapshotRepository } from './snapshot';
 
 // ── Public types ──────────────────────────────────────────────────────────────
 
@@ -48,6 +55,10 @@ export interface ProjectionVerificationReport {
   storedInterpretationCount: number;
   projectedInterpretationCount: number;
   differences: ProjectionDifference[];
+  /** Deterministic fingerprint of derivable fields in the stored profile. */
+  storedFingerprint: string;
+  /** Deterministic fingerprint of derivable fields in the freshly projected profile. */
+  projectedFingerprint: string;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -67,21 +78,80 @@ const KNOWN_EVENT_TYPES = new Set<string>([
 
 const PROJECTION_LAYERS: EssenceLayer[] = ['core', 'aspirations', 'expression', 'identity'];
 
+// ── Fingerprint ───────────────────────────────────────────────────────────────
+
+/**
+ * Deterministic fingerprint of the derivable fields in a projected profile.
+ * Stable across replays: evolution sorted by id, interpretations sorted by
+ * nodeId then id. Captures content, confidence, archivedAt null/non-null.
+ */
+export function computeProjectionFingerprint(profile: EssenceProfile): string {
+  const evo = [...profile.evolution]
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .map(e => ({
+      id: e.id,
+      nodeId: e.nodeId,
+      prev: e.previousInterpretationId,
+      next: e.newInterpretationId,
+    }));
+
+  const layers: Record<string, Record<string, Array<{ id: string; content: string; confidence: string; archived: boolean }>>> = {};
+  for (const layer of PROJECTION_LAYERS) {
+    const layerData = profile[layer] as Record<string, Interpretation[]>;
+    const nodeEntries = Object.entries(layerData).sort(([a], [b]) => a.localeCompare(b));
+    layers[layer] = Object.fromEntries(
+      nodeEntries.map(([nodeId, interps]) => [
+        nodeId,
+        [...interps]
+          .sort((a, b) => a.id.localeCompare(b.id))
+          .map(i => ({ id: i.id, content: i.content, confidence: i.confidence, archived: i.archivedAt !== null })),
+      ]),
+    );
+  }
+
+  return JSON.stringify({ evo, layers });
+}
+
 // ── Projector ─────────────────────────────────────────────────────────────────
 
 export class EssenceTimelineProjector {
   constructor(
     private readonly profileRepo: EssenceRepository,
     private readonly timelineRepo: EssenceTimelineRepository,
+    private readonly snapshotRepo?: EssenceSnapshotRepository,
   ) {}
 
   /**
    * Rebuild a profile's read state from its timeline events.
-   * Returns the projected profile. Does NOT persist it.
+   * If a snapshot repository is configured and a valid snapshot exists, replays
+   * only the delta events that arrived after the snapshot. Returns the projected
+   * profile without persisting it.
    */
   async rebuildProfile(profileId: string): Promise<EssenceProfile> {
-    const events = await this.timelineRepo.loadByProfile(profileId);
-    return this.project(profileId, events);
+    const allEvents = await this.timelineRepo.loadByProfile(profileId);
+
+    if (!this.snapshotRepo) {
+      return this.project(profileId, allEvents);
+    }
+
+    const snapshot = await this.snapshotRepo.loadLatest(profileId);
+    if (!snapshot || snapshot.projectorVersion !== PROJECTOR_VERSION) {
+      return this.project(profileId, allEvents);
+    }
+
+    // Delta replay: only events that come after the snapshot anchor.
+    const deltaEvents = allEvents.filter(e => {
+      const cmp = e.occurredAt.localeCompare(snapshot.lastEventOccurredAt);
+      if (cmp > 0) return true;
+      if (cmp === 0) return e.id.localeCompare(snapshot.lastEventId) > 0;
+      return false;
+    });
+
+    if (deltaEvents.length === 0) {
+      return cloneProfile(snapshot.profile);
+    }
+
+    return this.projectDelta(cloneProfile(snapshot.profile), deltaEvents);
   }
 
   /**
@@ -101,16 +171,15 @@ export class EssenceTimelineProjector {
   /**
    * Compare the stored profile (written by the live write path) against a fresh
    * replay result. Reports differences in derivable fields only.
-   *
-   * A `match: true` result means the Timeline is a faithful source of truth for
-   * the reported derivable fields. Divergence means the write path and the Timeline
-   * are out of sync — the diff locates where.
    */
   async verifyProjection(profileId: string): Promise<ProjectionVerificationReport> {
     const verifiedAt = new Date().toISOString();
     const stored = await this.profileRepo.getProfile(profileId);
     const projected = await this.rebuildProfile(profileId);
     const differences: ProjectionDifference[] = [];
+
+    const storedFingerprint = stored ? computeProjectionFingerprint(stored) : '';
+    const projectedFingerprint = computeProjectionFingerprint(projected);
 
     // ── evolution[] ───────────────────────────────────────────────────────────
     const storedEvo = stored?.evolution ?? [];
@@ -184,7 +253,42 @@ export class EssenceTimelineProjector {
       storedInterpretationCount: countInterpretations(stored),
       projectedInterpretationCount: countInterpretations(projected),
       differences,
+      storedFingerprint,
+      projectedFingerprint,
     };
+  }
+
+  /**
+   * Save a projection snapshot for a profile at its current timeline position.
+   * Requires a snapshotRepo; throws if none is configured.
+   */
+  async saveSnapshot(profileId: string): Promise<EssenceProfileSnapshot> {
+    if (!this.snapshotRepo) {
+      throw new Error('EssenceTimelineProjector: no snapshot repository configured');
+    }
+
+    const events = await this.timelineRepo.loadByProfile(profileId);
+    const sorted = sortEvents(events);
+    if (sorted.length === 0) {
+      throw new Error(`Cannot save snapshot for profile with no timeline events: ${profileId}`);
+    }
+
+    const profile = await this.rebuildProfile(profileId);
+    const lastEvent = sorted[sorted.length - 1];
+
+    const snapshot: EssenceProfileSnapshot = {
+      snapshotId: `snap_${lastEvent.id}`,
+      profileId,
+      projectorVersion: PROJECTOR_VERSION,
+      lastEventId: lastEvent.id,
+      lastEventOccurredAt: lastEvent.occurredAt,
+      eventCount: sorted.length,
+      capturedAt: new Date().toISOString(),
+      profile,
+    };
+
+    await this.snapshotRepo.save(snapshot);
+    return snapshot;
   }
 
   // ── Private ──────────────────────────────────────────────────────────────────
@@ -216,6 +320,28 @@ export class EssenceTimelineProjector {
     }
 
     return profile;
+  }
+
+  private projectDelta(base: EssenceProfile, deltaEvents: EssenceTimelineEvent[]): EssenceProfile {
+    const sorted = sortEvents(deltaEvents);
+    for (const event of sorted) {
+      if (!KNOWN_SCHEMA_VERSIONS.has(event.schemaVersion)) {
+        throw new Error(
+          `EssenceTimelineProjector: unsupported schemaVersion ${event.schemaVersion} in event ${event.id}`,
+        );
+      }
+      if (!KNOWN_EVENT_TYPES.has(event.eventType)) {
+        throw new Error(
+          `EssenceTimelineProjector: unknown eventType '${event.eventType}' in event ${event.id}`,
+        );
+      }
+      if (event.eventType === 'interpretation_committed') {
+        this.applyInterpretationCommitted(base, event);
+      } else if (event.eventType === 'interpretation_archived') {
+        this.applyInterpretationArchived(base, event);
+      }
+    }
+    return base;
   }
 
   private applyInterpretationCommitted(profile: EssenceProfile, event: EssenceTimelineEvent): void {
@@ -345,4 +471,9 @@ function countInterpretations(profile: EssenceProfile | null): number {
     const layerData = profile[layer] as Record<string, Interpretation[]>;
     return sum + Object.values(layerData).reduce((n, arr) => n + arr.length, 0);
   }, 0);
+}
+
+/** Deep clone a profile by round-tripping through JSON. */
+export function cloneProfile(profile: EssenceProfile): EssenceProfile {
+  return JSON.parse(JSON.stringify(profile)) as EssenceProfile;
 }

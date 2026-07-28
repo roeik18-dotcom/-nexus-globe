@@ -503,9 +503,6 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
 
     const projected = await this._projector.rebuildProfile(profileId);
     const merged = this.mergeProjectionIntoProfile(profile, projected);
-    // Fallback for pre-timeline interpretations: ensure the interpretation is archived
-    // in the merged profile even if the projector could not find it (no prior timeline event).
-    archiveInterpretation(merged, interpretationId, this.clock, archivedAt);
     await this.repo.saveProfile(merged);
 
     return { archived: true, evolutionEntryId: `proj_${eventId}` };
@@ -687,28 +684,6 @@ export class EssenceProposalService implements EssenceProposalAPI, EssenceUserAc
 
     const projected = await this._projector.rebuildProfile(profile.profileId);
     const merged = this.mergeProjectionIntoProfile(profile, projected);
-
-    // Post-merge: reinstate and archive pre-timeline active interpretations that
-    // were supposed to be replaced but aren't in the projected profile (because
-    // they predate the timeline). The projector can only archive what it knows
-    // about; interpretations not yet in the timeline are handled here.
-    if (preTimelineActiveIds.length > 0) {
-      const mergedLayer = merged[interp.layer] as Record<string, Interpretation[]>;
-      const mergedInterps = mergedLayer[interp.nodeId] ?? [];
-      const mergedIdSet = new Set(mergedInterps.map(i => i.id));
-      const storedLayer = profile[interp.layer] as Record<string, Interpretation[]>;
-      const preTimelineArchived: Interpretation[] = [];
-      for (const id of preTimelineActiveIds) {
-        if (!mergedIdSet.has(id)) {
-          const found = (storedLayer[interp.nodeId] ?? []).find(i => i.id === id);
-          if (found) preTimelineArchived.push({ ...found, archivedAt: now });
-        }
-      }
-      if (preTimelineArchived.length > 0) {
-        mergedLayer[interp.nodeId] = [...preTimelineArchived, ...mergedInterps];
-      }
-    }
-
     await this.repo.saveProfile(merged);
   }
 

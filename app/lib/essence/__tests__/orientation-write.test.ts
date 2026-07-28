@@ -109,13 +109,11 @@ describe('orientation write path — single-valued invariant', () => {
   });
 
   it('multiple pre-existing active interpretations are all archived on write', async () => {
-    const profile = await repo.getProfile('u1');
-    profile!.expression['OrientationResponseDepth'] = [
-      makeInterpretation('i1', 'OrientationResponseDepth', 'brief'),
-      makeInterpretation('i2', 'OrientationResponseDepth', 'balanced'),
-    ];
-    await repo.saveProfile(profile!);
+    // Build two prior active interpretations via the API so they are in the timeline.
+    await svc.correctItem('u1', correction('OrientationResponseDepth', 'brief'), userCtx);
+    await svc.correctItem('u1', correction('OrientationResponseDepth', 'balanced'), userCtx);
 
+    // A third write must archive both previous actives.
     await svc.correctItem('u1', correction('OrientationResponseDepth', 'explanatory'), userCtx);
 
     const updated = await repo.getProfile('u1');
