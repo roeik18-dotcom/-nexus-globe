@@ -256,6 +256,15 @@ class WakeTrigger:
 
     def _wait_blocking(self) -> None:
         """Open the mic stream and block until a wake event fires."""
+        import sys
+        _mod = sys.modules.get(__name__)
+        logger.info(
+            "=== _wait_blocking enter === module=%s  __file__=%s  id(module)=%d",
+            __name__,
+            getattr(_mod, "__file__", "NOT IN sys.modules"),
+            id(_mod) if _mod else -1,
+        )
+
         event = threading.Event()
 
         mic_sr     = _query_mic_rate()
@@ -300,6 +309,10 @@ class WakeTrigger:
             except Exception:
                 logger.exception("exception inside _callback (frame #%d)", _cb_count[0])
 
+        logger.info(
+            "=== opening InputStream === id(callback)=%d  callback repr=%r",
+            id(_callback), _callback,
+        )
         with sd.InputStream(
             samplerate=mic_sr,
             channels=1,
@@ -308,9 +321,11 @@ class WakeTrigger:
             callback=_callback,
         ) as stream:
             logger.info(
-                "InputStream open — device=%r sr=%d blocksize=%d active=%s",
+                "=== InputStream open === device=%r sr=%d blocksize=%d active=%s",
                 stream.device, stream.samplerate, stream.blocksize, stream.active,
             )
+            logger.info("=== calling event.wait() — stream is live ===")
             event.wait()  # blocking — holds the stream open until wake fires
+            logger.info("=== event.wait() returned — wake fired ===")
 
-        logger.info("Wake event received — stream closed")
+        logger.info("=== InputStream closed — _wait_blocking returning ===")
