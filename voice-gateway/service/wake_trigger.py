@@ -245,6 +245,35 @@ def _mic_sanity_check() -> None:
     Minimal mic test — identical to the standalone script that is known to work.
     No VAD, no queue, no Whisper, no resampling, no threading, no event logic.
     """
+    import os
+    import sys
+    import threading
+
+    logger.info("[sanity] === execution environment ===")
+    logger.info("[sanity] pid          = %d", os.getpid())
+    logger.info("[sanity] uid          = %d", os.getuid())
+    logger.info("[sanity] sys.executable = %s", sys.executable)
+    logger.info("[sanity] cwd          = %s", os.getcwd())
+    logger.info("[sanity] sounddevice  = %s", sd.__version__)
+    logger.info("[sanity] portaudio    = %s", sd.get_portaudio_version())
+    logger.info("[sanity] callback thread = %s", threading.current_thread().name)
+
+    # Log a curated subset of env vars relevant to audio / macOS / process context
+    audio_keys = {
+        "HOME", "USER", "LOGNAME", "SHELL",
+        "PATH", "DYLD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH",
+        "PA_RECOMMENDED_OUTPUT_DEVICE",          # PortAudio override
+        "AUDIODEV", "SDL_AUDIODRIVER",           # SDL / ALSA overrides
+        "APPLE_SECURITY_CHECK_POLICY",           # macOS TCC
+        "XPC_SERVICE_NAME", "XPC_FLAGS",         # LaunchAgent markers
+        "LAUNCHD_SOCKET",                        # set only under launchd
+        "TERM", "TERM_PROGRAM",                  # interactive terminal markers
+        "SUDO_USER",
+    }
+    env = os.environ
+    for key in sorted(audio_keys):
+        logger.info("[sanity] env %-36s = %s", key, env.get(key, "<unset>"))
+
     logger.info("[sanity] === starting mic sanity check ===")
 
     def _cb(indata, frames, t, status):
