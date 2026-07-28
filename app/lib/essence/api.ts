@@ -393,6 +393,33 @@ export interface EssenceProposalRepository {
   loadAllProposals(): Promise<PendingEssenceProposal[]>;
 }
 
+// ── Repository: Timeline ──────────────────────────────────────────────────────
+
+import type { EssenceTimelineEvent } from './timeline';
+
+/**
+ * Append-only store for the Essence Timeline (M1-1B).
+ *
+ * Invariants:
+ *   - append() is the only write operation; there is no update or delete.
+ *   - Events are ordered by insertion (loadByProfile returns them in append order).
+ *   - Implementations must be safe to call concurrently within a single process;
+ *     multi-process coordination is out of scope for M1.
+ *
+ * Implemented by InMemoryEssenceTimelineRepository (tests / dev) and
+ * FileSystemEssenceTimelineRepository (durable single-process deployments).
+ */
+export interface EssenceTimelineRepository {
+  /** Append one event to the Timeline. Never throws on duplicate IDs — caller owns uniqueness. */
+  append(event: EssenceTimelineEvent): Promise<void>;
+  /** Return all events for a profile, in insertion order. */
+  loadByProfile(profileId: string): Promise<EssenceTimelineEvent[]>;
+  /** Return all events that reference a given proposalId, in insertion order. */
+  loadByProposal(proposalId: string): Promise<EssenceTimelineEvent[]>;
+  /** Return all events that reference a given interpretationId, in insertion order. */
+  loadByInterpretation(interpretationId: string): Promise<EssenceTimelineEvent[]>;
+}
+
 // ── Sub-Interface: Classification ─────────────────────────────────────────────
 
 export type ClassificationResult =
