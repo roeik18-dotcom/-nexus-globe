@@ -10,14 +10,20 @@ Run via LaunchAgent (no terminal required). See launch/install.sh.
 """
 
 import asyncio
+import inspect
 import io
 import logging
+import os
 import subprocess
 import sys
 import tempfile
 import threading
 import time
 from pathlib import Path
+
+# ── Startup identity probe (runs before any logging handler) ──────────────────
+# Print so the line is visible even if logging later redirects to a different fd.
+print(f"[merlin_service] STARTUP  pid={os.getpid()}  __file__={__file__}", flush=True)
 
 import numpy as np
 import sounddevice as sd
@@ -396,6 +402,7 @@ _TTS_DEBUG_PATH = Path("/tmp/merlin_tts_test.mp3")
 
 def _debug_save_tts(data: bytes, label: str = "") -> None:
     """Write TTS bytes to a stable path and log diagnostics."""
+    logger.info("ENTER _debug_save_tts  label=%s  bytes=%d", label, len(data))
     try:
         _TTS_DEBUG_PATH.write_bytes(data)
         exists = _TTS_DEBUG_PATH.exists()
@@ -601,6 +608,24 @@ def _format_memory_review(store: MemoryStore) -> str:
 # ── Main service loop ─────────────────────────────────────────────────────────
 
 async def main() -> None:
+    try:
+        _git_sha = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=Path(__file__).parent.parent,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except Exception:
+        _git_sha = "unknown"
+    logger.info(
+        "IDENTITY  pid=%d  __file__=%s  git=%s"
+        "  stream_response_src=%s  _debug_save_tts_src=%s",
+        os.getpid(),
+        __file__,
+        _git_sha,
+        inspect.getsourcefile(stream_response),
+        inspect.getsourcefile(_debug_save_tts),
+    )
     logger.info("Merlin service starting…")
 
     adapter    = build_orchestrator()
