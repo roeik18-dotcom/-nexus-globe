@@ -125,8 +125,16 @@ class KeywordBuffer:
             self._inq.put(chunks)
 
     def _inference_loop(self) -> None:
-        import openai
-        client = openai.OpenAI(api_key=self._api_key)
+        try:
+            import openai
+            client = openai.OpenAI(api_key=self._api_key)
+            logger.info("Keyword inference thread ready (model=whisper-1, keyword=%r)", self._keyword)
+        except Exception:
+            logger.error(
+                "Keyword inference thread failed to start — keyword detection disabled",
+                exc_info=True,
+            )
+            return
 
         while True:
             chunks = self._inq.get()
@@ -139,13 +147,13 @@ class KeywordBuffer:
 
                 result = client.audio.transcriptions.create(model="whisper-1", file=buf)
                 text   = result.text.lower()
-                logger.debug("keyword scan: %r", text)
+                logger.info("keyword scan: %r", text)
 
                 if self._keyword in text:
                     logger.info("'%s' detected — waking Merlin", self._keyword)
                     self._trigger.set()
             except Exception:
-                logger.debug("keyword inference error", exc_info=True)
+                logger.warning("keyword inference error", exc_info=True)
 
 
 class WakeTrigger:
@@ -178,9 +186,9 @@ class WakeTrigger:
         )
 
         if kw:
-            logger.debug("Wake modes: keyword('%s') + double-clap", self._keyword)
+            logger.info("Wake modes: keyword('%s') + double-clap", self._keyword)
         else:
-            logger.debug("Wake mode: double-clap only (no OpenAI key)")
+            logger.info("Wake mode: double-clap only (no OpenAI key)")
 
         def _callback(indata: np.ndarray, frames: int, time_info, status) -> None:
             pcm = indata[:, 0].astype(np.float32)
