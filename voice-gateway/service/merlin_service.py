@@ -458,40 +458,47 @@ async def stream_response(
     buf           = SentenceBuffer(first_min_chars=30)
     full_response = ""
 
-    with sd.InputStream(
-        samplerate=None,
-        channels=None,
-        dtype=np.float32,
-        blocksize=320,      # 20 ms chunks for low-latency barge detection
-        callback=_barge_callback,
-    ):
-        logger.info("stream_response: LLM streaming start")
+    logger.info("stream_response: BEFORE InputStream open")
+    try:
+        _barge_stream = sd.InputStream(
+            samplerate=None,
+            channels=None,
+            dtype=np.float32,
+            blocksize=320,      # 20 ms chunks for low-latency barge detection
+            callback=_barge_callback,
+        )
+    except Exception as _exc:
+        logger.error("stream_response: InputStream OPEN FAILED: %s", _exc, exc_info=True)
+        raise
+
+    with _barge_stream:
+        logger.info("stream_response: InputStream open — LLM streaming start")
         async for chunk in adapter.respond(transcript, session_id=session_id):
             if barged_in.is_set():
                 break
             full_response += chunk
             sentence = buf.push(chunk)
             if sentence and not barged_in.is_set():
-                logger.info("stream_response: TTS synthesize (%d chars)", len(sentence))
+                logger.info("stream_response: PRE synthesize chunk (%d chars)", len(sentence))
                 audio_bytes = await tts.synthesize(sentence)
+                logger.info("stream_response: POST synthesize chunk (%d bytes)", len(audio_bytes))
                 _debug_save_tts(audio_bytes, label="chunk")
-                logger.info("stream_response: TTS done (%d bytes)", len(audio_bytes))
                 if not barged_in.is_set():
-                    logger.info("stream_response: playback start")
+                    logger.info("stream_response: PRE play chunk")
                     await player.play(audio_bytes)
-                    logger.info("stream_response: playback done")
+                    logger.info("stream_response: POST play chunk")
 
         if not barged_in.is_set():
             remainder = buf.flush()
             if remainder:
-                logger.info("stream_response: TTS remainder (%d chars)", len(remainder))
+                logger.info("stream_response: PRE synthesize remainder (%d chars)", len(remainder))
                 audio_bytes = await tts.synthesize(remainder)
+                logger.info("stream_response: POST synthesize remainder (%d bytes)", len(audio_bytes))
                 _debug_save_tts(audio_bytes, label="remainder")
-                logger.info("stream_response: TTS remainder done (%d bytes)", len(audio_bytes))
                 if not barged_in.is_set():
-                    logger.info("stream_response: playback remainder start")
+                    logger.info("stream_response: PRE play remainder")
                     await player.play(audio_bytes)
-                    logger.info("stream_response: playback remainder done")
+                    logger.info("stream_response: POST play remainder")
 
     logger.info(
         "Merlin: %s",
@@ -556,9 +563,13 @@ async def run_conversation_session(
         # Memory review voice command
         if any(phrase in transcript.lower() for phrase in _MEMORY_REVIEW_PHRASES):
             review_text = _format_memory_review(store)
-            logger.info("memory review: synthesizing response")
+            logger.info("memory review: PRE synthesize")
             audio_bytes = await tts.synthesize(review_text)
+            logger.info("memory review: POST synthesize (%d bytes)", len(audio_bytes))
+            _debug_save_tts(audio_bytes, label="memory_review")
+            logger.info("memory review: PRE play")
             await player.play(audio_bytes)
+            logger.info("memory review: POST play")
             continue
 
         logger.info("LLM+TTS: starting stream_response")
