@@ -350,6 +350,7 @@ class WakeTrigger:
     def __init__(self, openai_api_key: str = "", keyword: str = "merlin"):
         self._api_key = openai_api_key
         self._keyword = keyword
+        self._sanity_done = False   # run _mic_sanity_check only on first wake
 
     async def wait(self) -> list[np.ndarray]:
         """Block until a keyword or double clap is detected.
@@ -370,7 +371,9 @@ class WakeTrigger:
 
         Returns any post-keyword audio chunks (see drain_pending).
         """
-        _mic_sanity_check()
+        if not self._sanity_done:
+            _mic_sanity_check()
+            self._sanity_done = True
 
         import sys
         _mod = sys.modules.get(__name__)
@@ -481,11 +484,12 @@ class WakeTrigger:
             event.wait()
             logger.info("=== event.wait() returned — wake fired ===")
 
-            # Drain BEFORE the with-block exits so the callback can still add
-            # frames during the drain itself (stream is still live here).
-            pending: list[np.ndarray] = []
-            if kw_box[0] is not None:
-                pending = kw_box[0].drain_pending()
+        # InputStream is now CLOSED — PortAudio has joined the callback thread,
+        # so _chunks and _in_speech are stable.  Drain here to avoid any race
+        # with the callback that existed when drain was inside the with-block.
+        pending: list[np.ndarray] = []
+        if kw_box[0] is not None:
+            pending = kw_box[0].drain_pending()
 
         logger.info(
             "=== InputStream closed — _wait_blocking returning (%d pending chunks) ===",
