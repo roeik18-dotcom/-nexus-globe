@@ -345,15 +345,18 @@ class WakeTrigger:
 
                 if _cb_count[0] == 1 or now - _cb_last_log[0] >= 1.0:
                     _cb_last_log[0] = now
-                    # [POINT 1] all-channel max vs channel-0 max
+                    n_ch = indata.shape[1]
+                    ch_rms = [float(np.sqrt(np.mean(indata[:, ch] ** 2))) for ch in range(n_ch)]
+                    active_ch = int(np.argmax(ch_rms))
                     logger.info(
-                        "[pt1-cb] #%d shape=%s  indata_max=%.5f  ch0_max=%.5f",
+                        "[pt1-cb] #%d shape=%s  indata_max=%.5f  active_ch=%d  ch_rms=[%s]",
                         _cb_count[0], indata.shape,
                         float(np.abs(indata).max()),
-                        float(np.abs(indata[:, 0]).max()),
+                        active_ch,
+                        "  ".join(f"{i}:{v:.4f}" for i, v in enumerate(ch_rms)),
                     )
 
-                pcm = indata[:, 0].astype(np.float32)
+                pcm = indata.mean(axis=1).astype(np.float32)
                 rms = float(np.sqrt(np.mean(pcm ** 2)))
                 clap.feed(rms, now)
                 kw = kw_box[0]
