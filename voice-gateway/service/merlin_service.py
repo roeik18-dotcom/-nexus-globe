@@ -142,8 +142,12 @@ async def record_utterance(max_initial_silence: float | None = None) -> bytes:
 
     import service.vad_config as _vad_cfg
     logger.info(
-        "record_utterance: SILENCE_RMS=%.5f  merlin_service.__file__=%s  vad_config.__file__=%s",
-        SILENCE_RMS, __file__, _vad_cfg.__file__,
+        "record_utterance: SILENCE_RMS=%.5f id=%d"
+        "  vad_config.SPEECH_RMS_THRESHOLD=%.5f"
+        "  merlin_service.__file__=%s  vad_config.__file__=%s",
+        SILENCE_RMS, id(SILENCE_RMS),
+        _vad_cfg.SPEECH_RMS_THRESHOLD,
+        __file__, _vad_cfg.__file__,
     )
 
     chunks: list[np.ndarray] = []
