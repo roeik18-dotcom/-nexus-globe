@@ -30,6 +30,10 @@ export class InMemoryEssenceTimelineRepository implements EssenceTimelineReposit
     return this.events.filter(e => e.interpretationId === interpretationId);
   }
 
+  async loadAll(): Promise<EssenceTimelineEvent[]> {
+    return [...this.events];
+  }
+
   /** Test helper: return all events regardless of profile. */
   all(): EssenceTimelineEvent[] {
     return [...this.events];
@@ -47,4 +51,5 @@ export const noopTimelineRepository: EssenceTimelineRepository = {
   async loadByProfile(_profileId): Promise<EssenceTimelineEvent[]> { return []; },
   async loadByProposal(_proposalId): Promise<EssenceTimelineEvent[]> { return []; },
   async loadByInterpretation(_interpretationId): Promise<EssenceTimelineEvent[]> { return []; },
+  async loadAll(): Promise<EssenceTimelineEvent[]> { return []; },
 };

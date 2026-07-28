@@ -418,6 +418,8 @@ export interface EssenceTimelineRepository {
   loadByProposal(proposalId: string): Promise<EssenceTimelineEvent[]>;
   /** Return all events that reference a given interpretationId, in insertion order. */
   loadByInterpretation(interpretationId: string): Promise<EssenceTimelineEvent[]>;
+  /** Return all events across all profiles, in insertion order. Used by the Timeline Projector. */
+  loadAll(): Promise<EssenceTimelineEvent[]>;
 }
 
 // ── Sub-Interface: Classification ─────────────────────────────────────────────

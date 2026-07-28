@@ -63,4 +63,8 @@ export class FileSystemEssenceTimelineRepository implements EssenceTimelineRepos
   async loadByInterpretation(interpretationId: string): Promise<EssenceTimelineEvent[]> {
     return this.readAll().filter(e => e.interpretationId === interpretationId);
   }
+
+  async loadAll(): Promise<EssenceTimelineEvent[]> {
+    return this.readAll();
+  }
 }
