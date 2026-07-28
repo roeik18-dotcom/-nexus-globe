@@ -219,7 +219,37 @@ async def record_utterance(max_initial_silence: float | None = None) -> bytes:
             "record_utterance: stream open — native_sr=%d channels=%d blocksize=%d",
             native_sr, stream.channels, stream.blocksize,
         )
+
+        # Watchdog: warn if PortAudio hasn't called the callback within 1 s.
+        def _warn_no_cb() -> None:
+            if _cb_count[0] == 0:
+                logger.warning(
+                    "record_utterance: WARNING — no callback after 1s "
+                    "(blocksize=%d sr=%d ch=%d). "
+                    "PortAudio may not be delivering audio on this device.",
+                    stream.blocksize, native_sr, stream.channels,
+                )
+
+        # Safety net: if the callback never fires the future never resolves.
+        # Force a stop after max_initial_silence + 5 s so the coroutine always returns.
+        fallback_s = (max_initial_silence or MAX_RECORD_S) + 5.0
+
+        def _fallback_stop() -> None:
+            if not stop.is_set():
+                logger.warning(
+                    "record_utterance: fallback timeout (%.0fs) — "
+                    "callback fired=%s. Forcing stop.",
+                    fallback_s, _cb_count[0] > 0,
+                )
+                stop.set()
+
+        warn_h     = loop.call_later(1.0,       _warn_no_cb)
+        fallback_h = loop.call_later(fallback_s, _fallback_stop)
+
         await done
+
+        warn_h.cancel()
+        fallback_h.cancel()
 
     if not speech_on[0]:
         logger.info(
