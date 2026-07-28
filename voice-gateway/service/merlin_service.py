@@ -145,9 +145,12 @@ async def record_utterance(max_initial_silence: float | None = None) -> bytes:
     t_speech_on  = [0.0]
     t_last_voice = [0.0]
     speech_on    = [False]
+    _cb_count    = [0]
+    _cb_last_hb  = [0.0]   # last heartbeat timestamp
 
     def _callback(indata: np.ndarray, frames: int, time_info, status) -> None:
         now = time.monotonic()
+        _cb_count[0] += 1
 
         # loudest-channel RMS (handles multi-channel devices like RME Babyface)
         arr = indata.astype(np.float32)
@@ -160,6 +163,14 @@ async def record_utterance(max_initial_silence: float | None = None) -> bytes:
             pcm       = arr[:, active_ch]
             rms       = float(ch_rms[active_ch])
 
+        # heartbeat: log on first call and every 2 s while waiting for speech
+        if _cb_count[0] == 1 or (now - _cb_last_hb[0]) >= 2.0:
+            _cb_last_hb[0] = now
+            logger.info(
+                "record_utterance: cb #%d  rms=%.5f  threshold=%.5f  speech=%s  elapsed=%.1fs",
+                _cb_count[0], rms, SILENCE_RMS, speech_on[0], now - t_start,
+            )
+
         if not speech_on[0]:
             if rms >= SILENCE_RMS:
                 speech_on[0]    = True
@@ -167,6 +178,10 @@ async def record_utterance(max_initial_silence: float | None = None) -> bytes:
                 t_last_voice[0] = now
                 logger.info("record_utterance: VAD on  rms=%.4f", rms)
             elif max_initial_silence and (now - t_start) >= max_initial_silence:
+                logger.info(
+                    "record_utterance: initial silence timeout (%.1fs) — no speech",
+                    max_initial_silence,
+                )
                 stop.set()
                 return
         else:
