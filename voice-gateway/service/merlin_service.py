@@ -1,24 +1,10 @@
 #!/usr/bin/env python3
-"""Merlin background voice service.
+"""Merlin background voice service — natural conversation.
 
-Flow:
-  [always listening for double clap]
-       │
-  double clap detected
-       │
-  play wake chime
-       │
-  record until silence (VAD)
-       │
-  Whisper STT → text
-       │
-  Claude (Jarvis persona) → streaming text
-       │
-  ElevenLabs / OpenAI TTS → audio chunks (per sentence)
-       │
-  play audio (afplay)
-       │
-  [back to listening]
+Standby:  always listening at minimal CPU (mic closed).
+Wake:     "Hi Merlin" (keyword) or 👏👏 (double clap).
+Session:  multi-turn conversation; barge-in stops playback instantly;
+          8 s of silence after a response returns to standby.
 
 Run via LaunchAgent (no terminal required). See launch/install.sh.
 """
@@ -26,7 +12,6 @@ Run via LaunchAgent (no terminal required). See launch/install.sh.
 import asyncio
 import io
 import logging
-import os
 import subprocess
 import sys
 import tempfile
@@ -38,11 +23,10 @@ import numpy as np
 import sounddevice as sd
 from scipy.io import wavfile
 
-# ── Add voice-gateway root to path so `app.*` imports work ────────────────────
+# ── Add voice-gateway root to path ────────────────────────────────────────────
 _ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(_ROOT))
 
-# Load .env before importing app modules (pydantic-settings reads it at import)
 from dotenv import load_dotenv
 load_dotenv(_ROOT / ".env")
 
@@ -60,68 +44,129 @@ logging.basicConfig(
 logger = logging.getLogger("merlin.service")
 
 # ── Audio constants ───────────────────────────────────────────────────────────
-SAMPLE_RATE    = 16_000
-CHANNELS       = 1
-BLOCK_SIZE     = 512
+SAMPLE_RATE = 16_000
+CHANNELS    = 1
+BLOCK_SIZE  = 512
 
-# ── VAD parameters for recording utterance ───────────────────────────────────
-SILENCE_RMS    = 0.018      # normalized RMS below this = silence
-SILENCE_S      = 1.4        # seconds of silence to end turn
-MAX_RECORD_S   = 30         # hard safety cutoff
+# ── VAD (recording) ───────────────────────────────────────────────────────────
+SILENCE_RMS  = 0.018   # normalized RMS below this = silence
+SILENCE_S    = 0.8     # 0.8 s trailing silence ends an utterance
+MAX_RECORD_S = 30
 
+# ── Barge-in (interrupt Merlin mid-speech) ────────────────────────────────────
+BARGE_IN_RMS    = 0.05  # mic energy that counts as user speaking
+BARGE_IN_FRAMES = 8     # need ~160 ms of sustained energy (8 × 20 ms blocks)
+BARGE_IN_GRACE  = 0.5   # ignore first 0.5 s of playback (avoids echo trigger)
 
-# ── Audio playback ────────────────────────────────────────────────────────────
+# ── Conversation session ──────────────────────────────────────────────────────
+CONVERSATION_TIMEOUT = 8.0   # seconds of post-response silence → standby
 
-def _play(data: bytes) -> None:
-    """Synchronously play audio bytes via afplay (macOS). Blocks until done."""
-    if not data:
-        return
-    suffix = ".aiff" if data[:4] == b"FORM" else ".mp3"
-    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
-        f.write(data)
-        tmp = Path(f.name)
-    try:
-        subprocess.run(["afplay", str(tmp)], check=True,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except (FileNotFoundError, subprocess.CalledProcessError) as e:
-        logger.warning("afplay failed: %s", e)
-    finally:
-        tmp.unlink(missing_ok=True)
+_CHIME = "/System/Library/Sounds/Tink.aiff"
 
 
-async def play_async(data: bytes) -> None:
-    """Run _play in a thread so it doesn't block the event loop."""
-    if data:
-        await asyncio.get_running_loop().run_in_executor(None, _play, data)
+# ── Interruptible audio player ────────────────────────────────────────────────
+
+class AudioPlayer:
+    """Plays audio via afplay. interrupt() stops it immediately (barge-in)."""
+
+    def __init__(self) -> None:
+        self._proc: subprocess.Popen | None = None
+        self._tmp:  Path | None             = None
+
+    # ── internal sync play (runs in executor thread) ──────────────────────────
+
+    def _play_sync(self, data: bytes) -> None:
+        suffix = ".aiff" if data[:4] == b"FORM" else ".mp3"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
+            f.write(data)
+            self._tmp = Path(f.name)
+        try:
+            self._proc = subprocess.Popen(
+                ["afplay", str(self._tmp)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            self._proc.wait()
+        except (FileNotFoundError, OSError) as e:
+            logger.warning("afplay error: %s", e)
+        finally:
+            if self._tmp:
+                self._tmp.unlink(missing_ok=True)
+            self._tmp  = None
+            self._proc = None
+
+    # ── public async interface ────────────────────────────────────────────────
+
+    async def play(self, data: bytes) -> None:
+        if data:
+            await asyncio.get_running_loop().run_in_executor(None, self._play_sync, data)
+
+    async def chime(self) -> None:
+        await asyncio.get_running_loop().run_in_executor(
+            None,
+            lambda: subprocess.run(
+                ["afplay", _CHIME],
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            ),
+        )
+
+    def interrupt(self) -> None:
+        """Called from the audio callback thread — must be lock-free."""
+        proc = self._proc
+        if proc and proc.poll() is None:
+            proc.terminate()
 
 
 # ── Recording ─────────────────────────────────────────────────────────────────
 
-async def record_utterance() -> bytes:
+async def record_utterance(max_initial_silence: float | None = None) -> bytes:
     """
-    Record from microphone until SILENCE_S seconds of silence.
-    Returns raw WAV bytes (16kHz, mono, int16).
+    Record from the mic until VAD-detected silence.
+
+    max_initial_silence: if set and no speech begins within this many seconds,
+    returns b"" so the caller knows nothing was said (conversation timeout).
+
+    Returns WAV bytes (16 kHz mono int16), or b"" on timeout.
     """
     chunks: list[np.ndarray] = []
     silence_blocks = 0
-    max_silence_blocks = int(SILENCE_S * SAMPLE_RATE / BLOCK_SIZE)
-    max_total_blocks   = int(MAX_RECORD_S * SAMPLE_RATE / BLOCK_SIZE)
-    total_blocks = 0
+    total_blocks   = 0
+    initial_blocks = 0
+    speech_started = False
+
+    max_sil_blks  = int(SILENCE_S    * SAMPLE_RATE / BLOCK_SIZE)
+    max_tot_blks  = int(MAX_RECORD_S * SAMPLE_RATE / BLOCK_SIZE)
+    max_init_blks = (
+        int(max_initial_silence * SAMPLE_RATE / BLOCK_SIZE)
+        if max_initial_silence is not None else None
+    )
     stop = threading.Event()
 
     def _callback(indata: np.ndarray, frames: int, time_info, status) -> None:
-        nonlocal silence_blocks, total_blocks
+        nonlocal silence_blocks, total_blocks, initial_blocks, speech_started
         chunks.append(indata.copy())
         rms = float(np.sqrt(np.mean(indata.astype(np.float32) ** 2)))
-        silence_blocks = silence_blocks + 1 if rms < SILENCE_RMS else 0
-        total_blocks += 1
-        if silence_blocks >= max_silence_blocks or total_blocks >= max_total_blocks:
+
+        if rms >= SILENCE_RMS:
+            speech_started = True
+
+        if not speech_started:
+            initial_blocks += 1
+            if max_init_blks and initial_blocks >= max_init_blks:
+                stop.set()
+                return
+
+        silence_blocks  = silence_blocks + 1 if rms < SILENCE_RMS else 0
+        total_blocks   += 1
+        if silence_blocks >= max_sil_blks or total_blocks >= max_tot_blks:
             stop.set()
 
     loop = asyncio.get_running_loop()
     done = loop.create_future()
 
-    def _watcher():
+    def _watcher() -> None:
         stop.wait()
         loop.call_soon_threadsafe(done.set_result, None)
 
@@ -136,66 +181,120 @@ async def record_utterance() -> bytes:
     ):
         await done
 
+    if not speech_started:
+        return b""
+
     audio = np.concatenate(chunks, axis=0) if chunks else np.zeros((0, CHANNELS), dtype=np.int16)
-    buf = io.BytesIO()
+    buf   = io.BytesIO()
     wavfile.write(buf, SAMPLE_RATE, audio)
     return buf.getvalue()
 
 
-# ── One full conversation turn ────────────────────────────────────────────────
+# ── Streaming response with barge-in ─────────────────────────────────────────
 
-async def run_turn(
+async def stream_response(
+    adapter,
+    tts,
+    player: AudioPlayer,
+    transcript: str,
+    session_id: str,
+) -> bool:
+    """
+    Stream LLM → TTS while monitoring the mic for barge-in.
+
+    Returns True if the user interrupted, False if completed normally.
+    """
+    loop        = asyncio.get_running_loop()
+    barged_flag = threading.Event()    # set from audio thread
+    barged_in   = asyncio.Event()      # set on event loop, watched by async code
+    barge_count = 0
+    grace_until = time.monotonic() + BARGE_IN_GRACE
+
+    def _barge_callback(indata: np.ndarray, frames: int, time_info, status) -> None:
+        nonlocal barge_count
+        if barged_flag.is_set() or time.monotonic() < grace_until:
+            return
+        rms = float(np.sqrt(np.mean(indata[:, 0].astype(np.float32) ** 2)))
+        if rms > BARGE_IN_RMS:
+            barge_count += 1
+            if barge_count >= BARGE_IN_FRAMES:
+                barged_flag.set()
+                player.interrupt()
+                loop.call_soon_threadsafe(barged_in.set)
+        else:
+            barge_count = max(0, barge_count - 1)
+
+    buf           = SentenceBuffer(first_min_chars=30)
+    full_response = ""
+
+    with sd.InputStream(
+        samplerate=SAMPLE_RATE,
+        channels=1,
+        dtype=np.float32,
+        blocksize=320,      # 20 ms chunks for low-latency barge detection
+        callback=_barge_callback,
+    ):
+        async for chunk in adapter.respond(transcript, session_id=session_id):
+            if barged_in.is_set():
+                break
+            full_response += chunk
+            sentence = buf.push(chunk)
+            if sentence and not barged_in.is_set():
+                audio_bytes = await tts.synthesize(sentence)
+                if not barged_in.is_set():
+                    await player.play(audio_bytes)
+
+        if not barged_in.is_set():
+            remainder = buf.flush()
+            if remainder:
+                audio_bytes = await tts.synthesize(remainder)
+                if not barged_in.is_set():
+                    await player.play(audio_bytes)
+
+    logger.info(
+        "Merlin: %s",
+        full_response[:120] + ("…" if len(full_response) > 120 else ""),
+    )
+    return barged_in.is_set()
+
+
+# ── Conversation session ──────────────────────────────────────────────────────
+
+async def run_conversation_session(
     adapter,
     stt,
     tts,
+    player: AudioPlayer,
     session_id: str,
 ) -> None:
-    """STT → LLM → TTS for a single user utterance."""
-    logger.info("Recording…")
-    audio = await record_utterance()
+    """
+    Multi-turn conversation loop.
 
-    transcript = await stt.transcribe(audio)
-    if not transcript.strip():
-        logger.info("Empty transcript — returning to sleep")
-        return
-    logger.info("You: %s", transcript)
+    Stays awake after each response. Returns to standby after
+    CONVERSATION_TIMEOUT seconds of silence with no new speech.
+    """
+    while True:
+        logger.info("Listening… (%.0fs timeout)", CONVERSATION_TIMEOUT)
+        audio = await record_utterance(max_initial_silence=CONVERSATION_TIMEOUT)
 
-    buf = SentenceBuffer(first_min_chars=30)
-    loop = asyncio.get_running_loop()
-    full_response = ""
+        if not audio:
+            logger.info("No speech — returning to standby")
+            return
 
-    async for chunk in adapter.respond(transcript, session_id=session_id):
-        full_response += chunk
-        sentence = buf.push(chunk)
-        if sentence:
-            audio_bytes = await tts.synthesize(sentence)
-            await play_async(audio_bytes)
+        transcript = await stt.transcribe(audio)
+        if not transcript.strip():
+            continue
 
-    remainder = buf.flush()
-    if remainder:
-        audio_bytes = await tts.synthesize(remainder)
-        await play_async(audio_bytes)
+        logger.info("You: %s", transcript)
 
-    logger.info("Merlin: %s", full_response[:120] + ("…" if len(full_response) > 120 else ""))
+        interrupted = await stream_response(adapter, tts, player, transcript, session_id)
+
+        if interrupted:
+            logger.info("Barge-in detected — listening for next utterance")
+            await asyncio.sleep(0.2)   # brief gap before re-recording
 
 
 # ── Main service loop ─────────────────────────────────────────────────────────
-
-_CHIME = "/System/Library/Sounds/Tink.aiff"
-
-
-async def _play_chime() -> None:
-    """Play a brief system sound to acknowledge the wake trigger."""
-    await asyncio.get_running_loop().run_in_executor(
-        None,
-        lambda: subprocess.run(
-            ["afplay", _CHIME],
-            check=False,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        ),
-    )
-
 
 async def main() -> None:
     logger.info("Merlin service starting…")
@@ -203,37 +302,35 @@ async def main() -> None:
     adapter    = build_orchestrator()
     stt        = build_stt()
     tts        = build_tts()
+    player     = AudioPlayer()
     trigger    = WakeTrigger(openai_api_key=settings.openai_api_key)
     session_id = "merlin-bg"
 
     wake_modes = "keyword('merlin') + double-clap" if settings.openai_api_key else "double-clap only"
     logger.info(
-        "Ready. Adapter=%s STT=%s TTS=%s | wake=%s",
+        "Ready. Adapter=%s STT=%s TTS=%s | wake=%s | conversation_timeout=%.0fs",
         adapter.__class__.__name__,
         stt.__class__.__name__,
         tts.__class__.__name__,
         wake_modes,
+        CONVERSATION_TIMEOUT,
     )
 
     retry_delay = 2.0
 
     while True:
         try:
-            # Phase 1: low-power listening (mic closed between turns)
             await trigger.wait()
-
-            # Acknowledge wake before recording
-            await _play_chime()
+            await player.chime()
             retry_delay = 2.0
 
-            # Phase 2: full conversation turn
-            await run_turn(adapter, stt, tts, session_id)
+            await run_conversation_session(adapter, stt, tts, player, session_id)
 
         except KeyboardInterrupt:
             logger.info("Interrupted — shutting down")
             break
         except Exception:
-            logger.exception("Error in turn — retrying in %.0fs", retry_delay)
+            logger.exception("Error — retrying in %.0fs", retry_delay)
             await asyncio.sleep(retry_delay)
             retry_delay = min(retry_delay * 2, 60.0)
 
