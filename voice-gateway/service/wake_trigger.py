@@ -188,14 +188,22 @@ class KeywordBuffer:
         duration_s = len(audio) / self._mic_sr
 
         # resample to Whisper target rate if mic is at a different rate
+        rms_before = float(np.sqrt(np.mean(audio ** 2)))
+        max_before = float(np.max(np.abs(audio)))
         if self._mic_sr != WHISPER_SR:
             g     = gcd(self._mic_sr, WHISPER_SR)
             audio = resample_poly(audio, WHISPER_SR // g, self._mic_sr // g).astype(np.float32)
+        rms_after = float(np.sqrt(np.mean(audio ** 2)))
+        max_after = float(np.max(np.abs(audio)))
 
-        # [POINT 2] max of the audio array immediately before queue.put
         logger.info(
-            "VAD flush — speech_duration=%.2fs  max=%.5f  (mic_sr=%d→%d)  queue=%d",
-            duration_s, float(np.max(np.abs(audio))),
+            "VAD flush — speech_duration=%.2fs"
+            "  rms_before_resample=%.5f  max_before=%.5f"
+            "  rms_after_resample=%.5f  max_after=%.5f"
+            "  (mic_sr=%d→%d)  queue=%d",
+            duration_s,
+            rms_before, max_before,
+            rms_after, max_after,
             self._mic_sr, WHISPER_SR, self._inq.qsize() + 1,
         )
         self._inq.put(audio)
@@ -370,13 +378,25 @@ class WakeTrigger:
 
                 if _cb_count[0] == 1 or now - _cb_last_log[0] >= 1.0:
                     _cb_last_log[0] = now
-                    logger.info(
-                        "[pt1-cb] #%d shape=%s  indata_max=%.5f  active_ch=%d  ch_rms=[%s]",
-                        _cb_count[0], indata.shape,
-                        float(np.abs(indata).max()),
-                        active_ch,
-                        "  ".join(f"{i}:{v:.4f}" for i, v in enumerate(ch_rms_arr)),
-                    )
+                    if _cb_count[0] == 1:
+                        # First frame: full dtype + raw sample range before any processing
+                        logger.info(
+                            "[cb-frame1] indata.dtype=%s  shape=%s  raw_min=%.6f  raw_max=%.6f"
+                            "  indata_max=%.5f  active_ch=%d  ch_rms=[%s]",
+                            indata.dtype, indata.shape,
+                            float(indata.min()), float(indata.max()),
+                            float(np.abs(indata).max()),
+                            active_ch,
+                            "  ".join(f"{i}:{v:.4f}" for i, v in enumerate(ch_rms_arr)),
+                        )
+                    else:
+                        logger.info(
+                            "[pt1-cb] #%d shape=%s  indata_max=%.5f  active_ch=%d  ch_rms=[%s]",
+                            _cb_count[0], indata.shape,
+                            float(np.abs(indata).max()),
+                            active_ch,
+                            "  ".join(f"{i}:{v:.4f}" for i, v in enumerate(ch_rms_arr)),
+                        )
                 clap.feed(rms, now)
                 kw = kw_box[0]
                 if kw:
@@ -396,10 +416,23 @@ class WakeTrigger:
             callback=_callback,
         ) as stream:
             actual_sr = int(stream.samplerate)
-            logger.info(
-                "=== InputStream open === device=%r sr=%d channels=%d blocksize=%d active=%s",
-                stream.device, actual_sr, stream.channels, stream.blocksize, stream.active,
-            )
+            # ── device latency info ──────────────────────────────────────────
+            try:
+                dev_info = sd.query_devices(stream.device[0], kind="input")
+                logger.info(
+                    "=== InputStream open === device=%r sr=%d channels=%d blocksize=%d"
+                    "  dtype=%s  latency=%.4fs  dev_low_lat=%.4fs  dev_high_lat=%.4fs",
+                    stream.device, actual_sr, stream.channels, stream.blocksize,
+                    stream.dtype,
+                    stream.latency,
+                    dev_info.get("default_low_input_latency", float("nan")),
+                    dev_info.get("default_high_input_latency", float("nan")),
+                )
+            except Exception as _e:
+                logger.info(
+                    "=== InputStream open === device=%r sr=%d channels=%d blocksize=%d (latency query failed: %s)",
+                    stream.device, actual_sr, stream.channels, stream.blocksize, _e,
+                )
 
             # Build KeywordBuffer now that we know the real sample rate
             if self._api_key:
