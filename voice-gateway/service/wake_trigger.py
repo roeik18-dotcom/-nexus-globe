@@ -392,17 +392,29 @@ class WakeTrigger:
 
         Returns any post-keyword audio chunks (see drain_pending).
         """
+        import os
+        import sys
+        _mod = sys.modules.get(__name__)
+        logger.info(
+            "[wake] IDENTITY  pid=%d  __file__=%s  realpath=%s"
+            "  cwd=%s  module_file=%s",
+            os.getpid(),
+            __file__,
+            os.path.realpath(__file__),
+            os.getcwd(),
+            getattr(_mod, "__file__", "NOT IN sys.modules"),
+        )
+
         if not self._sanity_done:
             _mic_sanity_check()
             self._sanity_done = True
 
-        import sys
-        _mod = sys.modules.get(__name__)
+        _mod2 = sys.modules.get(__name__)
         logger.info(
             "=== _wait_blocking enter === module=%s  __file__=%s  id(module)=%d",
             __name__,
-            getattr(_mod, "__file__", "NOT IN sys.modules"),
-            id(_mod) if _mod else -1,
+            getattr(_mod2, "__file__", "NOT IN sys.modules"),
+            id(_mod2) if _mod2 else -1,
         )
 
         logger.info("sd.query_devices():\n%s", sd.query_devices())
