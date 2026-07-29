@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     elevenlabs_voice_id: str = "JBFqnCBsd6RMkjVDRZzb"   # George — deep, British
     elevenlabs_model: str = "eleven_turbo_v2_5"           # fast + multilingual
 
+    # ── Fish Audio TTS ────────────────────────────────────────────────────────
+    fish_audio_api_key: str = ""
+    fish_audio_voice_id: str = ""   # model_id from the voice URL on fish.audio
+
     claude_model: str = "claude-opus-4-8"
     persona: Literal["jarvis", "philos", "merlin"] = "jarvis"
 

@@ -137,6 +137,13 @@ def build_tts():
     if name == "system":
         from app.providers.tts.system_tts import SystemTTS
         return SystemTTS()
+    if name == "fish_audio":
+        if not settings.fish_audio_api_key:
+            raise ValueError("FISH_AUDIO_API_KEY is missing — required for TTS_PROVIDER=fish_audio")
+        if not settings.fish_audio_voice_id:
+            raise ValueError("FISH_AUDIO_VOICE_ID is missing — required for TTS_PROVIDER=fish_audio")
+        from app.providers.tts.fish_tts import FishAudioTTS
+        return FishAudioTTS()
     if name == "mock":
         from app.providers.tts.mock import MockTTS
         return MockTTS()

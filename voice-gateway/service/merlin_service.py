@@ -63,9 +63,9 @@ SILENCE_S    = 0.8     # 0.8 s trailing silence ends an utterance
 MAX_RECORD_S = 30
 
 # ── Barge-in (interrupt Merlin mid-speech) ────────────────────────────────────
-BARGE_IN_RMS    = 0.05  # mic energy that counts as user speaking
-BARGE_IN_FRAMES = 8     # need ~160 ms of sustained energy (8 × 20 ms blocks)
-BARGE_IN_GRACE  = 0.5   # ignore first 0.5 s of playback (avoids echo trigger)
+BARGE_IN_RMS    = 0.003  # mic energy that counts as user speaking (Babyface ch1: avg≈0.005 while speaking)
+BARGE_IN_FRAMES = 8      # need ~160 ms of sustained energy (8 × 20 ms blocks)
+BARGE_IN_GRACE  = 0.5    # ignore first 0.5 s of playback (avoids echo trigger)
 
 # ── Conversation session ──────────────────────────────────────────────────────
 CONVERSATION_TIMEOUT = 8.0   # seconds of post-response silence → standby
