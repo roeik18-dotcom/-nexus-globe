@@ -120,6 +120,40 @@ class AudioPlayer:
         self._interrupted.set()
         sd.stop()
 
+    async def play_stream(self, stream) -> None:
+        """Play float32 PCM chunks from an async generator of (np.ndarray, sample_rate).
+
+        Starts an sd.OutputStream on the first chunk (sample_rate is not known
+        until then).  Checks self._interrupted before every write so barge-in
+        stops playback immediately without needing a separate sd.stop() call.
+        """
+        self._interrupted.clear()
+        out: sd.OutputStream | None = None
+        loop = asyncio.get_running_loop()
+        try:
+            async for pcm_chunk, sr in stream:
+                if self._interrupted.is_set():
+                    break
+                if out is None:
+                    out = sd.OutputStream(
+                        samplerate=sr,
+                        channels=1,
+                        dtype="float32",
+                    )
+                    out.start()
+                    logger.info("play_stream: OutputStream opened sr=%d", sr)
+                if not self._interrupted.is_set() and pcm_chunk.size:
+                    await loop.run_in_executor(None, out.write, pcm_chunk)
+        except Exception as e:
+            logger.warning("play_stream error: %s", e)
+        finally:
+            if out is not None:
+                try:
+                    out.stop()
+                    out.close()
+                except Exception:
+                    pass
+
 
 # ── Recording ─────────────────────────────────────────────────────────────────
 
@@ -415,16 +449,22 @@ async def stream_response(
             full_response += chunk
             sentence = buf.push(chunk)
             if sentence and not barged_in.is_set():
-                audio_bytes = await tts.synthesize(sentence)
-                if not barged_in.is_set():
-                    await player.play(audio_bytes)
+                if hasattr(tts, "stream_synthesize"):
+                    await player.play_stream(tts.stream_synthesize(sentence))
+                else:
+                    audio_bytes = await tts.synthesize(sentence)
+                    if not barged_in.is_set():
+                        await player.play(audio_bytes)
 
         if not barged_in.is_set():
             remainder = buf.flush()
             if remainder:
-                audio_bytes = await tts.synthesize(remainder)
-                if not barged_in.is_set():
-                    await player.play(audio_bytes)
+                if hasattr(tts, "stream_synthesize"):
+                    await player.play_stream(tts.stream_synthesize(remainder))
+                else:
+                    audio_bytes = await tts.synthesize(remainder)
+                    if not barged_in.is_set():
+                        await player.play(audio_bytes)
 
     logger.info(
         "Merlin: %s",
