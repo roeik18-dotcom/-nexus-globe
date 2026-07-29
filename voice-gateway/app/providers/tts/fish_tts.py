@@ -1,16 +1,21 @@
 """Fish Audio TTS provider.
 
-Streaming mode (stream_synthesize):  audio plays as it arrives from Fish Audio —
-  the WAV header is parsed from the first HTTP chunk; subsequent chunks go
-  directly to AudioPlayer.play_stream() without waiting for the full response.
+API: POST https://api.fish.audio/v1/tts
+     Content-Type: application/msgpack  (NOT JSON)
+     Authorization: Bearer <key>
+     model header: speech-1.5
+
+Streaming mode (stream_synthesize):  audio plays as it arrives — WAV header
+  is parsed from the first HTTP chunk; subsequent chunks go directly to
+  AudioPlayer.play_stream() without waiting for the full response.
 
 Fallback:  on any HTTP / timeout error, synthesize() falls back to OpenAI TTS
   automatically (if OPENAI_API_KEY is set).
 
 Config (in .env):
     TTS_PROVIDER=fish_audio
-    FISH_AUDIO_API_KEY=<bearer token from fish.audio>
-    FISH_AUDIO_VOICE_ID=<model_id from the voice URL on fish.audio>
+    FISH_AUDIO_API_KEY=<bearer token from fish.audio → Settings → API>
+    FISH_AUDIO_VOICE_ID=<model_id from the voice URL: fish.audio/m/<ID>>
 """
 
 import io
@@ -21,6 +26,7 @@ from typing import AsyncGenerator
 
 import httpx
 import numpy as np
+import ormsgpack
 from scipy.io import wavfile
 from scipy.signal import resample_poly
 
@@ -30,6 +36,26 @@ logger = logging.getLogger(__name__)
 
 _TARGET_SR = 24_000   # must match merlin_service._TTS_SR
 _API_URL   = "https://api.fish.audio/v1/tts"
+_MODEL     = "speech-1.5"
+
+
+def _build_body(text: str, voice_id: str) -> bytes:
+    """Serialize a TTSRequest as msgpack — the encoding Fish Audio requires."""
+    return ormsgpack.packb({
+        "text": text,
+        "reference_id": voice_id,
+        "format": "wav",
+        "normalize": True,
+        "latency": "balanced",
+    })
+
+
+def _headers(api_key: str) -> dict:
+    return {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/msgpack",
+        "model": _MODEL,
+    }
 
 
 def _decode_pcm_bytes(data: bytes, sample_width: int, n_channels: int) -> np.ndarray:
@@ -41,7 +67,6 @@ def _decode_pcm_bytes(data: bytes, sample_width: int, n_channels: int) -> np.nda
     else:
         arr = np.frombuffer(data, dtype=np.uint8).astype(np.float32) / 128.0 - 1.0
     if n_channels > 1:
-        # Truncate to a multiple of n_channels before reshape
         trim = (len(arr) // n_channels) * n_channels
         arr = arr[:trim].reshape(-1, n_channels).mean(axis=1)
     return arr
@@ -78,7 +103,7 @@ class FishAudioTTS:
             self._fallback = OpenAITTS()
             logger.info("fish_audio: OpenAI TTS fallback configured")
 
-    # ── Non-streaming (used by providers that don't check for stream_synthesize) ─
+    # ── Non-streaming ─────────────────────────────────────────────────────────
 
     async def synthesize(self, text: str) -> bytes:
         if not text.strip():
@@ -95,14 +120,8 @@ class FishAudioTTS:
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(
                 _API_URL,
-                headers={"Authorization": f"Bearer {self._api_key}"},
-                json={
-                    "text": text,
-                    "reference_id": self._voice_id,
-                    "format": "wav",
-                    "normalize": True,
-                    "latency": "normal",
-                },
+                content=_build_body(text, self._voice_id),
+                headers=_headers(self._api_key),
             )
             resp.raise_for_status()
             wav_bytes = resp.content
@@ -114,17 +133,17 @@ class FishAudioTTS:
         )
         return pcm
 
-    # ── Streaming: play as data arrives ──────────────────────────────────────────
+    # ── Streaming: play as data arrives ───────────────────────────────────────
 
     async def stream_synthesize(
         self, text: str
     ) -> AsyncGenerator[tuple[np.ndarray, int], None]:
         """
-        Async generator yielding (float32_mono_pcm_chunk, sample_rate).
+        Async generator yielding (float32_mono_chunk, sample_rate).
 
-        The WAV header is parsed from the first HTTP chunk; all subsequent
-        chunks are decoded and yielded immediately so AudioPlayer.play_stream()
-        can start playback before the full response has arrived.
+        WAV header is parsed from the first HTTP chunk; all subsequent chunks
+        are decoded and yielded immediately so AudioPlayer.play_stream() can
+        start before the full response has arrived.
 
         On error, falls back to non-streaming synthesize() and yields one chunk.
         """
@@ -152,26 +171,19 @@ class FishAudioTTS:
         sample_rate  = None
         n_channels   = None
         sample_width = None
-        data_offset  = None   # byte offset where raw PCM starts in the stream
+        data_offset  = None
 
         async with httpx.AsyncClient(timeout=60.0) as client:
             async with client.stream(
                 "POST",
                 _API_URL,
-                headers={"Authorization": f"Bearer {self._api_key}"},
-                json={
-                    "text": text,
-                    "reference_id": self._voice_id,
-                    "format": "wav",
-                    "normalize": True,
-                    "latency": "normal",
-                },
+                content=_build_body(text, self._voice_id),
+                headers=_headers(self._api_key),
             ) as resp:
                 resp.raise_for_status()
 
                 async for raw_chunk in resp.aiter_bytes(4096):
                     if data_offset is None:
-                        # Still buffering the WAV header
                         header_buf.extend(raw_chunk)
                         idx = bytes(header_buf).find(b"data")
                         if idx != -1 and len(header_buf) >= idx + 8:
