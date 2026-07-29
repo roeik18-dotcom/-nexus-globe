@@ -457,10 +457,18 @@ class WakeTrigger:
                         _wake_buf.pop(0)
                     if _cb_count[0] % 50 == 0 and _wake_total[0] > 0:
                         try:
-                            wavfile.write("/tmp/merlin_wake_input.wav", sr,
-                                          np.concatenate(_wake_buf))
-                        except Exception:
-                            pass
+                            snap = np.concatenate(_wake_buf)
+                            wavfile.write("/tmp/merlin_wake_input.wav", sr, snap)
+                            logger.info(
+                                "[wake] wrote /tmp/merlin_wake_input.wav"
+                                "  samples=%d  sr=%d  duration=%.2fs"
+                                "  rms=%.6f  peak=%.6f",
+                                len(snap), sr, len(snap) / sr,
+                                float(np.sqrt(np.mean(snap ** 2))),
+                                float(np.abs(snap).max()),
+                            )
+                        except Exception as _wav_err:
+                            logger.warning("[wake] wavfile.write failed: %s", _wav_err)
 
                 clap.feed(rms, now)
                 kw = kw_box[0]
