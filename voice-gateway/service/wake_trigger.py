@@ -414,8 +414,12 @@ class WakeTrigger:
         clap     = ClapDetector(on_double_clap=event)
         kw_box   = [None]   # filled after stream opens so we have the real sr
 
-        _cb_count    = [0]
-        _cb_last_log = [0.0]
+        _WAKE_CH    = 1        # Babyface channel index that carries the mic signal
+        _sr_box     = [0]      # filled once stream opens; needed for WAV save
+        _wake_buf   = []       # rolling channel-1 PCM frames (capped at 2 s)
+        _wake_total = [0]      # total samples currently in _wake_buf
+        _cb_count   = [0]
+        _cb_logged  = [False]  # True after one-time startup log
 
         def _callback(indata: np.ndarray, frames: int, time_info, status) -> None:
             try:
@@ -425,43 +429,38 @@ class WakeTrigger:
                 _cb_count[0] += 1
                 now = time.monotonic()
 
-                # ── channel selection (safe for both 1-D and N-D indata) ──────────
-                raw_max = float(np.abs(indata).max())
-                raw_min = float(indata.min())
-                # Promote 1-D (mono) to 2-D so the rest of the logic is uniform.
-                # Without this, indata[:, active_ch] throws IndexError on mono
-                # devices and silently skips kw.feed() every frame.
+                # Promote 1-D mono to 2-D so channel indexing is uniform
                 indata_2d = indata[:, np.newaxis] if indata.ndim == 1 else indata
-                ch_rms_arr = np.sqrt(np.mean(indata_2d.astype(np.float32) ** 2, axis=0))
-                ch_max_arr = np.abs(indata_2d).max(axis=0)
-                active_ch  = int(np.argmax(ch_rms_arr))
-                pcm        = indata_2d[:, active_ch].astype(np.float32)
-                rms        = float(ch_rms_arr[active_ch])
-                ch_str     = "  ".join(f"{i}:rms={v:.6f},peak={p:.6f}"
-                                       for i, (v, p) in enumerate(zip(ch_rms_arr, ch_max_arr)))
 
-                # ── periodic full-channel log (every 0.2 s) ───────────────────────
-                if _cb_count[0] == 1 or now - _cb_last_log[0] >= 0.2:
-                    _cb_last_log[0] = now
+                # Extract the designated wake channel (hardcoded; not argmax)
+                pcm = indata_2d[:, _WAKE_CH].astype(np.float32)
+                rms = float(np.sqrt(np.mean(pcm ** 2)))
+
+                # One-time startup log: dtype, shape, raw signal range
+                if not _cb_logged[0]:
+                    _cb_logged[0] = True
                     logger.info(
-                        "[cb] #%d  dtype=%s  shape=%s  raw_min=%.6f  raw_max=%.6f"
-                        "  active_ch=%d  active_rms=%.6f  threshold=%.6f"
-                        "  ch=[%s]",
-                        _cb_count[0], indata.dtype, indata.shape, raw_min, raw_max,
-                        active_ch, rms, VAD_THRESHOLD, ch_str,
+                        "[wake] startup: dtype=%s  shape=%s  wake_ch=%d"
+                        "  raw_min=%.6f  raw_max=%.6f",
+                        indata.dtype, indata.shape, _WAKE_CH,
+                        float(indata.min()), float(np.abs(indata).max()),
                     )
 
-                # ── per-frame VAD trace: every frame above 5 % of threshold,
-                #    plus a heartbeat every 25 frames so silence is also visible ──
-                above = rms >= VAD_THRESHOLD
-                if above or _cb_count[0] % 25 == 0:
-                    logger.info(
-                        "[vad-frame] #%d  dtype=%s  raw_max=%.6f"
-                        "  active_ch=%d  rms=%.6f  threshold=%.6f  %s",
-                        _cb_count[0], indata.dtype, raw_max,
-                        active_ch, rms, VAD_THRESHOLD,
-                        "SPEECH" if above else "silence",
-                    )
+                # Rolling 2-second WAV capture written every ~50 frames (≈ 3.5 s)
+                sr = _sr_box[0]
+                if sr > 0:
+                    _wake_buf.append(pcm)
+                    _wake_total[0] += len(pcm)
+                    target = 2 * sr
+                    while _wake_total[0] > target and len(_wake_buf) > 1:
+                        _wake_total[0] -= len(_wake_buf[0])
+                        _wake_buf.pop(0)
+                    if _cb_count[0] % 50 == 0 and _wake_total[0] > 0:
+                        try:
+                            wavfile.write("/tmp/merlin_wake_input.wav", sr,
+                                          np.concatenate(_wake_buf))
+                        except Exception:
+                            pass
 
                 clap.feed(rms, now)
                 kw = kw_box[0]
@@ -481,7 +480,8 @@ class WakeTrigger:
             dtype=np.float32,
             callback=_callback,
         ) as stream:
-            actual_sr = int(stream.samplerate)
+            actual_sr     = int(stream.samplerate)
+            _sr_box[0]    = actual_sr   # unblock WAV capture in callback
             # ── device latency info ──────────────────────────────────────────
             try:
                 dev_info = sd.query_devices(stream.device[0], kind="input")
