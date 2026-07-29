@@ -46,6 +46,59 @@ MAX_BUFFER_S   = 4.0      # hard cap: transcribe even if silence never arrives
 # ── Telemetry ─────────────────────────────────────────────────────────────────
 _LOG_INTERVAL_FRAMES = 250   # heartbeat log every ~5 s (250 × 20 ms blocks)
 
+# ── API-key validation ──────────────────────────────────────────────────────
+# Common glyphs that appear when a *masked* key (e.g. from a screenshot or a
+# `re.sub` that redacted the value) is accidentally written into .env instead of
+# the real secret.  A real OpenAI key is ASCII-only, so any of these means the
+# key is corrupted — sending it in an HTTP header raises UnicodeEncodeError on
+# every request, which previously flooded the logs once per audio frame.
+_MASKING_CHARS = {"•": "bullet", "…": "ellipsis", "*": "asterisk"}
+_EXPECTED_KEY_PREFIX = "sk-"
+# Max consecutive inference failures before the keyword path disables itself as a
+# runtime backstop (validation should catch bad keys first; this guards the case
+# where a key passes validation but the API path keeps failing).
+_MAX_CONSECUTIVE_INFERENCE_ERRORS = 3
+
+
+def validate_openai_api_key(api_key: str | None) -> tuple[bool, str]:
+    """Validate an OpenAI API key without ever exposing it.
+
+    Returns ``(ok, reason)``.  ``reason`` is a non-sensitive, log-safe
+    explanation that NEVER contains the key itself; on success it is ``""``.
+
+    Rejects: missing/empty keys, keys containing masking placeholder glyphs
+    (•, …, *), keys with any non-ASCII character, and keys that lack the
+    expected OpenAI ``sk-`` prefix.
+    """
+    if not api_key or not api_key.strip():
+        return False, "OPENAI_API_KEY is missing or empty"
+
+    key = api_key.strip()
+
+    present_masks = [name for ch, name in _MASKING_CHARS.items() if ch in key]
+    if present_masks:
+        return False, (
+            "OPENAI_API_KEY contains masking placeholder character(s): "
+            + ", ".join(present_masks)
+            + " — a masked/redacted value appears to have been written to .env "
+            "instead of the real key"
+        )
+
+    non_ascii = sum(1 for ch in key if ord(ch) > 127)
+    if non_ascii:
+        return False, (
+            f"OPENAI_API_KEY contains {non_ascii} non-ASCII character(s); a real "
+            "key is ASCII-only, so this value is corrupted or masked"
+        )
+
+    if not key.startswith(_EXPECTED_KEY_PREFIX):
+        return False, (
+            f"OPENAI_API_KEY does not start with the expected "
+            f"{_EXPECTED_KEY_PREFIX!r} prefix"
+        )
+
+    return True, ""
+
 
 def _query_mic_rate() -> int:
     """Return the default input device's native sample rate."""
@@ -249,6 +302,19 @@ class KeywordBuffer:
     # ── inference thread ──────────────────────────────────────────────────────
 
     def _inference_loop(self) -> None:
+        # Validate the key once, up front.  An invalid key (e.g. masked with •)
+        # would otherwise raise UnicodeEncodeError on every single frame's
+        # request; instead we log one clear error and exit the thread, leaving
+        # the double-clap wake path fully operational.
+        ok, reason = validate_openai_api_key(self._api_key)
+        if not ok:
+            logger.error(
+                "Keyword inference thread not started — %s. "
+                "Keyword wake disabled; double-clap wake remains active.",
+                reason,
+            )
+            return
+
         try:
             import openai
             client = openai.OpenAI(api_key=self._api_key)
@@ -263,6 +329,7 @@ class KeywordBuffer:
             )
             return
 
+        consecutive_errors = 0
         while True:
             audio = self._inq.get()
             logger.info(
@@ -290,8 +357,21 @@ class KeywordBuffer:
                 if wake_match:
                     logger.info("keyword detected — waking Merlin")
                     self._trigger.set()
+                consecutive_errors = 0
             except Exception:
-                logger.warning("keyword inference error", exc_info=True)
+                consecutive_errors += 1
+                logger.warning(
+                    "keyword inference error (%d/%d consecutive)",
+                    consecutive_errors, _MAX_CONSECUTIVE_INFERENCE_ERRORS,
+                    exc_info=True,
+                )
+                if consecutive_errors >= _MAX_CONSECUTIVE_INFERENCE_ERRORS:
+                    logger.error(
+                        "Disabling keyword inference after %d consecutive errors "
+                        "to stop per-frame log flooding. Double-clap wake remains active.",
+                        consecutive_errors,
+                    )
+                    return
 
 
 def _mic_sanity_check() -> None:
@@ -364,12 +444,34 @@ class WakeTrigger:
     """
 
     def __init__(self, openai_api_key: str = "", keyword: str = "merlin"):
-        self._api_key = openai_api_key
         self._keyword = keyword
         self._sanity_done = False   # run _mic_sanity_check only on first wake
+
+        # Validate the key ONCE at startup.  If it is missing/corrupted/masked we
+        # disable the keyword path entirely (self._api_key = "") so the OpenAI
+        # inference thread never starts — this is what prevents the per-frame
+        # UnicodeEncodeError flood.  Double-clap wake is unaffected either way.
+        ok, reason = validate_openai_api_key(openai_api_key)
+        self._key_valid = ok
+        self._key_error = reason
+        self._api_key = openai_api_key if ok else ""
+
+        if ok:
+            logger.info("OPENAI_API_KEY validated — keyword + double-clap wake enabled")
+        elif openai_api_key:
+            logger.error(
+                "OPENAI_API_KEY invalid — keyword wake DISABLED: %s. "
+                "Double-clap wake remains active. Fix the key in .env and restart.",
+                reason,
+            )
+        else:
+            logger.warning(
+                "OPENAI_API_KEY not set — keyword wake disabled, double-clap only.",
+            )
+
         print(
             f"[WakeTrigger] __init__ id={id(self)}  sanity_done=False"
-            f"  api_key={'set' if openai_api_key else 'MISSING'}",
+            f"  keyword_wake={'enabled' if ok else 'disabled'}",
             flush=True,
         )
 
