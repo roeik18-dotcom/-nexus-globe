@@ -405,10 +405,6 @@ class WakeTrigger:
             getattr(_mod, "__file__", "NOT IN sys.modules"),
         )
 
-        if not self._sanity_done:
-            _mic_sanity_check()
-            self._sanity_done = True
-
         _mod2 = sys.modules.get(__name__)
         logger.info(
             "=== _wait_blocking enter === module=%s  __file__=%s  id(module)=%d",
