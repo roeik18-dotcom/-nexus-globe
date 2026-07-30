@@ -21,3 +21,6 @@ wake.log
 wake.loggrep
 bench/results/
 -nexus-globe/
+.env.*
+.env.save
+.DS_Store
