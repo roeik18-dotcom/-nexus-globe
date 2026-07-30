@@ -227,9 +227,11 @@ class KeywordBuffer:
             )
             self._peak_rms = 0.0
 
-        # per-frame trace when signal is at least 5 % of threshold
+        # per-frame trace when signal is at least 5 % of threshold.
+        # DEBUG on purpose: this fires roughly once per audio frame during normal
+        # standby listening and ballooned service.log to ~130 MB/day at INFO.
         if rms >= VAD_THRESHOLD * 0.05:
-            logger.info(
+            logger.debug(
                 "[vad-near] frame=%d  rms=%.6f  threshold=%.6f  ratio=%.1f%%"
                 "  pcm_dtype=%s  pcm_min=%.6f  pcm_max=%.6f  in_speech=%s",
                 self._frame_count, rms, VAD_THRESHOLD, rms / VAD_THRESHOLD * 100,
