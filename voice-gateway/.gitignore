@@ -10,3 +10,14 @@ dist/
 build/
 *.aiff
 *.mp3
+*.log
+*.wav
+*.bak
+client/*.bak
+wake_inference_keys
+startup.log
+wake-diag.log
+wake.log
+wake.loggrep
+bench/results/
+-nexus-globe/
