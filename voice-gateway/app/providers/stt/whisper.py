@@ -28,6 +28,11 @@ class WhisperSTT(STTProvider):
             model="whisper-1",
             file=file_like,
             response_format="text",
+            # Force Hebrew + deterministic decoding to match the wake path:
+            # on low-SNR mic input Whisper otherwise hallucinates foreign-language
+            # stock phrases (Thai/Korean) and word repetitions.
+            language="he",
+            temperature=0,
         )
 
         text = response.strip() if isinstance(response, str) else str(response).strip()

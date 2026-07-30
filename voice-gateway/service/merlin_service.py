@@ -63,9 +63,19 @@ SILENCE_S    = 0.8     # 0.8 s trailing silence ends an utterance
 MAX_RECORD_S = 30
 
 # ── Barge-in (interrupt Merlin mid-speech) ────────────────────────────────────
-BARGE_IN_RMS    = 0.003  # mic energy that counts as user speaking (Babyface ch1: avg≈0.005 while speaking)
+# 2026-07-30: was 0.003 — identical to the ambient noise floor (~0.002–0.003),
+# so room noise interrupted Merlin the instant he started speaking (log showed
+# repeated "interrupted=True response_len=0").  Raised well above the floor so
+# only real speech-over-Merlin barges in.
+BARGE_IN_RMS    = 0.010  # mic energy that counts as user speaking over Merlin
 BARGE_IN_FRAMES = 8      # need ~160 ms of sustained energy (8 × 20 ms blocks)
 BARGE_IN_GRACE  = 0.5    # ignore first 0.5 s of playback (avoids echo trigger)
+# 2026-07-30: temporarily disabled.  Merlin's own voice from the room speakers
+# fed back into the Babyface mic (or the user kept talking) and tripped barge-in
+# ~0.5 s into every reply, cutting it off (log: real reply, then interrupted=True
+# response_len=59).  Getting a COMPLETE spoken reply matters more than interrupt
+# support right now; re-enable once echo cancellation / a headset is in place.
+BARGE_IN_ENABLED = False
 
 # ── Conversation session ──────────────────────────────────────────────────────
 CONVERSATION_TIMEOUT = 8.0   # seconds of post-response silence → standby
@@ -381,6 +391,13 @@ async def record_utterance(
             native_sr, SAMPLE_RATE, len(audio),
         )
 
+    # Peak-normalize the captured command so the STT provider gets a healthy
+    # amplitude (mirrors the wake path).  Low-level input otherwise transcribes
+    # as Whisper hallucinations or empty text.
+    import service.vad_config as _vad_cfg
+    audio, _norm_gain = _vad_cfg.normalize_for_whisper(audio)
+    logger.info("record_utterance: normalize gain=×%.2f", _norm_gain)
+
     audio_i16 = (np.clip(audio, -1.0, 1.0) * 32767).astype(np.int16)
     buf = io.BytesIO()
     wavfile.write(buf, SAMPLE_RATE, audio_i16)
@@ -405,11 +422,28 @@ async def stream_response(
     barged_flag = threading.Event()    # set from audio thread
     barged_in   = asyncio.Event()      # set on event loop, watched by async code
     barge_count = 0
-    grace_until = time.monotonic() + BARGE_IN_GRACE
+    # Barge-in must only interrupt Merlin while he is ACTUALLY speaking.  It used
+    # to arm BARGE_IN_GRACE after stream_response *started* — i.e. during the
+    # ~1.3s the LLM spends thinking, before any audio plays — so the user still
+    # talking (or room noise) counted as "barging in" and killed the reply before
+    # a single token was produced (log: interrupted=True response_len=0).  Keep it
+    # disarmed (grace_until = inf) until the first audio chunk reaches the player,
+    # then apply the grace window.
+    playback_started = threading.Event()
+    grace_until = [float("inf")]
+
+    def _arm_barge() -> None:
+        if not playback_started.is_set():
+            playback_started.set()
+            grace_until[0] = time.monotonic() + BARGE_IN_GRACE
+            logger.info(
+                "stream_response: playback started — barge-in arms in %.1fs",
+                BARGE_IN_GRACE,
+            )
 
     def _barge_callback(indata: np.ndarray, frames: int, time_info, status) -> None:
         nonlocal barge_count
-        if barged_flag.is_set() or time.monotonic() < grace_until:
+        if barged_flag.is_set() or time.monotonic() < grace_until[0]:
             return
         arr = indata.astype(np.float32)
         if arr.ndim == 1:
@@ -429,19 +463,28 @@ async def stream_response(
     buf           = SentenceBuffer(first_min_chars=30)
     full_response = ""
 
-    try:
-        _barge_stream = sd.InputStream(
-            samplerate=None,
-            channels=None,
-            dtype=np.float32,
-            blocksize=320,      # 20 ms chunks for low-latency barge detection
-            callback=_barge_callback,
-        )
-    except Exception as _exc:
-        logger.error("stream_response: InputStream open failed: %s", _exc, exc_info=True)
-        raise
+    if BARGE_IN_ENABLED:
+        try:
+            _barge_stream = sd.InputStream(
+                samplerate=None,
+                channels=None,
+                dtype=np.float32,
+                blocksize=320,      # 20 ms chunks for low-latency barge detection
+                callback=_barge_callback,
+            )
+        except Exception as _exc:
+            logger.error("stream_response: InputStream open failed: %s", _exc, exc_info=True)
+            raise
+        _ctx = _barge_stream
+    else:
+        # Barge-in disabled: do NOT open a mic InputStream during playback.  This
+        # both lets Merlin finish uninterrupted and avoids the full-duplex
+        # rate conflict on the Babyface that produced CoreAudio -10863.
+        import contextlib
+        logger.info("stream_response: barge-in DISABLED — Merlin will finish uninterrupted")
+        _ctx = contextlib.nullcontext()
 
-    with _barge_stream:
+    with _ctx:
         logger.info("stream_response: LLM streaming start")
         async for chunk in adapter.respond(transcript, session_id=session_id):
             if barged_in.is_set():
@@ -449,6 +492,7 @@ async def stream_response(
             full_response += chunk
             sentence = buf.push(chunk)
             if sentence and not barged_in.is_set():
+                _arm_barge()   # Merlin is about to speak — now barge-in may apply
                 if hasattr(tts, "stream_synthesize"):
                     await player.play_stream(tts.stream_synthesize(sentence))
                 else:
@@ -459,6 +503,7 @@ async def stream_response(
         if not barged_in.is_set():
             remainder = buf.flush()
             if remainder:
+                _arm_barge()
                 if hasattr(tts, "stream_synthesize"):
                     await player.play_stream(tts.stream_synthesize(remainder))
                 else:

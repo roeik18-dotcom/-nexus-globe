@@ -38,6 +38,7 @@ DOUBLE_CLAP_WINDOW_S = 1.0
 
 # ── Keyword parameters ────────────────────────────────────────────────────────
 from service.vad_config import SPEECH_RMS_THRESHOLD as VAD_THRESHOLD  # shared with merlin_service
+from service.vad_config import normalize_for_whisper  # peak-normalize quiet utterances
 print(f"[wake_trigger] VAD_THRESHOLD={VAD_THRESHOLD:.5f} loaded from service.vad_config", flush=True)
 SPEECH_MIN_S   = 0.3      # minimum speech length before transcribing
 SILENCE_END_S  = 0.6      # silence this long ends the utterance
@@ -288,14 +289,19 @@ class KeywordBuffer:
         rms_after = float(np.sqrt(np.mean(audio ** 2)))
         max_after = float(np.max(np.abs(audio)))
 
+        # Peak-normalize the (already VAD-gated) utterance so Whisper receives a
+        # healthy amplitude.  Low-level mic input otherwise triggers Whisper
+        # hallucinations; this does not affect VAD gating (already decided above).
+        audio, norm_gain = normalize_for_whisper(audio)
+
         logger.info(
             "VAD flush — speech_duration=%.2fs"
             "  rms_before_resample=%.5f  max_before=%.5f"
-            "  rms_after_resample=%.5f  max_after=%.5f"
+            "  rms_after_resample=%.5f  max_after=%.5f  norm_gain=×%.2f"
             "  (mic_sr=%d→%d)  audio_dtype=%s  samples=%d",
             duration_s,
             rms_before, max_before,
-            rms_after, max_after,
+            rms_after, max_after, norm_gain,
             self._mic_sr, WHISPER_SR, audio.dtype, len(audio),
         )
         self._inq.put(audio)
@@ -349,7 +355,21 @@ class KeywordBuffer:
                 buf.name = "audio.wav"
 
                 logger.info("Whisper ← %.2fs audio (samples=%d)", duration_s, len(audio))
-                result = client.audio.transcriptions.create(model="whisper-1", file=buf)
+                # Bias recognition toward the wake word in both languages.  On
+                # low-SNR input Whisper otherwise hallucinates unrelated stock
+                # phrases ("phew", "you", Korean news); the prompt nudges it to
+                # prefer the actual keyword.  (Does not force a language.)
+                result = client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=buf,
+                    prompt="Merlin. מרלין. Hey Merlin.",
+                    # Force Hebrew so Whisper stops guessing wrong languages on
+                    # low-SNR input (was hallucinating Thai/Korean/English stock
+                    # phrases).  temperature=0 makes decoding deterministic and
+                    # curbs the repetition hallucination ("פיל פיל פיל…").
+                    language="he",
+                    temperature=0,
+                )
                 text   = result.text.lower()
                 logger.info("WAKE_TRANSCRIPT=%r  speech_duration=%.2fs", text, duration_s)
 
