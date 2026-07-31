@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from .calibration import Calibrator
 from .cognition import CognitionEngine, OrientationInput
 from .events import Event, EventBus, new_event
 from .executor import Executor
@@ -31,12 +32,14 @@ from .store import JsonlEventStore
 
 class AlphaRuntime:
     def __init__(self, algorithm: Optional[OrientationAlgorithm] = None,
-                 store_path: Optional[str] = None) -> None:
+                 store_path: Optional[str] = None, calibrate: bool = False) -> None:
         store = JsonlEventStore(store_path) if store_path else None
         self.bus = EventBus(store=store)
         if store is not None:
             self.bus.load_from(store.load())
         self.engine = CognitionEngine(self.bus, algorithm)
+        self.calibrate = calibrate                   # opt-in Learning→Cognition feedback
+        self.calibrator = Calibrator()
         self.bus.subscribe(self._on_intent)          # cognition runs on intent.classified
         self.planner = Planner(self.bus)
         self.executor = Executor(self.bus)
@@ -47,8 +50,15 @@ class AlphaRuntime:
         if e.type != "intent.classified":
             return
         p = e.payload
+        intent, conf = p["intent"], p.get("confidence", 0.0)
+        if self.calibrate:                            # Learning → Cognition feedback (opt-in)
+            conf, info = self.calibrator.adjust(intent, conf, self.learner.priors())
+            self.bus.publish(new_event(
+                "calibration.applied", "mos.calibration", f"intent:{intent}",
+                {"intent": intent, "adjusted": conf, **info},
+                correlation_id=e.correlation_id, causation_id=e.id))
         self.engine.orient(OrientationInput(
-            intent=p["intent"], intent_confidence=p.get("confidence", 0.0),
+            intent=intent, intent_confidence=conf,
             correlation_id=e.correlation_id, cause=e.id))
 
     # --- entry points ---

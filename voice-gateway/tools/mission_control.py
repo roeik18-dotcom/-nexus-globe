@@ -122,7 +122,7 @@ def build_panels(d):
         line("LLM", "Claude API, HTTP 200 stream", "99%", "ok"),
         line("TTS", "OpenAI onyx (Fish 402)", "99%", "ok"),
         line("Cognition (decide)", "Intent→goal→decision+confidence · RFC-020 shell BUILT v0", "v0", "ok"),
-        line("Alpha chain (E2E)", "text→intent→cognition→decision→plan→tool→response→learning · loop closed · scenario tests ✅", "v0", "ok"),
+        line("Alpha chain (E2E)", "intent→cognition→decision→plan→tool→response→learning→(confidence feedback) · loop closed · tests ✅", "v0", "ok"),
         line("Router / Actions", "vision defined, not built", "—", "idle", val="⚪"),
         line("Philos coupling", "shell built; algorithm = locked stub; not wired to voice", "—", "idle", val="⚪"),
     ]
