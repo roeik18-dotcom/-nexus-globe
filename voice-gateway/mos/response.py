@@ -8,12 +8,21 @@ from __future__ import annotations
 from .events import Event, EventBus, new_event
 
 _PHRASING = {
-    "read_clock": "השעה עכשיו …",
-    "read_mission_control": "הנה מצב המערכת …",
     "run_morning_brief": "פותח יום — הנה התדרוך …",
     "launch_application": "פתחתי את האפליקציה.",
     "ask_clarify": "לא הבנתי — תוכל לחזור?",
 }
+
+
+def _phrase(tool: str, result: dict) -> str:
+    # prefer the tool's REAL result when present
+    if tool == "read_clock" and result.get("time"):
+        return f"השעה עכשיו {result['time']}."
+    if tool == "read_mission_control" and result.get("summary"):
+        return f"מצב המערכת: {result['summary']}."
+    if tool == "read_weather" and result.get("note"):
+        return result["note"]
+    return _PHRASING.get(tool, f"בוצע: {tool}")
 
 
 class Responder:
@@ -25,7 +34,8 @@ class Responder:
         if e.type != "tool.executed":
             return
         tool = e.payload.get("tool", "")
+        result = e.payload.get("result") or {}
         self.bus.publish(new_event(
             "response.generated", "mos.response", e.subject,
-            {"text": _PHRASING.get(tool, f"בוצע: {tool}"), "tool": tool},
+            {"text": _phrase(tool, result), "tool": tool},
             correlation_id=e.correlation_id, causation_id=e.id))

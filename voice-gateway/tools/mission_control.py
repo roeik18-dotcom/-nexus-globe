@@ -173,7 +173,7 @@ def build_arch():
         ("Cognition · Philos", "§5.3", "ok", "RFC-020 shell + Orientation Runtime + World Graph BUILT v0 · algorithm = locked stub"),
         ("Memory", "§5.4", "warn", "episodic · semantic · project · relationship · timeline"),
         ("Planning", "§5.5", "ok", "v0 Planner built (decision→plan.created) — mos/planner.py"),
-        ("Action", "§5.6", "ok", "Executor+Responder v0 (plan→tool→response) + INV-6 gate/approval"),
+        ("Action", "§5.6", "ok", "Executor+Responder + REAL read-only tools (clock/status); irreversible simulated+gated"),
         ("Multi-Agent", "§5.7", "idle", "research · coding · review · coordinator (0 running)"),
         ("Mission Control", "read-model", "ok", "live dashboard — this screen"),
         ("Living Globe", "read-model", "warn", "World Graph projection built (mos/world_graph.py); globe UI = prototype"),

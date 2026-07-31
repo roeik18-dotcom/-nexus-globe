@@ -8,6 +8,7 @@ the real tool layer replaces `_run` behind the same events (INV-7).
 from __future__ import annotations
 
 from .events import Event, EventBus, new_event
+from .tools import run_tool
 
 # safe/reversible actions run without approval; everything else is gated (INV-6)
 _AUTO = {"read_clock", "read_mission_control", "read_weather", "halt_speech",
@@ -21,9 +22,11 @@ class Executor:
         bus.subscribe(self._on)
 
     def _run(self, action: str, subject: str, corr, cause) -> None:
+        ok, result = run_tool(action, {"n_events": len(self.bus.log)})
         self.bus.publish(new_event(
             "tool.executed", "mos.executor", subject,
-            {"tool": action, "ok": True}, correlation_id=corr, causation_id=cause))
+            {"tool": action, "ok": ok, "result": result},
+            correlation_id=corr, causation_id=cause))
 
     def _on(self, e: Event) -> None:
         if e.type == "plan.created":
