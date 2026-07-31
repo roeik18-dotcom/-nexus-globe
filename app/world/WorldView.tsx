@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import ForceGraph, { type GraphNode, type GraphEdge } from "@/app/world/ForceGraph";
 import CoverageDeltaExplorer from "@/app/world/CoverageDeltaExplorer";
+import MissionTimeline from "@/app/world/MissionTimeline";
 import { computeCoverageMetrics } from "@/app/graph/computeCoverageMetrics";
 import type { Mission } from "@/app/lib/mission/schema";
 import type { Gap } from "@/app/lib/gap/schema";
@@ -849,6 +850,12 @@ export default function WorldView({
             </button>
           </div>
         </div>
+
+        {/* Living Timeline — Start → Today → Forecast for the selected mission */}
+        {(() => {
+          const sm = missions.find(m => m.id === selectedMissionId);
+          return sm ? <MissionTimeline mission={sm} /> : null;
+        })()}
 
         {/* Semantic Level Selector */}
         <div style={{ marginBottom: 14 }}>
