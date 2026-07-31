@@ -173,6 +173,19 @@ class ContextBuilder:
         sections = [layer.render() for layer in self._layers]
         return "\n\n---\n\n".join(s.strip() for s in sections if s.strip())
 
+    def layer_diagnostics(self) -> list[tuple[str, int]]:
+        """Per-layer (class name, rendered char count) — for debug/observability.
+
+        Reflects the REAL layer list so no context source becomes a blind spot
+        (e.g. RelationshipMemoryLayer is visible alongside the recall path)."""
+        out: list[tuple[str, int]] = []
+        for layer in self._layers:
+            try:
+                out.append((type(layer).__name__, len((layer.render() or "").strip())))
+            except Exception:
+                out.append((type(layer).__name__, -1))
+        return out
+
     @classmethod
     def for_session(
         cls,

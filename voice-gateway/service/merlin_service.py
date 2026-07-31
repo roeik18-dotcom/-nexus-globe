@@ -395,10 +395,65 @@ async def record_utterance(
     # amplitude (mirrors the wake path).  Low-level input otherwise transcribes
     # as Whisper hallucinations or empty text.
     import service.vad_config as _vad_cfg
+    # Telemetry: capture the TRUE pre-normalization level of the command audio.
+    # This is what distinguishes "the user spoke weak" from "the capture path
+    # attenuated the signal" — the source of the wake-vs-command RMS gap.
+    _pre_norm_rms  = float(np.sqrt(np.mean(audio ** 2))) if audio.size else 0.0
+    _pre_norm_peak = float(np.max(np.abs(audio))) if audio.size else 0.0
     audio, _norm_gain = _vad_cfg.normalize_for_whisper(audio)
-    logger.info("record_utterance: normalize gain=×%.2f", _norm_gain)
+    _post_norm_rms = float(np.sqrt(np.mean(audio ** 2))) if audio.size else 0.0
+    logger.info(
+        "record_utterance: CMD_TELEMETRY  dur=%.2fs  pre_norm_rms=%.5f  "
+        "pre_norm_peak=%.5f  norm_gain=×%.2f  post_norm_rms=%.5f",
+        len(audio) / SAMPLE_RATE, _pre_norm_rms, _pre_norm_peak,
+        _norm_gain, _post_norm_rms,
+    )
 
     audio_i16 = (np.clip(audio, -1.0, 1.0) * 32767).astype(np.int16)
+
+    # Save the EXACT command audio sent to Whisper (gated by MERLIN_CAPTURE_WAV=1;
+    # mirrors the wake-path probe).  Lets us compare the command WAV to the wake
+    # WAV and see WHY the command-path RMS is lower.  No behaviour change when unset.
+    if os.environ.get("MERLIN_CAPTURE_WAV") == "1":
+        try:
+            import json as _json, hashlib as _hashlib
+            _cap_dir = os.path.expanduser("~/Library/Logs/Merlin/capture")
+            os.makedirs(_cap_dir, exist_ok=True)
+            _base   = "cmd_%s" % time.strftime("%Y%m%d-%H%M%S")
+            _cap_fn = os.path.join(_cap_dir, _base + ".wav")
+            wavfile.write(_cap_fn, SAMPLE_RATE, audio_i16)
+            _sha = _hashlib.sha256(open(_cap_fn, "rb").read()).hexdigest()
+            # Self-contained sidecar so a sample is comparable months later, and a
+            # WAV hash so a future re-transcription is provably the same audio.
+            # transcript/no_speech are filled by tools/e2_summary.py from the log
+            # (the command STT provider returns plain text, not verbose_json).
+            _meta = {
+                "experiment_id": os.environ.get("MERLIN_EXPERIMENT_ID", "E2"),
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                "wav_file": _base + ".wav",
+                "wav_sha256": _sha,
+                "audio": {
+                    "duration_s":    round(len(audio) / SAMPLE_RATE, 3),
+                    "rms_pre_norm":  round(_pre_norm_rms, 6),
+                    "peak_pre_norm": round(_pre_norm_peak, 6),
+                    "norm_gain":     round(_norm_gain, 3),
+                    "rms_post_norm": round(_post_norm_rms, 6),
+                },
+                "pipeline": {
+                    "vad_threshold":  SILENCE_RMS,
+                    "sample_rate":    SAMPLE_RATE,
+                    "stt_model":      "whisper-1",
+                    "stt_language":   "he",
+                    "stt_temperature": 0,
+                },
+                "stt": {"transcript": None},  # joined from service.log by e2_summary
+            }
+            with open(os.path.join(_cap_dir, _base + ".json"), "w") as _jf:
+                _json.dump(_meta, _jf, ensure_ascii=False, indent=2)
+            logger.info("COMMAND_CAPTURE_SAVED %s sha=%s", _cap_fn, _sha[:12])
+        except Exception as _cap_exc:
+            logger.warning("command capture save failed: %s", _cap_exc)
+
     buf = io.BytesIO()
     wavfile.write(buf, SAMPLE_RATE, audio_i16)
     return buf.getvalue()
@@ -570,6 +625,7 @@ async def run_conversation_session(
             continue
 
         logger.info("You: %s", transcript)
+        _mos_shadow(transcript)   # Voice → Event (shadow, opt-in; never affects the live path)
 
         # Memory review voice command
         if any(phrase in transcript.lower() for phrase in _MEMORY_REVIEW_PHRASES):
@@ -592,6 +648,32 @@ async def run_conversation_session(
         if interrupted:
             logger.info("Barge-in detected — listening for next utterance")
             await asyncio.sleep(0.2)
+
+
+_MOS_BRIDGE = None
+
+
+def _mos_shadow(transcript: str) -> None:
+    """Voice → Event, SHADOW MODE (opt-in, best-effort).
+
+    Mirrors the real STT transcript into the Merlin OS platform bus (mos) so the full
+    event chain (user.spoke → intent → cognition → decision → plan → tool → response →
+    learning) runs on REAL speech and is recorded to the durable log Mission Control
+    reads. It does NOT change what the user hears (the live LLM+TTS path is untouched)
+    and never raises. Enable with `launchctl setenv MERLIN_MOS_BRIDGE 1` + kickstart.
+    """
+    import os
+    if os.getenv("MERLIN_MOS_BRIDGE") != "1":
+        return
+    try:
+        global _MOS_BRIDGE
+        if _MOS_BRIDGE is None:
+            from mos.voice_bridge import VoiceBridge
+            from mos.runtime import DEFAULT_EVENT_LOG
+            _MOS_BRIDGE = VoiceBridge(store_path=DEFAULT_EVENT_LOG)
+        _MOS_BRIDGE.on_transcript(transcript)
+    except Exception as ex:                       # shadow must never break the live path
+        logger.warning("mos shadow bridge error (ignored): %s", ex)
 
 
 async def _extract_background(

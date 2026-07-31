@@ -267,6 +267,41 @@ class ClaudeAdapter(VoiceAdapter):
         ))
         _first_token = True
 
+        # ── DEBUG (temporary, OFF by default): log the STRUCTURE of what is sent
+        # to Anthropic — message count, per-message role+length, system-prompt
+        # length + a short prefix, and the current user message prefix.  No keys,
+        # no headers, no full content.  Enable with MERLIN_DEBUG_MESSAGES=1.
+        import os as _os
+        if _os.environ.get("MERLIN_DEBUG_MESSAGES") == "1":
+            _rl = [(m.get("role"), len(m.get("content", "") or "")) for m in recent_messages]
+            logger.info("DBG_MSGS  count=%d  roles/lens=%s", len(recent_messages), _rl)
+            logger.info("DBG_SYS   len=%d  head=%r", len(system_prompt or ""), (system_prompt or "")[:200])
+            # DBG_CONTEXT — per-layer view of ALL context sources feeding the
+            # system prompt.  Mirrors the real for_session() layer list (single
+            # source of truth) so no source is a blind spot — e.g. the
+            # RelationshipMemoryLayer is shown alongside the recall path.  Char
+            # counts only, no content.
+            _ess = self._essence_extra.get(session_id, "")
+            try:
+                from app.context_builder import ContextBuilder as _CB
+                _diag = _CB.for_session(
+                    self._persona, task, summary_state, tool_mem,
+                    recall_result=recall_result, essence_context=_ess,
+                ).layer_diagnostics()
+                logger.info("DBG_CTX   layers=%s", [f"{n}={c}" for n, c in _diag])
+            except Exception as _e:
+                logger.warning("DBG_CTX   layer diagnostics failed: %s", _e)
+            logger.info(
+                "DBG_CTX   recall: items=%d candidates=%d reasons=%s | memory_items=%d",
+                len(recall_result.items), recall_result.total_candidates,
+                dict(Counter(i.reason for i in recall_result.items)), len(memory),
+            )
+            _last_user = next((m for m in reversed(recent_messages) if m.get("role") == "user"), None)
+            if _last_user is not None:
+                logger.info("DBG_USER  head=%r", (_last_user.get("content") or "")[:200])
+            else:
+                logger.info("DBG_USER  (no user message in recent_messages)")
+
         async with self._client.messages.stream(
             model=settings.claude_model,
             max_tokens=1024,

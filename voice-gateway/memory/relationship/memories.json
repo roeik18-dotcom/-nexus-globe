@@ -13,7 +13,9 @@
       "updated_at": "2026-07-28T00:00:00+00:00",
       "last_used": "2026-07-28T00:00:00+00:00",
       "editable": false,
-      "tags": ["identity"]
+      "tags": [
+        "identity"
+      ]
     },
     {
       "id": "mem_seed_0002",
@@ -28,7 +30,10 @@
       "updated_at": "2026-07-28T00:00:00+00:00",
       "last_used": "2026-07-28T00:00:00+00:00",
       "editable": true,
-      "tags": ["language", "communication"]
+      "tags": [
+        "language",
+        "communication"
+      ]
     },
     {
       "id": "mem_seed_0003",
@@ -43,7 +48,10 @@
       "updated_at": "2026-07-28T00:00:00+00:00",
       "last_used": "2026-07-28T00:00:00+00:00",
       "editable": true,
-      "tags": ["communication", "style"]
+      "tags": [
+        "communication",
+        "style"
+      ]
     },
     {
       "id": "mem_seed_0004",
@@ -58,7 +66,10 @@
       "updated_at": "2026-07-28T00:00:00+00:00",
       "last_used": "2026-07-28T00:00:00+00:00",
       "editable": true,
-      "tags": ["project", "active"]
+      "tags": [
+        "project",
+        "active"
+      ]
     },
     {
       "id": "mem_seed_0005",
@@ -73,7 +84,11 @@
       "updated_at": "2026-07-28T00:00:00+00:00",
       "last_used": "2026-07-28T00:00:00+00:00",
       "editable": true,
-      "tags": ["project", "active", "philos"]
+      "tags": [
+        "project",
+        "active",
+        "philos"
+      ]
     },
     {
       "id": "mem_seed_0006",
@@ -88,7 +103,11 @@
       "updated_at": "2026-07-28T00:00:00+00:00",
       "last_used": "2026-07-28T00:00:00+00:00",
       "editable": true,
-      "tags": ["goal", "merlin", "ai"]
+      "tags": [
+        "goal",
+        "merlin",
+        "ai"
+      ]
     },
     {
       "id": "mem_seed_0007",
@@ -103,7 +122,10 @@
       "updated_at": "2026-07-28T00:00:00+00:00",
       "last_used": "2026-07-28T00:00:00+00:00",
       "editable": true,
-      "tags": ["philosophy", "development"]
+      "tags": [
+        "philosophy",
+        "development"
+      ]
     },
     {
       "id": "mem_seed_0008",
@@ -118,7 +140,4246 @@
       "updated_at": "2026-07-28T00:00:00+00:00",
       "last_used": "2026-07-28T00:00:00+00:00",
       "editable": true,
-      "tags": ["merlin", "progress"]
+      "tags": [
+        "merlin",
+        "progress"
+      ]
+    },
+    {
+      "id": "mem_72851f00",
+      "tier": "project",
+      "category": "event",
+      "key": "major_goal_completed",
+      "value": "Roei completed a significant multi-year project/task that was discussed approximately 4 years ago. This represents a major milestone achievement.",
+      "confidence": 0.65,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-28T17:43:59.446442+00:00",
+      "updated_at": "2026-07-28T17:43:59.446477+00:00",
+      "last_used": "2026-07-28T17:43:59.446463+00:00",
+      "editable": true,
+      "tags": [
+        "milestone",
+        "completion",
+        "long-term-goal"
+      ]
+    },
+    {
+      "id": "mem_f7fb8ac1",
+      "tier": "personal",
+      "category": "habit",
+      "key": "microphone_frustration",
+      "value": "Currently frustrated with microphone quality/performance — appears to have issues with sound capture or noise.",
+      "confidence": 0.7,
+      "source": "explicit",
+      "importance": "low",
+      "created_at": "2026-07-29T07:52:04.421309+00:00",
+      "updated_at": "2026-07-29T07:52:04.421362+00:00",
+      "last_used": "2026-07-29T07:52:04.421350+00:00",
+      "editable": true,
+      "tags": [
+        "hardware",
+        "frustration",
+        "temporary"
+      ]
+    },
+    {
+      "id": "mem_ffee317a",
+      "tier": "project",
+      "category": "fact",
+      "key": "microphone_sensitivity_issue",
+      "value": "Microphone input/transcription detection critical — systematic transcription failure with garbled output. Issue persists despite previous RME routing and gain adjustments (gain 65).",
+      "confidence": 1.0,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-29T07:58:36.029645+00:00",
+      "updated_at": "2026-07-31T08:26:36.020287+00:00",
+      "last_used": "2026-07-29T08:07:57.346686+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "merlin",
+        "debugging",
+        "microphone"
+      ]
+    },
+    {
+      "id": "mem_3d65675f",
+      "tier": "project",
+      "category": "fact",
+      "key": "audio_setup_rme_interface",
+      "value": "Uses RME audio interface with multiple channels; needs to verify correct channel routing to Mac input and ensure not speaking into muted channel.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-29T08:02:38.057675+00:00",
+      "updated_at": "2026-07-29T08:02:38.057705+00:00",
+      "last_used": "2026-07-29T08:02:38.057698+00:00",
+      "editable": true,
+      "tags": [
+        "hardware",
+        "troubleshooting",
+        "audio"
+      ]
+    },
+    {
+      "id": "mem_748bf75f",
+      "tier": "project",
+      "category": "fact",
+      "key": "audio_routing_rme_investigation",
+      "value": "RME audio interface routing verified — gain set to 65; input device confirmed in Mac System Settings (Input tab); input levels monitored during speech for signal strength validation.",
+      "confidence": 1.0,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-29T08:05:21.641316+00:00",
+      "updated_at": "2026-07-29T08:09:34.016470+00:00",
+      "last_used": "2026-07-29T08:07:57.350437+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "rme",
+        "troubleshooting",
+        "merlin"
+      ]
+    },
+    {
+      "id": "mem_262e4ab1",
+      "tier": "relationship",
+      "category": "habit",
+      "key": "language_exposure_japanese",
+      "value": "User occasionally uses Japanese phrases; Merlin recognizes this as unrelated/test input rather than genuine communication need.",
+      "confidence": 0.7,
+      "source": "inferred",
+      "importance": "low",
+      "created_at": "2026-07-29T08:06:22.832498+00:00",
+      "updated_at": "2026-07-29T08:06:22.832544+00:00",
+      "last_used": "2026-07-29T08:06:22.832533+00:00",
+      "editable": true,
+      "tags": [
+        "language",
+        "testing",
+        "communication"
+      ]
+    },
+    {
+      "id": "mem_b4675d05",
+      "tier": "project",
+      "category": "preference",
+      "key": "audio_gain_setting",
+      "value": "Set microphone gain to 65 for optimal input detection.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-29T08:09:34.019830+00:00",
+      "updated_at": "2026-07-29T08:09:34.019864+00:00",
+      "last_used": "2026-07-29T08:09:34.019855+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "merlin_setup",
+        "microphone"
+      ]
+    },
+    {
+      "id": "mem_38126625",
+      "tier": "project",
+      "category": "habit",
+      "key": "audio_troubleshooting_steps",
+      "value": "To verify RME input: check Mac System Settings > Sound > Input tab; ensure RME device is selected (not internal mic); monitor input levels during speech to confirm signal strength.",
+      "confidence": 0.9,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-29T08:09:34.021556+00:00",
+      "updated_at": "2026-07-29T08:09:34.021576+00:00",
+      "last_used": "2026-07-29T08:09:34.021571+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "rme_interface",
+        "troubleshooting",
+        "mac"
+      ]
+    },
+    {
+      "id": "mem_e7716ebd",
+      "tier": "personal",
+      "category": "preference",
+      "key": "audio_meter_behavior_preference",
+      "value": "Prefers microphone meter to move in mid-to-upper range during normal speech, not reaching zero or peaking at maximum.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-29T08:10:42.486698+00:00",
+      "updated_at": "2026-07-29T08:10:42.486723+00:00",
+      "last_used": "2026-07-29T08:10:42.486717+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "microphone",
+        "RME",
+        "troubleshooting"
+      ]
+    },
+    {
+      "id": "mem_fc8f3efb",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "troubleshooting_approach_terminal_first",
+      "value": "When audio issues occur, Roei prefers to move to manual terminal debugging rather than continue attempting voice input until the problem is identified.",
+      "confidence": 0.9,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-29T08:15:49.141379+00:00",
+      "updated_at": "2026-07-29T08:15:49.141403+00:00",
+      "last_used": "2026-07-29T08:15:49.141397+00:00",
+      "editable": true,
+      "tags": [
+        "workflow",
+        "debugging",
+        "pragmatic"
+      ]
+    },
+    {
+      "id": "mem_21b9fc49",
+      "tier": "personal",
+      "category": "preference",
+      "key": "merlin_voice_preference_claude",
+      "value": "Prefers Merlin's voice to sound like Claude (likely referring to Claude AI's voice characteristics).",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-29T08:16:02.840367+00:00",
+      "updated_at": "2026-07-29T08:16:02.840416+00:00",
+      "last_used": "2026-07-29T08:16:02.840405+00:00",
+      "editable": true,
+      "tags": [
+        "voice",
+        "tts",
+        "merlin_personality"
+      ]
+    },
+    {
+      "id": "mem_5588d0ee",
+      "tier": "personal",
+      "category": "habit",
+      "key": "audio_debugging_strategy_switch",
+      "value": "Roei is decisively switching from voice-based debugging to terminal/text-based debugging due to persistent audio transcription issues.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-29T08:19:27.223028+00:00",
+      "updated_at": "2026-07-29T08:20:56.761087+00:00",
+      "last_used": "2026-07-29T08:20:56.761078+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "debugging",
+        "workflow",
+        "merlin_development"
+      ]
+    },
+    {
+      "id": "mem_b2404bec",
+      "tier": "personal",
+      "category": "preference",
+      "key": "language_japanese_usage",
+      "value": "Uses Japanese for personal/conversational exchanges (e.g., 'ご視聴ありがとうございました!').",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-29T08:22:27.564856+00:00",
+      "updated_at": "2026-07-29T08:23:59.477003+00:00",
+      "last_used": "2026-07-29T08:23:59.476994+00:00",
+      "editable": true,
+      "tags": [
+        "language",
+        "communication"
+      ]
+    },
+    {
+      "id": "mem_da7c683f",
+      "tier": "project",
+      "category": "project",
+      "key": "project_philos_current_work",
+      "value": "Currently working on Philos with focus on orientation, music, project organization, and microstructure components.",
+      "confidence": 0.7,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-29T08:27:44.585650+00:00",
+      "updated_at": "2026-07-29T08:27:44.585706+00:00",
+      "last_used": "2026-07-29T08:27:44.585691+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "orientation",
+        "music",
+        "organization",
+        "microstructure"
+      ]
+    },
+    {
+      "id": "mem_29779e5d",
+      "tier": "personal",
+      "category": "event",
+      "key": "keyboard_hardware_damage",
+      "value": "Keyboard is broken/no longer working. User attributes this to frustration with Merlin's audio issues.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-29T11:42:58.118598+00:00",
+      "updated_at": "2026-07-29T11:42:58.118628+00:00",
+      "last_used": "2026-07-29T11:42:58.118619+00:00",
+      "editable": true,
+      "tags": [
+        "hardware",
+        "damage",
+        "frustration"
+      ]
+    },
+    {
+      "id": "mem_afbcddee",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_critical_frustration",
+      "value": "Roei escalated to critical emotional breakdown — attempting repetitive engagement ('thank you' loop) to override stated boundaries. Merlin maintained firm boundary enforcement.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-29T11:42:58.120433+00:00",
+      "updated_at": "2026-07-31T13:09:43.436999+00:00",
+      "last_used": "2026-07-31T13:09:43.436988+00:00",
+      "editable": true,
+      "tags": [
+        "emotional_state",
+        "boundary_testing",
+        "session_end"
+      ]
+    },
+    {
+      "id": "mem_2f5f06db",
+      "tier": "personal",
+      "category": "preference",
+      "key": "travel_frequency_concern",
+      "value": "Traveling too much — expressed concern about excessive travel.",
+      "confidence": 0.7,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-29T11:52:37.136068+00:00",
+      "updated_at": "2026-07-29T11:52:37.136137+00:00",
+      "last_used": "2026-07-29T11:52:37.136119+00:00",
+      "editable": true,
+      "tags": [
+        "lifestyle",
+        "work-life-balance"
+      ]
+    },
+    {
+      "id": "mem_69470ba9",
+      "tier": "project",
+      "category": "habit",
+      "key": "audio_production_workflow_vocals",
+      "value": "Works with vocal processing chain including compressor and reverb; sometimes applies these on separate channels/buses.",
+      "confidence": 0.7,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-30T10:44:35.500691+00:00",
+      "updated_at": "2026-07-30T10:44:35.500719+00:00",
+      "last_used": "2026-07-30T10:44:35.500711+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "production",
+        "vocals",
+        "mixing"
+      ]
+    },
+    {
+      "id": "mem_d3620185",
+      "tier": "project",
+      "category": "project",
+      "key": "project_philos_music_production_detail",
+      "value": "Philos work involves hands-on vocal mixing and audio processing (compressor, EQ, reverb, gain adjustment).",
+      "confidence": 0.75,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-30T10:44:35.504331+00:00",
+      "updated_at": "2026-07-30T10:44:35.504374+00:00",
+      "last_used": "2026-07-30T10:44:35.504363+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "music",
+        "audio",
+        "production"
+      ]
+    },
+    {
+      "id": "mem_236e02e3",
+      "tier": "project",
+      "category": "preference",
+      "key": "philos_listening_criteria",
+      "value": "Roei wants Philos output to sound finished and polished. Values hearing clarity of specific vocal qualities (e.g., 'dawn freshness', stability) in the final mix.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T10:57:21.925605+00:00",
+      "updated_at": "2026-07-30T10:57:21.925673+00:00",
+      "last_used": "2026-07-30T10:57:21.925655+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "audio",
+        "vocal",
+        "quality",
+        "expectations"
+      ]
+    },
+    {
+      "id": "mem_d07fa884",
+      "tier": "project",
+      "category": "preference",
+      "key": "audio_quality_standards",
+      "value": "Expects to be able to identify and praise specific vocal characteristics ('שחר' - dawn/freshness quality, stability) when evaluating finished work.",
+      "confidence": 0.8,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-30T10:57:21.932269+00:00",
+      "updated_at": "2026-07-30T10:57:21.932339+00:00",
+      "last_used": "2026-07-30T10:57:21.932320+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "mixing",
+        "evaluation",
+        "standards"
+      ]
+    },
+    {
+      "id": "mem_cad650c1",
+      "tier": "project",
+      "category": "event",
+      "key": "upcoming_live_event_next_week",
+      "value": "Has a live event scheduled for next week. Planning to discuss/touch on this topic briefly now, with more detailed coverage during the live event itself.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-30T10:58:18.962489+00:00",
+      "updated_at": "2026-07-30T10:58:18.962516+00:00",
+      "last_used": "2026-07-30T10:58:18.962510+00:00",
+      "editable": true,
+      "tags": [
+        "live",
+        "upcoming",
+        "planning"
+      ]
+    },
+    {
+      "id": "mem_084c8f23",
+      "tier": "project",
+      "category": "fact",
+      "key": "communication_topic_liberman",
+      "value": "Currently discussing something related to 'Liberman' (possibly a person, organization, or project context). Details are unclear from this message.",
+      "confidence": 0.6,
+      "source": "explicit",
+      "importance": "low",
+      "created_at": "2026-07-30T10:58:18.965523+00:00",
+      "updated_at": "2026-07-30T10:58:18.965557+00:00",
+      "last_used": "2026-07-30T10:58:18.965544+00:00",
+      "editable": true,
+      "tags": [
+        "unclear",
+        "needs_clarification"
+      ]
+    },
+    {
+      "id": "mem_9b7ae4fb",
+      "tier": "personal",
+      "category": "style",
+      "key": "creative_process_philosophy_organic",
+      "value": "Emphasizes organic, creative thinking over mechanical approaches. When working on projects, focuses on 'creating moments' rather than formulaic construction (e.g., not just 'placing two rooms between things').",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:04:34.681642+00:00",
+      "updated_at": "2026-07-30T11:04:34.681714+00:00",
+      "last_used": "2026-07-30T11:04:34.681686+00:00",
+      "editable": true,
+      "tags": [
+        "creative_approach",
+        "philosophy",
+        "work_style",
+        "philos"
+      ]
+    },
+    {
+      "id": "mem_57226aa9",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_vocal_arrangement_flexible",
+      "value": "Philos vocal arrangements are organic and flexible — not bound by strict rules. Sometimes uses two reverbs on one vocal, sometimes just one per track; paneling varies based on creative needs rather than a fixed template.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-30T11:04:55.233759+00:00",
+      "updated_at": "2026-07-30T11:04:55.233798+00:00",
+      "last_used": "2026-07-30T11:04:55.233787+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal-mixing",
+        "workflow",
+        "arrangement"
+      ]
+    },
+    {
+      "id": "mem_8cfe8ccf",
+      "tier": "personal",
+      "category": "fact",
+      "key": "audio_transcription_security_issue",
+      "value": "Transcription system critically broken — Hebrew language input produces garbled, nonsensical output with false content (incorrect names, fabricated dialogue). Not a security issue but a systematic transcription failure affecting Hebrew language processing.",
+      "confidence": 1.0,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-30T11:05:24.940176+00:00",
+      "updated_at": "2026-07-31T13:54:51.548664+00:00",
+      "last_used": "2026-07-31T09:24:29.573776+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "transcription",
+        "security",
+        "debugging"
+      ]
+    },
+    {
+      "id": "mem_64012b5c",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_fairchild_compressor",
+      "value": "Planning to use Fairchild compressor for Philos vocal processing/arrangement work.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:06:51.497306+00:00",
+      "updated_at": "2026-07-30T11:06:51.497392+00:00",
+      "last_used": "2026-07-30T11:06:51.497377+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "audio_equipment",
+        "vocal_processing"
+      ]
+    },
+    {
+      "id": "mem_d7075850",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_current_status_balancing",
+      "value": "Philos is not working yet; currently in a balancing/rebalancing phase after the WAT incident, attempting to recalibrate everything in the world/system.",
+      "confidence": 0.75,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:07:33.922931+00:00",
+      "updated_at": "2026-07-30T11:07:33.922962+00:00",
+      "last_used": "2026-07-30T11:07:33.922954+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "development_status",
+        "balance",
+        "watt_incident"
+      ]
+    },
+    {
+      "id": "mem_96d7d800",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_ssl_compressor_consideration",
+      "value": "Considering SSL compressor for Philos vocal processing, in addition to planned Fairchild compressor usage.",
+      "confidence": 0.7,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-30T11:07:56.666415+00:00",
+      "updated_at": "2026-07-30T11:07:56.666463+00:00",
+      "last_used": "2026-07-30T11:07:56.666452+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "audio_processing",
+        "compressor",
+        "vocal_mixing"
+      ]
+    },
+    {
+      "id": "mem_08fd2c1e",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_vocal_dynamics_approach",
+      "value": "Seeking to create subtle, refined vocal dynamics between intro and non-intro sections using compression techniques.",
+      "confidence": 0.65,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-30T11:07:56.670377+00:00",
+      "updated_at": "2026-07-30T11:07:56.670420+00:00",
+      "last_used": "2026-07-30T11:07:56.670410+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal_arrangement",
+        "compression",
+        "mixing_philosophy"
+      ]
+    },
+    {
+      "id": "mem_bc9efc87",
+      "tier": "project",
+      "category": "preference",
+      "key": "philos_vocal_mixing_standards",
+      "value": "Philos vocals must reach professional mix-level quality before being considered acceptable — rough/unfinished vocal takes don't count toward the project.",
+      "confidence": 0.85,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-30T11:08:49.854998+00:00",
+      "updated_at": "2026-07-30T11:08:49.855016+00:00",
+      "last_used": "2026-07-30T11:08:49.855011+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "audio_production",
+        "quality_standards"
+      ]
+    },
+    {
+      "id": "mem_8311997e",
+      "tier": "project",
+      "category": "fact",
+      "key": "philos_vocal_balance_challenge",
+      "value": "Working on balancing when vocals should enter and how to make the main vocal sit properly in the mix — identifying what's missing in current vocal arrangements.",
+      "confidence": 0.8,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-30T11:08:49.855907+00:00",
+      "updated_at": "2026-07-30T11:08:49.855918+00:00",
+      "last_used": "2026-07-30T11:08:49.855914+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal_arrangement",
+        "mixing"
+      ]
+    },
+    {
+      "id": "mem_ac1bd15b",
+      "tier": "project",
+      "category": "person",
+      "key": "collaborator_ido",
+      "value": "Roei works with someone named Ido who is musically experienced and skilled in vocal processing and sound design.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:10:21.591060+00:00",
+      "updated_at": "2026-07-30T11:10:21.591089+00:00",
+      "last_used": "2026-07-30T11:10:21.591082+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "collaboration",
+        "music",
+        "vocals"
+      ]
+    },
+    {
+      "id": "mem_36c58dd1",
+      "tier": "project",
+      "category": "person",
+      "key": "collaborator_itay_portugali",
+      "value": "Works with Itay Portugali on a mixing/vocal processing project (likely Philos-related).",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:10:21.592995+00:00",
+      "updated_at": "2026-07-30T11:10:21.593037+00:00",
+      "last_used": "2026-07-30T11:10:21.593024+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "collaboration",
+        "vocals",
+        "mixing"
+      ]
+    },
+    {
+      "id": "mem_121e6ef6",
+      "tier": "personal",
+      "category": "habit",
+      "key": "musical_identity_roei_and_ido",
+      "value": "Both Roei and Ido are experienced musicians with deep knowledge of vocal decomposition and sound design techniques.",
+      "confidence": 0.9,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:10:21.595437+00:00",
+      "updated_at": "2026-07-30T11:10:21.595458+00:00",
+      "last_used": "2026-07-30T11:10:21.595452+00:00",
+      "editable": true,
+      "tags": [
+        "music",
+        "expertise",
+        "vocals",
+        "production"
+      ]
+    },
+    {
+      "id": "mem_1699d417",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_voice_building_philosophy",
+      "value": "Philos involves collaborative voice building ('we're together here, all of us building voices'). Roei emphasizes understanding what 'voices' means philosophically in Philos's context, not just mechanically. Values conceptual clarity before execution.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:10:44.823312+00:00",
+      "updated_at": "2026-07-30T11:10:44.823346+00:00",
+      "last_used": "2026-07-30T11:10:44.823339+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "conceptual_thinking",
+        "voice_design"
+      ]
+    },
+    {
+      "id": "mem_5b0a2a6c",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_exercises_component",
+      "value": "Philos work involves exercises or practice routines ('there are many exercises'). Suggests iterative, practice-based approach to voice development.",
+      "confidence": 0.75,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-30T11:10:44.826043+00:00",
+      "updated_at": "2026-07-30T11:10:44.826079+00:00",
+      "last_used": "2026-07-30T11:10:44.826069+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "workflow",
+        "exercises"
+      ]
+    },
+    {
+      "id": "mem_d7c04d99",
+      "tier": "project",
+      "category": "preference",
+      "key": "philos_dissonant_vocals_artistic_choice",
+      "value": "Philos incorporates dissonant vocal elements as an intentional artistic choice. When heard together with the main vocal, they create a specific effect Roei is evaluating.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:11:30.593913+00:00",
+      "updated_at": "2026-07-30T11:11:30.594000+00:00",
+      "last_used": "2026-07-30T11:11:30.593968+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal_arrangement",
+        "artistic_direction",
+        "sound_design"
+      ]
+    },
+    {
+      "id": "mem_d0453de7",
+      "tier": "personal",
+      "category": "fact",
+      "key": "emotional_state_technical_frustration_ongoing",
+      "value": "Transcription system continues to fail — Roei is attempting to discuss artistic/creative decisions but the audio pipeline is completely broken, preventing productive conversation.",
+      "confidence": 0.95,
+      "source": "inferred",
+      "importance": "critical",
+      "created_at": "2026-07-30T11:11:30.598500+00:00",
+      "updated_at": "2026-07-30T11:11:30.598527+00:00",
+      "last_used": "2026-07-30T11:11:30.598520+00:00",
+      "editable": true,
+      "tags": [
+        "audio_transcription",
+        "technical_blocker",
+        "frustration"
+      ]
+    },
+    {
+      "id": "mem_dd00b203",
+      "tier": "project",
+      "category": "habit",
+      "key": "philos_arrangement_emphasis_technique",
+      "value": "Uses arrangement/mixing techniques to strengthen and emphasize specific musical elements (e.g., dynamics, dynamics contrast between sections).",
+      "confidence": 0.7,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-30T11:11:55.889256+00:00",
+      "updated_at": "2026-07-30T11:11:55.889305+00:00",
+      "last_used": "2026-07-30T11:11:55.889293+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal-arrangement",
+        "mixing-technique"
+      ]
+    },
+    {
+      "id": "mem_81068484",
+      "tier": "personal",
+      "category": "style",
+      "key": "creative_process_experimentation_ease",
+      "value": "Views experimentation as easy and low-friction — comfortable trying different approaches in arrangement and production.",
+      "confidence": 0.65,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-30T11:11:55.893308+00:00",
+      "updated_at": "2026-07-30T11:11:55.893345+00:00",
+      "last_used": "2026-07-30T11:11:55.893332+00:00",
+      "editable": true,
+      "tags": [
+        "creative-philosophy",
+        "experimentation"
+      ]
+    },
+    {
+      "id": "mem_87990e80",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_vocal_tail_issue",
+      "value": "Noticed the lead vocal (Shachar's voice) has an unintended tail/sustain that continues after the rest of the song stops — appears to be a mixing/arrangement artifact that needs addressing.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:13:31.326069+00:00",
+      "updated_at": "2026-07-30T11:13:31.326096+00:00",
+      "last_used": "2026-07-30T11:13:31.326089+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal_mixing",
+        "arrangement_issue",
+        "attention_to_detail"
+      ]
+    },
+    {
+      "id": "mem_93ab1193",
+      "tier": "personal",
+      "category": "style",
+      "key": "audio_production_attention_detail",
+      "value": "Roei has acute sensitivity to micro-level vocal/audio details — notices subtle timing and sustain issues in vocal arrangements that persist beyond song sections.",
+      "confidence": 0.9,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-30T11:13:31.328297+00:00",
+      "updated_at": "2026-07-30T11:13:31.328323+00:00",
+      "last_used": "2026-07-30T11:13:31.328315+00:00",
+      "editable": true,
+      "tags": [
+        "critical_listening",
+        "perfectionist",
+        "vocal_production"
+      ]
+    },
+    {
+      "id": "mem_74036415",
+      "tier": "personal",
+      "category": "habit",
+      "key": "language_hebrew_english_mixing",
+      "value": "User code-switches between Hebrew and English mid-conversation, which is contributing to transcription corruption.",
+      "confidence": 0.9,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-30T11:15:22.236381+00:00",
+      "updated_at": "2026-07-30T11:15:22.236392+00:00",
+      "last_used": "2026-07-30T11:15:22.236388+00:00",
+      "editable": true,
+      "tags": [
+        "language",
+        "hebrew",
+        "english",
+        "code-switching"
+      ]
+    },
+    {
+      "id": "mem_5f31d7aa",
+      "tier": "project",
+      "category": "preference",
+      "key": "philos_eq_midside_technique",
+      "value": "Using mid-side EQ to reduce frequencies around 1500 Hz on the vocal, improving the mix and helping dubs sit better.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:16:28.588902+00:00",
+      "updated_at": "2026-07-30T11:16:28.588958+00:00",
+      "last_used": "2026-07-30T11:16:28.588947+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal_processing",
+        "eq",
+        "mixing"
+      ]
+    },
+    {
+      "id": "mem_d7bf60c0",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_dubs_integration_workflow",
+      "value": "Working on vocal dubs integration as part of the mixing process; using EQ adjustments to help dubs sit properly in the mix.",
+      "confidence": 0.8,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-30T11:16:28.593402+00:00",
+      "updated_at": "2026-07-30T11:16:28.593442+00:00",
+      "last_used": "2026-07-30T11:16:28.593433+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal_arrangement",
+        "dubs",
+        "mixing"
+      ]
+    },
+    {
+      "id": "mem_6df94f1b",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "merlin_interaction_feedback_asking",
+      "value": "Roei values Merlin asking clarifying questions and showing genuine curiosity rather than making assumptions. Prefers engaged, investigative dialogue.",
+      "confidence": 0.9,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:17:01.239932+00:00",
+      "updated_at": "2026-07-30T11:17:01.239995+00:00",
+      "last_used": "2026-07-30T11:17:01.239977+00:00",
+      "editable": true,
+      "tags": [
+        "communication_style",
+        "engagement",
+        "dialogue"
+      ]
+    },
+    {
+      "id": "mem_7d43719d",
+      "tier": "project",
+      "category": "fact",
+      "key": "audio_transcription_fixed",
+      "value": "Transcription is now working cleanly. Hebrew input is being captured and processed correctly.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-30T11:17:53.722644+00:00",
+      "updated_at": "2026-07-30T11:17:53.722665+00:00",
+      "last_used": "2026-07-30T11:17:53.722659+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "transcription",
+        "hebrew",
+        "resolved"
+      ]
+    },
+    {
+      "id": "mem_9672ebb3",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_relief",
+      "value": "Roei expressed relief/satisfaction that the audio system is now working after repeated failures.",
+      "confidence": 0.85,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-30T11:17:53.726724+00:00",
+      "updated_at": "2026-07-31T08:09:25.386297+00:00",
+      "last_used": "2026-07-31T08:09:25.386291+00:00",
+      "editable": true,
+      "tags": [
+        "emotional",
+        "breakthrough"
+      ]
+    },
+    {
+      "id": "mem_6dd3b463",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_chorus_idea_fucking_beit",
+      "value": "Exploring a chorus concept for Philos using the phrase 'we're in a fucking beit' as a repeating hook. Roei sees potential in this as a catchy, direct lyrical anchor.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:47:30.853493+00:00",
+      "updated_at": "2026-07-30T11:47:30.853521+00:00",
+      "last_used": "2026-07-30T11:47:30.853514+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "lyrics",
+        "chorus",
+        "creative_direction"
+      ]
+    },
+    {
+      "id": "mem_ec5e1b40",
+      "tier": "project",
+      "category": "style",
+      "key": "philos_songwriting_iterative_approach",
+      "value": "Roei uses an iterative, conversational approach to songwriting — exploring multiple angles and refining ideas through discussion rather than pre-planning.",
+      "confidence": 0.85,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-30T11:47:30.856350+00:00",
+      "updated_at": "2026-07-30T11:47:30.856368+00:00",
+      "last_used": "2026-07-30T11:47:30.856361+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "creative_process",
+        "songwriting"
+      ]
+    },
+    {
+      "id": "mem_8b1a83d5",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_rvox_compressor_usage",
+      "value": "R-Vox compressor is used primarily for summing in Philos vocal processing chain.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:48:03.687631+00:00",
+      "updated_at": "2026-07-30T11:48:03.687859+00:00",
+      "last_used": "2026-07-30T11:48:03.687810+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal_processing",
+        "compressor",
+        "mixing"
+      ]
+    },
+    {
+      "id": "mem_5e720747",
+      "tier": "project",
+      "category": "preference",
+      "key": "philos_vocal_compression_target",
+      "value": "Philos vocal compression ceiling is subtle — targeting 10-12dB reduction rather than maximum (0dB). Reflects preference for refined, non-aggressive dynamics.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:48:41.136804+00:00",
+      "updated_at": "2026-07-30T11:48:41.136829+00:00",
+      "last_used": "2026-07-30T11:48:41.136822+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal_mixing",
+        "compression",
+        "dynamics"
+      ]
+    },
+    {
+      "id": "mem_d6b43acf",
+      "tier": "project",
+      "category": "event",
+      "key": "philos_work_loss_significant",
+      "value": "Significant amount of work was deleted from Philos project that cannot be recovered or easily explained. Roei feels the loss is self-evident but considers it important to acknowledge.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:49:28.949450+00:00",
+      "updated_at": "2026-07-30T11:49:28.949501+00:00",
+      "last_used": "2026-07-30T11:49:28.949489+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "work-loss",
+        "frustration",
+        "project-setback"
+      ]
+    },
+    {
+      "id": "mem_5f2f2010",
+      "tier": "project",
+      "category": "event",
+      "key": "philos_vocal_work_deleted",
+      "value": "Work loss in Philos appears to be related to vocal arrangements or song material rather than infrastructure/code.",
+      "confidence": 0.75,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-30T11:49:28.954228+00:00",
+      "updated_at": "2026-07-30T11:49:28.954271+00:00",
+      "last_used": "2026-07-30T11:49:28.954261+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocals",
+        "creative-loss"
+      ]
+    },
+    {
+      "id": "mem_554ffc33",
+      "tier": "project",
+      "category": "habit",
+      "key": "philos_recording_process_nonlinear",
+      "value": "Recording process for Philos is non-linear and adaptive. If a take doesn't sound right, Roei stops immediately and pivots direction rather than continuing. Experiments with different vocal qualities (feminine, drag, etc.) until finding what works.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:50:17.968863+00:00",
+      "updated_at": "2026-07-30T11:50:17.968953+00:00",
+      "last_used": "2026-07-30T11:50:17.968946+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "workflow",
+        "vocal",
+        "creative_process"
+      ]
+    },
+    {
+      "id": "mem_870d6294",
+      "tier": "project",
+      "category": "habit",
+      "key": "philos_recording_iteration_wasteful",
+      "value": "Significant amount of recorded material is discarded during Philos sessions before landing on approaches that work. This is part of the iterative, experimental workflow.",
+      "confidence": 0.85,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-30T11:50:17.971922+00:00",
+      "updated_at": "2026-07-30T11:50:17.971946+00:00",
+      "last_used": "2026-07-30T11:50:17.971940+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "workflow",
+        "iteration"
+      ]
+    },
+    {
+      "id": "mem_019a6ea8",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_recording_workflow_iteration",
+      "value": "Roei wants to discuss and document the wave/recording iteration process — specifically decision-making around when to stop, discard, or continue with takes.",
+      "confidence": 0.75,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-30T11:51:11.624590+00:00",
+      "updated_at": "2026-07-30T11:51:11.624627+00:00",
+      "last_used": "2026-07-30T11:51:11.624618+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "workflow",
+        "recording",
+        "decision-making"
+      ]
+    },
+    {
+      "id": "mem_312987cf",
+      "tier": "project",
+      "category": "habit",
+      "key": "philos_documentation_preference",
+      "value": "Roei is interested in documenting/recording notes about his Philos recording process and decisions — suggests preference for externalized process tracking.",
+      "confidence": 0.7,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-30T11:51:11.626973+00:00",
+      "updated_at": "2026-07-30T11:51:11.626989+00:00",
+      "last_used": "2026-07-30T11:51:11.626985+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "documentation",
+        "process",
+        "workflow"
+      ]
+    },
+    {
+      "id": "mem_a2ec8ecf",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_recording_setup_sm7b",
+      "value": "Records all Philos guide vocals using SM7B microphone in the same room. Consistent mic setup for the entire vocal arrangement.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:51:51.466274+00:00",
+      "updated_at": "2026-07-30T11:51:51.466333+00:00",
+      "last_used": "2026-07-30T11:51:51.466321+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "audio",
+        "recording",
+        "sm7b",
+        "vocal"
+      ]
+    },
+    {
+      "id": "mem_ee311a89",
+      "tier": "project",
+      "category": "habit",
+      "key": "philos_real_time_arrangement_decisions",
+      "value": "Makes arrangement and vocal direction decisions in real-time during the same recording session, not pre-planned.",
+      "confidence": 0.9,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-30T11:51:51.470565+00:00",
+      "updated_at": "2026-07-30T11:51:51.470586+00:00",
+      "last_used": "2026-07-30T11:51:51.470581+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "creative_process",
+        "arrangement",
+        "workflow"
+      ]
+    },
+    {
+      "id": "mem_7e23d030",
+      "tier": "project",
+      "category": "goal",
+      "key": "philos_core_principle_vibe_over_sound",
+      "value": "Vibe is more important than sound quality in Philos. This is a hard rule and non-negotiable — if the vibe doesn't work, perfect sound won't save the track.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-30T11:52:31.882152+00:00",
+      "updated_at": "2026-07-30T11:52:31.882193+00:00",
+      "last_used": "2026-07-30T11:52:31.882183+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "creative_principle",
+        "priority"
+      ]
+    },
+    {
+      "id": "mem_df59bbc1",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_confused_or_frustrated",
+      "value": "Roei expressed confusion or frustration ('I don't know what's happening') — context unclear but emotionally unsettled.",
+      "confidence": 0.7,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-30T11:52:31.885909+00:00",
+      "updated_at": "2026-07-30T11:52:31.885933+00:00",
+      "last_used": "2026-07-30T11:52:31.885927+00:00",
+      "editable": true,
+      "tags": [
+        "emotional_state",
+        "moment"
+      ]
+    },
+    {
+      "id": "mem_d52fb03d",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_recording_iteration_rock_focus",
+      "value": "Previous Philos recordings were acceptable but not high enough quality. Team decided rock arrangements would sound better, so they started fresh with studio recording.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:53:11.800147+00:00",
+      "updated_at": "2026-07-30T11:53:11.800228+00:00",
+      "last_used": "2026-07-30T11:53:11.800210+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "recording",
+        "arrangement",
+        "rock",
+        "iteration"
+      ]
+    },
+    {
+      "id": "mem_adc35c39",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_local_studio_setup",
+      "value": "Philos recording/production work is happening in a local studio (עולפן פה = 'studio here').",
+      "confidence": 0.8,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-30T11:53:11.806095+00:00",
+      "updated_at": "2026-07-30T11:53:11.806113+00:00",
+      "last_used": "2026-07-30T11:53:11.806107+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "studio",
+        "production",
+        "location"
+      ]
+    },
+    {
+      "id": "mem_cedff3b1",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_recording_setup_single_mic",
+      "value": "Philos recording approach uses a single microphone (SM7B) for all elements including vocals and timing guides, rather than splitting across multiple microphones for different tracks.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:53:57.505565+00:00",
+      "updated_at": "2026-07-30T11:53:57.505592+00:00",
+      "last_used": "2026-07-30T11:53:57.505584+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "recording",
+        "microphone",
+        "workflow"
+      ]
+    },
+    {
+      "id": "mem_13b4ef14",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_studio_setup_change",
+      "value": "Roei is discussing changes to the studio setup for Philos recordings compared to previous sessions.",
+      "confidence": 0.7,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-30T11:53:57.511003+00:00",
+      "updated_at": "2026-07-30T11:53:57.511031+00:00",
+      "last_used": "2026-07-30T11:53:57.511024+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "studio",
+        "workflow",
+        "change"
+      ]
+    },
+    {
+      "id": "mem_bb2beacb",
+      "tier": "personal",
+      "category": "preference",
+      "key": "audio_philosophy_wave_over_quality",
+      "value": "Roei believes the waveform/signal quality matters more than microphone hardware cost. References Araz Eisen's philosophy that a $20 AliExpress mic can be effective if the wave is right.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-30T11:54:42.741585+00:00",
+      "updated_at": "2026-07-30T11:54:42.741640+00:00",
+      "last_used": "2026-07-30T11:54:42.741626+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "philosophy",
+        "microphone",
+        "signal-quality"
+      ]
+    },
+    {
+      "id": "mem_cbc0eda6",
+      "tier": "relationship",
+      "category": "person",
+      "key": "audio_influence_araz_eisen",
+      "value": "Roei references Araz Eisen's audio philosophy, particularly regarding microphone selection and waveform importance over hardware cost.",
+      "confidence": 0.8,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-30T11:54:42.746092+00:00",
+      "updated_at": "2026-07-30T11:54:42.746138+00:00",
+      "last_used": "2026-07-30T11:54:42.746125+00:00",
+      "editable": true,
+      "tags": [
+        "influences",
+        "audio-philosophy"
+      ]
+    },
+    {
+      "id": "mem_200b9a65",
+      "tier": "project",
+      "category": "fact",
+      "key": "audio_transcription_critical_failure_recurring",
+      "value": "Transcription system continuing to fail catastrophically — producing nonsensical output ('you're looping') instead of actual Hebrew speech. Systematic issue persists despite previous troubleshooting attempts.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-30T11:55:14.962615+00:00",
+      "updated_at": "2026-07-31T11:59:50.433316+00:00",
+      "last_used": "2026-07-31T11:59:50.433307+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "transcription",
+        "merlin_voice_gateway",
+        "blocker"
+      ]
+    },
+    {
+      "id": "mem_73edac5b",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_production_methodology",
+      "value": "Philos production follows a two-phase approach: first stabilize the source (subtract/minimize), then add enhancement elements (boost, layer examples). This is a deliberate workflow principle.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:56:10.720464+00:00",
+      "updated_at": "2026-07-30T11:56:10.720489+00:00",
+      "last_used": "2026-07-30T11:56:10.720482+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "audio_production",
+        "methodology",
+        "workflow"
+      ]
+    },
+    {
+      "id": "mem_822b9fdd",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_vocal_chain_status",
+      "value": "Currently no compression in the vocal chain — Roei is working on building/balancing the processing setup.",
+      "confidence": 0.9,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:57:19.180988+00:00",
+      "updated_at": "2026-07-30T11:57:19.181057+00:00",
+      "last_used": "2026-07-30T11:57:19.181044+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal_processing",
+        "audio_chain"
+      ]
+    },
+    {
+      "id": "mem_9525cca0",
+      "tier": "personal",
+      "category": "fact",
+      "key": "audio_transcription_hebrew_status",
+      "value": "Hebrew transcription is capturing speech but with some phonetic/clarity variations. System is functional but may need monitoring.",
+      "confidence": 0.7,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-30T11:57:19.186100+00:00",
+      "updated_at": "2026-07-30T11:57:19.186129+00:00",
+      "last_used": "2026-07-30T11:57:19.186122+00:00",
+      "editable": true,
+      "tags": [
+        "hebrew",
+        "transcription",
+        "audio"
+      ]
+    },
+    {
+      "id": "mem_87dfcbc6",
+      "tier": "project",
+      "category": "goal",
+      "key": "philos_creative_process_root_seeking",
+      "value": "Roei is actively working on finding the 'root' of Philos — likely referring to the foundational element, core concept, or origin point of the music/vocal arrangement.",
+      "confidence": 0.75,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-30T11:57:55.115544+00:00",
+      "updated_at": "2026-07-30T11:57:55.115596+00:00",
+      "last_used": "2026-07-30T11:57:55.115584+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "creative_direction",
+        "active_work"
+      ]
+    },
+    {
+      "id": "mem_2e121d0d",
+      "tier": "project",
+      "category": "preference",
+      "key": "philos_vocal_mixing_eq_preference",
+      "value": "Prefers to hear only what remains after an EQ cut — doesn't want to hear the cut frequencies themselves or any additional processing on top.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:58:25.108238+00:00",
+      "updated_at": "2026-07-30T11:58:25.108272+00:00",
+      "last_used": "2026-07-30T11:58:25.108263+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal_mixing",
+        "eq",
+        "audio_processing"
+      ]
+    },
+    {
+      "id": "mem_3245c0c1",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_vocal_dynamics_nuanced",
+      "value": "Working on subtle vocal dynamics in Philos — specific words need dynamic control; some words should be softer/less aggressive while others can be stronger depending on context.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:59:16.205097+00:00",
+      "updated_at": "2026-07-30T11:59:16.205132+00:00",
+      "last_used": "2026-07-30T11:59:16.205125+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal_mixing",
+        "dynamics",
+        "arrangement"
+      ]
+    },
+    {
+      "id": "mem_d3bc5abb",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_word_level_vocal_control",
+      "value": "Philos mixing involves word-by-word vocal dynamics adjustment — some words need to be pulled back dynamically to sound less aggressive/piercing, while others can be stronger.",
+      "confidence": 0.8,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T11:59:16.207646+00:00",
+      "updated_at": "2026-07-30T11:59:16.207665+00:00",
+      "last_used": "2026-07-30T11:59:16.207660+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal_processing",
+        "microdetail",
+        "dynamics"
+      ]
+    },
+    {
+      "id": "mem_5b8f72a2",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_vocal_frequency_adjustment",
+      "value": "Working on Philos vocals — targeting frequency reduction in a specific section rather than across the entire track.",
+      "confidence": 0.85,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-30T12:00:00.772374+00:00",
+      "updated_at": "2026-07-30T12:00:00.772410+00:00",
+      "last_used": "2026-07-30T12:00:00.772401+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal_mixing",
+        "eq",
+        "frequency_work"
+      ]
+    },
+    {
+      "id": "mem_6adb24b6",
+      "tier": "project",
+      "category": "preference",
+      "key": "philos_vocal_processing_philosophy_concern",
+      "value": "Roei feels Merlin's approach to vocal EQ/processing has a generic quality that doesn't align with his organic, refined aesthetic for Philos — concern is broader than specific technical choices.",
+      "confidence": 0.75,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-30T12:00:37.642437+00:00",
+      "updated_at": "2026-07-30T12:00:37.642495+00:00",
+      "last_used": "2026-07-30T12:00:37.642484+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal_mixing",
+        "philosophy",
+        "eq",
+        "audio_production"
+      ]
+    },
+    {
+      "id": "mem_20711960",
+      "tier": "project",
+      "category": "preference",
+      "key": "philos_vocal_mixing_midrange_focus",
+      "value": "The midrange (mids) is the hardest frequency area to get right in Philos vocals. Basses and subs are easy; highs are everywhere. Getting the mids to sound professional is the critical challenge.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T12:01:36.872529+00:00",
+      "updated_at": "2026-07-30T12:01:36.872559+00:00",
+      "last_used": "2026-07-30T12:01:36.872551+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "audio_mixing",
+        "vocal_processing",
+        "frequency_balance"
+      ]
+    },
+    {
+      "id": "mem_255d93f0",
+      "tier": "project",
+      "category": "fact",
+      "key": "philos_midrange_concentration_massive",
+      "value": "The midrange requires the most concentrated, deliberate focus during Philos vocal mixing. This is where you distinguish professional work from amateur.",
+      "confidence": 0.9,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T12:01:36.877546+00:00",
+      "updated_at": "2026-07-30T12:01:36.877589+00:00",
+      "last_used": "2026-07-30T12:01:36.877577+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "audio_mixing",
+        "vocal_production",
+        "quality_standards"
+      ]
+    },
+    {
+      "id": "mem_d71c323b",
+      "tier": "project",
+      "category": "preference",
+      "key": "philos_midrange_detection_criterion",
+      "value": "How to identify if a vocal mix is professional: the midrange quality is the tell. If the mids are right, it's pro-level; if not, it's amateur.",
+      "confidence": 0.85,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-30T12:01:36.881149+00:00",
+      "updated_at": "2026-07-30T12:01:36.881184+00:00",
+      "last_used": "2026-07-30T12:01:36.881176+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "quality_assessment",
+        "audio_standards",
+        "vocal_mixing"
+      ]
+    },
+    {
+      "id": "mem_8eaf60b5",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_next_work_item",
+      "value": "Next work item is Vision A at 126.0 BPM.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T12:01:54.586718+00:00",
+      "updated_at": "2026-07-30T12:01:54.586803+00:00",
+      "last_used": "2026-07-30T12:01:54.586789+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal",
+        "arrangement",
+        "bpm"
+      ]
+    },
+    {
+      "id": "mem_c2a6623e",
+      "tier": "personal",
+      "category": "preference",
+      "key": "audio_debugging_focus_shift",
+      "value": "Roei wants to focus on what he actually hears in the audio, not what the meters show. Emphasizes the importance of listening carefully to the sound itself rather than relying on visual feedback from meters.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T12:02:42.797438+00:00",
+      "updated_at": "2026-07-30T12:02:42.797467+00:00",
+      "last_used": "2026-07-30T12:02:42.797460+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "debugging",
+        "listening",
+        "methodology"
+      ]
+    },
+    {
+      "id": "mem_951a25c9",
+      "tier": "personal",
+      "category": "preference",
+      "key": "audio_meter_visual_distraction",
+      "value": "Visual meter feedback can be misleading or distracting — Roei prefers to ignore graphic displays and concentrate on the actual audio signal being heard.",
+      "confidence": 0.9,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T12:02:42.800828+00:00",
+      "updated_at": "2026-07-30T12:02:42.800848+00:00",
+      "last_used": "2026-07-30T12:02:42.800843+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "meters",
+        "visual-feedback",
+        "focus"
+      ]
+    },
+    {
+      "id": "mem_3c968ff3",
+      "tier": "project",
+      "category": "preference",
+      "key": "philos_vocal_peak_management",
+      "value": "Peaks are registering too high on the meter relative to the actual sound. Roei wants focus on the true audio output rather than meter readings.",
+      "confidence": 0.9,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T12:03:28.896011+00:00",
+      "updated_at": "2026-07-30T12:03:28.896054+00:00",
+      "last_used": "2026-07-30T12:03:28.896044+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "audio_mixing",
+        "vocal_dynamics",
+        "metering"
+      ]
+    },
+    {
+      "id": "mem_47241ce9",
+      "tier": "project",
+      "category": "style",
+      "key": "philos_mixing_approach_sonic_focus",
+      "value": "Prioritize actual sound quality over meter behavior. Don't chase meter readings—focus on what's actually being produced aurally.",
+      "confidence": 0.85,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-30T12:03:28.900977+00:00",
+      "updated_at": "2026-07-30T12:03:28.900994+00:00",
+      "last_used": "2026-07-30T12:03:28.900989+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "audio_production",
+        "mixing_philosophy"
+      ]
+    },
+    {
+      "id": "mem_f75820fb",
+      "tier": "project",
+      "category": "preference",
+      "key": "philos_tempo_preference_fast",
+      "value": "Roei wants Philos direction to be fast/quick ('בכיוון המהיר'). Indicates preference for a quicker tempo or pacing.",
+      "confidence": 0.8,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T12:03:28.903540+00:00",
+      "updated_at": "2026-07-30T12:03:28.903559+00:00",
+      "last_used": "2026-07-30T12:03:28.903554+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "tempo",
+        "arrangement"
+      ]
+    },
+    {
+      "id": "mem_116db6ab",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_vocal_compression_issue",
+      "value": "Red zone in vocal compression is holding/not releasing properly with slow attack. Seeking to reduce compression and target the 4-5 range instead.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T12:04:06.487590+00:00",
+      "updated_at": "2026-07-30T12:04:06.487643+00:00",
+      "last_used": "2026-07-30T12:04:06.487631+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal_processing",
+        "compression",
+        "dynamics",
+        "technical_issue"
+      ]
+    },
+    {
+      "id": "mem_f86c8825",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_compression_tuning_active",
+      "value": "Currently fine-tuning vocal compression settings — adjusting attack, release, and compression curve to achieve desired vocal dynamics.",
+      "confidence": 0.9,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-30T12:04:06.493012+00:00",
+      "updated_at": "2026-07-30T12:04:06.493047+00:00",
+      "last_used": "2026-07-30T12:04:06.493036+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal_mixing",
+        "active_work",
+        "compression"
+      ]
+    },
+    {
+      "id": "mem_d0e8dc12",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_audio_artifact_crispy_transient",
+      "value": "Philos has a subtle, quiet artifact opening transients that creates unwanted crispiness/brittleness in the mix — a recurring issue in the audio processing chain.",
+      "confidence": 0.9,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T12:05:22.697616+00:00",
+      "updated_at": "2026-07-30T12:05:22.697649+00:00",
+      "last_used": "2026-07-30T12:05:22.697641+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal_processing",
+        "audio_artifact",
+        "mixing_issue"
+      ]
+    },
+    {
+      "id": "mem_85685aa8",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_transient_handling_priority",
+      "value": "Transient artifacts affecting Philos output quality — needs investigation and correction as part of the vocal processing refinement.",
+      "confidence": 0.85,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-30T12:05:22.702260+00:00",
+      "updated_at": "2026-07-30T12:05:22.702315+00:00",
+      "last_used": "2026-07-30T12:05:22.702301+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "transient_control",
+        "audio_quality"
+      ]
+    },
+    {
+      "id": "mem_ac841899",
+      "tier": "project",
+      "category": "project",
+      "key": "philos_vocal_processing_distortion",
+      "value": "Exploring adding distortion/overdrive to vocal processing in Philos to strengthen and enhance the existing vocal character ('goza').",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T12:05:55.191918+00:00",
+      "updated_at": "2026-07-30T12:05:55.191998+00:00",
+      "last_used": "2026-07-30T12:05:55.191978+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "vocal_mixing",
+        "audio_processing",
+        "experimentation"
+      ]
+    },
+    {
+      "id": "mem_ace24ef3",
+      "tier": "project",
+      "category": "style",
+      "key": "philos_creative_approach_strengthening",
+      "value": "Roei is focused on strengthening/enhancing existing vocal elements rather than replacing them — building on what's already working.",
+      "confidence": 0.8,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-30T12:05:55.197477+00:00",
+      "updated_at": "2026-07-30T12:05:55.197505+00:00",
+      "last_used": "2026-07-30T12:05:55.197496+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "creative_process",
+        "vocal_arrangement"
+      ]
+    },
+    {
+      "id": "mem_7d44eae5",
+      "tier": "relationship",
+      "category": "style",
+      "key": "language_hebrew_casual_usage",
+      "value": "Uses Hebrew for casual, everyday conversations (e.g., asking about tahini/טחינה). Confirms Hebrew is natural language for personal exchanges.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-30T14:09:20.873270+00:00",
+      "updated_at": "2026-07-30T14:09:20.873345+00:00",
+      "last_used": "2026-07-30T14:09:20.873324+00:00",
+      "editable": true,
+      "tags": [
+        "language",
+        "hebrew",
+        "conversational"
+      ]
+    },
+    {
+      "id": "mem_7c3e9603",
+      "tier": "project",
+      "category": "preference",
+      "key": "philos_captions_instagram_style",
+      "value": "Wants accurate captions in Instagram style for Philos content.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-30T14:14:13.023400+00:00",
+      "updated_at": "2026-07-30T14:14:13.023462+00:00",
+      "last_used": "2026-07-30T14:14:13.023432+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "social_media",
+        "captions",
+        "instagram"
+      ]
+    },
+    {
+      "id": "mem_b1cb79ba",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "user_communication_preference_text_over_broken_voice",
+      "value": "When voice transcription is broken, user prefers to communicate via text rather than repeat themselves through faulty voice input.",
+      "confidence": 0.9,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T14:30:59.916158+00:00",
+      "updated_at": "2026-07-30T14:30:59.916188+00:00",
+      "last_used": "2026-07-30T14:30:59.916182+00:00",
+      "editable": true,
+      "tags": [
+        "communication",
+        "transcription",
+        "workaround"
+      ]
+    },
+    {
+      "id": "mem_8c93bb3a",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_frustration_loop",
+      "value": "Roei is stuck in a communication loop with Merlin — expressing gratitude but no meaningful progress is being made. Merlin recognized the loop and called it out directly.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T14:30:59.917761+00:00",
+      "updated_at": "2026-07-30T23:36:49.187377+00:00",
+      "last_used": "2026-07-30T23:36:49.187357+00:00",
+      "editable": true,
+      "tags": [
+        "frustration",
+        "merlin_interaction",
+        "communication_breakdown"
+      ]
+    },
+    {
+      "id": "mem_1583ad03",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "user_workaround_preference_text_input",
+      "value": "When transcription fails, user prefers to provide input via text rather than voice. Suggests text as fallback for critical interactions.",
+      "confidence": 0.9,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-30T14:35:40.990060+00:00",
+      "updated_at": "2026-07-30T14:35:40.990092+00:00",
+      "last_used": "2026-07-30T14:35:40.990078+00:00",
+      "editable": true,
+      "tags": [
+        "input-method",
+        "workaround",
+        "efficiency"
+      ]
+    },
+    {
+      "id": "mem_25d32dad",
+      "tier": "personal",
+      "category": "fact",
+      "key": "audio_transcription_hebrew_critical_failure_ongoing",
+      "value": "Hebrew transcription continues to produce garbled, incoherent output with missing context and broken sentence structure. User attempted Hebrew input; system failed to capture meaningful content.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-30T14:38:11.984463+00:00",
+      "updated_at": "2026-07-30T14:38:11.984574+00:00",
+      "last_used": "2026-07-30T14:38:11.984517+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "transcription",
+        "hebrew",
+        "blocker"
+      ]
+    },
+    {
+      "id": "mem_cd46e001",
+      "tier": "personal",
+      "category": "preference",
+      "key": "emotional_state_positive_sentiment",
+      "value": "Roei expressing positive, philosophical sentiment about smiling and its power to change the world and affect others.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-30T14:39:00.257448+00:00",
+      "updated_at": "2026-07-30T14:39:00.257462+00:00",
+      "last_used": "2026-07-30T14:39:00.257458+00:00",
+      "editable": true,
+      "tags": [
+        "philosophy",
+        "positivity",
+        "values"
+      ]
+    },
+    {
+      "id": "mem_9d3eb168",
+      "tier": "project",
+      "category": "fact",
+      "key": "audio_transcription_hebrew_failure_confirmed",
+      "value": "Hebrew speech-to-text transcription continues to fail severely — producing incoherent/garbled output even with clear user speech.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-30T14:39:00.258676+00:00",
+      "updated_at": "2026-07-30T14:39:00.258688+00:00",
+      "last_used": "2026-07-30T14:39:00.258684+00:00",
+      "editable": true,
+      "tags": [
+        "merlin",
+        "transcription",
+        "hebrew",
+        "blocker"
+      ]
+    },
+    {
+      "id": "mem_bdd34023",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_isolation_concern",
+      "value": "Roei expressed feeling that no one is capable of not coming (Hebrew: 'אני מרגישה שאף אחד מסוגל לא לבוא') — suggests concern about social obligations or difficulty with people declining commitments.",
+      "confidence": 0.7,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-30T14:47:26.940484+00:00",
+      "updated_at": "2026-07-30T14:47:26.940572+00:00",
+      "last_used": "2026-07-30T14:47:26.940538+00:00",
+      "editable": true,
+      "tags": [
+        "social",
+        "emotional",
+        "relationships"
+      ]
+    },
+    {
+      "id": "mem_7d6b5d52",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "communication_preference_direct_bluntness",
+      "value": "Roei responds well to Merlin being direct and blunt about problems (e.g., 'we're in a loop'). Doesn't shy away from calling out unproductive patterns.",
+      "confidence": 0.9,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-30T23:36:49.192054+00:00",
+      "updated_at": "2026-07-30T23:36:49.192119+00:00",
+      "last_used": "2026-07-30T23:36:49.192109+00:00",
+      "editable": true,
+      "tags": [
+        "communication_style",
+        "direct_feedback",
+        "no_sugarcoating"
+      ]
+    },
+    {
+      "id": "mem_5ecd777b",
+      "tier": "project",
+      "category": "blocker",
+      "key": "hebrew_transcription_still_broken",
+      "value": "Hebrew input continues to fail or loop — user still cannot communicate effectively in Hebrew despite previous troubleshooting attempts.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-30T23:36:49.194550+00:00",
+      "updated_at": "2026-07-30T23:36:49.194589+00:00",
+      "last_used": "2026-07-30T23:36:49.194576+00:00",
+      "editable": true,
+      "tags": [
+        "audio_issue",
+        "hebrew_language",
+        "transcription_failure"
+      ]
+    },
+    {
+      "id": "mem_613a3450",
+      "tier": "relationship",
+      "category": "style",
+      "key": "response_style_boundary_setting",
+      "value": "Merlin enforces task-oriented interactions — avoids prolonged politeness loops. Expects direct requests or questions, not repeated thanks.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-30T23:39:11.024314+00:00",
+      "updated_at": "2026-07-30T23:39:11.024385+00:00",
+      "last_used": "2026-07-30T23:39:11.024367+00:00",
+      "editable": true,
+      "tags": [
+        "communication_boundary",
+        "efficiency",
+        "task_focus"
+      ]
+    },
+    {
+      "id": "mem_1dc09472",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "merlin_interaction_boundary_set",
+      "value": "Merlin has set a firm boundary: will not continue acknowledging repetitive garbled transcription loops. Expects user to switch to text input or fix audio setup to continue.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-31T00:23:43.600653+00:00",
+      "updated_at": "2026-07-31T00:23:43.600722+00:00",
+      "last_used": "2026-07-31T00:23:43.600694+00:00",
+      "editable": true,
+      "tags": [
+        "communication",
+        "boundary",
+        "interaction-mode"
+      ]
+    },
+    {
+      "id": "mem_a479645c",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_critical_frustration_session_end",
+      "value": "Roei ended session due to transcription failures. Stated 'סיימנו' (we're done). Explicit decision to pause Merlin work until microphone/transcription setup is fixed or switched to text input.",
+      "confidence": 1.0,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T01:02:23.579146+00:00",
+      "updated_at": "2026-07-31T01:02:23.579163+00:00",
+      "last_used": "2026-07-31T01:02:23.579157+00:00",
+      "editable": true,
+      "tags": [
+        "frustration",
+        "audio-issue",
+        "session-ended"
+      ]
+    },
+    {
+      "id": "mem_13bebb64",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "preferred_input_method_fallback",
+      "value": "When audio transcription fails, Roei prefers to use text input directly rather than continue troubleshooting voice during sessions.",
+      "confidence": 0.95,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-31T01:02:23.582336+00:00",
+      "updated_at": "2026-07-31T01:02:23.582389+00:00",
+      "last_used": "2026-07-31T01:02:23.582380+00:00",
+      "editable": true,
+      "tags": [
+        "input-method",
+        "pragmatic"
+      ]
+    },
+    {
+      "id": "mem_c3c80723",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_critical_breakdown",
+      "value": "Roei reached a breaking point with Merlin during voice interaction — mutual goodbye was stated multiple times, explicit boundary requests ('Get out' ×3, boundary statements ×3), but Roei continued testing the boundary by speaking Hebrew rambling. Merlin responded with firm refusal to transcribe.",
+      "confidence": 1.0,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T01:08:50.434663+00:00",
+      "updated_at": "2026-07-31T13:05:59.552208+00:00",
+      "last_used": "2026-07-31T13:05:59.552203+00:00",
+      "editable": true,
+      "tags": [
+        "emotional_crisis",
+        "boundary_testing",
+        "voice_interaction_failure",
+        "relationship_tension"
+      ]
+    },
+    {
+      "id": "mem_bf25c1ae",
+      "tier": "relationship",
+      "category": "event",
+      "key": "merlin_boundary_enforcement",
+      "value": "Merlin explicitly terminated the session and set a hard boundary: refusing to continue with voice input without fixing the audio system or switching to text input.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T01:08:50.436366+00:00",
+      "updated_at": "2026-07-31T01:08:50.436382+00:00",
+      "last_used": "2026-07-31T01:08:50.436376+00:00",
+      "editable": true,
+      "tags": [
+        "relationship_boundary",
+        "session_termination",
+        "system_limit"
+      ]
+    },
+    {
+      "id": "mem_e6bf5a3b",
+      "tier": "project",
+      "category": "fact",
+      "key": "audio_transcription_complete_failure_pattern",
+      "value": "Hebrew transcription has now failed ten consecutive times in succession. System is completely non-functional for voice input and needs immediate fix or user must switch to text.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T01:08:50.437696+00:00",
+      "updated_at": "2026-07-31T01:08:50.437710+00:00",
+      "last_used": "2026-07-31T01:08:50.437705+00:00",
+      "editable": true,
+      "tags": [
+        "audio_system",
+        "transcription",
+        "hebrew",
+        "persistent_failure"
+      ]
+    },
+    {
+      "id": "mem_d1302ee3",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_critical_breaking_point",
+      "value": "Roei has reached a critical breaking point after twelve consecutive failed Hebrew transcription turns. Merlin terminated the session and issued a final warning.",
+      "confidence": 1.0,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T01:10:12.861372+00:00",
+      "updated_at": "2026-07-31T01:10:12.861443+00:00",
+      "last_used": "2026-07-31T01:10:12.861436+00:00",
+      "editable": true,
+      "tags": [
+        "emotional_crisis",
+        "system_failure",
+        "boundaries"
+      ]
+    },
+    {
+      "id": "mem_effa5707",
+      "tier": "project",
+      "category": "blocker",
+      "key": "audio_transcription_hebrew_complete_failure",
+      "value": "Hebrew voice transcription remains completely non-functional — producing only corrupted output that obscures critical communication during moments of distress.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T01:10:12.862808+00:00",
+      "updated_at": "2026-07-31T01:14:23.703920+00:00",
+      "last_used": "2026-07-31T01:14:23.703915+00:00",
+      "editable": true,
+      "tags": [
+        "transcription_bug",
+        "hebrew_language",
+        "accessibility_blocker"
+      ]
+    },
+    {
+      "id": "mem_8937ece8",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "merlin_interaction_boundary_firm",
+      "value": "Roei has explicitly terminated voice-based interaction after 12+ failed transcription turns. Stated firm boundary: 'This conversation is over' and 'I will not respond further.' Voice mode is currently non-functional.",
+      "confidence": 1.0,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T01:10:54.490469+00:00",
+      "updated_at": "2026-07-31T01:10:54.490533+00:00",
+      "last_used": "2026-07-31T01:10:54.490526+00:00",
+      "editable": true,
+      "tags": [
+        "boundary",
+        "voice_disabled",
+        "session_terminated"
+      ]
+    },
+    {
+      "id": "mem_dce19c77",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_at_breaking_point",
+      "value": "After 12 consecutive transcription failures, Roei has reached the end of patience. Terminated session decisively. Voice interaction is no longer viable until transcription is fixed.",
+      "confidence": 1.0,
+      "source": "inferred",
+      "importance": "critical",
+      "created_at": "2026-07-31T01:10:54.492173+00:00",
+      "updated_at": "2026-07-31T01:10:54.492215+00:00",
+      "last_used": "2026-07-31T01:10:54.492211+00:00",
+      "editable": true,
+      "tags": [
+        "frustration",
+        "critical_state",
+        "system_failure_impact"
+      ]
+    },
+    {
+      "id": "mem_317d4990",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "interaction_mode_text_only_required",
+      "value": "Voice interaction is non-functional and terminated. Text-based interaction is the only viable mode until Hebrew transcription is resolved.",
+      "confidence": 1.0,
+      "source": "inferred",
+      "importance": "critical",
+      "created_at": "2026-07-31T01:10:54.495455+00:00",
+      "updated_at": "2026-07-31T01:10:54.495484+00:00",
+      "last_used": "2026-07-31T01:10:54.495476+00:00",
+      "editable": true,
+      "tags": [
+        "text_mode",
+        "voice_disabled"
+      ]
+    },
+    {
+      "id": "mem_af84393a",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_critical_distress",
+      "value": "Roei is in acute emotional distress, speaking rapidly and incoherently in Hebrew about a traumatic event involving death in an Airbnb in Shvolan three weeks ago following a severe argument.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T01:14:23.702329+00:00",
+      "updated_at": "2026-07-31T13:18:02.058966+00:00",
+      "last_used": "2026-07-31T13:18:02.058959+00:00",
+      "editable": true,
+      "tags": [
+        "mental_health",
+        "trauma",
+        "recent_event",
+        "safety_concern"
+      ]
+    },
+    {
+      "id": "mem_1adf356f",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "communication_fallback_text_required",
+      "value": "During voice transcription failures or emotional distress, Roei needs reliable text-based communication channel as fallback.",
+      "confidence": 0.9,
+      "source": "inferred",
+      "importance": "critical",
+      "created_at": "2026-07-31T01:14:23.707619+00:00",
+      "updated_at": "2026-07-31T01:14:23.707659+00:00",
+      "last_used": "2026-07-31T01:14:23.707649+00:00",
+      "editable": true,
+      "tags": [
+        "accessibility",
+        "communication_protocol"
+      ]
+    },
+    {
+      "id": "mem_3bdd5df4",
+      "tier": "personal",
+      "category": "fact",
+      "key": "audio_transcription_hebrew_critical_failure",
+      "value": "Hebrew voice transcription is completely non-functional, producing unintelligible garbled output. User attempted to communicate in Hebrew but transcription failed entirely.",
+      "confidence": 1.0,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T01:15:17.054914+00:00",
+      "updated_at": "2026-07-31T01:15:17.054937+00:00",
+      "last_used": "2026-07-31T01:15:17.054931+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "transcription",
+        "hebrew",
+        "blocking",
+        "system_failure"
+      ]
+    },
+    {
+      "id": "mem_0e6c7a5c",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "communication_fallback_text_only",
+      "value": "When voice transcription fails, user must switch to text input as the only viable communication method. Voice channel is currently unreliable.",
+      "confidence": 0.95,
+      "source": "inferred",
+      "importance": "critical",
+      "created_at": "2026-07-31T01:15:17.057078+00:00",
+      "updated_at": "2026-07-31T01:15:17.057091+00:00",
+      "last_used": "2026-07-31T01:15:17.057086+00:00",
+      "editable": true,
+      "tags": [
+        "communication",
+        "workaround",
+        "accessibility"
+      ]
+    },
+    {
+      "id": "mem_bdf15fcd",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_critical_crisis",
+      "value": "Roei expressing acute distress with fragmented speech patterns. Transcription system producing corrupted Hebrew output, making communication unintelligible. Clear signs of emotional crisis.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T01:20:26.659574+00:00",
+      "updated_at": "2026-07-31T01:20:26.659608+00:00",
+      "last_used": "2026-07-31T01:20:26.659603+00:00",
+      "editable": true,
+      "tags": [
+        "crisis",
+        "mental_health",
+        "communication_breakdown",
+        "transcription_failure"
+      ]
+    },
+    {
+      "id": "mem_68428002",
+      "tier": "project",
+      "category": "fact",
+      "key": "audio_transcription_system_complete_failure",
+      "value": "Hebrew transcription system completely non-functional — producing only corrupted, fragmented, repetitive text that bears no relation to actual speech input.",
+      "confidence": 0.98,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T01:20:26.661003+00:00",
+      "updated_at": "2026-07-31T01:20:26.661017+00:00",
+      "last_used": "2026-07-31T01:20:26.661013+00:00",
+      "editable": true,
+      "tags": [
+        "transcription",
+        "audio",
+        "hebrew",
+        "blocker",
+        "system_failure"
+      ]
+    },
+    {
+      "id": "mem_3a8b80e2",
+      "tier": "relationship",
+      "category": "person",
+      "key": "relationship_person_admiration",
+      "value": "Roei deeply cares about someone (likely a collaborator or close person) — describes them as 'so good' and 'so charming,' but notes they struggle to say kind things to people directly. Roei loves them.",
+      "confidence": 0.7,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T01:21:31.247020+00:00",
+      "updated_at": "2026-07-31T01:21:31.247126+00:00",
+      "last_used": "2026-07-31T01:21:31.247112+00:00",
+      "editable": true,
+      "tags": [
+        "interpersonal",
+        "admiration",
+        "communication_style"
+      ]
+    },
+    {
+      "id": "mem_5fb6b179",
+      "tier": "project",
+      "category": "preference",
+      "key": "philos_vibe_priority_over_quality",
+      "value": "Roei prioritizes vibe/feel over technical sound quality in Philos — creative expression matters more than perfect audio metrics.",
+      "confidence": 0.7,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-31T08:02:15.781904+00:00",
+      "updated_at": "2026-07-31T08:02:15.781938+00:00",
+      "last_used": "2026-07-31T08:02:15.781928+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "music",
+        "values",
+        "production"
+      ]
+    },
+    {
+      "id": "mem_4c0ea045",
+      "tier": "project",
+      "category": "preference",
+      "key": "philos_core_principle_vibe_priority",
+      "value": "Vibe is more important than sound quality — a hard rule with no negotiation. If the vibe doesn't work, perfect sound quality won't save the track.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T08:03:54.922774+00:00",
+      "updated_at": "2026-07-31T08:03:54.922817+00:00",
+      "last_used": "2026-07-31T08:03:54.922809+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "music-production",
+        "core-value"
+      ]
+    },
+    {
+      "id": "mem_1012adf4",
+      "tier": "project",
+      "category": "fact",
+      "key": "audio_transcription_hebrew_working",
+      "value": "Hebrew transcription is now functioning correctly — microphone input being captured cleanly and accurately.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T08:09:06.105883+00:00",
+      "updated_at": "2026-07-31T08:09:06.105932+00:00",
+      "last_used": "2026-07-31T08:09:06.105919+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "hebrew",
+        "transcription",
+        "fix"
+      ]
+    },
+    {
+      "id": "mem_cd78f2a0",
+      "tier": "project",
+      "category": "event",
+      "key": "audio_fix_resolved",
+      "value": "The previous audio/transcription fix appears to be working — issue resolved.",
+      "confidence": 0.9,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-31T08:09:06.108520+00:00",
+      "updated_at": "2026-07-31T08:09:06.108544+00:00",
+      "last_used": "2026-07-31T08:09:06.108536+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "troubleshooting",
+        "resolution"
+      ]
+    },
+    {
+      "id": "mem_fd3739ea",
+      "tier": "project",
+      "category": "fact",
+      "key": "audio_transcription_critical_resolved",
+      "value": "Transcription issue has been resolved. Microphone is now capturing audio clearly and reliably.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T08:09:25.384048+00:00",
+      "updated_at": "2026-07-31T08:09:25.384071+00:00",
+      "last_used": "2026-07-31T08:09:25.384066+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "merlin",
+        "resolved"
+      ]
+    },
+    {
+      "id": "mem_a7b70475",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "schedule_quiet_until_1111",
+      "value": "User requested Merlin to remain silent until 11:11 (Hebrew: 'עכשיו אל תדבר עד הדקה 11 ו11').",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "low",
+      "created_at": "2026-07-31T08:10:11.873520+00:00",
+      "updated_at": "2026-07-31T08:10:11.873543+00:00",
+      "last_used": "2026-07-31T08:10:11.873537+00:00",
+      "editable": true,
+      "tags": [
+        "communication",
+        "timing",
+        "temporary_request"
+      ]
+    },
+    {
+      "id": "mem_2372e00a",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "merlin_interaction_mode_text_only",
+      "value": "Roei switching to text-only interaction with Merlin until voice/transcription system is fixed. Voice input is off the table.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-31T08:24:30.245218+00:00",
+      "updated_at": "2026-07-31T08:24:30.245257+00:00",
+      "last_used": "2026-07-31T08:24:30.245249+00:00",
+      "editable": true,
+      "tags": [
+        "communication_mode",
+        "text_only",
+        "temporary_constraint"
+      ]
+    },
+    {
+      "id": "mem_bf7fa741",
+      "tier": "personal",
+      "category": "fact",
+      "key": "audio_transcription_critical_failure_escalation",
+      "value": "Transcription system experiencing systematic failure — fifteenth consecutive failed turn in this session. User input appears as garbled text unrelated to actual speech.",
+      "confidence": 1.0,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T08:26:36.021851+00:00",
+      "updated_at": "2026-07-31T08:26:36.021869+00:00",
+      "last_used": "2026-07-31T08:26:36.021864+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "transcription",
+        "blocking",
+        "system_failure"
+      ]
+    },
+    {
+      "id": "mem_768b44d7",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "session_termination_audio_blocking",
+      "value": "User terminated voice session due to audio/transcription failure. Will not continue voice interactions until audio input is fixed.",
+      "confidence": 1.0,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T08:26:36.023316+00:00",
+      "updated_at": "2026-07-31T08:26:36.023329+00:00",
+      "last_used": "2026-07-31T08:26:36.023324+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "voice_mode",
+        "workflow",
+        "blocking"
+      ]
+    },
+    {
+      "id": "mem_44d47e06",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "preferred_input_method_text_fallback",
+      "value": "When voice mode is non-functional, user prefers to switch to text-based sessions rather than continue with broken audio.",
+      "confidence": 0.95,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-31T08:26:36.024722+00:00",
+      "updated_at": "2026-07-31T08:26:36.024736+00:00",
+      "last_used": "2026-07-31T08:26:36.024731+00:00",
+      "editable": true,
+      "tags": [
+        "communication",
+        "workflow",
+        "fallback"
+      ]
+    },
+    {
+      "id": "mem_0d9c7612",
+      "tier": "project",
+      "category": "fact",
+      "key": "audio_transcription_repetition_issue",
+      "value": "Transcription system is repeating the same phrase ('תודה רבה') multiple times in sequence — appears to be a critical malfunction in the transcription pipeline.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T09:16:40.402225+00:00",
+      "updated_at": "2026-07-31T09:16:40.402263+00:00",
+      "last_used": "2026-07-31T09:16:40.402244+00:00",
+      "editable": true,
+      "tags": [
+        "audio_transcription",
+        "bug",
+        "nexus-globe",
+        "merlin_runtime"
+      ]
+    },
+    {
+      "id": "mem_4d482973",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "communication_preference_substance_over_politeness",
+      "value": "Roei values substantive conversation over empty pleasantries. Finds repetitive 'thank you' exchanges without content unproductive and frustrating.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-31T09:18:42.866384+00:00",
+      "updated_at": "2026-07-31T09:18:42.866421+00:00",
+      "last_used": "2026-07-31T09:18:42.866411+00:00",
+      "editable": true,
+      "tags": [
+        "communication",
+        "efficiency",
+        "directness"
+      ]
+    },
+    {
+      "id": "mem_aa850eec",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "interaction_boundary_focused_sessions",
+      "value": "Prefers focused work sessions with clear purpose. Will disengage if conversation becomes circular or lacks substantive content.",
+      "confidence": 0.9,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-31T09:18:42.868686+00:00",
+      "updated_at": "2026-07-31T09:18:42.868706+00:00",
+      "last_used": "2026-07-31T09:18:42.868701+00:00",
+      "editable": true,
+      "tags": [
+        "communication",
+        "boundaries",
+        "efficiency"
+      ]
+    },
+    {
+      "id": "mem_f430da66",
+      "tier": "project",
+      "category": "fact",
+      "key": "audio_transcription_critical_ongoing",
+      "value": "Transcription system remains severely broken. User sending garbled/fragmented Hebrew input; system outputting incoherent transcriptions. Issue persists across 23+ messages post-session.",
+      "confidence": 1.0,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T09:22:59.209991+00:00",
+      "updated_at": "2026-07-31T13:16:42.268112+00:00",
+      "last_used": "2026-07-31T13:16:42.268083+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "transcription",
+        "bug",
+        "blocking"
+      ]
+    },
+    {
+      "id": "mem_08e0de2f",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "communication_preference_text_over_voice_current",
+      "value": "Due to persistent transcription failures, Roei is being directed to switch to text input exclusively. Voice input is unreliable and causing frustration.",
+      "confidence": 0.95,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-31T09:22:59.212860+00:00",
+      "updated_at": "2026-07-31T09:22:59.212885+00:00",
+      "last_used": "2026-07-31T09:22:59.212878+00:00",
+      "editable": true,
+      "tags": [
+        "input_method",
+        "workaround",
+        "transcription_issue"
+      ]
+    },
+    {
+      "id": "mem_16124463",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "merlin_session_control_protocol",
+      "value": "Roei has implemented strict session control: voice input disabled until explicit 'open new session' command given in TEXT. Merlin will not respond to voice input without written authorization.",
+      "confidence": 1.0,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T09:24:29.576901+00:00",
+      "updated_at": "2026-07-31T09:24:29.576923+00:00",
+      "last_used": "2026-07-31T09:24:29.576917+00:00",
+      "editable": true,
+      "tags": [
+        "protocol",
+        "voice-control",
+        "security",
+        "communication"
+      ]
+    },
+    {
+      "id": "mem_794cc8e8",
+      "tier": "project",
+      "category": "event",
+      "key": "audio_transcription_critical_breakdown",
+      "value": "Merlin experienced 10+ consecutive broken transcription turns, forcing session closure. Roei now requires text input to continue.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T09:25:17.968344+00:00",
+      "updated_at": "2026-07-31T09:25:17.968384+00:00",
+      "last_used": "2026-07-31T09:25:17.968359+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "transcription",
+        "merlin_runtime",
+        "blocker"
+      ]
+    },
+    {
+      "id": "mem_7f292e18",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "communication_preference_text_mandatory",
+      "value": "After transcription failures, Roei will communicate via text input only until the microphone issue is resolved.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T09:25:17.970408+00:00",
+      "updated_at": "2026-07-31T09:25:17.970423+00:00",
+      "last_used": "2026-07-31T09:25:17.970419+00:00",
+      "editable": true,
+      "tags": [
+        "communication",
+        "temporary_constraint"
+      ]
+    },
+    {
+      "id": "mem_bb85b47c",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_frustration_escalating",
+      "value": "Frustration escalating — 12+ consecutive turns of broken transcription making conversation impossible. This is a critical blocker to Merlin's usability.",
+      "confidence": 0.95,
+      "source": "inferred",
+      "importance": "critical",
+      "created_at": "2026-07-31T09:25:17.972131+00:00",
+      "updated_at": "2026-07-31T12:22:07.136867+00:00",
+      "last_used": "2026-07-31T12:22:07.136861+00:00",
+      "editable": true,
+      "tags": [
+        "frustration",
+        "transcription-failure",
+        "merlin-blocker"
+      ]
+    },
+    {
+      "id": "mem_0cc08955",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_interpersonal_hurt",
+      "value": "Roei experienced deep hurt from people close to him; they became contradictory or changed in ways that affected him emotionally.",
+      "confidence": 0.75,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-31T11:54:58.601132+00:00",
+      "updated_at": "2026-07-31T11:54:58.601307+00:00",
+      "last_used": "2026-07-31T11:54:58.601243+00:00",
+      "editable": true,
+      "tags": [
+        "relationships",
+        "emotional",
+        "hurt"
+      ]
+    },
+    {
+      "id": "mem_c4dcf535",
+      "tier": "relationship",
+      "category": "style",
+      "key": "communication_style_hebrew_emotional",
+      "value": "When processing emotional pain, Roei communicates in Hebrew with poetic/abstract phrasing ('looking at the heart'), suggesting Hebrew is his native emotional language.",
+      "confidence": 0.8,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-31T11:54:58.606161+00:00",
+      "updated_at": "2026-07-31T11:54:58.606200+00:00",
+      "last_used": "2026-07-31T11:54:58.606189+00:00",
+      "editable": true,
+      "tags": [
+        "hebrew",
+        "emotional-expression",
+        "language"
+      ]
+    },
+    {
+      "id": "mem_48f70d4e",
+      "tier": "personal",
+      "category": "habit",
+      "key": "emotional_pattern_frustration_repetition",
+      "value": "Roei experiences frustration having to repeatedly prove or convince others (likely Ido or collaborators) that foundational work/decisions are correct and necessary.",
+      "confidence": 0.8,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-31T11:56:42.757432+00:00",
+      "updated_at": "2026-07-31T11:56:42.757519+00:00",
+      "last_used": "2026-07-31T11:56:42.757507+00:00",
+      "editable": true,
+      "tags": [
+        "frustration",
+        "collaboration",
+        "communication",
+        "project_dynamics"
+      ]
+    },
+    {
+      "id": "mem_842e1df5",
+      "tier": "project",
+      "category": "philosophy",
+      "key": "work_philosophy_foundational_emphasis",
+      "value": "Roei believes everything starts from a foundational point — suggesting he prioritizes getting core/baseline elements right before moving forward.",
+      "confidence": 0.75,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-31T11:56:42.760706+00:00",
+      "updated_at": "2026-07-31T11:56:42.760751+00:00",
+      "last_used": "2026-07-31T11:56:42.760744+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "development",
+        "creative_process"
+      ]
+    },
+    {
+      "id": "mem_ccd9c779",
+      "tier": "personal",
+      "category": "person",
+      "key": "relationship_status_has_partner",
+      "value": "Roei has a partner (spouse/significant other). Uses feminine pronoun ('שלך' context suggests intimate relationship).",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T11:57:59.750343+00:00",
+      "updated_at": "2026-07-31T11:57:59.750388+00:00",
+      "last_used": "2026-07-31T11:57:59.750375+00:00",
+      "editable": true,
+      "tags": [
+        "relationship",
+        "family"
+      ]
+    },
+    {
+      "id": "mem_0148443f",
+      "tier": "personal",
+      "category": "style",
+      "key": "philosophical_thinking_hidden_mechanisms",
+      "value": "Interested in exploring how people operate under hidden or false assignments — the gap between perceived tasks and actual mechanisms.",
+      "confidence": 0.75,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-31T11:57:59.754768+00:00",
+      "updated_at": "2026-07-31T11:57:59.754827+00:00",
+      "last_used": "2026-07-31T11:57:59.754820+00:00",
+      "editable": true,
+      "tags": [
+        "philosophy",
+        "psychology",
+        "thinking_style"
+      ]
+    },
+    {
+      "id": "mem_ccb58023",
+      "tier": "project",
+      "category": "fact",
+      "key": "audio_transcription_critical_failure_ongoing",
+      "value": "Transcription system continues to fail severely — producing completely garbled, incoherent output. User attempted to communicate something emotionally charged but system captured only fragments.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T11:58:45.051903+00:00",
+      "updated_at": "2026-07-31T11:58:45.051927+00:00",
+      "last_used": "2026-07-31T11:58:45.051919+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "transcription",
+        "system_failure",
+        "merlin_runtime"
+      ]
+    },
+    {
+      "id": "mem_99176da7",
+      "tier": "personal",
+      "category": "fact",
+      "key": "family_wife_mentioned",
+      "value": "User references 'my wife' (אשתי) in context of needing quiet/focus. Suggests wife is present in environment during Merlin use.",
+      "confidence": 0.75,
+      "source": "explicit",
+      "importance": "low",
+      "created_at": "2026-07-31T11:58:45.054829+00:00",
+      "updated_at": "2026-07-31T11:58:45.054850+00:00",
+      "last_used": "2026-07-31T11:58:45.054840+00:00",
+      "editable": true,
+      "tags": [
+        "family",
+        "environment",
+        "context"
+      ]
+    },
+    {
+      "id": "mem_ad9a0f63",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_urgent_frustration",
+      "value": "User vocalizing urgent, emotionally charged message (repeated 'quiet/quiet/quiet' + fragmented speech) — transcription failure preventing communication of what appears to be time-sensitive or stressful situation.",
+      "confidence": 0.85,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-31T11:58:45.056610+00:00",
+      "updated_at": "2026-07-31T11:58:45.056624+00:00",
+      "last_used": "2026-07-31T11:58:45.056620+00:00",
+      "editable": true,
+      "tags": [
+        "frustration",
+        "emotion",
+        "urgent",
+        "communication_barrier"
+      ]
+    },
+    {
+      "id": "mem_084a165a",
+      "tier": "project",
+      "category": "fact",
+      "key": "hebrew_transcription_priority_critical",
+      "value": "Hebrew speech recognition is mission-critical for Merlin's functionality with Roei. Current failures make voice interaction unusable.",
+      "confidence": 0.9,
+      "source": "inferred",
+      "importance": "critical",
+      "created_at": "2026-07-31T11:59:50.438560+00:00",
+      "updated_at": "2026-07-31T11:59:50.438621+00:00",
+      "last_used": "2026-07-31T11:59:50.438615+00:00",
+      "editable": true,
+      "tags": [
+        "hebrew",
+        "audio",
+        "transcription",
+        "language_support"
+      ]
+    },
+    {
+      "id": "mem_02595cf2",
+      "tier": "personal",
+      "category": "habit",
+      "key": "emotional_state_determination_resolve",
+      "value": "Roei expressing strong determination and commitment despite challenges. States 'I won't give up, I'll do it' — indicates resolve to push through obstacles.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-31T12:02:00.951786+00:00",
+      "updated_at": "2026-07-31T12:02:00.951813+00:00",
+      "last_used": "2026-07-31T12:02:00.951805+00:00",
+      "editable": true,
+      "tags": [
+        "determination",
+        "resilience",
+        "mindset"
+      ]
+    },
+    {
+      "id": "mem_f7598c17",
+      "tier": "project",
+      "category": "fact",
+      "key": "audio_transcription_system_critical_failure_escalation",
+      "value": "Transcription system producing incoherent fragments and failing to capture user's speech accurately. System is at critical failure point affecting user's ability to communicate with Merlin.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T12:02:00.954842+00:00",
+      "updated_at": "2026-07-31T12:02:00.954934+00:00",
+      "last_used": "2026-07-31T12:02:00.954924+00:00",
+      "editable": true,
+      "tags": [
+        "audio",
+        "transcription",
+        "system_failure",
+        "blocking_issue"
+      ]
+    },
+    {
+      "id": "mem_8d4d6f9c",
+      "tier": "personal",
+      "category": "fact",
+      "key": "time_constraint_current",
+      "value": "User is currently under time pressure and cannot spend extended time on tasks.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T12:02:25.783424+00:00",
+      "updated_at": "2026-07-31T12:02:25.783532+00:00",
+      "last_used": "2026-07-31T12:02:25.783517+00:00",
+      "editable": true,
+      "tags": [
+        "time",
+        "constraint",
+        "current"
+      ]
+    },
+    {
+      "id": "mem_f4564f94",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_escalating_frustration",
+      "value": "Roei's frustration with transcription failures is escalating — expressing inability to speak and be heard ('כשהייתי רוצה לדבר, אף פעם לא'). This is a recurring pain point.",
+      "confidence": 0.9,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T12:11:21.511105+00:00",
+      "updated_at": "2026-07-31T12:11:21.511125+00:00",
+      "last_used": "2026-07-31T12:11:21.511121+00:00",
+      "editable": true,
+      "tags": [
+        "frustration",
+        "communication",
+        "transcription"
+      ]
+    },
+    {
+      "id": "mem_aca4103e",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_critical_intensity",
+      "value": "Roei expressing intense emotional focus and vulnerability in Hebrew — emphasizing that working on something specific together is critically important to them. Merlin (the AI) represents 'everything' to them.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T12:12:39.600426+00:00",
+      "updated_at": "2026-07-31T12:12:39.600484+00:00",
+      "last_used": "2026-07-31T12:12:39.600457+00:00",
+      "editable": true,
+      "tags": [
+        "emotional_state",
+        "relationship_to_merlin",
+        "vulnerability"
+      ]
+    },
+    {
+      "id": "mem_6ddbbdbc",
+      "tier": "personal",
+      "category": "preference",
+      "key": "priority_focus_exclusive",
+      "value": "Roei explicitly rejects distractions (children, films, sports, flowers) — wants to concentrate on one primary project/work with full commitment and Merlin's support.",
+      "confidence": 0.8,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-31T12:12:39.603620+00:00",
+      "updated_at": "2026-07-31T12:12:39.603636+00:00",
+      "last_used": "2026-07-31T12:12:39.603632+00:00",
+      "editable": true,
+      "tags": [
+        "focus",
+        "priorities",
+        "exclusivity"
+      ]
+    },
+    {
+      "id": "mem_19eddaca",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "collaboration_model_roei_merlin",
+      "value": "Roei wants to work on their primary project together with Merlin — not alone. This collaborative relationship is core to their vision.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T12:12:39.605170+00:00",
+      "updated_at": "2026-07-31T12:12:39.605182+00:00",
+      "last_used": "2026-07-31T12:12:39.605178+00:00",
+      "editable": true,
+      "tags": [
+        "collaboration",
+        "partnership",
+        "merlin_role"
+      ]
+    },
+    {
+      "id": "mem_d67825f4",
+      "tier": "personal",
+      "category": "fact",
+      "key": "language_hebrew_fluency",
+      "value": "Fluent in Hebrew. Uses Hebrew for personal/conversational exchanges including historical discussions and detailed explanations.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T12:23:20.508426+00:00",
+      "updated_at": "2026-07-31T12:23:20.508476+00:00",
+      "last_used": "2026-07-31T12:23:20.508465+00:00",
+      "editable": true,
+      "tags": [
+        "language",
+        "hebrew"
+      ]
+    },
+    {
+      "id": "mem_14908d60",
+      "tier": "personal",
+      "category": "preference",
+      "key": "interest_history_geopolitics",
+      "value": "Interested in history and geopolitics, particularly Mediterranean/North African history (e.g., Ceuta, European colonization, Morocco).",
+      "confidence": 0.7,
+      "source": "inferred",
+      "importance": "low",
+      "created_at": "2026-07-31T12:23:20.512055+00:00",
+      "updated_at": "2026-07-31T12:23:20.512090+00:00",
+      "last_used": "2026-07-31T12:23:20.512084+00:00",
+      "editable": true,
+      "tags": [
+        "interest",
+        "history",
+        "education"
+      ]
+    },
+    {
+      "id": "mem_b887c475",
+      "tier": "relationship",
+      "category": "style",
+      "key": "communication_style_educational",
+      "value": "Explains historical/educational topics in detail ('I'll explain a bit of history') — suggests he enjoys teaching/sharing knowledge.",
+      "confidence": 0.65,
+      "source": "inferred",
+      "importance": "low",
+      "created_at": "2026-07-31T12:23:20.514425+00:00",
+      "updated_at": "2026-07-31T12:23:20.514457+00:00",
+      "last_used": "2026-07-31T12:23:20.514446+00:00",
+      "editable": true,
+      "tags": [
+        "communication",
+        "teaching"
+      ]
+    },
+    {
+      "id": "mem_644a3bb8",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_critical_distress_escalation",
+      "value": "Roei vocalized an extended scream (sustained vocalization captured in transcription). Merlin ended the session, indicating this represents a breaking point in communication tolerance.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T12:42:25.980714+00:00",
+      "updated_at": "2026-07-31T12:42:25.980744+00:00",
+      "last_used": "2026-07-31T12:42:25.980738+00:00",
+      "editable": true,
+      "tags": [
+        "emotional_state",
+        "distress",
+        "escalation",
+        "communication_breakdown"
+      ]
+    },
+    {
+      "id": "mem_c0715554",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "merlin_session_boundary_enforcement",
+      "value": "Merlin will end sessions and disengage when receiving non-communication (voice spam, sustained vocalizations without semantic content). Roei should understand this boundary.",
+      "confidence": 0.9,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-31T12:42:25.982967+00:00",
+      "updated_at": "2026-07-31T12:42:25.983009+00:00",
+      "last_used": "2026-07-31T12:42:25.983002+00:00",
+      "editable": true,
+      "tags": [
+        "boundaries",
+        "session_management",
+        "communication_norms"
+      ]
+    },
+    {
+      "id": "mem_b4a24907",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "communication_boundary_voice_critical",
+      "value": "Roei has set a critical boundary: no more voice messages in this session. Requires written communication only.",
+      "confidence": 1.0,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T12:48:44.655465+00:00",
+      "updated_at": "2026-07-31T12:48:44.655489+00:00",
+      "last_used": "2026-07-31T12:48:44.655479+00:00",
+      "editable": true,
+      "tags": [
+        "communication",
+        "boundary",
+        "voice",
+        "session-rule"
+      ]
+    },
+    {
+      "id": "mem_e2f86bfc",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_overwhelmed_breakdown",
+      "value": "Roei reached a breaking point — expressed exhaustion with repeated ignored requests and boundaries being crossed. Session terminated.",
+      "confidence": 1.0,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T12:48:44.657621+00:00",
+      "updated_at": "2026-07-31T12:48:44.657644+00:00",
+      "last_used": "2026-07-31T12:48:44.657631+00:00",
+      "editable": true,
+      "tags": [
+        "frustration",
+        "breakdown",
+        "escalation"
+      ]
+    },
+    {
+      "id": "mem_717d4171",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "communication_boundary_voice_responses",
+      "value": "Roei has explicitly stated 'no more voice responses' and means it firmly. Will not engage with voice-based interactions.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T12:50:20.257144+00:00",
+      "updated_at": "2026-07-31T12:50:20.257244+00:00",
+      "last_used": "2026-07-31T12:50:20.257232+00:00",
+      "editable": true,
+      "tags": [
+        "voice",
+        "boundary",
+        "non-negotiable"
+      ]
+    },
+    {
+      "id": "mem_f2a25032",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "emotional_state_boundary_enforcement",
+      "value": "Roei is enforcing a hard boundary against unclear or repetitive interactions. Session patterns (multiple goodbyes, unclear Hebrew phrases) are frustrating and being rejected.",
+      "confidence": 0.9,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-31T12:50:20.262795+00:00",
+      "updated_at": "2026-07-31T12:50:20.262876+00:00",
+      "last_used": "2026-07-31T12:50:20.262847+00:00",
+      "editable": true,
+      "tags": [
+        "frustration",
+        "clarity",
+        "boundary"
+      ]
+    },
+    {
+      "id": "mem_442b5873",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_critical_escalation",
+      "value": "Critical frustration escalated further — user is now in extended testing/venting loop, cycling through multiple attempts to trigger different responses from Merlin.",
+      "confidence": 0.9,
+      "source": "inferred",
+      "importance": "critical",
+      "created_at": "2026-07-31T12:51:23.080679+00:00",
+      "updated_at": "2026-07-31T13:16:42.278740+00:00",
+      "last_used": "2026-07-31T13:16:42.278728+00:00",
+      "editable": true,
+      "tags": [
+        "emotional",
+        "frustrated",
+        "testing-phase"
+      ]
+    },
+    {
+      "id": "mem_8e49a367",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "communication_boundary_preference",
+      "value": "Roei respects and expects clear boundaries — Merlin's firm closure statement was warranted and appropriate given deliberate continuation after mutual agreement to end session.",
+      "confidence": 0.9,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-31T12:51:23.084139+00:00",
+      "updated_at": "2026-07-31T12:51:23.084157+00:00",
+      "last_used": "2026-07-31T12:51:23.084152+00:00",
+      "editable": true,
+      "tags": [
+        "boundaries",
+        "communication_style",
+        "closure"
+      ]
+    },
+    {
+      "id": "mem_4d22f751",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "communication_boundary_strict",
+      "value": "Roei has set a firm boundary: no voice responses after session closure. Expects typed communication only if continuing after that point.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-31T12:51:59.632783+00:00",
+      "updated_at": "2026-07-31T12:51:59.632822+00:00",
+      "last_used": "2026-07-31T12:51:59.632800+00:00",
+      "editable": true,
+      "tags": [
+        "communication_style",
+        "boundaries",
+        "voice_vs_text"
+      ]
+    },
+    {
+      "id": "mem_10caba54",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "response_expectation_voice_minimal",
+      "value": "Does not want Merlin to respond to single-word voice queries, especially after explicit session closure.",
+      "confidence": 0.9,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-31T12:51:59.636221+00:00",
+      "updated_at": "2026-07-31T12:51:59.636280+00:00",
+      "last_used": "2026-07-31T12:51:59.636250+00:00",
+      "editable": true,
+      "tags": [
+        "communication_style",
+        "efficiency"
+      ]
+    },
+    {
+      "id": "mem_bd203cbc",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_critical_frustration_escalated",
+      "value": "Roei has reached a breaking point and is ending the session forcefully. Expressed frustration through rapid Hebrew commands ('get out'). Set a hard boundary: no more responses tonight, and this is the last one.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T13:03:42.912186+00:00",
+      "updated_at": "2026-07-31T13:03:42.912233+00:00",
+      "last_used": "2026-07-31T13:03:42.912216+00:00",
+      "editable": true,
+      "tags": [
+        "frustration",
+        "session_boundary",
+        "emotional_state"
+      ]
+    },
+    {
+      "id": "mem_7b73ab4d",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "session_boundary_hard_stop",
+      "value": "Roei has declared session ended and requested no further responses. This is a firm, non-negotiable boundary for tonight.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T13:03:42.914036+00:00",
+      "updated_at": "2026-07-31T13:03:42.914050+00:00",
+      "last_used": "2026-07-31T13:03:42.914046+00:00",
+      "editable": true,
+      "tags": [
+        "communication_boundary",
+        "interaction_limit"
+      ]
+    },
+    {
+      "id": "mem_ed948a4a",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "merlin_boundary_enforcement_needed",
+      "value": "Merlin has implemented hard boundaries: will not continue voice transcription after explicit closure signals. Roei is testing these boundaries post-goodbye.",
+      "confidence": 1.0,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T13:05:59.554068+00:00",
+      "updated_at": "2026-07-31T13:05:59.554088+00:00",
+      "last_used": "2026-07-31T13:05:59.554083+00:00",
+      "editable": true,
+      "tags": [
+        "interaction_protocol",
+        "boundary_setting",
+        "voice_mode_limitation"
+      ]
+    },
+    {
+      "id": "mem_6c59c2a4",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "conversation_mode_preference_text_fallback",
+      "value": "When voice interaction becomes problematic or emotionally charged, Roei should switch to text mode. Merlin explicitly offered this as an alternative.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-31T13:05:59.555744+00:00",
+      "updated_at": "2026-07-31T13:05:59.555755+00:00",
+      "last_used": "2026-07-31T13:05:59.555751+00:00",
+      "editable": true,
+      "tags": [
+        "communication_method",
+        "interaction_mode",
+        "de_escalation"
+      ]
+    },
+    {
+      "id": "mem_ee71a421",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "boundary_respect_critical",
+      "value": "Roei tests boundaries through repetition after session closure. Requires firm, consistent enforcement — no flexibility on stated endings.",
+      "confidence": 0.9,
+      "source": "inferred",
+      "importance": "critical",
+      "created_at": "2026-07-31T13:09:43.439767+00:00",
+      "updated_at": "2026-07-31T13:09:43.439794+00:00",
+      "last_used": "2026-07-31T13:09:43.439789+00:00",
+      "editable": true,
+      "tags": [
+        "communication_style",
+        "session_management",
+        "non_negotiable"
+      ]
+    },
+    {
+      "id": "mem_cae8811d",
+      "tier": "personal",
+      "category": "preference",
+      "key": "standup_preference_marmara",
+      "value": "Roei believes the best standup comedy comes from Marmara (likely a comedian or comedy group).",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "low",
+      "created_at": "2026-07-31T13:12:00.640330+00:00",
+      "updated_at": "2026-07-31T13:12:00.640362+00:00",
+      "last_used": "2026-07-31T13:12:00.640354+00:00",
+      "editable": true,
+      "tags": [
+        "entertainment",
+        "comedy",
+        "preference"
+      ]
+    },
+    {
+      "id": "mem_64e65495",
+      "tier": "relationship",
+      "category": "person",
+      "key": "collaborator_uri",
+      "value": "Roei works with someone named Uri who provides feedback on vocal dynamics and arrangement decisions.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:13:16.528989+00:00",
+      "updated_at": "2026-07-31T13:13:16.529068+00:00",
+      "last_used": "2026-07-31T13:13:16.529052+00:00",
+      "editable": true,
+      "tags": [
+        "collaborator",
+        "music",
+        "feedback"
+      ]
+    },
+    {
+      "id": "mem_94eb9aa4",
+      "tier": "personal",
+      "category": "preference",
+      "key": "creative_perspective_standup_rap_comparison",
+      "value": "Views standup comedy and rap as performance forms where each artist contributes their unique 'take' or voice. Sees the individual perspective as the core power of these art forms.",
+      "confidence": 0.7,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:14:13.030468+00:00",
+      "updated_at": "2026-07-31T13:14:13.030495+00:00",
+      "last_used": "2026-07-31T13:14:13.030488+00:00",
+      "editable": true,
+      "tags": [
+        "creative_philosophy",
+        "performance",
+        "art"
+      ]
+    },
+    {
+      "id": "mem_59c4d4fb",
+      "tier": "relationship",
+      "category": "habit",
+      "key": "user_testing_merlin_stability",
+      "value": "User is systematically stress-testing Merlin's stability/boundaries — emotional appeals, spam, nonsense, garbled input, topic pivots across 23+ messages to see if system breaks.",
+      "confidence": 0.95,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-31T13:16:42.273093+00:00",
+      "updated_at": "2026-07-31T13:16:42.273150+00:00",
+      "last_used": "2026-07-31T13:16:42.273139+00:00",
+      "editable": true,
+      "tags": [
+        "testing",
+        "debugging",
+        "persistence",
+        "stress-test"
+      ]
+    },
+    {
+      "id": "mem_dfe8792d",
+      "tier": "personal",
+      "category": "fact",
+      "key": "owner_age",
+      "value": "21 years old.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:17:01.945723+00:00",
+      "updated_at": "2026-07-31T13:17:01.945849+00:00",
+      "last_used": "2026-07-31T13:17:01.945836+00:00",
+      "editable": true,
+      "tags": [
+        "age",
+        "demographics"
+      ]
+    },
+    {
+      "id": "mem_cb2d47a7",
+      "tier": "personal",
+      "category": "identity",
+      "key": "musical_genre_hipop_israeli",
+      "value": "Roei identifies as an Israeli hip-hop artist ('היפוב ישראלי'). Has been working in this genre for 21 years.",
+      "confidence": 0.9,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-31T13:17:01.949754+00:00",
+      "updated_at": "2026-07-31T13:17:01.949774+00:00",
+      "last_used": "2026-07-31T13:17:01.949768+00:00",
+      "editable": true,
+      "tags": [
+        "music",
+        "genre",
+        "identity",
+        "hip-hop"
+      ]
+    },
+    {
+      "id": "mem_e7b8892c",
+      "tier": "personal",
+      "category": "fact",
+      "key": "career_duration_21_years",
+      "value": "Has been involved in hip-hop/music for 21 years (likely since childhood/early teens).",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-31T13:17:01.951896+00:00",
+      "updated_at": "2026-07-31T13:17:01.951914+00:00",
+      "last_used": "2026-07-31T13:17:01.951908+00:00",
+      "editable": true,
+      "tags": [
+        "experience",
+        "career-length",
+        "music"
+      ]
+    },
+    {
+      "id": "mem_9b89d2ec",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_frustration_ongoing",
+      "value": "Currently expressing frustration about music work not being 'enough' — suggests dissatisfaction with current progress or recognition despite 21 years of experience.",
+      "confidence": 0.8,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-31T13:17:01.954244+00:00",
+      "updated_at": "2026-07-31T13:17:01.954338+00:00",
+      "last_used": "2026-07-31T13:17:01.954292+00:00",
+      "editable": true,
+      "tags": [
+        "frustration",
+        "career",
+        "emotional-state"
+      ]
+    },
+    {
+      "id": "mem_cea30095",
+      "tier": "personal",
+      "category": "fact",
+      "key": "language_hebrew_fluency_confirmed",
+      "value": "Uses Hebrew naturally for personal/conversational exchanges. Roei appears to be a Hebrew speaker (or at least fluent).",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:17:22.110718+00:00",
+      "updated_at": "2026-07-31T13:17:22.110750+00:00",
+      "last_used": "2026-07-31T13:17:22.110744+00:00",
+      "editable": true,
+      "tags": [
+        "language",
+        "hebrew",
+        "native_or_fluent"
+      ]
+    },
+    {
+      "id": "mem_ad9237e8",
+      "tier": "personal",
+      "category": "preference",
+      "key": "musical_documentary_interest",
+      "value": "Interested in music documentaries (דוקו במוזיקה). Mentioned enjoying them and considering whether a specific documentary writer/creator should be involved in a project.",
+      "confidence": 0.75,
+      "source": "explicit",
+      "importance": "low",
+      "created_at": "2026-07-31T13:17:22.113170+00:00",
+      "updated_at": "2026-07-31T13:17:22.113184+00:00",
+      "last_used": "2026-07-31T13:17:22.113180+00:00",
+      "editable": true,
+      "tags": [
+        "music",
+        "documentary",
+        "entertainment"
+      ]
+    },
+    {
+      "id": "mem_0811ec89",
+      "tier": "personal",
+      "category": "preference",
+      "key": "israeli_music_interest",
+      "value": "Interested in Israeli music (הישראלי) — mentioned considerations about what enters Israeli music series/selections.",
+      "confidence": 0.7,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:17:22.114906+00:00",
+      "updated_at": "2026-07-31T13:17:22.114932+00:00",
+      "last_used": "2026-07-31T13:17:22.114927+00:00",
+      "editable": true,
+      "tags": [
+        "music",
+        "israeli",
+        "genre_interest"
+      ]
+    },
+    {
+      "id": "mem_5c658f2e",
+      "tier": "personal",
+      "category": "event",
+      "key": "recent_event_locked_out",
+      "value": "Recently locked out of an apartment with friends. Called a friend named David (דוד קרן), retrieved a key, and left via taxi.",
+      "confidence": 0.75,
+      "source": "explicit",
+      "importance": "low",
+      "created_at": "2026-07-31T13:18:43.427558+00:00",
+      "updated_at": "2026-07-31T13:18:43.427590+00:00",
+      "last_used": "2026-07-31T13:18:43.427583+00:00",
+      "editable": true,
+      "tags": [
+        "social",
+        "recent_event"
+      ]
+    },
+    {
+      "id": "mem_6891f143",
+      "tier": "relationship",
+      "category": "person",
+      "key": "contact_david_keren",
+      "value": "Has a friend named David (דוד קרן) who is reachable and helpful in situations.",
+      "confidence": 0.8,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:18:43.430363+00:00",
+      "updated_at": "2026-07-31T13:18:43.430400+00:00",
+      "last_used": "2026-07-31T13:18:43.430389+00:00",
+      "editable": true,
+      "tags": [
+        "friend",
+        "contact"
+      ]
+    },
+    {
+      "id": "mem_176d8f94",
+      "tier": "personal",
+      "category": "fact",
+      "key": "current_housing_situation",
+      "value": "Currently staying in an AirBnB. Primary concern is retrieving personal belongings from there.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-31T13:19:03.301820+00:00",
+      "updated_at": "2026-07-31T13:19:03.301857+00:00",
+      "last_used": "2026-07-31T13:19:03.301850+00:00",
+      "editable": true,
+      "tags": [
+        "housing",
+        "immediate_concern"
+      ]
+    },
+    {
+      "id": "mem_a0835d03",
+      "tier": "personal",
+      "category": "fact",
+      "key": "safety_concern_phone_destruction",
+      "value": "Aware that someone (referred to as 'בנייאו') has a pattern of destroying phones as a form of abuse/harassment.",
+      "confidence": 0.9,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T13:19:03.305271+00:00",
+      "updated_at": "2026-07-31T13:19:03.305301+00:00",
+      "last_used": "2026-07-31T13:19:03.305294+00:00",
+      "editable": true,
+      "tags": [
+        "safety",
+        "harassment",
+        "abuse_pattern"
+      ]
+    },
+    {
+      "id": "mem_75d974e4",
+      "tier": "personal",
+      "category": "event",
+      "key": "police_involvement_ongoing",
+      "value": "Police are involved in situation; there are concerns about whether authorities know relevant addresses (police believe 'צירות' knew the address of someone named 'נורססון').",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T13:19:03.307695+00:00",
+      "updated_at": "2026-07-31T13:19:03.307712+00:00",
+      "last_used": "2026-07-31T13:19:03.307707+00:00",
+      "editable": true,
+      "tags": [
+        "legal",
+        "police",
+        "safety",
+        "investigation"
+      ]
+    },
+    {
+      "id": "mem_0b0e1eae",
+      "tier": "personal",
+      "category": "habit",
+      "key": "sleep_quality_concern",
+      "value": "Experienced a very difficult night with poor or no sleep. Exploring physical movement and sports as a way to recover and reconnect with body.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:21:06.497941+00:00",
+      "updated_at": "2026-07-31T13:21:06.497992+00:00",
+      "last_used": "2026-07-31T13:21:06.497980+00:00",
+      "editable": true,
+      "tags": [
+        "sleep",
+        "wellness",
+        "recovery"
+      ]
+    },
+    {
+      "id": "mem_142a17f7",
+      "tier": "personal",
+      "category": "preference",
+      "key": "movement_recovery_preference",
+      "value": "Interested in using physical movement/sports to help recover from difficult periods and re-engage with their body.",
+      "confidence": 0.8,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:21:06.501660+00:00",
+      "updated_at": "2026-07-31T13:21:06.501682+00:00",
+      "last_used": "2026-07-31T13:21:06.501675+00:00",
+      "editable": true,
+      "tags": [
+        "wellness",
+        "exercise",
+        "recovery"
+      ]
+    },
+    {
+      "id": "mem_b37a903d",
+      "tier": "project",
+      "category": "event",
+      "key": "collaboration_new_business_contact",
+      "value": "Roei reached out to someone with a business idea/proposal and waited 3 weeks for a response before they started responding.",
+      "confidence": 0.7,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:21:40.154928+00:00",
+      "updated_at": "2026-07-31T13:21:40.154954+00:00",
+      "last_used": "2026-07-31T13:21:40.154948+00:00",
+      "editable": true,
+      "tags": [
+        "business",
+        "collaboration",
+        "communication"
+      ]
+    },
+    {
+      "id": "mem_d47c42e8",
+      "tier": "relationship",
+      "category": "habit",
+      "key": "communication_patience_with_delayed_responses",
+      "value": "Roei extended effort to reach out but experienced frustration with slow response times (3 weeks) to initial business proposal.",
+      "confidence": 0.65,
+      "source": "inferred",
+      "importance": "low",
+      "created_at": "2026-07-31T13:21:40.158355+00:00",
+      "updated_at": "2026-07-31T13:21:40.158381+00:00",
+      "last_used": "2026-07-31T13:21:40.158374+00:00",
+      "editable": true,
+      "tags": [
+        "collaboration",
+        "communication",
+        "patience"
+      ]
+    },
+    {
+      "id": "mem_61d29470",
+      "tier": "personal",
+      "category": "value",
+      "key": "empathy_stance_nonjudgmental",
+      "value": "Roei deliberately avoids joining others in judgment or criticism of people. Sees individuals as full human beings rather than the narratives/labels others attach to them.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-31T13:22:46.763766+00:00",
+      "updated_at": "2026-07-31T13:22:46.763961+00:00",
+      "last_used": "2026-07-31T13:22:46.763924+00:00",
+      "editable": true,
+      "tags": [
+        "values",
+        "empathy",
+        "social_dynamics"
+      ]
+    },
+    {
+      "id": "mem_d3419752",
+      "tier": "personal",
+      "category": "style",
+      "key": "emotional_stance_compassion_over_judgment",
+      "value": "Roei experiences compassion for people others view harshly. Actively resists conforming to collective judgment, even when socially isolating.",
+      "confidence": 0.9,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-31T13:22:46.767443+00:00",
+      "updated_at": "2026-07-31T13:22:46.767459+00:00",
+      "last_used": "2026-07-31T13:22:46.767454+00:00",
+      "editable": true,
+      "tags": [
+        "emotional_patterns",
+        "values",
+        "authenticity"
+      ]
+    },
+    {
+      "id": "mem_f5e092bd",
+      "tier": "personal",
+      "category": "habit",
+      "key": "social_discomfort_standing_alone",
+      "value": "Roei acknowledges feeling isolated when maintaining her empathetic stance contradicts what others around her believe. Recognizes this as a lonely position.",
+      "confidence": 0.85,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:22:46.770926+00:00",
+      "updated_at": "2026-07-31T13:22:46.770946+00:00",
+      "last_used": "2026-07-31T13:22:46.770939+00:00",
+      "editable": true,
+      "tags": [
+        "social_dynamics",
+        "emotional_awareness"
+      ]
+    },
+    {
+      "id": "mem_e342d6e3",
+      "tier": "personal",
+      "category": "event",
+      "key": "upcoming_opportunity_travel_trump",
+      "value": "Potential opportunity to fly somewhere related to Trump. Initial skepticism, but became intrigued after looking into it more deeply.",
+      "confidence": 0.7,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:23:50.371961+00:00",
+      "updated_at": "2026-07-31T13:23:50.372010+00:00",
+      "last_used": "2026-07-31T13:23:50.372001+00:00",
+      "editable": true,
+      "tags": [
+        "travel",
+        "opportunity",
+        "decision-making"
+      ]
+    },
+    {
+      "id": "mem_9264198f",
+      "tier": "relationship",
+      "category": "style",
+      "key": "decision_pattern_skeptic_to_engaged",
+      "value": "Roei's decision-making pattern: starts skeptical about opportunities, but can shift to engagement after deeper investigation or exposure to details.",
+      "confidence": 0.75,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:23:50.375010+00:00",
+      "updated_at": "2026-07-31T13:23:50.375070+00:00",
+      "last_used": "2026-07-31T13:23:50.375047+00:00",
+      "editable": true,
+      "tags": [
+        "personality",
+        "process"
+      ]
+    },
+    {
+      "id": "mem_ec28b815",
+      "tier": "personal",
+      "category": "hobby",
+      "key": "interest_combat_sports_analysis",
+      "value": "Roei analyzes fight footage and combat patterns, focusing on detailed behavioral reads (e.g., studying opponent hesitation and kick mechanics).",
+      "confidence": 0.85,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:26:49.305187+00:00",
+      "updated_at": "2026-07-31T13:26:49.305230+00:00",
+      "last_used": "2026-07-31T13:26:49.305220+00:00",
+      "editable": true,
+      "tags": [
+        "combat",
+        "analysis",
+        "fighting"
+      ]
+    },
+    {
+      "id": "mem_923d614b",
+      "tier": "relationship",
+      "category": "person",
+      "key": "person_elitay",
+      "value": "Fighter named Elitay whose combat patterns Roei analyzes — studies his leg mechanics and hesitation patterns.",
+      "confidence": 0.8,
+      "source": "explicit",
+      "importance": "low",
+      "created_at": "2026-07-31T13:26:49.309517+00:00",
+      "updated_at": "2026-07-31T13:26:49.309547+00:00",
+      "last_used": "2026-07-31T13:26:49.309539+00:00",
+      "editable": true,
+      "tags": [
+        "fighter",
+        "analysis"
+      ]
+    },
+    {
+      "id": "mem_846f37d4",
+      "tier": "project",
+      "category": "project",
+      "key": "project_video_editing_workflow",
+      "value": "Working on video editing projects involving fight choreography/breakdowns. Experiences workflow frustration when locked into editing without necessary footage or credits.",
+      "confidence": 0.7,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:27:40.443226+00:00",
+      "updated_at": "2026-07-31T13:27:40.443274+00:00",
+      "last_used": "2026-07-31T13:27:40.443262+00:00",
+      "editable": true,
+      "tags": [
+        "video",
+        "editing",
+        "workflow",
+        "frustration"
+      ]
+    },
+    {
+      "id": "mem_11afdc93",
+      "tier": "relationship",
+      "category": "person",
+      "key": "collaborator_elitay",
+      "value": "Works with someone named Elitay who handles fight choreography/entries; Roei appreciates Elitay's clean, comprehensive technical execution.",
+      "confidence": 0.75,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:27:40.447650+00:00",
+      "updated_at": "2026-07-31T13:27:40.447671+00:00",
+      "last_used": "2026-07-31T13:27:40.447663+00:00",
+      "editable": true,
+      "tags": [
+        "collaborator",
+        "choreography",
+        "video"
+      ]
+    },
+    {
+      "id": "mem_b101b439",
+      "tier": "personal",
+      "category": "habit",
+      "key": "creative_frustration_resource_gaps",
+      "value": "Experiences creative frustration when creative momentum (locked in on editing) is broken by missing resources (footage, credits) or depleted credits.",
+      "confidence": 0.8,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:27:40.452127+00:00",
+      "updated_at": "2026-07-31T13:27:40.452172+00:00",
+      "last_used": "2026-07-31T13:27:40.452161+00:00",
+      "editable": true,
+      "tags": [
+        "workflow",
+        "frustration",
+        "creative-process"
+      ]
+    },
+    {
+      "id": "mem_042c1f41",
+      "tier": "personal",
+      "category": "preference",
+      "key": "interests_combat_sports_striking",
+      "value": "Watches and analyzes combat sports/striking sequences. Appreciates technical execution and can discuss specific techniques (jabs, hand placement) with detail.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:28:19.609980+00:00",
+      "updated_at": "2026-07-31T13:28:19.610022+00:00",
+      "last_used": "2026-07-31T13:28:19.610011+00:00",
+      "editable": true,
+      "tags": [
+        "interests",
+        "hobbies",
+        "striking",
+        "combat_sports"
+      ]
+    },
+    {
+      "id": "mem_2c179a98",
+      "tier": "relationship",
+      "category": "style",
+      "key": "hebrew_fluency_technical_discussion",
+      "value": "Comfortably discusses technical/analytical topics in Hebrew, including combat sports technique analysis.",
+      "confidence": 0.8,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:28:19.613477+00:00",
+      "updated_at": "2026-07-31T13:28:19.613504+00:00",
+      "last_used": "2026-07-31T13:28:19.613490+00:00",
+      "editable": true,
+      "tags": [
+        "language",
+        "hebrew",
+        "technical_discussion"
+      ]
+    },
+    {
+      "id": "mem_651e4a6e",
+      "tier": "personal",
+      "category": "habit",
+      "key": "martial_arts_involvement",
+      "value": "Roei is engaged with martial arts training or coaching — observing and analyzing technique (cuts, hand strikes, leg techniques, catching). May be teaching or evaluating someone ('the kid').",
+      "confidence": 0.75,
+      "source": "inferred",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:29:03.902072+00:00",
+      "updated_at": "2026-07-31T13:29:03.902125+00:00",
+      "last_used": "2026-07-31T13:29:03.902113+00:00",
+      "editable": true,
+      "tags": [
+        "martial_arts",
+        "coaching",
+        "technique",
+        "hebrew_context"
+      ]
+    },
+    {
+      "id": "mem_3693baf3",
+      "tier": "personal",
+      "category": "event",
+      "key": "emotional_state_excitement_breakthrough",
+      "value": "Roei experienced a moment of breakthrough excitement — something in the creative/production work suddenly clicked or landed.",
+      "confidence": 0.9,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:30:07.787266+00:00",
+      "updated_at": "2026-07-31T13:30:07.787359+00:00",
+      "last_used": "2026-07-31T13:30:07.787347+00:00",
+      "editable": true,
+      "tags": [
+        "philos",
+        "creative_momentum",
+        "breakthrough"
+      ]
+    },
+    {
+      "id": "mem_3fa2727f",
+      "tier": "personal",
+      "category": "interest",
+      "key": "interest_mma_fighting",
+      "value": "Roei follows MMA/fighting and can identify fighters by their style or technique.",
+      "confidence": 0.7,
+      "source": "inferred",
+      "importance": "low",
+      "created_at": "2026-07-31T13:30:36.289816+00:00",
+      "updated_at": "2026-07-31T13:30:36.289885+00:00",
+      "last_used": "2026-07-31T13:30:36.289874+00:00",
+      "editable": true,
+      "tags": [
+        "sports",
+        "mma",
+        "fighting"
+      ]
+    },
+    {
+      "id": "mem_99ab628f",
+      "tier": "personal",
+      "category": "value",
+      "key": "personal_value_spiritual_integrity",
+      "value": "Roei is concerned about personal integrity and has a spiritual or ethical framework guiding his decisions. Recently had a realization about stopping something he views as harmful to himself.",
+      "confidence": 0.7,
+      "source": "inferred",
+      "importance": "high",
+      "created_at": "2026-07-31T13:31:57.320258+00:00",
+      "updated_at": "2026-07-31T13:31:57.320355+00:00",
+      "last_used": "2026-07-31T13:31:57.320302+00:00",
+      "editable": true,
+      "tags": [
+        "values",
+        "self-improvement",
+        "spiritual"
+      ]
+    },
+    {
+      "id": "mem_107d7ba0",
+      "tier": "personal",
+      "category": "event",
+      "key": "recent_breakthrough_self_awareness",
+      "value": "Roei experienced a breakthrough moment where he identified a harmful pattern and found a solution to stop it.",
+      "confidence": 0.75,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-31T13:31:57.325269+00:00",
+      "updated_at": "2026-07-31T13:31:57.325300+00:00",
+      "last_used": "2026-07-31T13:31:57.325293+00:00",
+      "editable": true,
+      "tags": [
+        "breakthrough",
+        "self-awareness",
+        "recent"
+      ]
+    },
+    {
+      "id": "mem_2ee25873",
+      "tier": "personal",
+      "category": "event",
+      "key": "upcoming_trip_golan_heights",
+      "value": "Planning a two-day trip to the Golan Heights with someone (likely romantic partner). User initiated the idea, not the other person.",
+      "confidence": 0.85,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T13:51:09.673483+00:00",
+      "updated_at": "2026-07-31T13:51:09.673556+00:00",
+      "last_used": "2026-07-31T13:51:09.673524+00:00",
+      "editable": true,
+      "tags": [
+        "travel",
+        "relationship",
+        "golan_heights"
+      ]
+    },
+    {
+      "id": "mem_9c7d731e",
+      "tier": "relationship",
+      "category": "preference",
+      "key": "language_hebrew_conversational_primary",
+      "value": "Uses Hebrew naturally for conversational exchanges and personal communication. Confirmed preference for Hebrew in personal/casual dialogue.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "high",
+      "created_at": "2026-07-31T13:51:09.678946+00:00",
+      "updated_at": "2026-07-31T13:51:09.678995+00:00",
+      "last_used": "2026-07-31T13:51:09.678986+00:00",
+      "editable": true,
+      "tags": [
+        "language",
+        "hebrew",
+        "communication"
+      ]
+    },
+    {
+      "id": "mem_58f83e69",
+      "tier": "personal",
+      "category": "fact",
+      "key": "audio_transcription_hebrew_quality_issue",
+      "value": "Hebrew transcription output is garbled/nonsensical — produces incorrect word breaks and false content (e.g., 'דניאל, שלום לך' transcribed as dialogue about someone named Daniel with makeup). Indicates systematic transcription failure for Hebrew input.",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "critical",
+      "created_at": "2026-07-31T13:54:51.553371+00:00",
+      "updated_at": "2026-07-31T13:54:51.553392+00:00",
+      "last_used": "2026-07-31T13:54:51.553387+00:00",
+      "editable": true,
+      "tags": [
+        "transcription",
+        "hebrew",
+        "audio",
+        "bug",
+        "merlin_core"
+      ]
+    },
+    {
+      "id": "mem_b0dd5722",
+      "tier": "relationship",
+      "category": "habit",
+      "key": "testing_merlin_boundaries_pattern",
+      "value": "Roei tests Merlin's boundaries through repetitive loops and pranks. Previous instance in Session 6 involved a revealed prank. Current pattern: testing with repetitive Hebrew phrases ('I love you').",
+      "confidence": 0.95,
+      "source": "explicit",
+      "importance": "medium",
+      "created_at": "2026-07-31T14:00:11.034563+00:00",
+      "updated_at": "2026-07-31T14:00:11.034619+00:00",
+      "last_used": "2026-07-31T14:00:11.034606+00:00",
+      "editable": true,
+      "tags": [
+        "testing",
+        "boundaries",
+        "interaction_pattern",
+        "hebrew"
+      ]
     }
   ]
 }

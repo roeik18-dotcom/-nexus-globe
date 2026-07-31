@@ -12,7 +12,9 @@ that only supports 44.1 / 48 / 96 kHz.
 
 import asyncio
 import io
+import json
 import logging
+import os
 import queue
 import threading
 import time
@@ -59,6 +61,56 @@ _EXPECTED_KEY_PREFIX = "sk-"
 # runtime backstop (validation should catch bad keys first; this guards the case
 # where a key passes validation but the API path keeps failing).
 _MAX_CONSECUTIVE_INFERENCE_ERRORS = 3
+
+# ── Audio-capture probe (instrumentation; OFF by default) ─────────────────────
+# Experiment E2: to answer "does the inconsistency already exist in the audio sent
+# to Whisper?", we must analyse the EXACT buffer the system sent to STT.  This
+# probe saves that buffer + metadata per utterance — but ONLY when the env var
+# MERLIN_CAPTURE_WAV=1 is set.  When it is unset, the production path is byte-for-
+# byte identical (no extra API fields, no writes, no behaviour change).
+_CAPTURE_DIR = os.path.expanduser(
+    os.environ.get("MERLIN_CAPTURE_DIR", "~/Library/Logs/Merlin/capture")
+)
+_capture_seq = [0]
+
+
+def _capture_enabled() -> bool:
+    return os.environ.get("MERLIN_CAPTURE_WAV") == "1"
+
+
+def _save_capture(audio: np.ndarray, sr: int, wake_match: bool, result) -> None:
+    """Save the exact Whisper-bound audio + metadata (capture mode only).
+
+    `result` is a verbose_json transcription result (requested only in capture
+    mode), so segment-level no_speech_prob and detected language are available.
+    """
+    os.makedirs(_CAPTURE_DIR, exist_ok=True)
+    _capture_seq[0] += 1
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    base = f"wake_{stamp}_{_capture_seq[0]:03d}"
+    wavfile.write(
+        os.path.join(_CAPTURE_DIR, base + ".wav"),
+        sr, (np.clip(audio, -1.0, 1.0) * 32767).astype(np.int16),
+    )
+    peak = float(np.max(np.abs(audio))) if audio.size else 0.0
+    rms  = float(np.sqrt(np.mean(audio ** 2))) if audio.size else 0.0
+    segs = getattr(result, "segments", None) or []
+    no_speech = float(np.mean([s.no_speech_prob for s in segs])) if segs else None
+    meta = {
+        "timestamp": stamp,
+        "wav": base + ".wav",
+        "rms": round(rms, 6),
+        "peak": round(peak, 6),
+        "duration": round(len(audio) / sr, 3),
+        "sample_rate": sr,
+        "wake_match": bool(wake_match),
+        "transcript": getattr(result, "text", ""),
+        "no_speech": round(no_speech, 4) if no_speech is not None else None,
+        "language": getattr(result, "language", None),
+    }
+    with open(os.path.join(_CAPTURE_DIR, base + ".json"), "w", encoding="utf-8") as fh:
+        json.dump(meta, fh, ensure_ascii=False, indent=2)
+    logger.info("CAPTURE saved %s  rms=%.5f peak=%.5f match=%s", base, rms, peak, wake_match)
 
 
 def validate_openai_api_key(api_key: str | None) -> tuple[bool, str]:
@@ -359,7 +411,8 @@ class KeywordBuffer:
                 # low-SNR input Whisper otherwise hallucinates unrelated stock
                 # phrases ("phew", "you", Korean news); the prompt nudges it to
                 # prefer the actual keyword.  (Does not force a language.)
-                result = client.audio.transcriptions.create(
+                _cap = _capture_enabled()
+                _create_kwargs = dict(
                     model="whisper-1",
                     file=buf,
                     prompt="Merlin. מרלין. Hey Merlin.",
@@ -370,6 +423,12 @@ class KeywordBuffer:
                     language="he",
                     temperature=0,
                 )
+                # Capture mode ONLY: ask for verbose_json so the probe can record
+                # no_speech_prob + detected language.  Off by default → the call is
+                # byte-for-byte the production call.
+                if _cap:
+                    _create_kwargs["response_format"] = "verbose_json"
+                result = client.audio.transcriptions.create(**_create_kwargs)
                 text   = result.text.lower()
                 logger.info("WAKE_TRANSCRIPT=%r  speech_duration=%.2fs", text, duration_s)
 
@@ -379,6 +438,14 @@ class KeywordBuffer:
                 if wake_match:
                     logger.info("keyword detected — waking Merlin")
                     self._trigger.set()
+
+                # Instrumentation probe (E2) — saves the exact Whisper-bound buffer
+                # + metadata.  No-op unless MERLIN_CAPTURE_WAV=1.
+                if _cap:
+                    try:
+                        _save_capture(audio, WHISPER_SR, wake_match, result)
+                    except Exception as _cap_err:
+                        logger.warning("capture probe failed: %s", _cap_err)
                 consecutive_errors = 0
             except Exception:
                 consecutive_errors += 1
