@@ -24,3 +24,5 @@ bench/results/
 .env.*
 .env.save
 .DS_Store
+tools/*.html
+tools/capture/
