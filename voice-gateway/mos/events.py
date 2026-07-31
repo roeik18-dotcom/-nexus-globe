@@ -61,18 +61,26 @@ def new_event(
 class EventBus:
     """Minimal append-only log + pub/sub (R-1, R-4). v0, in-memory, single-process."""
 
-    def __init__(self) -> None:
+    def __init__(self, store: "Any | None" = None) -> None:
         self._log: list[Event] = []
         self._subs: list[Callable[[Event], None]] = []
+        self._store = store                  # optional durable sink (duck-typed .append)
 
     def subscribe(self, fn: Callable[[Event], None]) -> None:
         self._subs.append(fn)
 
     def publish(self, event: Event) -> Event:
-        self._log.append(event)              # append-only store (R-1); never mutate
+        self._log.append(event)              # in-memory append-only (R-1); never mutate
+        if self._store is not None:
+            self._store.append(event)        # durable append-only (survives restart)
         for fn in list(self._subs):
             fn(event)
         return event
+
+    def load_from(self, events: list[Event]) -> None:
+        """Rehydrate the in-memory log from a durable store WITHOUT re-firing
+        subscribers (replay-to-restore-state, not re-execute). INV-5 / R-2."""
+        self._log.extend(events)
 
     @property
     def log(self) -> list[Event]:

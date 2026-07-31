@@ -13,9 +13,15 @@ from __future__ import annotations
 
 from typing import Optional
 
+import os
+
 from .cognition import CognitionEngine, Orientation, OrientationInput
 from .events import Event, EventBus, new_event
 from .philos_seam import OrientationAlgorithm
+from .store import JsonlEventStore
+
+# default durable event log (read by Mission Control's Trace panel)
+DEFAULT_EVENT_LOG = os.path.expanduser("~/Library/Logs/Merlin/mos_events.jsonl")
 
 # v0 reversibility classification (feeds INV-6). Real Action layer will own this.
 _REVERSIBLE = {"read_clock", "read_mission_control", "read_weather",
@@ -66,8 +72,12 @@ class ActionStub:
 class Runtime:
     """Bus + Cognition + Action, wired. `handle_intent` runs one full turn."""
 
-    def __init__(self, algorithm: Optional[OrientationAlgorithm] = None) -> None:
-        self.bus = EventBus()
+    def __init__(self, algorithm: Optional[OrientationAlgorithm] = None,
+                 store_path: Optional[str] = None) -> None:
+        store = JsonlEventStore(store_path) if store_path else None
+        self.bus = EventBus(store=store)
+        if store is not None:                       # remember across restart (INV-5)
+            self.bus.load_from(store.load())
         self.engine = CognitionEngine(self.bus, algorithm)
         self.action = ActionStub(self.bus)
 

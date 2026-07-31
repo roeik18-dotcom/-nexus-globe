@@ -68,6 +68,40 @@ def collect():
     st = sh("git", "-C", REPO, "status", "--short").splitlines()
     d["dirty"] = [l for l in st if l.strip()]
 
+    # --- mos durable event log → recent traces (Trace engine, read-model) ---
+    import json as _json
+    from collections import OrderedDict
+    elog = os.path.expanduser("~/Library/Logs/Merlin/mos_events.jsonl")
+    traces: list[dict] = []
+    if os.path.exists(elog):
+        evs = []
+        with open(elog, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        evs.append(_json.loads(line))
+                    except Exception:
+                        pass
+        groups: "OrderedDict[str, list]" = OrderedDict()
+        for e in evs:
+            groups.setdefault(e.get("correlation_id") or "—", []).append(e)
+        for cid, g in list(groups.items())[-8:]:
+            g.sort(key=lambda e: e.get("seq", 0))
+            types = [e.get("type", "") for e in g]
+            if any("action.result" in t for t in types):
+                outcome = "done"
+            elif any("action.gated" in t for t in types):
+                outcome = "awaiting_approval"
+            elif any(b in t for t in types for b in ("error", "failed", "rejected")):
+                outcome = "failed"
+            else:
+                outcome = "open"
+            dec = next((e.get("payload", {}).get("decision")
+                        for e in g if e.get("type") == "decision.made"), "—")
+            traces.append({"cid": cid, "n": len(g), "outcome": outcome, "decision": dec})
+    d["traces"] = list(reversed(traces))     # newest first
+
     d["now"] = _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return d
 
@@ -130,18 +164,18 @@ def build_arch():
             ("Action", "warn"), ("Learning", "idle")]
     # layer contracts (§5 / Part II) — live status
     layers = [
-        ("Kernel", "§5.0", "warn", "min Event Bus + append-only store v0 (mos/events.py)"),
+        ("Kernel", "§5.0", "warn", "Event Bus + DURABLE JSONL store + Trace engine (mos/) — v0 in-process"),
         ("Perception · Audio", "§5.1", "warn", "wake ✓ · speaker-id · music · echo · speech-quality"),
         ("Perception · Vision", "§5.1", "idle", "screen · OCR · window · gesture"),
         ("Perception · Digital", "§5.1", "warn", "git · fs · processes · calendar · mail · net"),
         ("Intent", "§5.2", "warn", "v0 keyword classifier built (mos/intent_bridge.py); STT reliability = the blocker"),
-        ("Cognition · Philos", "§5.3", "ok", "RFC-020 decision shell BUILT v0 · algorithm = locked stub"),
+        ("Cognition · Philos", "§5.3", "ok", "RFC-020 shell + Orientation Runtime + World Graph BUILT v0 · algorithm = locked stub"),
         ("Memory", "§5.4", "warn", "episodic · semantic · project · relationship · timeline"),
         ("Planning", "§5.5", "idle", "goals · critical-path · next-action · KPIs"),
         ("Action", "§5.6", "warn", "stub + INV-6 gate + approval flow; runtime wires Intent→Cognition→Action"),
         ("Multi-Agent", "§5.7", "idle", "research · coding · review · coordinator (0 running)"),
         ("Mission Control", "read-model", "ok", "live dashboard — this screen"),
-        ("Living Globe", "read-model", "warn", "entity · relationship · over time"),
+        ("Living Globe", "read-model", "warn", "World Graph projection built (mos/world_graph.py); globe UI = prototype"),
         ("Morning Brief", "read-model", "idle", "what · why · confidence (scheduled)"),
     ]
     return loop, layers
@@ -189,6 +223,20 @@ def render_html(d):
         '<div class="inv">9 System Invariants &middot; event-sourced loop &middot; contracts §5 &middot; '
         '<span class="muted">docs/MERLIN-OS-ARCHITECTURE-v1.md</span></div>'
         f'<div class="layers">{layer_html}</div></section>')
+
+    _odot = {"done": "ok", "awaiting_approval": "warn", "failed": "blocked", "open": "info"}
+    if d.get("traces"):
+        trows = "".join(
+            f'<div class="row {_odot.get(t["outcome"], "info")}"><span class="dot"></span>'
+            f'<div class="body"><div class="what">{html.escape(str(t["decision"]))} '
+            f'<span class="sec">{html.escape(t["cid"])}</span></div>'
+            f'<div class="why">{t["n"]} events · {html.escape(t["outcome"].replace("_", " "))}</div>'
+            f'</div></div>' for t in d["traces"])
+    else:
+        trows = ('<div class="row info"><span class="dot"></span><div class="body">'
+                 '<div class="what">no traces yet</div><div class="why">run '
+                 'mos.runtime with a store_path to populate the durable log</div></div></div>')
+    traces_html = f'<section class="panel"><h2>🧵 Traces (recent turns)</h2>{trows}</section>'
 
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -271,6 +319,7 @@ li:first-child{{border-top:none}} code{{color:var(--info);font-family:SFMono-Reg
     </div><span class="conf">now</span></div>
     <h2 style="margin-top:14px">📝 Uncommitted</h2><ul>{dirty}</ul>
   </section>
+  {traces_html}
 </div>
 {arch_html}
 <div class="foot">Mission Control v0 · live data from launchd · git · service.log · Silero probe · regenerates on reload</div>
