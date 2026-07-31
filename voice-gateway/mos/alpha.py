@@ -22,6 +22,7 @@ from .cognition import CognitionEngine, OrientationInput
 from .events import Event, EventBus, new_event
 from .executor import Executor
 from .intent_bridge import to_bus
+from .learning import Learner
 from .philos_seam import OrientationAlgorithm
 from .planner import Planner
 from .response import Responder
@@ -40,6 +41,7 @@ class AlphaRuntime:
         self.planner = Planner(self.bus)
         self.executor = Executor(self.bus)
         self.responder = Responder(self.bus)
+        self.learner = Learner(self.bus)             # closes the loop (§4)
 
     def _on_intent(self, e: Event) -> None:
         if e.type != "intent.classified":
