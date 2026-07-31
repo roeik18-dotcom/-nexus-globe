@@ -10,8 +10,8 @@ import { useEffect, useRef, useState } from "react";
  * zoom (camera). Click a node to focus. Real counts only; the ambient field is
  * atmosphere, never presented as data.
  */
-export type PNode = { id: string; type: string; label: string };
-export type PEdge = { s: string; t: string };
+export type PNode = { id: string; type: string; label: string; born: number };
+export type PEdge = { s: string; t: string; born: number };
 export type Counts = { entities: number; missions: number; relationships: number; communities: number };
 
 const COLOR: Record<string, string> = {
@@ -30,6 +30,32 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
   const [sel, setSel] = useState<Placed | null>(null);
   const [feed, setFeed] = useState<string[]>([]);
   const [ai, setAi] = useState("Listening…");
+
+  // ── Time axis: the world was born over a week; scrub to watch it grow ──
+  const timeRef = useRef<number>(0);
+  const bornVals = nodes.map(n => n.born).filter(b => b > 0);
+  const minBorn = bornVals.length ? Math.min(...bornVals) : 0;
+  const maxBorn = bornVals.length ? Math.max(...bornVals) : 0;
+  const [nowMs, setNowMs] = useState(0);
+  const [playT, setPlayT] = useState<number | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const forecastEnd = (nowMs || maxBorn) + 30 * 86_400_000;
+  const curT = playT ?? maxBorn;
+  timeRef.current = curT;
+
+  useEffect(() => { setNowMs(Date.now()); setPlayT(maxBorn); }, [maxBorn]);
+  useEffect(() => {
+    if (!playing) return;
+    let raf = 0; const start = performance.now(), dur = 8000;
+    const step = (ts: number) => {
+      const k = Math.min(1, (ts - start) / dur);
+      setPlayT(minBorn + (maxBorn - minBorn) * k);
+      if (k < 1) raf = requestAnimationFrame(step); else setPlaying(false);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [playing, minBorn, maxBorn]);
+  const fmtDate = (t: number) => new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 
   useEffect(() => {
     if (!sampleEvents.length) return;
@@ -82,6 +108,7 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
 
     function frame() {
       t += reduce ? 0 : 0.0011;
+      const pt = timeRef.current;   // time playhead — only born-by-now entities exist
       const cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.33 * zoomRef.current;
       const bg = ctx!.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, "#03070f"); bg.addColorStop(1, "#01030a");
       ctx!.fillStyle = bg; ctx!.fillRect(0, 0, W, H);
@@ -109,6 +136,7 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
       // energy arcs (real relations) with a flowing pulse
       let drawn = 0;
       for (let i = 0; i < edges.length; i++) {
+        if (edges[i].born > pt) continue;   // relation not yet born at playhead
         const a = pos.get(edges[i].s), b = pos.get(edges[i].t); if (!a || !b) continue;
         const pa = proj(a.lat, a.lon, R, cx, cy), pb = proj(b.lat, b.lon, R, cx, cy);
         if (pa.z < 0 && pb.z < 0) continue;
@@ -128,6 +156,7 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
         .sort((u, v) => (u.p.deg - v.p.deg) || (u.z - v.z));
       const front: typeof frontRef.current = [];
       for (const { p, sx, sy, z } of projected) {
+        if (p.born > pt) continue;   // entity not yet born at the playhead
         const front0 = z > 0;
         const scale = (1 + (p.deg / maxDeg) * 3.2) * Math.max(zoomRef.current * 0.85, 0.7);
         const rad = (front0 ? 2 : 1.1) * scale;
@@ -200,6 +229,29 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
         <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#3fb950", boxShadow: "0 0 12px #3fb950", animation: "pplanetpulse 1.6s infinite" }} />
         <span style={{ fontSize: 13, color: "#cfe6f5" }}>Merlin · {ai}</span>
       </div>
+
+      {/* Time axis — scrub Past → Today → Forecast; the world grows */}
+      {maxBorn > 0 && (
+        <div style={{ position: "absolute", bottom: 84, left: "50%", transform: "translateX(-50%)", width: "min(600px, 62vw)", zIndex: 3 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 6 }}>
+            <button onClick={() => setPlaying(p => !p)} title="Replay the world's growth"
+              style={{ fontSize: 12, color: "#7cc4ff", background: "rgba(8,16,28,0.7)", border: "1px solid #1e4060", borderRadius: 20, padding: "4px 14px", cursor: "pointer", backdropFilter: "blur(6px)" }}>
+              {playing ? "❚❚ pause" : "▶ replay growth"}
+            </button>
+            <span style={{ fontSize: 15, fontWeight: 600, color: "#e6ecf5", minWidth: 92, textAlign: "center" }}>
+              {curT >= (nowMs || maxBorn) ? "Today" : fmtDate(curT)}
+            </span>
+          </div>
+          <input type="range" min={minBorn} max={forecastEnd} value={curT}
+            onChange={e => { setPlaying(false); setPlayT(Number(e.target.value)); }}
+            style={{ width: "100%", accentColor: "#38bdf8", cursor: "pointer" }} />
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, letterSpacing: "1px", textTransform: "uppercase", color: "#3a4f6b", marginTop: 2 }}>
+            <span>{fmtDate(minBorn)} · first values</span>
+            <span>Today</span>
+            <span>Forecast →</span>
+          </div>
+        </div>
+      )}
 
       {sel && (
         <div style={{ position: "absolute", top: "50%", right: 32, transform: "translateY(-50%)", width: 280, zIndex: 3, background: "rgba(6,12,22,0.82)", backdropFilter: "blur(10px)", border: `1px solid ${sel.color}55`, borderRadius: 14, padding: 18 }}>

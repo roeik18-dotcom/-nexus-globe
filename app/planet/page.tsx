@@ -29,19 +29,22 @@ export default function PlanetPage() {
   const providers    = readJsonStore<Provider>                   (path.join(DATA, "providers.json"));
   const pcr          = readJsonStore<ProviderCapabilityRelation>(path.join(DATA, "provider-capability-relations.json"));
 
+  const born = (d?: string) => { const t = d ? Date.parse(d) : NaN; return Number.isNaN(t) ? 0 : t; };
   const nodes: PNode[] = [
-    ...missions.map(m => ({ id: m.id, type: "mission", label: short(m.context?.statement ?? m.id) })),
-    ...gaps.map(g => ({ id: g.id, type: "gap", label: short(g.context?.description ?? g.id) })),
-    ...values.map(v => ({ id: v.id, type: "value", label: v.context?.label ?? v.id })),
-    ...capabilities.map(c => ({ id: c.id, type: "capability", label: c.context?.label ?? c.id })),
-    ...providers.map(p => ({ id: p.id, type: "provider", label: p.context?.label ?? p.id })),
+    ...missions.map(m => ({ id: m.id, type: "mission", label: short(m.context?.statement ?? m.id), born: born(m.createdAt) })),
+    ...gaps.map(g => ({ id: g.id, type: "gap", label: short(g.context?.description ?? g.id), born: born(g.createdAt) })),
+    ...values.map(v => ({ id: v.id, type: "value", label: v.context?.label ?? v.id, born: born(v.createdAt) })),
+    ...capabilities.map(c => ({ id: c.id, type: "capability", label: c.context?.label ?? c.id, born: born(c.createdAt) })),
+    ...providers.map(p => ({ id: p.id, type: "provider", label: p.context?.label ?? p.id, born: born(p.createdAt) })),
   ];
+  const bornOf = new Map(nodes.map(n => [n.id, n.born]));
+  const eb = (s: string, t: string) => Math.max(bornOf.get(s) ?? 0, bornOf.get(t) ?? 0);
 
   const edges: PEdge[] = [];
-  for (const m of missions) for (const g of (m.gaps ?? [])) { const t = rid(g); if (t) edges.push({ s: m.id, t }); }
-  for (const g of gaps) for (const v of (g.requiredValues ?? [])) { const t = rid(v); if (t) edges.push({ s: g.id, t }); }
-  for (const r of vcr) edges.push({ s: r.valueId, t: r.capabilityId });
-  for (const r of pcr) edges.push({ s: r.providerId, t: r.capabilityId });
+  for (const m of missions) for (const g of (m.gaps ?? [])) { const t = rid(g); if (t) edges.push({ s: m.id, t, born: eb(m.id, t) }); }
+  for (const g of gaps) for (const v of (g.requiredValues ?? [])) { const t = rid(v); if (t) edges.push({ s: g.id, t, born: eb(g.id, t) }); }
+  for (const r of vcr) edges.push({ s: r.valueId, t: r.capabilityId, born: born(r.createdAt) || eb(r.valueId, r.capabilityId) });
+  for (const r of pcr) edges.push({ s: r.providerId, t: r.capabilityId, born: born(r.createdAt) || eb(r.providerId, r.capabilityId) });
 
   const domains = new Set<string>();
   for (const e of [...missions, ...gaps, ...values, ...capabilities, ...providers])
