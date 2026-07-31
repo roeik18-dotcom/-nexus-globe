@@ -22,6 +22,13 @@ def _phrase(tool: str, result: dict) -> str:
         return f"מצב המערכת: {result['summary']}."
     if tool == "read_weather" and result.get("note"):
         return result["note"]
+    if tool == "launch_application" and result.get("app"):
+        app = result["app"]
+        if result.get("launched"):
+            return f"פתחתי את {app}."
+        if result.get("dry_run"):
+            return f"מוכן לפתוח את {app} (dry-run — הכלי האמיתי כבוי)."
+        return f"לא הצלחתי לפתוח את {app}: {result.get('error', 'שגיאה')}"
     return _PHRASING.get(tool, f"בוצע: {tool}")
 
 

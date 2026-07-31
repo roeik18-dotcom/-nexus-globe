@@ -30,6 +30,7 @@ class OrientationInput:                       # RFC-020 §1 input contract (v0 s
     intent_confidence: float = 0.0
     context: dict = None
     evidence: list = None
+    params: dict = None                       # e.g. {"target": "pro_tools"} for open_app
     correlation_id: Optional[str] = None
     cause: Optional[str] = None               # causation_id of the triggering event
 
@@ -38,6 +39,8 @@ class OrientationInput:                       # RFC-020 §1 input contract (v0 s
             self.context = {}
         if self.evidence is None:
             self.evidence = []
+        if self.params is None:
+            self.params = {}
 
 
 @dataclass
@@ -102,7 +105,8 @@ class CognitionEngine:
         self.bus.publish(new_event(
             type="decision.made", actor="mos.cognition", subject=f"intent:{inp.intent}",
             payload=orientation.as_min() | {"engine_version": self.version,
-                                            "rationale": r.rationale},
+                                            "rationale": r.rationale,
+                                            "params": inp.params},
             correlation_id=inp.correlation_id, causation_id=inp.cause))
         return orientation
 

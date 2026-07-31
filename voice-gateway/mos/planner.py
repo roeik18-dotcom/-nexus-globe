@@ -30,7 +30,9 @@ class Planner:
         if e.type != "decision.made":
             return
         actions = _expand(e.payload["decision"])
-        steps = [{"action": a, "depends_on": (actions[i - 1] if i else None)}
+        params = e.payload.get("params") or {}
+        steps = [{"action": a, "depends_on": (actions[i - 1] if i else None),
+                  "params": params if a == e.payload["decision"] else {}}
                  for i, a in enumerate(actions)]
         self.bus.publish(new_event(
             "plan.created", "mos.planner", e.subject,

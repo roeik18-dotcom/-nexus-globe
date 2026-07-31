@@ -21,8 +21,8 @@ class Executor:
         self.pending: dict[str, dict] = {}       # token -> {action, subject, corr}
         bus.subscribe(self._on)
 
-    def _run(self, action: str, subject: str, corr, cause) -> None:
-        ok, result = run_tool(action, {"n_events": len(self.bus.log)})
+    def _run(self, action: str, subject: str, corr, cause, params=None) -> None:
+        ok, result = run_tool(action, {"n_events": len(self.bus.log), **(params or {})})
         self.bus.publish(new_event(
             "tool.executed", "mos.executor", subject,
             {"tool": action, "ok": ok, "result": result},
@@ -31,18 +31,18 @@ class Executor:
     def _on(self, e: Event) -> None:
         if e.type == "plan.created":
             for step in e.payload.get("steps", []):
-                action = step["action"]
+                action, params = step["action"], step.get("params") or {}
                 if action in _AUTO:
-                    self._run(action, e.subject, e.correlation_id, e.id)
+                    self._run(action, e.subject, e.correlation_id, e.id, params)
                 else:
                     self.pending[e.id] = {"action": action, "subject": e.subject,
-                                          "corr": e.correlation_id}
+                                          "corr": e.correlation_id, "params": params}
                     self.bus.publish(new_event(
                         "permission.required", "mos.executor", e.subject,
-                        {"action": action, "token": e.id,
+                        {"action": action, "token": e.id, "target": params.get("target"),
                          "reason": "irreversible/outward — requires approval (INV-6)"},
                         correlation_id=e.correlation_id, causation_id=e.id))
         elif e.type == "approval.granted":
             p = self.pending.pop(e.payload.get("token"), None)
             if p:
-                self._run(p["action"], p["subject"], p["corr"], e.id)
+                self._run(p["action"], p["subject"], p["corr"], e.id, p.get("params"))

@@ -16,9 +16,16 @@ def test_weather_is_honest_placeholder_not_fabricated():
 
 
 def test_unregistered_tool_is_simulated_not_crash():
-    ok, result = run_tool("launch_application")
+    ok, result = run_tool("some_unknown_tool")
     assert ok and result.get("simulated") is True
-    assert not has_tool("launch_application")
+    assert not has_tool("some_unknown_tool")
+
+
+def test_launch_application_is_registered_and_dry_run_by_default():
+    assert has_tool("launch_application")
+    ok, result = run_tool("launch_application", {"target": "pro_tools"})
+    assert ok and result["app"] == "Pro Tools"
+    assert result.get("dry_run") is True and result.get("launched") is False  # no real launch
 
 
 def test_real_time_flows_through_the_whole_chain():

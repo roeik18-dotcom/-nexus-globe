@@ -57,8 +57,9 @@ class AlphaRuntime:
                 "calibration.applied", "mos.calibration", f"intent:{intent}",
                 {"intent": intent, "adjusted": conf, **info},
                 correlation_id=e.correlation_id, causation_id=e.id))
+        params = {"target": p["target"]} if p.get("target") else {}
         self.engine.orient(OrientationInput(
-            intent=intent, intent_confidence=conf,
+            intent=intent, intent_confidence=conf, params=params,
             correlation_id=e.correlation_id, cause=e.id))
 
     # --- entry points ---
