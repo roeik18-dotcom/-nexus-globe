@@ -1,17 +1,19 @@
 # ADR-001 — Orientation Dimensions: grounding the Essence engine in Philos theory
 
-- **Status:** Phase 1 **approved with constraint** — 2026-07-30.
-  Approved: the additive metadata layer + the Vesica structure (pole · relation ·
-  pole). **NOT approved / must NOT be hard-coded yet:** the dimension→department
-  mapping, and the `TaskFraming` pole/relation assignment. Both must first be
-  **derived from Philos first principles** (Matter → Space → Time → Life;
-  Physical / Emotional / Rational; the six departments; the force model), with a
-  documented argument for *why each mapping is necessary* (not intuitive), and
-  **alternatives presented before implementation** where more than one valid
-  mapping exists. Rationale: the mapping is one of the deepest decisions in
-  Philos — a wrong lock now would bias every downstream AI/analysis/graph. The
-  metadata layer is built now *without* locking the mapping, so the mapping can
-  change later without breaking code.
+- **Status:** **RESOLVED — 2026-07-30.** Vision-level decision by the owner:
+  **Essence Orientation is a Presentation/Interaction layer of the AI, NOT part of
+  the Philos ontology / human model.** Therefore each dimension's Philos binding is
+  **`independent`** (no mapping to Dimensions/Departments, by design), and the
+  per-dimension axis structure is kept but **reframed from the Philos "Vesica" to a
+  neutral bipolar axis** (`kind: 'bipolar'`, `poleNegative · middle · polePositive`)
+  — option **V1**. `TaskFraming` stays flat (TF-3). Implemented in
+  `orientation-philos-map.ts`; guard test asserts every binding is `independent`.
+  (History: Phase 1 built the layer with the binding deliberately `unresolved`
+  pending this decision; the earlier interim read of "independent" from code
+  behavior was a Hypothesis, now confirmed as a Conclusion at the vision level.)
+- **Directive:** Build on the existing model; treat Philos theory as source of
+  truth; do not redesign the core; keep every change modular and
+  backward-compatible; compare designs and recommend one before implementing.
 - **Directive:** Build on the existing model; treat Philos theory as source of
   truth; do not redesign the core; keep every change modular and
   backward-compatible; compare designs and recommend one before implementing.
@@ -186,3 +188,26 @@ dimension→department/dimension mapping represented as a **typed, explicitly
 any code change*. Resolving the mapping is deferred until it is decided **what
 semantic role** Essence orientation plays (express dimensions / reflect departments
 / independent style), which is tied to open questions A1 and A4.
+
+### Pending semantic decision (refined 2026-07-30)
+The semantic-role question has a **prior question** that must be answered at the
+*vision* level, not inferred from code:
+
+> **Is Essence Orientation part of the Philos ontology (the human model), or a
+> Presentation / Interaction layer of the AI?**
+
+- That the current implementation adapts AI responses is an **Observation**, not
+  proof of canonical meaning — *implementation behavior ≠ model definition.*
+- **If Presentation/Interaction layer only** → option A (independent style):
+  `binding = independent`, keep the per-dimension axis structure but drop the
+  Philos framing (V1), and the ADR documents the separation.
+- **If part of Philos's human model** (even if not yet used) → `independent` is
+  premature; the binding **stays `unresolved`** until the model is complete (or a
+  justified mapping is derived).
+
+**Status: RESOLVED (2026-07-30).** The owner decided at the vision level:
+**Presentation/Interaction layer.** Consequences implemented: binding →
+`independent` for every dimension; axis reframed from Philos "Vesica" to a neutral
+bipolar axis (V1: `kind:'bipolar'`, `poleNegative · middle · polePositive`);
+TaskFraming stays flat. No mapping to Philos Dimensions/Departments. Verified:
+Phase 1 test 7/7, essence suite 694/694, no new tsc errors.

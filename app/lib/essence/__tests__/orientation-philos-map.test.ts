@@ -1,14 +1,15 @@
 /**
- * Orientation → Philos metadata layer (Phase 1) — invariants.
+ * Orientation dimension metadata (Presentation/Interaction layer) — invariants.
  *
  * Guards that the additive layer (ADR-001):
  *  - covers every ORIENTATION_SCHEMA dimension exactly,
- *  - uses only real schema values for poles/relation (no drift, no invented values),
- *  - models the four bipolar dimensions as vesicas and TaskFraming as flat, and
- *  - CRITICALLY hard-codes NO dimension→Philos mapping (every binding unresolved).
+ *  - uses only real schema values for poles/middle (no drift, no invented values),
+ *  - models the four bipolar dimensions as bipolar axes and TaskFraming as flat, and
+ *  - CRITICALLY encodes NO Philos mapping (every binding `independent`, per the
+ *    vision decision that Essence Orientation is a Presentation/Interaction layer).
  *
- * The last group is the safeguard the directive requires: no mapping can be
- * silently locked in without a deliberate change here + an ADR update.
+ * The last group is the safeguard: a mapping cannot be introduced without a
+ * deliberate change here + an ADR update.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -19,7 +20,7 @@ import {
 } from '../orientation';
 import {
   ORIENTATION_PHILOS_MAP,
-  isPhilosMapped,
+  isOrientationDimension,
 } from '../orientation-philos-map';
 
 const DIMENSION_KEYS = Object.keys(ORIENTATION_SCHEMA) as OrientationDimensionKey[];
@@ -29,26 +30,26 @@ describe('ORIENTATION_PHILOS_MAP — coverage', () => {
     expect(Object.keys(ORIENTATION_PHILOS_MAP).sort()).toEqual([...DIMENSION_KEYS].sort());
   });
 
-  it('isPhilosMapped agrees with the schema keys', () => {
-    for (const k of DIMENSION_KEYS) expect(isPhilosMapped(k)).toBe(true);
-    expect(isPhilosMapped('NotADimension')).toBe(false);
+  it('isOrientationDimension agrees with the schema keys', () => {
+    for (const k of DIMENSION_KEYS) expect(isOrientationDimension(k)).toBe(true);
+    expect(isOrientationDimension('NotADimension')).toBe(false);
   });
 });
 
 describe('ORIENTATION_PHILOS_MAP — axis structure', () => {
-  it('TaskFraming is the only flat axis; the other four are vesicas', () => {
+  it('TaskFraming is the only flat axis; the other four are bipolar', () => {
     for (const k of DIMENSION_KEYS) {
       const kind = ORIENTATION_PHILOS_MAP[k].axis.kind;
       if (k === 'OrientationTaskFraming') expect(kind).toBe('flat');
-      else expect(kind).toBe('vesica');
+      else expect(kind).toBe('bipolar');
     }
   });
 
-  it('each vesica uses exactly the three schema values (permutation, no invented values)', () => {
+  it('each bipolar axis uses exactly the three schema values (permutation, no invented values)', () => {
     for (const k of DIMENSION_KEYS) {
       const axis = ORIENTATION_PHILOS_MAP[k].axis;
-      if (axis.kind !== 'vesica') continue;
-      const used = [axis.poleNegative, axis.relation, axis.polePositive];
+      if (axis.kind !== 'bipolar') continue;
+      const used = [axis.poleNegative, axis.middle, axis.polePositive];
       // every value is valid for this dimension
       for (const v of used) expect(isValidOrientationValue(k, v)).toBe(true);
       // all three are distinct
@@ -70,18 +71,18 @@ describe('ORIENTATION_PHILOS_MAP — axis structure', () => {
   });
 });
 
-describe('ORIENTATION_PHILOS_MAP — no mapping is hard-coded (ADR-001 guard)', () => {
-  it('every Philos binding is unresolved', () => {
+describe('ORIENTATION_PHILOS_MAP — no Philos mapping is encoded (ADR-001 guard)', () => {
+  it('every Philos binding is independent (Presentation/Interaction layer)', () => {
     for (const k of DIMENSION_KEYS) {
-      expect(ORIENTATION_PHILOS_MAP[k].philos.status).toBe('unresolved');
+      expect(ORIENTATION_PHILOS_MAP[k].philos.status).toBe('independent');
     }
   });
 
-  it('unresolved bindings document candidates but activate none', () => {
+  it('each independent binding states a reason referencing the ADR', () => {
     for (const k of DIMENSION_KEYS) {
       const philos = ORIENTATION_PHILOS_MAP[k].philos;
-      expect(philos.candidates.length).toBeGreaterThan(0);
-      expect(philos.note).toContain('ADR-001');
+      expect(philos.reason.length).toBeGreaterThan(0);
+      expect(philos.reason).toContain('ADR-001');
     }
   });
 });
