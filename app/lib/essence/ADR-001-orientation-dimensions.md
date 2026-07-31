@@ -14,9 +14,6 @@
 - **Directive:** Build on the existing model; treat Philos theory as source of
   truth; do not redesign the core; keep every change modular and
   backward-compatible; compare designs and recommend one before implementing.
-- **Directive:** Build on the existing model; treat Philos theory as source of
-  truth; do not redesign the core; keep every change modular and
-  backward-compatible; compare designs and recommend one before implementing.
 
 ## Context
 
@@ -211,3 +208,13 @@ The semantic-role question has a **prior question** that must be answered at the
 bipolar axis (V1: `kind:'bipolar'`, `poleNegative · middle · polePositive`);
 TaskFraming stays flat. No mapping to Philos Dimensions/Departments. Verified:
 Phase 1 test 7/7, essence suite 694/694, no new tsc errors.
+
+## Out of Scope
+
+This ADR decides the **Essence orientation ↔ Philos relationship only**. It does NOT:
+- Define the **Philos ontology** itself (Dimensions/Departments live in the engine +
+  `docs/nexus-ontology-v1.md`).
+- Change **inference, calibration, schema**, or the Python mirror.
+- Decide the **Experience Layer** (globe / daily brief / Merlin).
+- Define a future **`resolved`** mapping — it only records that the binding is
+  `independent` for now, revisitable if the vision changes.
