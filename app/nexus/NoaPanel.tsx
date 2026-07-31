@@ -11,6 +11,7 @@ import {
   type CollapseRisk,
 } from "../lib/noa";
 import NoaTransformation from "./NoaTransformation";
+import ThirtySecond from "./ThirtySecond";
 import PersonalMap from "./PersonalMap";
 import UserIntake, { type IntakeProfile } from "./UserIntake";
 import PhilosDiagnostic from "./PhilosDiagnostic";
@@ -142,7 +143,7 @@ const VALUE_NODES = [
 ];
 
 // Profile tabs.
-const TABS = ["journey", "map", "me", "overview", "community", "requests", "chain", "posts"] as const;
+const TABS = ["situation", "journey", "map", "me", "overview", "community", "requests", "chain", "posts"] as const;
 type ProfileTab = (typeof TABS)[number];
 
 // Score interpretation bands (UI reading of the existing score — no calc change).
@@ -324,6 +325,13 @@ export default function NoaPanel() {
           <button key={t} onClick={() => setTab(t)} style={{ flex: 1, padding: "6px 4px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontWeight: 600, textTransform: "capitalize", border: `1px solid ${tab === t ? C.cyan : C.border}`, background: tab === t ? "#38bdf822" : "transparent", color: tab === t ? C.cyan : C.borderSoft }}>{t}</button>
         ))}
       </div>
+
+      {/* Situation — free-text → dominant-force classification (/api/analyze) → positioning */}
+      {tab === "situation" && (
+        <div style={{ height: 620 }}>
+          <ThirtySecond onContinue={() => setTab("me")} />
+        </div>
+      )}
 
       {/* Journey — the First 30 Seconds; Continue settles into the Personal Map */}
       {tab === "journey" && (

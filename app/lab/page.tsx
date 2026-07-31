@@ -78,6 +78,15 @@ const RESEARCH: ResearchItem[] = [
     href:        `${GITHUB}/docs/marketplace-core-v0.md`,
   },
   {
+    title:       "Marketplace Matching Engine",
+    description: "Matching Engine v0.2 — capability↔gap scoring, provider ranking, and resolution over VCR/PCR relations.",
+    grade:       "Candidate",
+    tier:        "architecture",
+    sourcePath:  "docs/marketplace-matching-engine-v0.md",
+    kind:        "Documentation",
+    href:        `${GITHUB}/docs/marketplace-matching-engine-v0.md`,
+  },
+  {
     title:       "Evidence Roadmap",
     description: "Per-claim evidence grades across FEP falsification, Marketplace, M9, and Application tracks. Living index.",
     grade:       "Candidate",

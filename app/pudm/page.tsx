@@ -108,13 +108,14 @@ export default function PudmPage() {
   const valueById      = new Map(values.map      (v => [v.id, v]));
   const capabilityById = new Map(capabilities.map(c => [c.id, c]));
 
-  // Build Map<valueId, Capability[]> from the ValueCapabilityRelation store
-  const capsByValueId = new Map<string, Capability[]>();
+  // Build Map<valueId, {cap, relationType}[]> from the ValueCapabilityRelation store
+  // (relationType — can_address / required_for / selected_for — is the edge's meaning)
+  const capsByValueId = new Map<string, { cap: Capability; relationType: string }[]>();
   for (const rel of relations) {
     const cap = capabilityById.get(rel.capabilityId);
     if (!cap) continue;
     const arr = capsByValueId.get(rel.valueId) ?? [];
-    arr.push(cap);
+    arr.push({ cap, relationType: rel.relationType });
     capsByValueId.set(rel.valueId, arr);
   }
 
@@ -314,10 +315,12 @@ export default function PudmPage() {
                             </div>
                             {vCaps.length > 0 && (
                               <div style={{ display: "grid", gap: 4 }}>
-                                {vCaps.map(cap => {
+                                {vCaps.map(({ cap, relationType }) => {
                                   const capProvs = provsByCapId.get(cap.id) ?? [];
+                                  const relColor = relationType === "required_for" ? "#D29922"
+                                    : relationType === "selected_for" ? "#3FB950" : "#7C8AA3";
                                   return (
-                                    <div key={cap.id}>
+                                    <div key={cap.id + relationType}>
                                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                                         <span style={{ fontSize: 10, color: "var(--muted)", fontFamily: "monospace" }}>capability →</span>
                                         <span style={{
@@ -326,6 +329,13 @@ export default function PudmPage() {
                                           background: "#F472B618", color: "#F472B6", border: "1px solid #F472B630",
                                         }}>
                                           {cap.context.label}
+                                        </span>
+                                        <span title="value→capability relation type" style={{
+                                          display: "inline-block", padding: "1px 6px", borderRadius: 3,
+                                          fontSize: 9, fontWeight: 600, letterSpacing: "0.3px",
+                                          background: relColor + "18", color: relColor, border: "1px solid " + relColor + "40",
+                                        }}>
+                                          {relationType}
                                         </span>
                                       </div>
                                       {capProvs.length > 0 && (

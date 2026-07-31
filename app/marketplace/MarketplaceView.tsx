@@ -962,6 +962,7 @@ export default function MarketplaceView({
               {[
                 { n: missionGaps.length,     label: "gaps",                  color: "#D29922" },
                 { n: missionCapCount,        label: "capabilities",           color: "#F472B6" },
+                { n: missionCoveredCapCount, label: "covered by a provider",  color: "#3FB950" },
                 { n: missionProviderCount,   label: "example providers",      color: "#FB923C" },
               ].map(s => (
                 <div key={s.label} style={{ display: "flex", alignItems: "baseline", gap: 5 }}>

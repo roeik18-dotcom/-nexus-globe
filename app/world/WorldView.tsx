@@ -834,6 +834,19 @@ export default function WorldView({
                 </button>
               );
             })}
+            <button
+              onClick={() => startCascade(selectedMissionId)}
+              title="Replay the Mission → Gap → Value → Capability → Provider cascade for the current mission"
+              style={{
+                fontSize: 11, padding: "5px 12px", borderRadius: 4, cursor: "pointer",
+                fontWeight: 600, background: "transparent", color: "#22D3EE",
+                border: "1px solid rgba(34,211,238,0.4)",
+                fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+                transition: "background 0.15s ease, color 0.15s ease",
+              }}
+            >
+              ▶ Replay
+            </button>
           </div>
         </div>
 
