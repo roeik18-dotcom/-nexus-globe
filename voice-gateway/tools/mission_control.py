@@ -121,7 +121,8 @@ def build_panels(d):
              "90%", "warn", val="🟡"),
         line("LLM", "Claude API, HTTP 200 stream", "99%", "ok"),
         line("TTS", "OpenAI onyx (Fish 402)", "99%", "ok"),
-        line("Cognition (decide)", "Intent→goal→decision+confidence · RFC-020 shell BUILT v0 · 5/5 tests", "v0", "ok"),
+        line("Cognition (decide)", "Intent→goal→decision+confidence · RFC-020 shell BUILT v0", "v0", "ok"),
+        line("Alpha chain (E2E)", "text→intent→cognition→decision→plan→tool→response · 4 scenario tests ✅", "v0", "ok"),
         line("Router / Actions", "vision defined, not built", "—", "idle", val="⚪"),
         line("Philos coupling", "shell built; algorithm = locked stub; not wired to voice", "—", "idle", val="⚪"),
     ]
@@ -160,8 +161,8 @@ def build_panels(d):
 def build_arch():
     # cognition loop (§4) — status reflects real build state
     loop = [("Perception", "blocked"), ("Intent", "warn"),
-            ("Cognition · Philos", "ok"), ("Planning", "idle"),
-            ("Action", "warn"), ("Learning", "idle")]
+            ("Cognition · Philos", "ok"), ("Planning", "ok"),
+            ("Action", "ok"), ("Learning", "idle")]
     # layer contracts (§5 / Part II) — live status
     layers = [
         ("Kernel", "§5.0", "warn", "Event Bus + DURABLE JSONL store + Trace engine (mos/) — v0 in-process"),
@@ -171,8 +172,8 @@ def build_arch():
         ("Intent", "§5.2", "warn", "v0 keyword classifier built (mos/intent_bridge.py); STT reliability = the blocker"),
         ("Cognition · Philos", "§5.3", "ok", "RFC-020 shell + Orientation Runtime + World Graph BUILT v0 · algorithm = locked stub"),
         ("Memory", "§5.4", "warn", "episodic · semantic · project · relationship · timeline"),
-        ("Planning", "§5.5", "idle", "goals · critical-path · next-action · KPIs"),
-        ("Action", "§5.6", "warn", "stub + INV-6 gate + approval flow; runtime wires Intent→Cognition→Action"),
+        ("Planning", "§5.5", "ok", "v0 Planner built (decision→plan.created) — mos/planner.py"),
+        ("Action", "§5.6", "ok", "Executor+Responder v0 (plan→tool→response) + INV-6 gate/approval"),
         ("Multi-Agent", "§5.7", "idle", "research · coding · review · coordinator (0 running)"),
         ("Mission Control", "read-model", "ok", "live dashboard — this screen"),
         ("Living Globe", "read-model", "warn", "World Graph projection built (mos/world_graph.py); globe UI = prototype"),
