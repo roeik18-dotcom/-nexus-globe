@@ -111,8 +111,20 @@ def collect():
                         pass
             total_ms = (round((max(stamps) - min(stamps)).total_seconds() * 1000, 1)
                         if len(stamps) > 1 else 0.0)
+            _label = {"user.spoke": "Voice", "intent.classified": "Intent",
+                      "decision.made": "Decision", "plan.created": "Planner",
+                      "permission.required": "Permission", "approval.granted": "Approval",
+                      "tool.executed": "Tool", "response.generated": "Response",
+                      "learning.updated": "Learning"}
+            path_stages: list[str] = []
+            for ev in g:
+                t = ev.get("type", "")
+                lbl = "Orientation" if t.startswith("cognition.seam") else _label.get(t)
+                if lbl and (not path_stages or path_stages[-1] != lbl):
+                    path_stages.append(lbl)
             traces.append({"cid": cid, "n": len(g), "outcome": outcome,
-                           "decision": dec, "total_ms": total_ms})
+                           "decision": dec, "total_ms": total_ms,
+                           "path": " → ".join(path_stages)})
     d["traces"] = list(reversed(traces))     # newest first
 
     d["now"] = _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -187,7 +199,7 @@ def build_arch():
         ("Cognition · Philos", "§5.3", "ok", "RFC-020 shell + Orientation Runtime + World Graph BUILT v0 · algorithm = locked stub"),
         ("Memory", "§5.4", "warn", "episodic · semantic · project · relationship · timeline"),
         ("Planning", "§5.5", "ok", "v0 Planner built (decision→plan.created) — mos/planner.py"),
-        ("Action", "§5.6", "ok", "Executor+Responder + REAL read-only tools (clock/status); irreversible simulated+gated"),
+        ("Action", "§5.6", "ok", "Executor+Responder + real tools: clock/status + app-launch (Ableton/Pro Tools, dry-run, gated)"),
         ("Multi-Agent", "§5.7", "idle", "research · coding · review · coordinator (0 running)"),
         ("Mission Control", "read-model", "ok", "live dashboard — this screen"),
         ("Living Globe", "read-model", "warn", "World Graph projection built (mos/world_graph.py); globe UI = prototype"),
@@ -244,7 +256,8 @@ def render_html(d):
         trows = "".join(
             f'<div class="row {_odot.get(t["outcome"], "info")}"><span class="dot"></span>'
             f'<div class="body"><div class="what">{html.escape(str(t["decision"]))} '
-            f'<span class="sec">{html.escape(t["cid"])}</span></div>'
+            f'<span class="sec">replay: {html.escape(t["cid"])}</span></div>'
+            f'<div class="why">{html.escape(t.get("path", ""))}</div>'
             f'<div class="why">{t["n"]} events · {html.escape(t["outcome"].replace("_", " "))} · {t.get("total_ms", 0)}ms</div>'
             f'</div></div>' for t in d["traces"])
     else:
