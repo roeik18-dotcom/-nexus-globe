@@ -71,6 +71,16 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
   const focusRef = useRef<{ t: number | null; zoom: number }>({ t: null, zoom: 1 });
   const toggleLayer = (k: string) => setActive(s => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
 
+  // ── Living Forces — aggregate fields, from real data ──
+  const forces = [
+    { key: "purpose", label: "Purpose", color: "#a78bfa", v: nodes.filter(n => n.type === "mission").length },
+    { key: "trust", label: "Trust · connection", color: "#38bdf8", v: edges.length },
+    { key: "knowledge", label: "Knowledge", color: "#22d3ee", v: nodes.filter(n => n.type === "capability").length },
+    { key: "opportunity", label: "Opportunity", color: "#3fb950", v: nodes.filter(n => n.type === "provider").length },
+    { key: "tension", label: "Tension", color: "#fb923c", v: nodes.filter(n => n.type === "gap").length },
+  ];
+  const maxF = Math.max(...forces.map(f => f.v), 1);
+
   useEffect(() => {
     if (!sampleEvents.length) return;
     let i = 0;
@@ -105,6 +115,17 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
     const byDeg = [...P].sort((a, b) => b.deg - a.deg);
     const hubIds = new Set(byDeg.slice(0, 7).map(p => p.id));
 
+    const fc = { purpose: nodes.filter(n => n.type === "mission").length, trust: edges.length,
+      knowledge: nodes.filter(n => n.type === "capability").length,
+      opportunity: nodes.filter(n => n.type === "provider").length, tension: nodes.filter(n => n.type === "gap").length };
+    const fmax = Math.max(...Object.values(fc), 1);
+    const FORCEGLOW = [
+      { color: "#a78bfa", a: 0.0, sp: 0.05, mag: fc.purpose / fmax },
+      { color: "#38bdf8", a: 1.3, sp: -0.04, mag: fc.trust / fmax },
+      { color: "#22d3ee", a: 2.6, sp: 0.06, mag: fc.knowledge / fmax },
+      { color: "#3fb950", a: 3.9, sp: -0.05, mag: fc.opportunity / fmax },
+      { color: "#fb923c", a: 5.1, sp: 0.045, mag: fc.tension / fmax },
+    ];
     const stars = Array.from({ length: 300 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() * 1.3, tw: Math.random() * 6 }));
     // ambient life — thousands of faint drifting motes (atmosphere, not data)
     const amb = Array.from({ length: 1800 }, () => ({ a: Math.random() * Math.PI * 2, rr: 0.4 + Math.random() * 1.15, sp: 0.2 + Math.random() * 0.8, r: Math.random() * 1.1, c: Math.random() < 0.5 ? "#2a4a7a" : "#1e5a6a" }));
@@ -153,6 +174,15 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
       const gb = ctx!.createRadialGradient(cx - R * 0.38, cy - R * 0.38, R * 0.1, cx, cy, R);
       gb.addColorStop(0, "#14223e"); gb.addColorStop(1, "#050b16");
       ctx!.fillStyle = gb; ctx!.beginPath(); ctx!.arc(cx, cy, R, 0, 7); ctx!.fill();
+      // Living Forces — soft light fields hovering over the world
+      for (const f of FORCEGLOW) {
+        const ang = f.a + (reduce ? 0 : t * f.sp * 12);
+        const gx = cx + Math.cos(ang) * R * 0.5, gy = cy + Math.sin(ang) * R * 0.38;
+        const gr = R * (0.4 + f.mag * 0.55) * (1 + 0.06 * Math.sin(t * 2 + f.a));
+        const g = ctx!.createRadialGradient(gx, gy, 0, gx, gy, gr);
+        g.addColorStop(0, f.color + "22"); g.addColorStop(0.6, f.color + "0c"); g.addColorStop(1, f.color + "00");
+        ctx!.fillStyle = g; ctx!.beginPath(); ctx!.arc(gx, gy, gr, 0, 7); ctx!.fill();
+      }
 
       // energy arcs (real relations) with a flowing pulse
       let drawn = 0;
@@ -166,11 +196,17 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
         const mx = (pa.sx + pb.sx) / 2, my = (pa.sy + pb.sy) / 2 - R * 0.14;
         ctx!.strokeStyle = "rgba(80,150,240,0.10)"; ctx!.lineWidth = 1;
         ctx!.beginPath(); ctx!.moveTo(pa.sx, pa.sy); ctx!.quadraticCurveTo(mx, my, pb.sx, pb.sy); ctx!.stroke();
-        // flowing energy dot
-        const u = ((t * 0.6 + i * 0.13) % 1);
-        const fx = bez(pa.sx, mx, pb.sx, u), fy = bez(pa.sy, my, pb.sy, u);
-        ctx!.globalAlpha = 0.8; ctx!.fillStyle = "#7cc4ff";
-        ctx!.beginPath(); ctx!.arc(fx, fy, 1.4, 0, 7); ctx!.fill(); ctx!.globalAlpha = 1;
+        // flowing energy — several particles streaming along each relation
+        for (let k = 0; k < 3; k++) {
+          const u = ((t * 0.9 + i * 0.13 + k / 3) % 1);
+          const fx = bez(pa.sx, mx, pb.sx, u), fy = bez(pa.sy, my, pb.sy, u);
+          const fade = Math.sin(u * Math.PI);           // brightest mid-arc
+          ctx!.globalAlpha = 0.85 * fade;
+          const gg = ctx!.createRadialGradient(fx, fy, 0, fx, fy, 4.5);
+          gg.addColorStop(0, "#bfe6ff"); gg.addColorStop(0.4, "#7cc4ff"); gg.addColorStop(1, "#7cc4ff00");
+          ctx!.fillStyle = gg; ctx!.beginPath(); ctx!.arc(fx, fy, 4.5, 0, 7); ctx!.fill();
+        }
+        ctx!.globalAlpha = 1;
       }
 
       // nodes — small→large (hierarchy), hubs glow + label
@@ -182,7 +218,9 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
         if (!layers.has(p.type)) continue;   // layer filter
         const front0 = z > 0;
         const scale = (1 + (p.deg / maxDeg) * 3.2) * Math.max(zoomRef.current * 0.85, 0.7);
-        const rad = (front0 ? 2 : 1.1) * scale;
+        // pulse — every node breathes; rhythm varies by type/degree
+        const pulse = 1 + 0.20 * Math.sin(t * (2 + (p.deg % 4) * 0.6) + p.lon * 5 + p.lat * 3);
+        const rad = (front0 ? 2 : 1.1) * scale * (reduce ? 1 : pulse);
         ctx!.globalAlpha = front0 ? 1 : 0.2;
         if (front0) {
           const g = ctx!.createRadialGradient(sx, sy, 0, sx, sy, rad * 4.5);
@@ -255,6 +293,21 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
             </button>
           );
         })}
+      </div>
+
+      {/* Living Forces — fields of the world (real magnitudes) */}
+      <div style={{ position: "absolute", top: 168, left: 32, width: 196, zIndex: 3, pointerEvents: "none" }}>
+        <div style={{ fontSize: 10, letterSpacing: "2px", textTransform: "uppercase", color: "#5f7a9b", marginBottom: 8 }}>Living Forces</div>
+        {forces.map(f => (
+          <div key={f.key} style={{ marginBottom: 7 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#8ba3c0", marginBottom: 3 }}>
+              <span>{f.label}</span><span style={{ color: f.color, fontWeight: 600 }}>{f.v}</span>
+            </div>
+            <div style={{ height: 5, borderRadius: 3, background: "#0b1a2e", overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${Math.max(6, (f.v / maxF) * 100)}%`, background: `linear-gradient(90deg, ${f.color}44, ${f.color})`, boxShadow: `0 0 10px ${f.color}`, borderRadius: 3 }} />
+            </div>
+          </div>
+        ))}
       </div>
 
       <div style={{ position: "absolute", bottom: 28, left: 32, display: "flex", gap: 34, zIndex: 2, pointerEvents: "none" }}>
