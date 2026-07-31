@@ -29,6 +29,24 @@ _KEYWORDS: dict[str, list[str]] = {
 }
 
 
+# app targets for open_app (Hebrew + English). Ableton AND Pro Tools, plus common apps.
+_APPS: dict[str, list[str]] = {
+    "ableton":   ["ableton", "אבלטון"],
+    "pro_tools": ["pro tools", "protools", "פרו טולס", "פרוטולס"],
+    "chrome":    ["chrome", "כרום"],
+    "vscode":    ["vscode", "vs code", "קוד"],
+    "terminal":  ["terminal", "טרמינל"],
+}
+
+
+def detect_app(text: str) -> Optional[str]:
+    t = (text or "").lower()
+    for app, kws in _APPS.items():
+        if any(k.lower() in t for k in kws):
+            return app
+    return None
+
+
 def classify(text: str) -> tuple[str, float]:
     """Return (intent, confidence in [0,1]). Unknown → ('unknown', low)."""
     if not text or not text.strip():
@@ -51,10 +69,12 @@ def to_bus(bus: EventBus, text: str, *, actor: str = "mos.intent",
            correlation_id: Optional[str] = None) -> Event:
     """Classify a transcript and emit intent.classified on the bus."""
     intent, conf = classify(text)
+    payload = {"intent": intent, "confidence": conf, "transcript": text}
+    if intent == "open_app":
+        payload["target"] = detect_app(text)      # which app: ableton / pro_tools / …
     return bus.publish(new_event(
         "intent.classified", actor, f"intent:{intent}",
-        {"intent": intent, "confidence": conf, "transcript": text},
-        correlation_id=correlation_id or f"turn::{intent}"))
+        payload, correlation_id=correlation_id or f"turn::{intent}"))
 
 
 def _demo() -> None:

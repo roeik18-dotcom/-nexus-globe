@@ -99,7 +99,20 @@ def collect():
                 outcome = "open"
             dec = next((e.get("payload", {}).get("decision")
                         for e in g if e.get("type") == "decision.made"), "—")
-            traces.append({"cid": cid, "n": len(g), "outcome": outcome, "decision": dec})
+            _stage = {"user.spoke", "intent.classified", "decision.made", "plan.created",
+                      "permission.required", "tool.executed", "response.generated",
+                      "learning.updated"}
+            stamps = []
+            for ev in g:
+                if ev.get("type") in _stage and ev.get("timestamp"):
+                    try:
+                        stamps.append(_dt.datetime.fromisoformat(ev["timestamp"]))
+                    except Exception:
+                        pass
+            total_ms = (round((max(stamps) - min(stamps)).total_seconds() * 1000, 1)
+                        if len(stamps) > 1 else 0.0)
+            traces.append({"cid": cid, "n": len(g), "outcome": outcome,
+                           "decision": dec, "total_ms": total_ms})
     d["traces"] = list(reversed(traces))     # newest first
 
     d["now"] = _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -123,6 +136,7 @@ def build_panels(d):
         line("TTS", "OpenAI onyx (Fish 402)", "99%", "ok"),
         line("Cognition (decide)", "Intent→goal→decision+confidence · RFC-020 shell BUILT v0", "v0", "ok"),
         line("Alpha chain (E2E)", "intent→cognition→decision→plan→tool→response→learning→(confidence feedback) · loop closed · tests ✅", "v0", "ok"),
+        line("Voice→Event", "STT transcript → platform bus · SHADOW mode (opt-in) · Ableton+Pro Tools recognized", "opt-in", "warn"),
         line("Router / Actions", "vision defined, not built", "—", "idle", val="⚪"),
         line("Philos coupling", "shell built; algorithm = locked stub; not wired to voice", "—", "idle", val="⚪"),
     ]
@@ -166,7 +180,7 @@ def build_arch():
     # layer contracts (§5 / Part II) — live status
     layers = [
         ("Kernel", "§5.0", "warn", "Event Bus + DURABLE JSONL store + Trace engine (mos/) — v0 in-process"),
-        ("Perception · Audio", "§5.1", "warn", "wake ✓ · speaker-id · music · echo · speech-quality"),
+        ("Perception · Audio", "§5.1", "warn", "wake ✓ · Voice→Event shadow bridge (opt-in) built · STT reliability = blocker"),
         ("Perception · Vision", "§5.1", "idle", "screen · OCR · window · gesture"),
         ("Perception · Digital", "§5.1", "warn", "git · fs · processes · calendar · mail · net"),
         ("Intent", "§5.2", "warn", "v0 keyword classifier built (mos/intent_bridge.py); STT reliability = the blocker"),
@@ -231,7 +245,7 @@ def render_html(d):
             f'<div class="row {_odot.get(t["outcome"], "info")}"><span class="dot"></span>'
             f'<div class="body"><div class="what">{html.escape(str(t["decision"]))} '
             f'<span class="sec">{html.escape(t["cid"])}</span></div>'
-            f'<div class="why">{t["n"]} events · {html.escape(t["outcome"].replace("_", " "))}</div>'
+            f'<div class="why">{t["n"]} events · {html.escape(t["outcome"].replace("_", " "))} · {t.get("total_ms", 0)}ms</div>'
             f'</div></div>' for t in d["traces"])
     else:
         trows = ('<div class="row info"><span class="dot"></span><div class="body">'
