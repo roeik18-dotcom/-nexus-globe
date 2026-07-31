@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import ForceGraph, { type GraphNode, type GraphEdge } from "@/app/world/ForceGraph";
 import CoverageDeltaExplorer from "@/app/world/CoverageDeltaExplorer";
 import MissionTimeline from "@/app/world/MissionTimeline";
+import CinematicBackground from "@/app/world/CinematicBackground";
 import { computeCoverageMetrics } from "@/app/graph/computeCoverageMetrics";
 import type { Mission } from "@/app/lib/mission/schema";
 import type { Gap } from "@/app/lib/gap/schema";
@@ -758,13 +759,15 @@ export default function WorldView({
     <div
       style={{
         minHeight: "100dvh",
-        background: "#020d1a",
+        background: "transparent",
         color: "#cfe6f5",
         fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
         padding: "32px 16px 80px",
+        position: "relative",
       }}
     >
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+      <CinematicBackground />
+      <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative", zIndex: 1 }}>
 
         {/* Header */}
         <header style={{ marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
