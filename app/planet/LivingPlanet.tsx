@@ -35,6 +35,7 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
   const ref = useRef<HTMLCanvasElement | null>(null);
   const zoomRef = useRef(1);
   const frontRef = useRef<{ n: Placed; sx: number; sy: number; r: number }[]>([]);
+  const reactRef = useRef<{ id: string; at: number } | null>(null);   // event → world ripple
   const [sel, setSel] = useState<Placed | null>(null);
   const [feed, setFeed] = useState<string[]>([]);
   const [ai, setAi] = useState("Listening…");
@@ -84,9 +85,17 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
   useEffect(() => {
     if (!sampleEvents.length) return;
     let i = 0;
-    const id = setInterval(() => { i = (i + 1) % sampleEvents.length; setFeed(f => [sampleEvents[i], ...f].slice(0, 6)); }, 2000);
+    const id = setInterval(() => {
+      i = (i + 1) % sampleEvents.length;
+      const reasoning = i % 3 === 0;
+      const line = reasoning
+        ? `⟳ Merlin · orientation → decision · Knowledge +${1 + Math.floor(Math.random() * 3)}`
+        : sampleEvents[i];
+      setFeed(f => [line, ...f].slice(0, 6));
+      if (nodes.length) reactRef.current = { id: nodes[Math.floor(Math.random() * nodes.length)].id, at: performance.now() };
+    }, 2000);
     return () => clearInterval(id);
-  }, [sampleEvents]);
+  }, [sampleEvents, nodes]);
   useEffect(() => {
     const s = ["Listening…", "Thinking…", "Searching World…", "Comparing Missions…", "Found."];
     let i = 0; const id = setInterval(() => { i = (i + 1) % s.length; setAi(s[i]); }, 2500);
@@ -239,6 +248,20 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
         ctx!.globalAlpha = 1;
       }
       frontRef.current = front;
+      // event → world: expanding ripple at the reacting node
+      const rc = reactRef.current;
+      if (rc && !reduce) {
+        const rp = pos.get(rc.id);
+        if (rp && layers.has(rp.type) && rp.born <= pt) {
+          const pr = proj(rp.lat, rp.lon, R, cx, cy);
+          const el = performance.now() - rc.at;
+          if (pr.z > 0 && el < 1500) {
+            const k = el / 1500;
+            ctx!.globalAlpha = (1 - k) * 0.75; ctx!.strokeStyle = "#bfe6ff"; ctx!.lineWidth = 2;
+            ctx!.beginPath(); ctx!.arc(pr.sx, pr.sy, 6 + k * 42, 0, 7); ctx!.stroke(); ctx!.globalAlpha = 1;
+          }
+        }
+      }
       // vignette
       const v = ctx!.createRadialGradient(cx, cy, Math.min(W, H) * 0.25, cx, cy, Math.max(W, H) * 0.7);
       v.addColorStop(0, "#00000000"); v.addColorStop(1, "#00030acc");
