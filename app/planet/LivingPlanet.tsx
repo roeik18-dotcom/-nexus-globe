@@ -19,6 +19,14 @@ const COLOR: Record<string, string> = {
   provider: "#3fb950", person: "#e6ecf5", entity: "#22d3ee",
 };
 
+const LAYERS = [
+  { key: "mission", label: "Missions", color: COLOR.mission },
+  { key: "value", label: "Values", color: COLOR.value },
+  { key: "gap", label: "Gaps", color: COLOR.gap },
+  { key: "capability", label: "Capabilities", color: COLOR.capability },
+  { key: "provider", label: "Providers", color: COLOR.provider },
+];
+
 type Placed = PNode & { lat: number; lon: number; color: string; deg: number };
 
 export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
@@ -56,6 +64,12 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
     return () => cancelAnimationFrame(raf);
   }, [playing, minBorn, maxBorn]);
   const fmtDate = (t: number) => new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
+  // ── Layers (eye picks a layer) + camera focus (orbit/zoom into a node) ──
+  const [active, setActive] = useState<Set<string>>(() => new Set(LAYERS.map(l => l.key)));
+  const activeRef = useRef(active); activeRef.current = active;
+  const focusRef = useRef<{ t: number | null; zoom: number }>({ t: null, zoom: 1 });
+  const toggleLayer = (k: string) => setActive(s => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
 
   useEffect(() => {
     if (!sampleEvents.length) return;
@@ -107,8 +121,15 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
     const bez = (p0: number, p1: number, p2: number, u: number) => (1 - u) * (1 - u) * p0 + 2 * (1 - u) * u * p1 + u * u * p2;
 
     function frame() {
-      t += reduce ? 0 : 0.0011;
+      if (focusRef.current.t !== null) {                       // orbit the camera to a node
+        let d = focusRef.current.t - t; d = Math.atan2(Math.sin(d), Math.cos(d));
+        t += d * 0.08;
+        zoomRef.current += (focusRef.current.zoom - zoomRef.current) * 0.08;
+      } else {
+        t += reduce ? 0 : 0.0011;
+      }
       const pt = timeRef.current;   // time playhead — only born-by-now entities exist
+      const layers = activeRef.current;
       const cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.33 * zoomRef.current;
       const bg = ctx!.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, "#03070f"); bg.addColorStop(1, "#01030a");
       ctx!.fillStyle = bg; ctx!.fillRect(0, 0, W, H);
@@ -138,6 +159,7 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
       for (let i = 0; i < edges.length; i++) {
         if (edges[i].born > pt) continue;   // relation not yet born at playhead
         const a = pos.get(edges[i].s), b = pos.get(edges[i].t); if (!a || !b) continue;
+        if (!layers.has(a.type) || !layers.has(b.type)) continue;   // layer filter
         const pa = proj(a.lat, a.lon, R, cx, cy), pb = proj(b.lat, b.lon, R, cx, cy);
         if (pa.z < 0 && pb.z < 0) continue;
         drawn++;
@@ -157,6 +179,7 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
       const front: typeof frontRef.current = [];
       for (const { p, sx, sy, z } of projected) {
         if (p.born > pt) continue;   // entity not yet born at the playhead
+        if (!layers.has(p.type)) continue;   // layer filter
         const front0 = z > 0;
         const scale = (1 + (p.deg / maxDeg) * 3.2) * Math.max(zoomRef.current * 0.85, 0.7);
         const rad = (front0 ? 2 : 1.1) * scale;
@@ -190,6 +213,7 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
       let best: Placed | null = null, bd = 22;
       for (const f of frontRef.current) { const d = Math.hypot(f.sx - e.clientX, f.sy - e.clientY); if (d < Math.max(bd, f.r + 8)) { bd = d; best = f.n; } }
       setSel(best);
+      focusRef.current = best ? { t: -best.lon, zoom: 1.9 } : { t: null, zoom: 1 };  // orbit in / release
     };
     cv.addEventListener("wheel", onWheel, { passive: true });
     cv.addEventListener("click", onClick);
@@ -213,6 +237,24 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
         <div style={{ fontSize: 11, letterSpacing: "5px", color: "#5f7a9b", textTransform: "uppercase" }}>Philos</div>
         <div style={{ fontSize: 32, fontWeight: 700, color: "#e6ecf5", letterSpacing: "1px" }}>Living Planet</div>
         <div style={{ fontSize: 11, color: "#5f7a9b", marginTop: 2 }}>scroll to zoom · click a node · you are entering the world</div>
+      </div>
+
+      {/* Layers — the eye picks what lives in the world */}
+      <div style={{ position: "absolute", top: 108, left: 32, display: "flex", gap: 7, flexWrap: "wrap", maxWidth: 340, zIndex: 3 }}>
+        {LAYERS.map(l => {
+          const on = active.has(l.key);
+          return (
+            <button key={l.key} onClick={() => toggleLayer(l.key)} style={{
+              fontSize: 10, letterSpacing: "0.4px", padding: "4px 10px", borderRadius: 20, cursor: "pointer",
+              background: on ? l.color + "22" : "transparent", color: on ? l.color : "#3a4f6b",
+              border: `1px solid ${on ? l.color + "88" : "#1e3550"}`, fontWeight: 600,
+              display: "flex", alignItems: "center", gap: 6, transition: "all .15s ease",
+            }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: on ? l.color : "#28405e", boxShadow: on ? `0 0 8px ${l.color}` : "none" }} />
+              {l.label}
+            </button>
+          );
+        })}
       </div>
 
       <div style={{ position: "absolute", bottom: 28, left: 32, display: "flex", gap: 34, zIndex: 2, pointerEvents: "none" }}>
@@ -260,7 +302,7 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
           <Row k="Relationships" v={String(rels)} /><Row k="Influence (degree)" v={String(sel.deg)} />
           <Row k="Rank" v={sel.deg >= 4 ? "hub" : sel.deg >= 2 ? "connector" : "leaf"} />
           <div style={{ fontSize: 10, color: "#3a4f6b", marginTop: 12 }}>zoom · orbit · history · forecast — coming next</div>
-          <button onClick={() => setSel(null)} style={{ marginTop: 12, fontSize: 11, color: "#5f7a9b", background: "transparent", border: "1px solid #1e3550", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}>close</button>
+          <button onClick={() => { setSel(null); focusRef.current = { t: null, zoom: 1 }; }} style={{ marginTop: 12, fontSize: 11, color: "#5f7a9b", background: "transparent", border: "1px solid #1e3550", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}>close</button>
         </div>
       )}
       <style>{`@keyframes pplanetpulse{50%{opacity:.35}}`}</style>
