@@ -56,7 +56,9 @@ CHANNELS    = 1
 BLOCK_SIZE  = 512
 
 # ── VAD (recording) ───────────────────────────────────────────────────────────
-from service.vad_config import SPEECH_RMS_THRESHOLD as SILENCE_RMS  # shared with wake_trigger
+# NOT the wake threshold: record_utterance needs headroom over the noise floor
+# that wake detection can afford to sit inside.  See vad_config.COMMAND_RMS_THRESHOLD.
+from service.vad_config import COMMAND_RMS_THRESHOLD as SILENCE_RMS
 # print() survives before logging handlers are wired up
 print(f"[merlin_service] SILENCE_RMS={SILENCE_RMS:.5f} loaded from service.vad_config", flush=True)
 SILENCE_S    = 0.8     # 0.8 s trailing silence ends an utterance
@@ -207,10 +209,10 @@ async def record_utterance(
     import service.vad_config as _vad_cfg
     logger.info(
         "record_utterance: SILENCE_RMS=%.5f id=%d"
-        "  vad_config.SPEECH_RMS_THRESHOLD=%.5f"
+        "  vad_config.COMMAND_RMS_THRESHOLD=%.5f"
         "  merlin_service.__file__=%s  vad_config.__file__=%s",
         SILENCE_RMS, id(SILENCE_RMS),
-        _vad_cfg.SPEECH_RMS_THRESHOLD,
+        _vad_cfg.COMMAND_RMS_THRESHOLD,
         __file__, _vad_cfg.__file__,
     )
 
