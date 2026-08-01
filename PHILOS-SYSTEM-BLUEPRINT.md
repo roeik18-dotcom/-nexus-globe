@@ -52,7 +52,7 @@ backend, no writer, no multi-group runtime, and no live production data.** Every
 | 10 | Impact verification | **implemented — reference vertical slice** ¹ · **trust: missing** |
 | 11 | Canonical Event Log | **implemented — reference vertical slice** ¹ |
 | 12 | Hidden engines | **planned** |
-| 13 | Globe legend & semantics | **partially implemented** — event-backed arcs exist; ontology nodes and the HUD are still **mocked** |
+| 13 | Globe legend & semantics | **partially implemented** ² — arcs projected from the event log for **3 of 16** event types, including `transfer.completed` with amount/currency/value; legend present; provenance (event_id, timestamp, status) reaches the tooltip. Ontology nodes and parts of the HUD remain **mocked** |
 | 14 | Four journeys | **planned** |
 | 15 | Daily-life taxonomy | **planned** |
 | 16 | Privacy & exposure | **missing** — required before any second participant |
@@ -67,6 +67,17 @@ backend, no writer, no multi-group runtime, and no live production data.** Every
 
 ¹ **Scope note.** Validated for one seeded Value Group only; not yet generalized to
 multi-group production runtime.
+
+² **Globe scope note (verified live 2026-08-01).** `projectGlobeGraph` projects
+`member.joined`, `leader.appointed` and `transfer.completed` — 3 of the 16 event
+types the log defines. 8 arcs and 10 nodes render for the seeded group; the
+completed transfer carries amount, currency, resource type and value tags read
+straight off the event, and a transfer with no `resource_delta` yields an arc with
+no amount rather than a fabricated one. A legend names each line type. Still
+**mocked** on the same screen: ~61 ontology nodes from `data/*.json` positioned by
+hashing an id, a 720-point decorative swarm, the LIVING FORCES relabelling of entity
+counts, the cycling LIVE STREAM, and the fixed `SYNC · REALTIME` / `ORBIT · OPTIMAL`
+strings. Point position is layout, never geography.
 
 ### What exists today
 
@@ -472,7 +483,9 @@ Discover → Orient → Join → Act → Reflect → Learn → Grow → Influenc
 6. **Every action shows its real effect** on people, values, and system state.
 7. **No sci-fi decoration, no extra panels** — clarity before spectacle.
 
-*Guardrail 4 is now satisfied — `/` enters at `/hub`, and the globe is reached from
-there. Guardrails 5 and 7 remain partly violated by `app/planet`: alongside the
-event-backed arcs it still renders ontology nodes positioned by hashing an id, and
-HUD strings with nothing behind them. Recorded as known debt, not approved behaviour.*
+*Guardrail 4 is satisfied — `/` enters at `/hub`, and the globe is reached from
+there. Guardrail 5 is now partly satisfied: a legend names each line type, and every
+arc states its event on hover. Guardrails 5 and 7 remain partly violated all the
+same — alongside the event-backed arcs, `app/planet` still renders ontology nodes
+positioned by hashing an id, a decorative point swarm, and HUD strings with nothing
+behind them (§13 note ²). Recorded as known debt, not approved behaviour.*
