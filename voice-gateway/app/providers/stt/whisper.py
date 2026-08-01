@@ -27,9 +27,17 @@ logger = logging.getLogger(__name__)
 #
 # This mirrors that lever for the command path.  A prompt is a decoding bias, not
 # a constraint: it steers the script without rejecting a genuinely non-Hebrew
-# utterance.  Kept as Hebrew prose (the wake path's variant is wake-word specific
-# and would bias every command toward the word "Merlin").
-_HEBREW_PROMPT_BIAS = "שיחה בעברית עם מרלין. Merlin. מרלין."
+# utterance.
+#
+# MUST be a bare token list, never prose.  The first attempt here was a full
+# sentence ("שיחה בעברית עם מרלין."), and gpt-4o-transcribe echoed it back verbatim
+# as the transcript on five consecutive cycles (2026-08-01 18:33–18:38) — including
+# one with pre_norm_peak=0.303 and norm_gain=×1.00, i.e. a clean, full-scale
+# capture.  The output was byte-identical regardless of input level, which is the
+# signature of the decoder continuing the prompt rather than transcribing.
+# Disconnected words give the decoder a script and vocabulary hint with no
+# sentence to complete.  The wake path has always used this form.
+_HEBREW_PROMPT_BIAS = "עברית, רועי, מרלין, שעה, היום, מחר, פילוס, נקסוס"
 
 # ── Command-path audio-capture probe (instrumentation; OFF by default) ─────────
 # Mirrors the wake-path probe in service/wake_trigger.py.  Saves the EXACT WAV

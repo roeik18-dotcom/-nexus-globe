@@ -59,6 +59,31 @@ async def test_prompt_bias_actually_contains_hebrew():
     assert any("֐" <= ch <= "׿" for ch in _HEBREW_PROMPT_BIAS)
 
 
+EXPECTED_PROMPT = "עברית, רועי, מרלין, שעה, היום, מחר, פילוס, נקסוס"
+
+
+@pytest.mark.asyncio
+async def test_prompt_bias_is_the_pinned_token_list():
+    assert _HEBREW_PROMPT_BIAS == EXPECTED_PROMPT
+
+
+@pytest.mark.asyncio
+async def test_prompt_bias_is_tokens_not_prose():
+    """Prose gets echoed back as the transcript — the 2026-08-01 18:33–18:38 failure.
+
+    A full-sentence prompt ("שיחה בעברית עם מרלין.") was returned verbatim on five
+    consecutive cycles, byte-identical across pre_norm_peak 0.058–0.303, because the
+    decoder continued the prompt instead of transcribing.  Bare tokens give it no
+    sentence to complete.
+    """
+    assert "." not in _HEBREW_PROMPT_BIAS, "sentence-final punctuation invites an echo"
+    assert "?" not in _HEBREW_PROMPT_BIAS
+    assert "!" not in _HEBREW_PROMPT_BIAS
+    tokens = [t.strip() for t in _HEBREW_PROMPT_BIAS.split(",")]
+    assert len(tokens) >= 4, "a token list, not a phrase"
+    assert all(t and " " not in t for t in tokens), f"each entry must be one word: {tokens}"
+
+
 @pytest.mark.asyncio
 async def test_command_stt_decoding_stays_deterministic():
     """temperature=0 curbs the repetition/hallucination failure mode."""
