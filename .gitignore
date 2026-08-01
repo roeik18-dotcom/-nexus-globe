@@ -1,7 +1,11 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
+# `/node_modules` is anchored to the repo root, so a nested one is NOT covered:
+# voice-gateway/node_modules appeared (vite cache) and was untracked-but-unignored,
+# one broad `git add -A` away from committing a dependency tree.
 /node_modules
+voice-gateway/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
