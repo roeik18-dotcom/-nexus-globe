@@ -7,7 +7,8 @@ import type { Capability } from "@/app/lib/capability/schema";
 import type { ValueCapabilityRelation } from "@/app/lib/value-capability-relation/schema";
 import type { Provider } from "@/app/lib/provider/schema";
 import type { ProviderCapabilityRelation } from "@/app/lib/provider-capability-relation/schema";
-import LivingPlanet, { type PNode, type PEdge } from "./LivingPlanet";
+import { type PNode, type PEdge } from "./LivingPlanet";
+import LivingField from "./LivingField";
 
 export const metadata = { title: "Philos — Living Planet" };
 
@@ -71,5 +72,5 @@ export default function PlanetPage() {
 
   if (nodes.length === 0) return <div style={{ padding: 40, fontFamily: "system-ui" }}>No world data.</div>;
 
-  return <LivingPlanet nodes={nodes} edges={edges} counts={counts} sampleEvents={sampleEvents} />;
+  return <LivingField nodes={nodes} edges={edges} counts={counts} sampleEvents={sampleEvents} />;
 }
