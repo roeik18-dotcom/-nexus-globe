@@ -31,7 +31,10 @@ export default function PlanetPage() {
   const pcr          = readJsonStore<ProviderCapabilityRelation>(path.join(DATA, "provider-capability-relations.json"));
 
   const born = (d?: string) => { const t = d ? Date.parse(d) : NaN; return Number.isNaN(t) ? 0 : t; };
-  const dom = (e: { context?: { domain?: string } }) => e.context?.domain || "general";
+  // Every PUDM schema declares `domain: string | null`, so the parameter must
+  // admit null. Typing it `string | undefined` made each call site an error and
+  // was only invisible because next.config sets ignoreBuildErrors.
+  const dom = (e: { context?: { domain?: string | null } }) => e.context?.domain || "general";
   const nodes: PNode[] = [
     ...missions.map(m => ({ id: m.id, type: "mission", label: short(m.context?.statement ?? m.id), born: born(m.createdAt), community: dom(m) })),
     ...gaps.map(g => ({ id: g.id, type: "gap", label: short(g.context?.description ?? g.id), born: born(g.createdAt), community: dom(g) })),

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useClientNow } from "./useClientNow";
 import type { PNode, PEdge, Counts } from "./LivingPlanet";
 
 /**
@@ -33,24 +34,27 @@ export default function LivingField({ nodes, edges, counts, sampleEvents }: {
   const frontRef = useRef<{ b: Body; sx: number; sy: number; r: number }[]>([]);
   const reactRef = useRef<{ id: string; at: number } | null>(null);
   const [sel, setSel] = useState<Body | null>(null);
-  const selRef = useRef<Body | null>(null); selRef.current = sel;
+  const selRef = useRef<Body | null>(null);
   const [feed, setFeed] = useState<string[]>([]);
   const [ai, setAi] = useState("Listening…");
   const [active, setActive] = useState<Set<string>>(() => new Set(LAYERS.map(l => l.key)));
-  const activeRef = useRef(active); activeRef.current = active;
+  const activeRef = useRef(active);
+  // the render loop reads these from refs; sync after commit, never during render
+  useEffect(() => { selRef.current = sel; }, [sel]);
+  useEffect(() => { activeRef.current = active; }, [active]);
   const toggleLayer = (k: string) => setActive(s => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
 
   const bornVals = nodes.map(n => n.born).filter(b => b > 0);
   const minBorn = bornVals.length ? Math.min(...bornVals) : 0;
   const maxBorn = bornVals.length ? Math.max(...bornVals) : 0;
-  const [nowMs, setNowMs] = useState(0);
+  const nowMs = useClientNow();
   const [playT, setPlayT] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const timeRef = useRef(0);
   const forecastEnd = (nowMs || maxBorn) + 30 * 86_400_000;
-  const curT = playT ?? maxBorn; timeRef.current = curT;
+  const curT = playT ?? maxBorn;
+  useEffect(() => { timeRef.current = curT; }, [curT]);
   const fmtDate = (t: number) => new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  useEffect(() => { setNowMs(Date.now()); setPlayT(maxBorn); }, [maxBorn]);
   useEffect(() => {
     if (!playing) return; let raf = 0; const s = performance.now(), d = 8000;
     const step = (ts: number) => { const k = Math.min(1, (ts - s) / d); setPlayT(minBorn + (maxBorn - minBorn) * k); if (k < 1) raf = requestAnimationFrame(step); else setPlaying(false); };
@@ -108,7 +112,7 @@ export default function LivingField({ nodes, edges, counts, sampleEvents }: {
       for (let i = 0; i < live.length; i++) {
         const a = live[i];
         for (let j = i + 1; j < live.length; j++) {
-          const b = live[j]; let dx = a.x - b.x, dy = a.y - b.y; let d2 = dx * dx + dy * dy; if (d2 < 1) d2 = 1;
+          const b = live[j]; const dx = a.x - b.x, dy = a.y - b.y; let d2 = dx * dx + dy * dy; if (d2 < 1) d2 = 1;
           if (d2 > 90000) continue; const f = 900 / d2; const d = Math.sqrt(d2); const fx = (dx / d) * f, fy = (dy / d) * f;
           a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
         }
@@ -122,7 +126,7 @@ export default function LivingField({ nodes, edges, counts, sampleEvents }: {
       for (const e of edges) {
         if (e.born > timeRef.current) continue; const a = byId.get(e.s), b = byId.get(e.t);
         if (!a || !b || !liveIds.has(a.id) || !liveIds.has(b.id)) continue;
-        let dx = b.x - a.x, dy = b.y - a.y; const d = Math.hypot(dx, dy) || 1; const rest = 120; const f = (d - rest) * 0.008;
+        const dx = b.x - a.x, dy = b.y - a.y; const d = Math.hypot(dx, dy) || 1; const rest = 120; const f = (d - rest) * 0.008;
         const fx = (dx / d) * f, fy = (dy / d) * f; a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
       }
       for (const b of live) { b.vx *= 0.86; b.vy *= 0.86; b.x += b.vx; b.y += b.vy; }

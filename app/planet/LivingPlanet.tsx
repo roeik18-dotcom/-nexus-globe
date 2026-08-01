@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useClientNow } from "./useClientNow";
 
 /**
  * LivingPlanet — entering Philos as a PLACE. A rotating planet of the real World
@@ -46,14 +47,14 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
   const bornVals = nodes.map(n => n.born).filter(b => b > 0);
   const minBorn = bornVals.length ? Math.min(...bornVals) : 0;
   const maxBorn = bornVals.length ? Math.max(...bornVals) : 0;
-  const [nowMs, setNowMs] = useState(0);
+  const nowMs = useClientNow();
   const [playT, setPlayT] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const forecastEnd = (nowMs || maxBorn) + 30 * 86_400_000;
   const curT = playT ?? maxBorn;
-  timeRef.current = curT;
+  // the render loop reads this from a ref; sync after commit, never during render
+  useEffect(() => { timeRef.current = curT; }, [curT]);
 
-  useEffect(() => { setNowMs(Date.now()); setPlayT(maxBorn); }, [maxBorn]);
   useEffect(() => {
     if (!playing) return;
     let raf = 0; const start = performance.now(), dur = 8000;
@@ -69,9 +70,13 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
 
   // ── Layers (eye picks a layer) + camera focus (orbit/zoom into a node) ──
   const [active, setActive] = useState<Set<string>>(() => new Set(LAYERS.map(l => l.key)));
-  const activeRef = useRef(active); activeRef.current = active;
+  const activeRef = useRef(active);
   const focusRef = useRef<{ t: number | null; zoom: number }>({ t: null, zoom: 1 });
-  const selRef = useRef<Placed | null>(null); selRef.current = sel;
+  const selRef = useRef<Placed | null>(null);
+  // both are read by the animation loop, so they sync after commit rather than
+  // during render — writing a ref mid-render is what React 19 flags
+  useEffect(() => { activeRef.current = active; }, [active]);
+  useEffect(() => { selRef.current = sel; }, [sel]);
   const toggleLayer = (k: string) => setActive(s => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
 
   // ── Living Forces — aggregate fields, from real data ──
