@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from "react";
  * zoom (camera). Click a node to focus. Real counts only; the ambient field is
  * atmosphere, never presented as data.
  */
-export type PNode = { id: string; type: string; label: string; born: number };
+export type PNode = { id: string; type: string; label: string; born: number; community?: string };
 export type PEdge = { s: string; t: string; born: number };
 export type Counts = { entities: number; missions: number; relationships: number; communities: number };
 
@@ -127,11 +127,19 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
     edges.forEach(e => { deg.set(e.s, (deg.get(e.s) || 0) + 1); deg.set(e.t, (deg.get(e.t) || 0) + 1); });
     const maxDeg = Math.max(1, ...deg.values());
 
-    const P: Placed[] = nodes.map((n, i) => {
-      let h = 2166136261; for (let k = 0; k < n.id.length; k++) { h ^= n.id.charCodeAt(k); h = Math.imul(h, 16777619); }
-      const lat = (((h >>> 0) % 1000) / 1000 - 0.5) * Math.PI;
-      const lon = (((h >>> 10) % 1000) / 1000) * Math.PI * 2 + i * 1e-4;
-      return { ...n, lat, lon, color: COLOR[n.type] || COLOR.entity, deg: deg.get(n.id) || 0 };
+    const hash = (s: string) => { let h = 2166136261; for (let k = 0; k < s.length; k++) { h ^= s.charCodeAt(k); h = Math.imul(h, 16777619); } return h >>> 0; };
+    // community ecosystems — each domain gets a region on the sphere; nodes cluster in it
+    const commList = Array.from(new Set(nodes.map(n => n.community || "general")));
+    const commCenter = new Map(commList.map(c => { const h = hash("c::" + c); return [c, { lat: ((h % 1000) / 1000 - 0.5) * 2.4, lon: (((h >> 10) % 1000) / 1000) * Math.PI * 2 }]; }));
+    const commSize = new Map<string, number>();
+    nodes.forEach(n => commSize.set(n.community || "general", (commSize.get(n.community || "general") || 0) + 1));
+    const P: Placed[] = nodes.map((n) => {
+      const c = commCenter.get(n.community || "general")!;
+      const hh = hash(n.id);
+      const jLat = ((hh % 1000) / 1000 - 0.5) * 0.52;
+      const jLon = (((hh >> 10) % 1000) / 1000 - 0.5) * 0.52;
+      const lat = Math.max(-1.5, Math.min(1.5, c.lat + jLat));
+      return { ...n, lat, lon: c.lon + jLon, color: COLOR[n.type] || COLOR.entity, deg: deg.get(n.id) || 0 };
     });
     const pos = new Map(P.map(p => [p.id, p]));
     lonRef.current = new Map(P.map(p => [p.id, p.lon]));   // for gentle auto-camera
@@ -143,6 +151,10 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
       knowledge: nodes.filter(n => n.type === "capability").length,
       opportunity: nodes.filter(n => n.type === "provider").length, tension: nodes.filter(n => n.type === "gap").length };
     const fmax = Math.max(...Object.values(fc), 1);
+    // World Heat — atmosphere hue shifts with the trust ↔ tension balance
+    const warmth = fc.tension / (fc.trust + fc.tension + 1);
+    const atmR = Math.round(56 + (248 - 56) * warmth), atmG = Math.round(160 + (140 - 160) * warmth), atmB = Math.round(248 + (80 - 248) * warmth);
+    const atmRGB = `${atmR},${atmG},${atmB}`;
     const FORCEGLOW = [
       { color: "#a78bfa", a: 0.0, sp: 0.05, mag: fc.purpose / fmax },
       { color: "#38bdf8", a: 1.3, sp: -0.04, mag: fc.trust / fmax },
@@ -192,7 +204,7 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
       ctx!.globalAlpha = 1;
       // atmosphere
       const at = ctx!.createRadialGradient(cx, cy, R * 0.72, cx, cy, R * 1.65);
-      at.addColorStop(0, "rgba(56,160,248,0.18)"); at.addColorStop(1, "rgba(56,160,248,0)");
+      at.addColorStop(0, `rgba(${atmRGB},0.20)`); at.addColorStop(1, `rgba(${atmRGB},0)`);
       ctx!.fillStyle = at; ctx!.beginPath(); ctx!.arc(cx, cy, R * 1.65, 0, 7); ctx!.fill();
       // body
       const gb = ctx!.createRadialGradient(cx - R * 0.38, cy - R * 0.38, R * 0.1, cx, cy, R);
@@ -218,19 +230,14 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
         if (pa.z < 0 && pb.z < 0) continue;
         drawn++;
         const mx = (pa.sx + pb.sx) / 2, my = (pa.sy + pb.sy) / 2 - R * 0.14;
-        ctx!.strokeStyle = "rgba(80,150,240,0.10)"; ctx!.lineWidth = 1;
+        // river — a continuous flowing stream along the relation (not discrete dots)
+        ctx!.beginPath(); ctx!.moveTo(pa.sx, pa.sy); ctx!.quadraticCurveTo(mx, my, pb.sx, pb.sy);
+        ctx!.strokeStyle = "rgba(80,150,240,0.10)"; ctx!.lineWidth = 1; ctx!.stroke();
+        ctx!.save();
+        ctx!.setLineDash([5, 11]); ctx!.lineDashOffset = -((t * 90 + i * 7) % 16);
+        ctx!.strokeStyle = "rgba(124,196,255,0.55)"; ctx!.lineWidth = 1.7; ctx!.lineCap = "round";
         ctx!.beginPath(); ctx!.moveTo(pa.sx, pa.sy); ctx!.quadraticCurveTo(mx, my, pb.sx, pb.sy); ctx!.stroke();
-        // flowing energy — several particles streaming along each relation
-        for (let k = 0; k < 3; k++) {
-          const u = ((t * 0.9 + i * 0.13 + k / 3) % 1);
-          const fx = bez(pa.sx, mx, pb.sx, u), fy = bez(pa.sy, my, pb.sy, u);
-          const fade = Math.sin(u * Math.PI);           // brightest mid-arc
-          ctx!.globalAlpha = 0.85 * fade;
-          const gg = ctx!.createRadialGradient(fx, fy, 0, fx, fy, 4.5);
-          gg.addColorStop(0, "#bfe6ff"); gg.addColorStop(0.4, "#7cc4ff"); gg.addColorStop(1, "#7cc4ff00");
-          ctx!.fillStyle = gg; ctx!.beginPath(); ctx!.arc(fx, fy, 4.5, 0, 7); ctx!.fill();
-        }
-        ctx!.globalAlpha = 1;
+        ctx!.restore();
       }
 
       // nodes — small→large (hierarchy), hubs glow + label
@@ -263,6 +270,19 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
         ctx!.globalAlpha = 1;
       }
       frontRef.current = front;
+      // community ecosystem labels — the world reads as regions, not uniform dots
+      ctx!.textAlign = "center";
+      for (const [name, c] of commCenter) {
+        if ((commSize.get(name) || 0) < 2) continue;
+        const pc = proj(c.lat, c.lon, R, cx, cy);
+        if (pc.z > 0.25) {
+          ctx!.globalAlpha = 0.5 * pc.z;
+          ctx!.fillStyle = "#9fb8d6";
+          ctx!.font = "700 11px var(--font-geist-sans), system-ui, sans-serif";
+          ctx!.fillText(name.toUpperCase(), pc.sx, pc.sy - 10);
+          ctx!.globalAlpha = 1;
+        }
+      }
       // event → world: expanding ripple at the reacting node
       const rc = reactRef.current;
       if (rc && !reduce) {
@@ -313,6 +333,13 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
         <div style={{ fontSize: 11, letterSpacing: "5px", color: "#5f7a9b", textTransform: "uppercase" }}>Philos</div>
         <div style={{ fontSize: 32, fontWeight: 700, color: "#e6ecf5", letterSpacing: "1px" }}>Living Planet</div>
         <div style={{ fontSize: 11, color: "#5f7a9b", marginTop: 2 }}>scroll to zoom · click a node · you are entering the world</div>
+      </div>
+
+      {/* Lens-modes of the same world (the world is the home; lenses are views into it) */}
+      <div style={{ position: "absolute", top: 30, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 6, zIndex: 4 }}>
+        {[["world", "World"], ["marketplace", "Market"], ["pudm", "PUDM"], ["nexus", "Nexus"], ["lab", "Lab"], ["essence", "Essence"]].map(([h, l]) => (
+          <a key={h} href={`/${h}`} style={{ fontSize: 11, color: "#7aa0c8", textDecoration: "none", padding: "5px 12px", borderRadius: 20, border: "1px solid #14304e", background: "rgba(8,16,28,0.6)", backdropFilter: "blur(6px)" }}>{l}</a>
+        ))}
       </div>
 
       {/* Layers — the eye picks what lives in the world */}

@@ -30,12 +30,13 @@ export default function PlanetPage() {
   const pcr          = readJsonStore<ProviderCapabilityRelation>(path.join(DATA, "provider-capability-relations.json"));
 
   const born = (d?: string) => { const t = d ? Date.parse(d) : NaN; return Number.isNaN(t) ? 0 : t; };
+  const dom = (e: { context?: { domain?: string } }) => e.context?.domain || "general";
   const nodes: PNode[] = [
-    ...missions.map(m => ({ id: m.id, type: "mission", label: short(m.context?.statement ?? m.id), born: born(m.createdAt) })),
-    ...gaps.map(g => ({ id: g.id, type: "gap", label: short(g.context?.description ?? g.id), born: born(g.createdAt) })),
-    ...values.map(v => ({ id: v.id, type: "value", label: v.context?.label ?? v.id, born: born(v.createdAt) })),
-    ...capabilities.map(c => ({ id: c.id, type: "capability", label: c.context?.label ?? c.id, born: born(c.createdAt) })),
-    ...providers.map(p => ({ id: p.id, type: "provider", label: p.context?.label ?? p.id, born: born(p.createdAt) })),
+    ...missions.map(m => ({ id: m.id, type: "mission", label: short(m.context?.statement ?? m.id), born: born(m.createdAt), community: dom(m) })),
+    ...gaps.map(g => ({ id: g.id, type: "gap", label: short(g.context?.description ?? g.id), born: born(g.createdAt), community: dom(g) })),
+    ...values.map(v => ({ id: v.id, type: "value", label: v.context?.label ?? v.id, born: born(v.createdAt), community: dom(v) })),
+    ...capabilities.map(c => ({ id: c.id, type: "capability", label: c.context?.label ?? c.id, born: born(c.createdAt), community: dom(c) })),
+    ...providers.map(p => ({ id: p.id, type: "provider", label: p.context?.label ?? p.id, born: born(p.createdAt), community: dom(p) })),
   ];
   const bornOf = new Map(nodes.map(n => [n.id, n.born]));
   const eb = (s: string, t: string) => Math.max(bornOf.get(s) ?? 0, bornOf.get(t) ?? 0);
