@@ -1,0 +1,41 @@
+{
+  "_comment": [
+    "CANONICAL fixture for RFC-040 Canonical Event Envelope v1.",
+    "Every implementation asserts against THIS file, not a copy — that is the",
+    "only practical defence against the TypeScript and Python implementations",
+    "drifting apart. Adding a field to the spec without updating this fixture",
+    "must fail both test suites.",
+    "Content is synthetic. Philos does not conform yet; see RFC-040 §6."
+  ],
+  "event_id": "01J9ZQ8F3K7M2N5P8R1T4V6X0A",
+  "event_family": "personal_config.change",
+  "event_type": "entry.updated",
+  "actor_id": "roei",
+  "timestamp": "2026-08-01T22:14:05+03:00",
+  "entity_type": "profile_entry",
+  "entity_id": "music/production-signature",
+  "visibility": "private",
+  "audience": {
+    "scope": "owner"
+  },
+  "evidence": [],
+  "provenance": {
+    "source": "human_statement",
+    "ref": "conversation:2026-08-01T22:13",
+    "method": "stated_directly"
+  },
+  "schema_version": 1,
+  "payload": {
+    "operation": "update",
+    "path": "music/production-signature",
+    "previous_value": {
+      "statement": "Sparse arrangements, close-mic'd vocals."
+    },
+    "new_value": {
+      "statement": "Sparse arrangements, close-mic'd vocals, minimal compression."
+    },
+    "reason": "clarified that minimal compression is a signature, not an occasional choice",
+    "effective_from": "2026-08-01T22:14:05+03:00",
+    "effective_until": null
+  }
+}
