@@ -36,6 +36,7 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
   const zoomRef = useRef(1);
   const frontRef = useRef<{ n: Placed; sx: number; sy: number; r: number }[]>([]);
   const reactRef = useRef<{ id: string; at: number } | null>(null);   // event → world ripple
+  const lonRef = useRef<Map<string, number>>(new Map());              // node id → longitude (for auto-camera)
   const [sel, setSel] = useState<Placed | null>(null);
   const [feed, setFeed] = useState<string[]>([]);
   const [ai, setAi] = useState("Listening…");
@@ -70,6 +71,7 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
   const [active, setActive] = useState<Set<string>>(() => new Set(LAYERS.map(l => l.key)));
   const activeRef = useRef(active); activeRef.current = active;
   const focusRef = useRef<{ t: number | null; zoom: number }>({ t: null, zoom: 1 });
+  const selRef = useRef<Placed | null>(null); selRef.current = sel;
   const toggleLayer = (k: string) => setActive(s => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
 
   // ── Living Forces — aggregate fields, from real data ──
@@ -92,7 +94,19 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
         ? `⟳ Merlin · orientation → decision · Knowledge +${1 + Math.floor(Math.random() * 3)}`
         : sampleEvents[i];
       setFeed(f => [line, ...f].slice(0, 6));
-      if (nodes.length) reactRef.current = { id: nodes[Math.floor(Math.random() * nodes.length)].id, at: performance.now() };
+      if (nodes.length) {
+        const rn = nodes[Math.floor(Math.random() * nodes.length)];
+        reactRef.current = { id: rn.id, at: performance.now() };
+        // gentle camera drift to a significant event — only on reasoning ticks, never
+        // while the user has a node focused, and it auto-releases so ambient rotation resumes
+        if (reasoning && i % 6 === 0 && !selRef.current) {
+          const lon = lonRef.current.get(rn.id);
+          if (lon !== undefined) {
+            focusRef.current = { t: -lon, zoom: 1.22 };
+            setTimeout(() => { if (!selRef.current) focusRef.current = { t: null, zoom: 1 }; }, 1900);
+          }
+        }
+      }
     }, 2000);
     return () => clearInterval(id);
   }, [sampleEvents, nodes]);
@@ -120,6 +134,7 @@ export default function LivingPlanet({ nodes, edges, counts, sampleEvents }: {
       return { ...n, lat, lon, color: COLOR[n.type] || COLOR.entity, deg: deg.get(n.id) || 0 };
     });
     const pos = new Map(P.map(p => [p.id, p]));
+    lonRef.current = new Map(P.map(p => [p.id, p.lon]));   // for gentle auto-camera
     // hierarchy: nodes drawn small→large so hubs sit on top; labels only for top hubs
     const byDeg = [...P].sort((a, b) => b.deg - a.deg);
     const hubIds = new Set(byDeg.slice(0, 7).map(p => p.id));
