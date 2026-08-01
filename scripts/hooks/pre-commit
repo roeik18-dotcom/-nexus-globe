@@ -1,0 +1,4 @@
+#!/bin/sh
+# Repo pre-commit hook. Version-controlled via core.hooksPath (see scripts/hooks/install.sh).
+# Keep this shim trivial: all logic — and all tests — live in profile_guard.py.
+exec python3 "$(dirname "$0")/profile_guard.py"
