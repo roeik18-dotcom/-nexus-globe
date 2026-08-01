@@ -34,7 +34,15 @@ export interface GlobeNode {
   community: string;
 }
 
-/** One line on the globe, and the event that put it there. */
+/**
+ * One line on the globe, and the event that put it there.
+ *
+ * The financial fields are OPTIONAL and are populated only from what the event
+ * actually carries. A transfer whose event has no `resource_delta` yields an arc
+ * with no amount — the line still exists, because the transfer did, but the globe
+ * must not display a number nobody recorded. Absence here is a fact, not a gap to
+ * fill in.
+ */
 export interface GlobeArc {
   source_id: string;
   target_id: string;
@@ -46,6 +54,17 @@ export interface GlobeArc {
   verification_status?: VerificationStatus;
   /** Human-readable, for the globe's arc label. Never invented. */
   label: string;
+
+  // ── resource semantics: present only on resource-moving relations ──
+  /** Absolute magnitude moved. Direction is expressed by source → target. */
+  amount?: number;
+  currency?: string;
+  /** `resource_delta.kind` — money | time | knowledge | equipment | service. */
+  resource_type?: string;
+  /** The event's own value_tags — which value this movement served. */
+  value_tags?: string[];
+  /** Lifecycle state of the transfer this arc represents. */
+  transfer_status?: "proposed" | "approved" | "executing" | "completed" | "reversed";
 }
 
 export interface GlobeGraph {
@@ -60,7 +79,11 @@ export interface GlobeGraph {
  * the globe MEANS, not a rendering tweak — so the map is explicit rather than
  * "draw every event that happens to have two ids".
  */
-const ARC_RELATIONS = new Set(["member.joined", "leader.appointed"]);
+const ARC_RELATIONS = new Set([
+  "member.joined",
+  "leader.appointed",
+  "transfer.completed",
+]);
 
 const ms = (iso: string): number => {
   const t = Date.parse(iso);
@@ -114,9 +137,59 @@ export function projectGlobeGraph(
     });
   };
 
+  // A completed transfer carries the money (`resource_delta`) but not the
+  // recipient — that is written on the approving event for the same transfer id.
+  // Index the approvals so the completion can name where the money went without
+  // guessing.
+  const approvalOf = new Map<string, PhilosEvent>();
+  for (const e of log) {
+    if (e.event_type === "transfer.approved") approvalOf.set(e.entity_id, e);
+  }
+
+  const addRecipient = (id: string, label: string, born: number) => {
+    if (!id || seen.has(id)) return;
+    seen.add(id);
+    nodes.push({ id, type: "recipient", label, born, community });
+  };
+
   const arcs: GlobeArc[] = [];
   for (const e of log) {
     if (!ARC_RELATIONS.has(e.event_type)) continue;
+
+    if (e.event_type === "transfer.completed") {
+      const approval = approvalOf.get(e.entity_id);
+      const recipient =
+        typeof approval?.payload?.recipient === "string" ? approval.payload.recipient : "";
+      // No approving event means no named destination. Drawing the line anyway
+      // would invent a target, so it is dropped — same rule as any other arc.
+      if (!recipient) continue;
+
+      const recipientId = `recipient:${e.entity_id}`;
+      addRecipient(recipientId, recipient, ms(e.timestamp));
+
+      const delta = e.resource_delta;
+      const purpose =
+        typeof approval?.payload?.purpose === "string" ? approval.payload.purpose : "";
+
+      arcs.push({
+        // money leaves the group and reaches the recipient
+        source_id: groupId,
+        target_id: recipientId,
+        relation: e.event_type,
+        event_id: e.event_id,
+        timestamp: e.timestamp,
+        verification_status: e.verification_status,
+        label: `${groupName} → ${recipient}${purpose ? ` — ${purpose}` : ""}`,
+        // Read straight off the event. Absent stays absent: an amount nobody
+        // recorded must not appear as a number on the globe.
+        amount: delta ? Math.abs(delta.amount) : undefined,
+        currency: delta?.currency,
+        resource_type: delta?.kind,
+        value_tags: e.value_tags.length ? [...e.value_tags] : undefined,
+        transfer_status: "completed",
+      });
+      continue;
+    }
 
     let source = "";
     let target = "";

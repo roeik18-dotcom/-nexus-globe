@@ -83,6 +83,11 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, counts, sampleEvent
         source_id: a.source_id, target_id: a.target_id, relation: a.relation,
         event_id: a.event_id, timestamp: a.timestamp,
         verification_status: a.verification_status, text: a.label,
+        amount: a.amount, currency: a.currency, resource_type: a.resource_type,
+        value_tags: a.value_tags, transfer_status: a.transfer_status,
+        // resource movements read differently from membership: one is money
+        // leaving the group, the other is a person joining it
+        isTransfer: a.relation === "transfer.completed",
       };
     }).filter(Boolean) as any[];
     return { points: [...swarm, ...entityPts], arcs };
@@ -117,13 +122,26 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, counts, sampleEvent
             pointLabel={(d: any) => d.label ? `<div style="font:600 12px system-ui;color:#fff">${d.label}</div><div style="font:11px system-ui;color:${d.color}">${d.type}</div>` : ""}
             arcsData={arcs}
             arcStartLat={(d: any) => d.startLat} arcStartLng={(d: any) => d.startLng} arcEndLat={(d: any) => d.endLat} arcEndLng={(d: any) => d.endLng}
-            arcColor={() => ["rgba(120,180,255,0.05)", "rgba(150,210,255,0.85)"]} arcStroke={0.18} arcAltitude={0.18}
+            // A resource movement is a different KIND of line from a membership
+            // one, so it reads differently. Colour only — no extra motion.
+            arcColor={(d: any) => d.isTransfer
+              ? ["rgba(255,206,138,0.06)", "rgba(255,206,138,0.92)"]
+              : ["rgba(120,180,255,0.05)", "rgba(150,210,255,0.85)"]}
+            arcStroke={(d: any) => (d.isTransfer ? 0.32 : 0.18)} arcAltitude={0.18}
             arcDashLength={0.4} arcDashGap={0.25} arcDashAnimateTime={3200}
             // Hovering a line states its provenance. Not decoration: without this
             // a viewer cannot ask why a line exists and get an answer (§13).
+            // Amount/currency/value appear ONLY when the event carried them.
             arcLabel={(d: any) => `<div style="font:600 12px system-ui;color:#fff">${d.text}</div>`
-              + `<div style="font:11px system-ui;color:#8fd0ff">${d.relation} · ${d.timestamp.slice(0, 10)}</div>`
+              + `<div style="font:11px system-ui;color:${d.isTransfer ? "#ffce8a" : "#8fd0ff"}">${d.relation} · ${d.timestamp.slice(0, 10)}</div>`
+              + (d.amount !== undefined
+                  ? `<div style="font:600 12px system-ui;color:#ffce8a">${d.amount.toLocaleString("he-IL")}${d.currency ? ` ${d.currency}` : ""}`
+                    + `${d.resource_type ? ` · ${d.resource_type}` : ""}</div>`
+                  : (d.isTransfer ? `<div style="font:11px system-ui;color:#7b8ca6">amount not recorded</div>` : ""))
+              + (d.value_tags?.length ? `<div style="font:11px system-ui;color:#cdd8ec">value: ${d.value_tags.join(" · ")}</div>` : "")
+              + `<div style="font:10px system-ui;color:#7b8ca6">${d.source_id} → ${d.target_id}</div>`
               + `<div style="font:10px system-ui;color:#7b8ca6">event ${d.event_id}`
+              + `${d.transfer_status ? ` · ${d.transfer_status}` : ""}`
               + `${d.verification_status ? ` · ${d.verification_status}` : ""}</div>`}
           />
         )}
@@ -134,6 +152,33 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, counts, sampleEvent
       <div style={S.topCenter}><span style={S.liveDot} /> PHILOS · WORLD — GLOBAL FIELD</div>
       <div style={S.tl}>ORBIT · OPTIMAL</div>
       <div style={S.tr}>SYNC · REALTIME</div>
+
+      {/* Legend — blueprint §13: a line the viewer cannot decode is not
+          information. Lists only what is actually drawn, and says plainly which
+          parts are event-backed and which are not. */}
+      <div style={S.legend}>
+        <div style={S.railHead}>LEGEND</div>
+        <div style={S.legendRow}>
+          <span style={{ ...S.legendLine, background: "linear-gradient(90deg,rgba(255,206,138,0.1),#ffce8a)", height: 2 }} />
+          <span style={S.legendText}>resource transfer — amount · value · event</span>
+        </div>
+        <div style={S.legendRow}>
+          <span style={{ ...S.legendLine, background: "linear-gradient(90deg,rgba(150,210,255,0.1),#96d2ff)" }} />
+          <span style={S.legendText}>membership / appointment — from the event log</span>
+        </div>
+        <div style={S.legendRow}>
+          <span style={{ ...S.legendDot, background: MISSION }} />
+          <span style={S.legendText}>mission</span>
+        </div>
+        <div style={S.legendRow}>
+          <span style={{ ...S.legendDot, background: ENTITY }} />
+          <span style={S.legendText}>entity · person · group · recipient</span>
+        </div>
+        <div style={S.legendNote}>
+          Lines come from events and name the event on hover. Point positions are
+          layout, not geography.
+        </div>
+      </div>
 
       <div style={S.leftRail}>
         <div style={S.railHead}>LIVING FORCES</div>
@@ -169,6 +214,12 @@ const S: Record<string, React.CSSProperties> = {
   tr: { position: "absolute", top: 20, right: 22, zIndex: 10, fontSize: 9, letterSpacing: "2px", color: "#3e587f" },
 
   leftRail: { position: "absolute", left: 24, top: "50%", transform: "translateY(-50%)", zIndex: 10, display: "flex", flexDirection: "column", gap: 2 },
+  legend: { position: "absolute", left: 24, bottom: 26, zIndex: 10, display: "flex", flexDirection: "column", gap: 5, maxWidth: 250 },
+  legendRow: { display: "flex", alignItems: "center", gap: 9 },
+  legendLine: { width: 26, height: 1.5, borderRadius: 2, flexShrink: 0 },
+  legendDot: { width: 6, height: 6, borderRadius: "50%", flexShrink: 0, marginLeft: 10, marginRight: 10 },
+  legendText: { fontSize: 9.5, color: "#6f89b6", lineHeight: 1.4 },
+  legendNote: { fontSize: 8.5, color: "#3e587f", lineHeight: 1.5, marginTop: 4 },
   rightRail: { position: "absolute", right: 24, top: "50%", transform: "translateY(-50%)", zIndex: 10, width: 190, display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" },
   railHead: { fontSize: 8.5, letterSpacing: "2.5px", color: "#3e587f", marginBottom: 8 },
   railRow: { display: "flex", alignItems: "baseline", gap: 12, padding: "3px 0" },

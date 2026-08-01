@@ -96,8 +96,15 @@ describe("every arc exposes its provenance", () => {
   });
 
   it("only projects the relation types it declares", () => {
+    // Adding a relation here is a decision about what a line on the globe MEANS,
+    // so the list is asserted explicitly rather than derived — a new arc type
+    // must fail this test and be justified, never appear silently.
     const kinds = new Set(graph().arcs.map((a) => a.relation));
-    expect([...kinds].sort()).toEqual(["leader.appointed", "member.joined"]);
+    expect([...kinds].sort()).toEqual([
+      "leader.appointed",
+      "member.joined",
+      "transfer.completed",
+    ]);
   });
 });
 
