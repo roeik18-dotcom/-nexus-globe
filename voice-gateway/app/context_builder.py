@@ -2,8 +2,9 @@
 
 import json
 import logging
+from datetime import datetime
 from pathlib import Path
-from typing import Protocol
+from typing import Callable, Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +67,58 @@ class PersistentMemoryLayer:
             return ""
         selected = {item.key: item.value for item in items}
         return f"## Persistent memory\n\n```json\n{json.dumps(selected, ensure_ascii=False, indent=2)}\n```"
+
+
+def _local_now() -> datetime:
+    """Current local time from the Mac system clock, timezone-aware.
+
+    `.astimezone()` with no argument attaches whatever zone the OS is configured
+    for, so this follows the machine instead of pinning a region.  Naive
+    `datetime.now()` would render an ISO string with no offset, which is exactly
+    the ambiguity this layer exists to remove.
+    """
+    return datetime.now().astimezone()
+
+
+class CurrentTimeLayer:
+    """Puts the wall clock in the system prompt.
+
+    Merlin has no clock and no tool-calling: `app/adapters/claude.py` passes no
+    `tools=`, and the MOS `read_clock` (mos/tools.py) is reachable only through the
+    MERLIN_MOS_BRIDGE path, which is off.  Asked "מה השעה", the model therefore
+    invented one — it answered 05:49 at 19:24 local on 2026-08-01, in a tone
+    indistinguishable from a real reading.
+
+    This is context injection, NOT tool-calling: the time is stamped once per turn
+    and is correct only as of prompt assembly.  It is deliberately isolated behind
+    `clock` so a real clock tool can replace it by swapping this one dependency,
+    with no other caller affected.
+    """
+
+    def __init__(self, clock: Callable[[], datetime] = _local_now) -> None:
+        self._clock = clock
+
+    def render(self) -> str:
+        now = self._clock()
+        raw = now.strftime("%z")                       # e.g. "+0300"
+        offset = f"{raw[:3]}:{raw[3:]}" if raw else "?"
+        hhmm = now.strftime("%H:%M")
+        h12 = now.hour % 12 or 12                       # portable 12-hour form
+        spoken = f"{h12}:{now.strftime('%M')} {'AM' if now.hour < 12 else 'PM'}"
+        # Lead with the ANSWER in one unambiguous value. The prior 3-line block
+        # (ISO / Timezone / Local) let the model pick the wrong field or recompute
+        # and state a wrong time; giving the spoken HH:MM first + a verbatim rule
+        # removes that failure mode without adding tool-calling.
+        return (
+            "## Current time (authoritative — do not recompute)\n"
+            f"The current time is exactly {hhmm} ({spoken}) on "
+            f"{now.strftime('%A, %d %B %Y')}. "
+            f"Timezone {now.tzname() or 'local'} (UTC{offset}); "
+            f"ISO {now.isoformat(timespec='seconds')}.\n"
+            f"When the user asks the time or date, answer with exactly this value — "
+            f"say {hhmm} — and never add, subtract, round, reformat, or invent any "
+            "other time. This is the real machine clock at the start of this turn."
+        )
 
 
 class SessionSummaryLayer:
@@ -195,10 +248,14 @@ class ContextBuilder:
         tool_memory=None,
         recall_result=None,
         essence_context: str = "",
+        clock: Callable[[], datetime] | None = None,
     ) -> "ContextBuilder":
         layers: list = [
             BaseIdentityLayer(persona),
             PersonaLayer(persona),
+            # early: the model should know "now" before reading memory or history,
+            # both of which contain past timestamps it could otherwise anchor on
+            CurrentTimeLayer(clock) if clock else CurrentTimeLayer(),
             PersistentMemoryLayer(recall_result=recall_result, persona=persona),
             RelationshipMemoryLayer(),
             SessionSummaryLayer(summary),
