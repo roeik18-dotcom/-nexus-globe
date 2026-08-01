@@ -34,6 +34,17 @@ def _read_weather(ctx: dict) -> dict:
     return {"note": "weather tool not connected (no network) — placeholder"}
 
 
+def _run_morning_brief(ctx: dict) -> dict:
+    """Day opener — Snapshot + Coverage only (mos/morning.py).
+
+    Returns raw state and a diagnostic report. Analysis, priorities and the
+    spoken briefing are separate layers that do not exist yet, so this tool
+    deliberately never produces prose.
+    """
+    from .morning import run_morning_brief as _brief
+    return _brief(ctx)
+
+
 def _read_mission_control(ctx: dict) -> dict:
     n = ctx.get("n_events") if ctx else None
     return {"summary": f"{n} events on the bus" if n is not None else "status available"}
@@ -60,6 +71,7 @@ _REGISTRY: dict[str, Callable[[dict], dict]] = {
     "read_clock": _read_clock,
     "read_weather": _read_weather,
     "read_mission_control": _read_mission_control,
+    "run_morning_brief": _run_morning_brief,
     "launch_application": _launch_application,
 }
 
