@@ -4,6 +4,7 @@ import io
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from app.config import settings
 from app.providers.stt.base import STTProvider
 from app.providers.stt.mock import MockSTT
 
@@ -94,7 +95,7 @@ async def test_whisper_stt_transcribe_calls_openai():
     assert result == "שלום עולם"
     mock_client.audio.transcriptions.create.assert_awaited_once()
     call_kwargs = mock_client.audio.transcriptions.create.call_args.kwargs
-    assert call_kwargs["model"] == "whisper-1"
+    assert call_kwargs["model"] == settings.stt_model
     assert call_kwargs["response_format"] == "text"
 
 

@@ -16,6 +16,21 @@ from app.providers.stt.base import STTProvider
 
 logger = logging.getLogger(__name__)
 
+# ── Hebrew script bias for the command transcription ──────────────────────────
+# `language="he"` alone is only a HINT to gpt-4o-transcribe — unlike whisper-1,
+# where it pinned the decoder's language token.  Observed 2026-08-01 with
+# language="he" already in place: a clean 3.07 s capture of Hebrew speech
+# (RMS −26 dBFS, norm_gain ×1.00) came back as 'პოლოშერტ, ბლეკ პოლოშერტ.' —
+# correct phonetics rendered in Georgian script — and shorter captures returned
+# 'こんにちは。' / 'Ebu.'.  The wake path never showed this because it also passes a
+# `prompt`, which biases the decoder toward the expected script.
+#
+# This mirrors that lever for the command path.  A prompt is a decoding bias, not
+# a constraint: it steers the script without rejecting a genuinely non-Hebrew
+# utterance.  Kept as Hebrew prose (the wake path's variant is wake-word specific
+# and would bias every command toward the word "Merlin").
+_HEBREW_PROMPT_BIAS = "שיחה בעברית עם מרלין. Merlin. מרלין."
+
 # ── Command-path audio-capture probe (instrumentation; OFF by default) ─────────
 # Mirrors the wake-path probe in service/wake_trigger.py.  Saves the EXACT WAV
 # bytes sent to Whisper for a COMMAND utterance + metadata — ONLY when
@@ -109,6 +124,9 @@ class WhisperSTT(STTProvider):
             # on low-SNR mic input Whisper otherwise hallucinates foreign-language
             # stock phrases (Thai/Korean) and word repetitions.
             language="he",
+            # Script bias — see _HEBREW_PROMPT_BIAS.  language="he" is advisory on
+            # gpt-4o-transcribe; the wake path pairs it with a prompt, this mirrors it.
+            prompt=_HEBREW_PROMPT_BIAS,
             temperature=0,
             # Capture mode asks for a structured body (for language/segment metadata);
             # otherwise the production call is unchanged (response_format="text").
