@@ -17,6 +17,7 @@ import subprocess
 import sys
 import threading
 import time
+from collections import deque
 from pathlib import Path
 
 # ── Startup identity probe (runs before any logging handler) ──────────────────
@@ -63,6 +64,26 @@ from service.vad_config import COMMAND_RMS_THRESHOLD as SILENCE_RMS
 print(f"[merlin_service] SILENCE_RMS={SILENCE_RMS:.5f} loaded from service.vad_config", flush=True)
 SILENCE_S    = 0.8     # 0.8 s trailing silence ends an utterance
 MAX_RECORD_S = 30
+
+# Minimum voiced audio an utterance must contain to be worth transcribing.
+# Mirrors wake_trigger.SPEECH_MIN_S, which record_utterance never had.
+#
+# Without it a single block over SILENCE_RMS latches speech_on, and SILENCE_S
+# then closes the utterance ~0.84 s later — before the user has begun speaking.
+# Observed 2026-08-01 after the threshold split (service.log, PID 41280): six
+# consecutive turns triggered at rms 0.0114–0.0138 (well clear of the 0.006 gate,
+# so NOT the noise floor) and every one closed at total=0.84s with 0.00 s of
+# voiced audio, shipping ~0.9 s of bleed to Whisper as 'はい。' / '。'.
+# Real commands in the same log carry 2.19 s+ of voiced audio, so 0.30 s
+# separates the two cleanly with wide margin on both sides.
+COMMAND_MIN_SPEECH_S = 0.30
+
+# Audio kept from BEFORE the gate opens, so the first phoneme is not clipped.
+# The gate needs a block or two of energy to cross SILENCE_RMS, and on this rig a
+# block is ~70 ms (3072 frames @ 44.1 kHz) — without a pre-roll the capture starts
+# mid-word.  0.30 s covers ~4 blocks: enough for the onset, short enough that it
+# cannot be mistaken for a silent prefix.
+COMMAND_PREROLL_S = 0.30
 
 # ── Barge-in (interrupt Merlin mid-speech) ────────────────────────────────────
 # 2026-07-30: was 0.003 — identical to the ambient noise floor (~0.002–0.003),
@@ -184,6 +205,135 @@ class AudioPlayer:
 
 # ── Recording ─────────────────────────────────────────────────────────────────
 
+class _CommandCapture:
+    """Decides WHICH samples reach STT for one record_utterance call.
+
+    Split out of the PortAudio callback so the buffering rules are testable
+    without an audio device.  The callback still owns the device, the heartbeat
+    logging and the initial-silence timeout; this owns the speech state machine
+    and the buffer.
+
+    The rule it exists to enforce: audio is buffered only while speech is on,
+    plus COMMAND_PREROLL_S of lead-in.  Silence before the gate opens rolls
+    through a bounded pre-roll ring and is otherwise dropped, so a false start
+    followed by six seconds of quiet cannot pad the capture that follows.
+    """
+
+    def __init__(self, *, threshold: float, min_speech_s: float,
+                 silence_s: float, max_record_s: float,
+                 max_initial_silence: float | None,
+                 preroll_s: float = COMMAND_PREROLL_S,
+                 sample_rate: int = 0) -> None:
+        self.threshold           = threshold
+        self.min_speech_s        = min_speech_s
+        self.silence_s           = silence_s
+        self.max_record_s        = max_record_s
+        self.max_initial_silence = max_initial_silence
+        self.preroll_s           = preroll_s
+        # 0 until the stream reports its rate; voiced_s then reads None and every
+        # rule that depends on it fails open (unchanged behaviour).
+        self.sample_rate         = sample_rate
+
+        self.chunks: list[np.ndarray] = []
+        self._preroll: deque[np.ndarray] = deque()
+        self._preroll_samples = 0
+
+        self.speech_on     = False
+        self.voiced_frames = 0
+        self.false_starts  = 0
+        self.t_speech_on   = 0.0
+        self.t_last_voice  = 0.0
+
+    @property
+    def voiced_s(self) -> float | None:
+        if self.sample_rate <= 0:
+            return None
+        return self.voiced_frames / self.sample_rate
+
+    @property
+    def preroll_samples(self) -> int:
+        return self._preroll_samples
+
+    def _push_preroll(self, block: np.ndarray) -> None:
+        # Bounded ring: never more than preroll_s of lead-in is retained, so the
+        # buffer cannot grow while we wait out a long silence.
+        cap = int(self.preroll_s * (self.sample_rate or 48_000))
+        self._preroll.append(block)
+        self._preroll_samples += len(block)
+        while self._preroll and self._preroll_samples - len(self._preroll[0]) >= cap:
+            self._preroll_samples -= len(self._preroll.popleft())
+
+    def _is_false_start(self, total_s: float, elapsed_s: float) -> bool:
+        """The gate opened but no real speech followed — and there is budget left.
+
+        Fails open (returns False) when the sample rate is unknown, the hard
+        record cap was hit, or the initial-silence budget is absent/spent.
+        """
+        voiced = self.voiced_s
+        return (
+            voiced is not None
+            and voiced < self.min_speech_s
+            and total_s < self.max_record_s
+            and bool(self.max_initial_silence)
+            and elapsed_s < self.max_initial_silence
+        )
+
+    def discard(self) -> None:
+        """Drop the capture so far and go back to listening (false start)."""
+        self.chunks.clear()
+        self._preroll.clear()
+        self._preroll_samples = 0
+        self.speech_on        = False
+        self.voiced_frames    = 0
+        self.t_speech_on      = 0.0
+        self.t_last_voice     = 0.0
+
+    def feed(self, block: np.ndarray, rms: float, now: float,
+             elapsed_s: float) -> str:
+        """Consume one block. Returns the resulting state.
+
+        'listening'    — silent, nothing buffered beyond the pre-roll ring
+        'speech_start' — gate just opened; pre-roll flushed into the capture
+        'recording'    — buffering speech
+        'false_start'  — capture discarded, still listening
+        'done'         — utterance complete, hand the buffer to STT
+        """
+        n = len(block)
+        if not self.speech_on:
+            if rms >= self.threshold:
+                self.speech_on     = True
+                self.t_speech_on   = now
+                self.t_last_voice  = now
+                self.voiced_frames += n
+                # lead-in first, so the first phoneme survives
+                self.chunks.extend(self._preroll)
+                self._preroll.clear()
+                self._preroll_samples = 0
+                self.chunks.append(block)
+                return "speech_start"
+            self._push_preroll(block)
+            return "listening"
+
+        if rms >= self.threshold:
+            self.t_last_voice  = now
+            self.voiced_frames += n
+        silence_s = now - self.t_last_voice
+        total_s   = now - self.t_speech_on
+        if silence_s >= self.silence_s or total_s >= self.max_record_s:
+            if self._is_false_start(total_s, elapsed_s):
+                self.false_starts += 1
+                self.discard()
+                return "false_start"
+            return "done"
+        self.chunks.append(block)
+        return "recording"
+
+    def audio(self) -> np.ndarray:
+        if not self.chunks:
+            return np.zeros(0, dtype=np.float32)
+        return np.concatenate(self.chunks)
+
+
 async def record_utterance(
     max_initial_silence: float | None = None,
     prefill: list[np.ndarray] | None = None,
@@ -216,15 +366,21 @@ async def record_utterance(
         __file__, _vad_cfg.__file__,
     )
 
-    chunks: list[np.ndarray] = []
     stop = threading.Event()
 
-    t_start      = time.monotonic()
-    t_speech_on  = [0.0]
-    t_last_voice = [0.0]
-    speech_on    = [False]
-    _cb_count    = [0]
-    _cb_last_hb  = [0.0]   # last heartbeat timestamp
+    t_start     = time.monotonic()
+    _cb_count   = [0]
+    _cb_last_hb = [0.0]   # last heartbeat timestamp
+    # Voiced audio is accumulated in FRAMES, not from timestamps: prefill chunks are
+    # all stamped with the same instant, so a timestamp delta reads 0 s for a
+    # prefill-only utterance and would discard perfectly good command audio.
+    cap = _CommandCapture(
+        threshold           = SILENCE_RMS,
+        min_speech_s        = COMMAND_MIN_SPEECH_S,
+        silence_s           = SILENCE_S,
+        max_record_s        = MAX_RECORD_S,
+        max_initial_silence = max_initial_silence,
+    )
 
     def _callback(indata: np.ndarray, frames: int, time_info, status) -> None:
         now = time.monotonic()
@@ -253,43 +409,60 @@ async def record_utterance(
                     "  speech=%s  elapsed=%.1fs\n        ch_rms=[%s]",
                     _cb_count[0], indata.shape, indata_max,
                     active_ch, rms, SILENCE_RMS,
-                    speech_on[0], now - t_start, ch_rms_str,
+                    cap.speech_on, now - t_start, ch_rms_str,
                 )
             else:
                 logger.info(
                     "[rec] cb #%d  shape=%s  indata_max=%.5f"
                     "  rms=%.5f  threshold=%.5f  speech=%s  elapsed=%.1fs",
                     _cb_count[0], indata.shape, indata_max,
-                    rms, SILENCE_RMS, speech_on[0], now - t_start,
+                    rms, SILENCE_RMS, cap.speech_on, now - t_start,
                 )
 
-        if not speech_on[0]:
-            if rms >= SILENCE_RMS:
-                speech_on[0]    = True
-                t_speech_on[0]  = now
-                t_last_voice[0] = now
-                logger.info("record_utterance: VAD on  rms=%.4f", rms)
-            elif max_initial_silence and (now - t_start) >= max_initial_silence:
+        elapsed_s = now - t_start
+        # Silence before the gate opens never reaches `chunks` — it rolls through
+        # the bounded pre-roll ring inside `cap`.  This is what stops a false start
+        # followed by six seconds of quiet from padding the next capture.
+        state = cap.feed(pcm.copy(), rms, now, elapsed_s)
+
+        if state == "listening":
+            if max_initial_silence and elapsed_s >= max_initial_silence:
                 logger.info(
                     "record_utterance: initial silence timeout (%.1fs) — no speech",
                     max_initial_silence,
                 )
                 stop.set()
-                return
-        else:
-            if rms >= SILENCE_RMS:
-                t_last_voice[0] = now
-            silence_s = now - t_last_voice[0]
-            total_s   = now - t_speech_on[0]
-            if silence_s >= SILENCE_S or total_s >= MAX_RECORD_S:
-                logger.info(
-                    "record_utterance: VAD off  silence=%.2fs total=%.2fs",
-                    silence_s, total_s,
-                )
-                stop.set()
-                return
+            return
 
-        chunks.append(pcm.copy())
+        if state == "speech_start":
+            logger.info(
+                "record_utterance: VAD on  rms=%.4f  (pre-roll %.2fs)",
+                rms, cap.preroll_s,
+            )
+            return
+
+        if state == "false_start":
+            # The gate opened on a transient (speaker bleed, a door, the chime
+            # tail) and no real speech followed.  Discarded; we keep listening on
+            # the ORIGINAL initial-silence budget rather than shipping ~0.9 s of
+            # noise to Whisper as a hallucinated transcript.
+            logger.info(
+                "record_utterance: FALSE_START #%d — voiced<%.2fs — discarding, "
+                "still listening (%.1fs of %.1fs budget left)",
+                cap.false_starts, COMMAND_MIN_SPEECH_S,
+                (max_initial_silence or 0) - elapsed_s, max_initial_silence or 0,
+            )
+            return
+
+        if state == "done":
+            voiced_s = cap.voiced_s
+            logger.info(
+                "record_utterance: VAD off  voiced=%s  buffered=%d samples",
+                "unknown" if voiced_s is None else f"{voiced_s:.2f}s",
+                sum(len(c) for c in cap.chunks),
+            )
+            stop.set()
+            return
 
     loop = asyncio.get_running_loop()
     done = loop.create_future()
@@ -312,21 +485,15 @@ async def record_utterance(
         )
         for _chunk in prefill:
             _rms = float(np.sqrt(np.mean(_chunk ** 2)))
-            if not speech_on[0]:
-                if _rms >= SILENCE_RMS:
-                    speech_on[0]    = True
-                    t_speech_on[0]  = _t0
-                    t_last_voice[0] = _t0
-                    logger.info("record_utterance: VAD on (prefill)  rms=%.4f", _rms)
-            else:
-                if _rms >= SILENCE_RMS:
-                    t_last_voice[0] = _t0
-            if speech_on[0]:
-                chunks.append(_chunk.copy())
-        if speech_on[0]:
+            # Same buffering rule as the live callback: silent prefill only feeds
+            # the pre-roll ring.  Every chunk shares _t0, so no end-of-utterance
+            # can fire here — prefill can start a capture, never finish one.
+            if cap.feed(_chunk.copy(), _rms, _t0, _t0 - t_start) == "speech_start":
+                logger.info("record_utterance: VAD on (prefill)  rms=%.4f", _rms)
+        if cap.speech_on:
             logger.info(
                 "record_utterance: prefill contained speech (%d chunks buffered)",
-                len(chunks),
+                len(cap.chunks),
             )
         else:
             logger.info(
@@ -347,7 +514,8 @@ async def record_utterance(
         dtype=np.float32,
         callback=_callback,
     ) as stream:
-        native_sr = int(stream.samplerate)
+        native_sr        = int(stream.samplerate)
+        cap.sample_rate  = native_sr   # arms the false-start guard (mirrors wake_trigger)
         logger.info(
             "[rec] stream open — device=%r sr=%d ch=%d blocksize=%d dtype=float32",
             stream.device, native_sr, stream.channels, stream.blocksize,
@@ -384,17 +552,18 @@ async def record_utterance(
         warn_h.cancel()
         fallback_h.cancel()
 
-    if not speech_on[0]:
+    if not cap.speech_on:
         logger.info(
-            "record_utterance: no speech in %.1fs — returning to standby",
-            max_initial_silence or 0,
+            "record_utterance: no speech in %.1fs — returning to standby "
+            "(false_starts=%d)",
+            max_initial_silence or 0, cap.false_starts,
         )
         return b""
 
-    if not chunks:
+    if not cap.chunks:
         return b""
 
-    audio = np.concatenate(chunks)
+    audio = cap.audio()
     logger.info(
         "record_utterance: captured %.2fs (native_sr=%d samples=%d)",
         len(audio) / native_sr, native_sr, len(audio),
@@ -421,9 +590,11 @@ async def record_utterance(
     _post_norm_rms = float(np.sqrt(np.mean(audio ** 2))) if audio.size else 0.0
     logger.info(
         "record_utterance: CMD_TELEMETRY  dur=%.2fs  pre_norm_rms=%.5f  "
-        "pre_norm_peak=%.5f  norm_gain=×%.2f  post_norm_rms=%.5f",
+        "pre_norm_peak=%.5f  norm_gain=×%.2f  post_norm_rms=%.5f  "
+        "voiced=%.2fs  false_starts=%d",
         len(audio) / SAMPLE_RATE, _pre_norm_rms, _pre_norm_peak,
         _norm_gain, _post_norm_rms,
+        cap.voiced_s or 0.0, cap.false_starts,
     )
 
     audio_i16 = (np.clip(audio, -1.0, 1.0) * 32767).astype(np.int16)
