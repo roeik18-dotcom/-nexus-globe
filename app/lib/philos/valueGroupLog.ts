@@ -410,6 +410,22 @@ export const VALUE_GROUP_EVENTS: PhilosEvent[] = [
     verification_status: "self_report",
   },
   {
+    event_id: "e0705",
+    actor_id: "p_maya",
+    entity_type: "impact",
+    entity_id: "imp_elder_support_july",
+    event_type: "verification.requested",
+    value_tags: ["אחריות"],
+    timestamp: "2026-08-01T08:20:00+03:00",
+    visibility: "public",
+    payload: {
+      target_impact_event_id: "e070",
+      reason: "דיווח עצמי — נדרש אימות בלתי תלוי לפני פרסום כהשפעה מאומתת",
+      requested_verifier_role: "community",
+    },
+    evidence: [],
+  },
+  {
     event_id: "e071",
     actor_id: "p_dana",
     entity_type: "impact",

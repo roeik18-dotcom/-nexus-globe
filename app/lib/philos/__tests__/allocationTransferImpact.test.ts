@@ -140,7 +140,7 @@ describe("impact verification state", () => {
   // Verification now comes from impact.verified events, so these three cases
   // must strip them: what is under test is the claim standing on its own.
   const unverified = (status?: PhilosEvent["verification_status"]): PhilosEvent[] =>
-    VALUE_GROUP_EVENTS.filter((e) => e.event_type !== "impact.verified").map((e) =>
+    VALUE_GROUP_EVENTS.filter((e) => e.event_type !== "impact.verified" && e.event_type !== "verification.requested").map((e) =>
       e.event_type === "impact.recorded" ? { ...e, verification_status: status } : e,
     );
 

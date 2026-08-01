@@ -22,6 +22,7 @@ import {
   type AllocationView,
   type ImpactView,
   type TransferView,
+  type VerificationLevel,
 } from "@/app/lib/philos/projectValueGroup";
 
 const TERMINALS = [
@@ -49,20 +50,30 @@ const STATUS_LABEL: Record<string, string> = {
 // Verification level is its own axis, separate from the evidence status above.
 // `partial` gets its own label and colour precisely so it can never be read as
 // verified — the count it belongs to is impact_totals.partial, not .verified.
-const LEVEL_LABEL: Record<string, string> = {
+//
+// These are typed `Record<VerificationLevel, …>`, NOT Record<string, …>. When
+// `under_review` was added to the domain the loose typing let the badge render
+// blank — no mark, no label, no colour — which reads as "nothing to say about
+// this claim" rather than "someone has asked for it to be checked". Exhaustive
+// typing makes the next added level a compile error instead of a silent gap.
+export const LEVEL_LABEL: Record<VerificationLevel, string> = {
   unverified: "לא אומת",
+  under_review: "בבדיקה",
   verified: "אומת",
   partial: "אומת חלקית",
   inferred: "הסקה בלבד",
   rejected: "נדחה באימות",
   inconclusive: "לא הוכרע",
 };
-const LEVEL_MARK: Record<string, string> = {
-  unverified: "◦", verified: "✓", partial: "◐",
+export const LEVEL_MARK: Record<VerificationLevel, string> = {
+  unverified: "◦", under_review: "⟳", verified: "✓", partial: "◐",
   inferred: "≈", rejected: "✕", inconclusive: "?",
 };
-const LEVEL_STYLE: Record<string, React.CSSProperties> = {
+export const LEVEL_STYLE: Record<VerificationLevel, React.CSSProperties> = {
   unverified: { background: "rgba(250,204,21,0.10)", color: "#facc15" },
+  // amber-violet, distinct from both verified green and unverified yellow:
+  // being checked is its own state, not a weaker kind of verified.
+  under_review: { background: "rgba(167,139,250,0.12)", color: "#a78bfa" },
   verified: { background: "rgba(52,211,153,0.12)", color: "#6ee7b7" },
   partial: { background: "rgba(125,211,252,0.10)", color: "#7dd3fc" },
   inferred: { background: "rgba(148,163,184,0.12)", color: "#94a3b8" },
@@ -272,9 +283,10 @@ export default function ValueHub({
                   <span style={S.impactStat}><b style={S.impactN}>{i.people_affected}</b> אנשים הושפעו</span>
                   <span style={S.impactStat}><b style={S.impactN}>{nis(i.resources_invested)}</b> הושקעו</span>
                 </div>
-                {/* Five distinct states, never a verified/not-verified binary:
-                    partial and rejected each say what they are, so a partly
-                    supported claim can never read as a verified one. */}
+                {/* Seven distinct states, never a verified/not-verified binary:
+                    partial, rejected and under_review each say what they are, so
+                    a partly supported, refuted or still-being-checked claim can
+                    never read as a verified one. */}
                 <div style={{ ...S.verify, ...LEVEL_STYLE[i.verification_level] }}>
                   {LEVEL_MARK[i.verification_level]} {LEVEL_LABEL[i.verification_level]}
                   {" · "}{STATUS_LABEL[i.verification_status]}
@@ -283,6 +295,16 @@ export default function ValueHub({
                   {i.verified_by_count > 0 && ` · ${i.verified_by_count} מאמתים`}
                   {i.confidence !== undefined && ` · ביטחון ${Math.round(i.confidence * 100)}%`}
                 </div>
+                {/* An open request is context, not a result: it says who asked,
+                    why, and which role was asked — never that the claim holds. */}
+                {i.review_request && (
+                  <div style={S.review}>
+                    ביקש/ה בדיקה: {i.review_request.requester_name} ·{" "}
+                    {i.review_request.requested_at.slice(0, 10)} · נדרש אימות מ־
+                    {i.review_request.requested_verifier_role}
+                    <div style={S.reviewReason}>{i.review_request.reason}</div>
+                  </div>
+                )}
                 {i.verification && (
                   <div style={S.evidence}>
                     {i.verification.verifier_name} · {i.verification.verified_at.slice(0, 10)}
@@ -412,6 +434,8 @@ const S: Record<string, React.CSSProperties> = {
   verifyPartial: { background: "rgba(125,211,252,0.10)", color: "#7dd3fc" },
   verifyBad: { background: "rgba(248,113,113,0.10)", color: "#f87171" },
   evidence: { fontSize: 10.5, color: "#5f7aa6" },
+  review: { fontSize: 11, color: "#a78bfa", lineHeight: 1.5 },
+  reviewReason: { fontSize: 10.5, color: "#8aa0c8", marginTop: 2 },
 
   valueLead: { fontSize: 22, fontWeight: 800, color: "#f4f8ff", marginBottom: 10 },
   secondary: { display: "inline-block", marginTop: 12, fontSize: 12.5, color: "#8aa0c8", textDecoration: "none" },

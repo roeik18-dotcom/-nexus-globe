@@ -21,7 +21,7 @@ const IMPACT_EVENT = "e070";
 
 /** The seed log with every verification stripped — an impact only reported. */
 const REPORTED_ONLY: PhilosEvent[] = VALUE_GROUP_EVENTS.filter(
-  (e) => e.event_type !== "impact.verified",
+  (e) => e.event_type !== "impact.verified" && e.event_type !== "verification.requested",
 );
 
 function verification(

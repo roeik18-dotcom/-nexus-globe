@@ -54,6 +54,7 @@ export type EventType =
   | "transfer.completed"
   // impact
   | "impact.recorded"
+  | "verification.requested"
   | "impact.verified";
 
 /**
@@ -114,6 +115,40 @@ export interface ImpactVerificationPayload {
 export interface ImpactVerifiedEvent extends PhilosEvent {
   event_type: "impact.verified";
   payload: ImpactVerificationPayload & Record<string, unknown>;
+}
+
+/**
+ * `verification.requested` — someone asked for a claim to be checked.
+ *
+ * This exists so `under_review` is a state the log CARRIES rather than one the
+ * projection guesses. Without it, "under review" could only be inferred from the
+ * absence of a verification — and absence of checking is not evidence that
+ * checking is under way. Same principle as verified_fraction: if nobody recorded
+ * it, it did not happen.
+ */
+export interface VerificationRequestPayload {
+  /** event_id of the `impact.recorded` event to be checked. */
+  target_impact_event_id: string;
+  reason: string;
+  /** Which role is being asked to check — not a named person, so it can be reassigned. */
+  requested_verifier_role: string;
+}
+
+export interface VerificationRequestedEvent extends PhilosEvent {
+  event_type: "verification.requested";
+  payload: VerificationRequestPayload & Record<string, unknown>;
+}
+
+export function isVerificationRequestedEvent(
+  e: PhilosEvent,
+): e is VerificationRequestedEvent {
+  if (e.event_type !== "verification.requested") return false;
+  const p = e.payload as Partial<VerificationRequestPayload> | undefined;
+  return (
+    typeof p?.target_impact_event_id === "string" &&
+    typeof p?.reason === "string" &&
+    typeof p?.requested_verifier_role === "string"
+  );
 }
 
 export function isImpactVerifiedEvent(e: PhilosEvent): e is ImpactVerifiedEvent {

@@ -13,10 +13,12 @@
 import {
   inOrder,
   isImpactVerifiedEvent,
+  isVerificationRequestedEvent,
   isVerified,
   statusForMethod,
   type ImpactVerificationPayload,
   type PhilosEvent,
+  type VerificationRequestPayload,
   type Provenance,
   type VerificationMethod,
   type VerificationResult,
@@ -98,6 +100,7 @@ export interface TransferView {
  */
 export type VerificationLevel =
   | "unverified"
+  | "under_review"
   | "verified"
   | "partial"
   | "inferred"
@@ -112,6 +115,17 @@ export interface ImpactBucket {
 }
 
 export type ImpactTotals = Record<VerificationLevel, ImpactBucket>;
+
+/** An open request for checking — what makes `under_review` traceable. */
+export interface VerificationRequestView {
+  event_id: string;
+  requester_id: string;
+  requester_name: string;
+  requested_at: string;
+  reason: string;
+  requested_verifier_role: string;
+  evidence: string[];
+}
 
 /** One completed act of checking, surfaced so the screen can name the verifier. */
 export interface ImpactVerificationView {
@@ -153,6 +167,9 @@ export interface ImpactView {
   rejected: boolean;
   /** The latest valid verification, or null while the impact is only reported. */
   verification: ImpactVerificationView | null;
+  /** The open request, when checking was asked for but not yet concluded. */
+  review_request: VerificationRequestView | null;
+  review_request_count: number;
   /** Every valid verification aimed at this impact, oldest first. */
   verification_count: number;
   verified_by_count: number;
@@ -194,6 +211,13 @@ const num = (v: unknown, fallback = 0): number => (typeof v === "number" ? v : f
 function hhmm(timestamp: string): string {
   const m = /T(\d{2}:\d{2})/.exec(timestamp);
   return m ? m[1] : "";
+}
+
+/** Canonical "is a later than b", matching inOrder's (timestamp, event_id) key. */
+function isAfter(a: PhilosEvent, b: PhilosEvent): boolean {
+  return a.timestamp === b.timestamp
+    ? a.event_id > b.event_id
+    : a.timestamp > b.timestamp;
 }
 
 /** Date part as written, so "today" compares without a timezone shift. */
@@ -389,6 +413,7 @@ export function projectValueGroup(
   // states a claim; `impact.verified` is someone checking it. A claim therefore
   // stays REPORTED until a valid verification event points at it.
   const verifications = log.filter(isImpactVerifiedEvent);
+  const requests = log.filter(isVerificationRequestedEvent);
 
   const impact: ImpactView[] = log
     .filter((e) => e.event_type === "impact.recorded")
@@ -407,6 +432,17 @@ export function projectValueGroup(
       // (timestamp, event_id) — deterministic when several land together.
       const latest = mine.length ? mine[mine.length - 1] : null;
       const p = latest?.payload as ImpactVerificationPayload | undefined;
+
+      // Requests aimed at THIS impact; same validity rule as verifications.
+      const myRequests = requests.filter(
+        (r) => (r.payload as VerificationRequestPayload).target_impact_event_id === e.event_id,
+      );
+      const latestRequest = myRequests.length ? myRequests[myRequests.length - 1] : null;
+      // Pending = asked for, and nothing has concluded it SINCE. A request that
+      // predates the verification is already answered; one that follows it
+      // re-opens the question.
+      const pending = latestRequest !== null &&
+        (latest === null || isAfter(latestRequest, latest));
 
       let status = reported;
       let rejected = false;
@@ -428,6 +464,13 @@ export function projectValueGroup(
         }
         // "rejected" and "inconclusive" leave the claim at its reported level:
         // being checked and failing must never read as being verified.
+      }
+      // A pending request outranks any earlier conclusion: the claim is being
+      // looked at again, so it is under review rather than settled.
+      if (pending) {
+        status = reported;
+        rejected = false;
+        level = "under_review";
       }
 
       const affirming = mine.filter((v) => {
@@ -469,6 +512,19 @@ export function projectValueGroup(
               : undefined,
           }
           : null,
+        review_request: latestRequest && pending
+          ? {
+            event_id: latestRequest.event_id,
+            requester_id: latestRequest.actor_id,
+            requester_name: nameOf(latestRequest.actor_id),
+            requested_at: latestRequest.timestamp,
+            reason: (latestRequest.payload as VerificationRequestPayload).reason,
+            requested_verifier_role:
+              (latestRequest.payload as VerificationRequestPayload).requested_verifier_role,
+            evidence: latestRequest.evidence ?? [],
+          }
+          : null,
+        review_request_count: myRequests.length,
         verification_count: mine.length,
         verified_by_count: new Set(affirming.map((v) => v.actor_id)).size,
         confidence,
@@ -495,6 +551,7 @@ export function projectValueGroup(
   });
   const impact_totals: ImpactTotals = {
     unverified: emptyBucket(),
+    under_review: emptyBucket(),
     verified: emptyBucket(),
     partial: emptyBucket(),
     inferred: emptyBucket(),

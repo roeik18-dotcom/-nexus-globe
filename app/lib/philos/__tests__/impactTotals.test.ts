@@ -18,7 +18,7 @@ import { GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../valueGroupLog";
 const IMPACT_EVENT = "e070";
 
 const REPORTED_ONLY: PhilosEvent[] = VALUE_GROUP_EVENTS.filter(
-  (e) => e.event_type !== "impact.verified",
+  (e) => e.event_type !== "impact.verified" && e.event_type !== "verification.requested",
 );
 
 function verification(
