@@ -17,6 +17,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from .personal_config import DEFAULT_MAX_AGE_DAYS, load_personal_config
 from .snapshot import (
     Collector,
     SourceCoverage,
@@ -259,6 +260,136 @@ class ProjectActivityCollector:
         )
 
 
+# ── personal config: who Roei is, as Merlin currently understands it ─────────
+
+
+class PersonalConfigCollector:
+    """Reads `profiles/*.yaml` through the loader and reports its health.
+
+    Reports the SUMMARY only — counts, provenance, validation state — never the
+    statements themselves. The snapshot is a diagnostic passed between layers and
+    written to logs; profile prose is private and has no business travelling
+    through it.
+
+    Status mapping, each a different fact about the world:
+      no files at all              → NOT_CONFIGURED (nothing to be wrong about)
+      files present, none parsed   → ERROR (they exist and we could not read them)
+      parsed, validation errors    → ERROR (partial data is still a failed read)
+      parsed, valid, zero entries  → AVAILABLE, empty (a real "nothing declared")
+      parsed, valid, but old       → STALE (readable, no longer a current account)
+      parsed, valid, fresh         → AVAILABLE
+
+    `absence_is_meaningful` is True in exactly ONE case: the source exists, parsed,
+    validated, is AVAILABLE, and the projected profile is genuinely empty. Only
+    then does "no entries" describe Roei rather than the file.
+
+    Every other status sets it False — including STALE. A profile last written a
+    year ago that contains nothing tells us what was true a year ago, not what is
+    true now, so a later layer must not read its silence as a current fact. The
+    failure this prevents is Merlin announcing "you have no personal config" when
+    it merely failed to read one.
+    """
+
+    source_id = "personal_config.profile"
+    domain = "personal_config"
+
+    def __init__(
+        self,
+        profiles_dir: Path | None = None,
+        *,
+        max_age_days: float = DEFAULT_MAX_AGE_DAYS,
+        now: datetime.datetime | None = None,
+    ) -> None:
+        self._dir = profiles_dir or (REPO_ROOT / "voice-gateway" / "profiles")
+        self._max_age_days = max_age_days
+        self._now = now
+
+    def _age_seconds(self, last_updated: str | None) -> float | None:
+        if not last_updated:
+            return None
+        try:
+            then = datetime.datetime.fromisoformat(last_updated)
+        except ValueError:
+            return None
+        now = self._now or datetime.datetime.now().astimezone()
+        if then.tzinfo is None:
+            then = then.astimezone()
+        return max(0.0, (now - then).total_seconds())
+
+    def collect(self) -> SourceReading:
+        state, loaded = load_personal_config(self._dir)
+        evidence = [str(self._dir / lf.path.name) for lf in loaded]
+        collected_at = now_iso()
+
+        if not any(lf.existed for lf in loaded):
+            return not_configured(
+                self.source_id, self.domain,
+                f"no profile files in {self._dir} — Merlin has no account of who Roei is",
+                collected_at=collected_at,
+            )
+
+        summary = state.summary()
+        age = self._age_seconds(state.last_updated)
+
+        # Files exist but nothing parsed, or validation found problems: either way
+        # the read failed. absence_is_meaningful=False — an empty payload here says
+        # nothing about Roei, only about the files.
+        if not any(lf.parsed for lf in loaded) or not state.is_valid:
+            unreadable = [lf.path.name for lf in loaded if lf.existed and not lf.parsed]
+            detail = (
+                f"unreadable: {', '.join(unreadable)}" if unreadable
+                else f"{len(state.errors)} validation error(s)"
+            )
+            return SourceReading(
+                coverage=SourceCoverage(
+                    source_id=self.source_id,
+                    domain=self.domain,
+                    status=SourceStatus.ERROR,
+                    collected_at=collected_at,
+                    data_age_seconds=age,
+                    absence_is_meaningful=False,
+                    confidence=0.0,
+                    evidence=evidence,
+                    note=f"personal config did not load cleanly — {detail}",
+                ),
+                payload=summary,
+            )
+
+        if age is not None and age > self._max_age_days * 86400:
+            days = age / 86400
+            return SourceReading(
+                coverage=SourceCoverage(
+                    source_id=self.source_id,
+                    domain=self.domain,
+                    status=SourceStatus.STALE,
+                    collected_at=collected_at,
+                    data_age_seconds=age,
+                    # it parsed, but it describes a past state: an empty stale
+                    # profile says what was true then, never what is true now
+                    absence_is_meaningful=False,
+                    confidence=0.5,
+                    evidence=evidence,
+                    note=(
+                        f"profile last updated {days:.0f} days ago "
+                        f"(budget {self._max_age_days:.0f}) — may no longer describe how Roei works"
+                    ),
+                ),
+                payload=summary,
+            )
+
+        return _ok(
+            self.source_id, self.domain, summary,
+            # The single case where silence is evidence: read successfully, valid,
+            # current — and empty. A non-empty profile has nothing to conclude
+            # from absence, so the claim is not made.
+            absence_is_meaningful=state.is_empty,
+            confidence=1.0,
+            evidence=evidence,
+            data_age_seconds=age,
+            collected_at=collected_at,
+        )
+
+
 # ── domains with no source yet ───────────────────────────────────────────────
 # Present on purpose. Omitting them would let a later layer treat "no data" as
 # "nothing happened" — the exact failure this pipeline is built to prevent.
@@ -287,10 +418,7 @@ def default_collectors(root: Path | None = None, since: str = "24 hours ago") ->
         HostHealthCollector(),
         GitCollector(root, since),
         ProjectActivityCollector(root, since),
-        NotConfiguredCollector(
-            "personal_config.profile", "personal_config",
-            "no profile store wired up — cannot report version or changes since last session",
-        ),
+        PersonalConfigCollector(),
         NotConfiguredCollector(
             "music.ableton", "music",
             "no Ableton project path configured — song, mix and master state unobservable",
