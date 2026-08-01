@@ -45,3 +45,10 @@ next-env.d.ts
 __pycache__/
 *.log
 wake-diag.log
+
+# ── Personal Config: real profile data stays LOCAL ───────────────────────────
+# "Private repo" is not the same as "not exposed": history is permanent, a push
+# or a shared branch leaks it, and a later .gitignore does not undo a commit.
+# Tracked: schema, loader, synthetic *.example.yaml. Never: Roei's own data.
+voice-gateway/profiles/*.yaml
+!voice-gateway/profiles/*.example.yaml

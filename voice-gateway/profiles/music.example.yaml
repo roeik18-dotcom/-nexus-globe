@@ -1,0 +1,74 @@
+# Music profile — SYNTHETIC EXAMPLE. Safe for a public repository.
+#
+# Documentation and test fixture only; never loaded as real data. The loader
+# reads `music.yaml` (untracked, local) and reports NOT_CONFIGURED when absent.
+#
+# ALL music entries are owner-only: a musical identity must never become a
+# Philos founder principle or a universal rule, so founder_principle_candidate
+# and philos_core are false throughout.
+owner: example-user
+layer: music
+schema_version: 1
+note: >
+  Fictional creative/studio identity demonstrating the schema. The
+  studio-operating entry is the seam where identity becomes live operational
+  state (active projects, mixes, tasks, gear).
+
+entries:
+  - id: artistic-identity
+    type: fact
+    statement: "Plays melodic folk under the name The Paper Kite; ukulele is the signature instrument."
+    confidence: stated
+    valid_from: null
+    valid_until: null
+    privacy: public
+    usage: { merlin: true, founder_principle_candidate: false, philos_core: false }
+
+  - id: production-signature
+    type: preference
+    statement: "Sparse arrangements, close-mic'd vocals, minimal compression."
+    confidence: stated
+    valid_from: null
+    valid_until: null
+    privacy: public
+    usage: { merlin: true, founder_principle_candidate: false, philos_core: false }
+
+  - id: songwriting
+    type: preference
+    statement: "Writes lyrics first, then finds the melody; verses drafted longhand."
+    confidence: stated
+    valid_from: null
+    valid_until: null
+    privacy: public
+    usage: { merlin: true, founder_principle_candidate: false, philos_core: false }
+
+  - id: performance
+    type: preference
+    statement: "Small rooms over large stages; no in-ear monitors."
+    confidence: stated
+    valid_from: null
+    valid_until: null
+    privacy: public
+    usage: { merlin: true, founder_principle_candidate: false, philos_core: false }
+
+  # ── a former way of working, retained as history ──────────────────────────
+  - id: old-workflow
+    type: historical_pattern
+    statement: "Formerly tracked to tape before moving to a DAW."
+    confidence: stated
+    valid_from: "2019"
+    valid_until: "2023-06"
+    privacy: public
+    usage: { merlin: true, founder_principle_candidate: false, philos_core: false }
+
+  # ── the seam to live operational state ────────────────────────────────────
+  # Empty collections are DECLARED, not implied: a reader must be able to tell
+  # "no active projects recorded" from "this was never populated".
+  - id: studio-operating
+    type: fact
+    statement: "Studio Operating Profile (to populate): DAW Example DAW; interface Example Interface 2i2. active_projects=[]; mixes_pending=[]; production_tasks=[]; equipment=[]; plugins=[]; backups=[]."
+    confidence: stated
+    valid_from: null
+    valid_until: null
+    privacy: public
+    usage: { merlin: true, founder_principle_candidate: false, philos_core: false }

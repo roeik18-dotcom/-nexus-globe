@@ -1,0 +1,102 @@
+# Person profile — SYNTHETIC EXAMPLE. Safe for a public repository.
+#
+# This file is documentation and a test fixture. It is NEVER loaded as real
+# data: the loader reads `person.yaml` (untracked, local) and reports
+# NOT_CONFIGURED when it is absent. Falling back to this file would let Merlin
+# present a fictional person as its owner.
+#
+# Every supported field appears at least once, including the ones the real
+# profile does not currently exercise (`historical_pattern`, non-null
+# `valid_from`/`valid_until`, `privacy: sensitive`).
+owner: example-user
+layer: person
+schema_version: 1
+note: >
+  Fictional profile demonstrating the schema. Merlin uses merlin-flagged entries
+  as context. Entries flagged founder_principle_candidate MAY, via an explicit
+  human step, inform Philos founder principles; none may enter Philos Core.
+
+entries:
+  # ── fact ──────────────────────────────────────────────────────────────────
+  - id: identity
+    type: fact
+    statement: "Alex Doe — example user, builder of imaginary things."
+    confidence: stated
+    valid_from: null
+    valid_until: null
+    privacy: public
+    usage: { merlin: true, founder_principle_candidate: false, philos_core: false }
+
+  - id: projects
+    type: fact
+    statement: "Two example efforts: Widget (a tool) and Sketchbook (a hobby)."
+    confidence: stated
+    valid_from: null
+    valid_until: null
+    privacy: public
+    usage: { merlin: true, founder_principle_candidate: false, philos_core: false }
+
+  # ── preference ────────────────────────────────────────────────────────────
+  - id: comm-style
+    type: preference
+    statement: "Prefers short answers with the conclusion first."
+    confidence: stated
+    valid_from: null
+    valid_until: null
+    privacy: public
+    usage: { merlin: true, founder_principle_candidate: false, philos_core: false }
+
+  - id: review-habit
+    type: preference
+    statement: "Reviews work in the morning rather than late at night."
+    confidence: observed
+    valid_from: "2025-01"
+    valid_until: null
+    privacy: public
+    usage: { merlin: true, founder_principle_candidate: false, philos_core: false }
+
+  # ── personal_principle — example-user-only ────────────────────────────────
+  - id: measure-twice
+    type: personal_principle
+    statement: "Tends to prefer a slower start with a clearer plan."
+    confidence: personal
+    valid_from: null
+    valid_until: null
+    privacy: public
+    usage: { merlin: true, founder_principle_candidate: false, philos_core: false }
+
+  # ── personal_principle — founder-principle candidate ──────────────────────
+  # Phrased as a leaning, generalisable without identity. Crossing into Philos
+  # founder principles is an explicit human step, never automatic.
+  - id: evidence-before-claim
+    type: personal_principle
+    statement: "A claim is worth what its evidence supports, not what it asserts."
+    confidence: personal
+    valid_from: null
+    valid_until: null
+    privacy: public
+    usage: { merlin: false, founder_principle_candidate: true, philos_core: false }
+
+  # ── historical_pattern — how things USED to be ────────────────────────────
+  # valid_until makes this past, not present. A loader must never render it as
+  # the current routine; promotion requires an explicit update.
+  - id: old-schedule
+    type: historical_pattern
+    statement: "Formerly worked in long single-session blocks with no fixed breaks."
+    confidence: observed
+    valid_from: "2022-03"
+    valid_until: "2024-09"
+    privacy: public
+    usage: { merlin: true, founder_principle_candidate: false, philos_core: false }
+
+  # ── privacy: sensitive — withheld from the Merlin render ──────────────────
+  # Present only to demonstrate the field. Real sensitive data (contact,
+  # financial, medical) is excluded from these profiles by policy.
+  - id: example-sensitive
+    type: fact
+    statement: "Placeholder for a sensitive entry; withheld from prompts."
+    confidence: stated
+    valid_from: null
+    valid_until: null
+    privacy: sensitive
+    usage: { merlin: false, founder_principle_candidate: false, philos_core: false }
