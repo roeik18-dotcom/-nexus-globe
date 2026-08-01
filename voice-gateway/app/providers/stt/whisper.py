@@ -74,6 +74,20 @@ def _save_cmd_capture(audio_bytes: bytes, result) -> None:
     logger.info("CAPTURE(cmd) saved %s  rms=%s peak=%s", base, meta["rms"], meta["peak"])
 
 
+def _response_text(response) -> str:
+    """Transcript text from either transcription response shape.
+
+    response_format="text" → a bare `str`; "json"/"verbose_json" → an object with
+    `.text`.  Returns "" only when the response genuinely carries no text.
+    """
+    if isinstance(response, str):
+        return response.strip()
+    text = getattr(response, "text", None)
+    if isinstance(text, str):
+        return text.strip()
+    return str(response).strip() if response is not None else ""
+
+
 class WhisperSTT(STTProvider):
     def __init__(self) -> None:
         self._client = AsyncOpenAI(api_key=settings.openai_api_key)
@@ -89,27 +103,33 @@ class WhisperSTT(STTProvider):
 
         _cap = _cmd_capture_enabled()
         _kwargs = dict(
-            model="whisper-1",
+            model=settings.stt_model,
             file=file_like,
             # Force Hebrew + deterministic decoding to match the wake path:
             # on low-SNR mic input Whisper otherwise hallucinates foreign-language
             # stock phrases (Thai/Korean) and word repetitions.
             language="he",
             temperature=0,
-            # Capture mode ONLY asks for verbose_json (for no_speech + language);
+            # Capture mode asks for a structured body (for language/segment metadata);
             # otherwise the production call is unchanged (response_format="text").
-            response_format="verbose_json" if _cap else "text",
+            # NOTE: gpt-4o-transcribe rejects "verbose_json" with HTTP 400 — only
+            # "json" and "text" are accepted.  Requesting verbose_json here is what
+            # took the wake path down (3 consecutive 400s → keyword inference off).
+            response_format="json" if _cap else "text",
         )
         response = await self._client.audio.transcriptions.create(**_kwargs)
 
+        # Extract the transcript defensively: the SDK returns a bare `str` for
+        # response_format="text" and an object with `.text` for "json".  Keying this
+        # off `_cap` alone silently yields "" whenever the two disagree — which reads
+        # downstream as "no speech" rather than as an error.  Handle both shapes.
+        text = _response_text(response)
+
         if _cap:
-            text = (getattr(response, "text", "") or "").strip()
             try:
                 _save_cmd_capture(audio_bytes, response)
             except Exception as _e:  # never let instrumentation break transcription
                 logger.warning("command capture probe failed: %s", _e)
-        else:
-            text = response.strip() if isinstance(response, str) else str(response).strip()
 
         logger.debug("whisper transcribed %d bytes → %r", len(audio_bytes), text[:80])
         return text

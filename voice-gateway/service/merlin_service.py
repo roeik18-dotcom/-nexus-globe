@@ -114,16 +114,31 @@ class AudioPlayer:
         if data:
             await asyncio.get_running_loop().run_in_executor(None, self._play_sync, data)
 
-    async def chime(self) -> None:
-        await asyncio.get_running_loop().run_in_executor(
-            None,
-            lambda: subprocess.run(
+    def _chime_sync(self) -> None:
+        try:
+            subprocess.run(
                 ["afplay", _CHIME],
                 check=False,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-            ),
-        )
+            )
+        except Exception as e:
+            logger.warning("chime error (ignored): %s", e)
+
+    def chime(self) -> None:
+        """Play the wake chime WITHOUT blocking the caller.
+
+        `afplay` costs ~1.36 s of wall time for a 0.56 s sound — process spawn plus a
+        CoreAudio device open dominate.  Awaiting it held the wake→listen path for
+        that entire time, and in that window no audio is captured at all: the wake
+        InputStream has already closed and the recorder has not opened yet.  A command
+        spoken straight after the wake word fell into that hole and the session timed
+        out with "no speech".
+
+        The chime is feedback, not a gate, so it is fired and left to run while the
+        recorder opens.  The returned future is intentionally dropped.
+        """
+        asyncio.get_running_loop().run_in_executor(None, self._chime_sync)
 
     def interrupt(self) -> None:
         """Called from the audio callback thread — must be lock-free."""
@@ -442,7 +457,7 @@ async def record_utterance(
                 "pipeline": {
                     "vad_threshold":  SILENCE_RMS,
                     "sample_rate":    SAMPLE_RATE,
-                    "stt_model":      "whisper-1",
+                    "stt_model":      settings.stt_model,
                     "stt_language":   "he",
                     "stt_temperature": 0,
                 },
@@ -743,7 +758,7 @@ async def main() -> None:
         try:
             pending = await trigger.wait()
             logger.info("WAKE_HANDLER_ENTERED  pending_chunks=%d", len(pending))
-            await player.chime()
+            player.chime()          # non-blocking — must not delay the recorder
             retry_delay = 2.0
 
             logger.info("STARTING_ASSISTANT_PIPELINE")

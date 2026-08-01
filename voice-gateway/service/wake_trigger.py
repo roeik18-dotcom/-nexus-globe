@@ -42,7 +42,7 @@ DOUBLE_CLAP_WINDOW_S = 1.0
 from service.vad_config import SPEECH_RMS_THRESHOLD as VAD_THRESHOLD  # shared with merlin_service
 from service.vad_config import normalize_for_whisper  # peak-normalize quiet utterances
 print(f"[wake_trigger] VAD_THRESHOLD={VAD_THRESHOLD:.5f} loaded from service.vad_config", flush=True)
-SPEECH_MIN_S   = 0.3      # minimum speech length before transcribing
+SPEECH_MIN_S   = 0.15     # minimum speech length before transcribing (was 0.3; marginal SM58 signal fragments into short bursts)
 SILENCE_END_S  = 0.6      # silence this long ends the utterance
 MAX_BUFFER_S   = 4.0      # hard cap: transcribe even if silence never arrives
 
@@ -57,10 +57,17 @@ _LOG_INTERVAL_FRAMES = 250   # heartbeat log every ~5 s (250 × 20 ms blocks)
 # every request, which previously flooded the logs once per audio frame.
 _MASKING_CHARS = {"•": "bullet", "…": "ellipsis", "*": "asterisk"}
 _EXPECTED_KEY_PREFIX = "sk-"
-# Max consecutive inference failures before the keyword path disables itself as a
-# runtime backstop (validation should catch bad keys first; this guards the case
-# where a key passes validation but the API path keeps failing).
+# Max consecutive inference failures before the keyword path backs off as a runtime
+# backstop (validation should catch bad keys first; this guards the case where a key
+# passes validation but the API path keeps failing).
 _MAX_CONSECUTIVE_INFERENCE_ERRORS = 3
+
+# Backoff schedule (seconds) applied after each burst of consecutive failures.  The
+# purpose of the backstop is to stop per-frame log flooding, NOT to kill the wake
+# word: it used to `return`, so a single bad request shape or a transient API blip
+# left keyword wake dead until someone noticed and restarted the service.  Now the
+# thread sleeps, drains whatever piled up, and tries again — it self-heals.
+_INFERENCE_BACKOFF_S = (30, 60, 300)
 
 # ── Audio-capture probe (instrumentation; OFF by default) ─────────────────────
 # Experiment E2: to answer "does the inconsistency already exist in the audio sent
@@ -377,10 +384,13 @@ class KeywordBuffer:
 
         try:
             import openai
+            from app.config import settings as _settings
+
+            stt_model = _settings.stt_model
             client = openai.OpenAI(api_key=self._api_key)
             logger.info(
-                "Keyword inference thread ready (model=whisper-1, keywords=%s, mic_sr=%d→%d)",
-                self._keywords, self._mic_sr, WHISPER_SR,
+                "Keyword inference thread ready (model=%s, keywords=%s, mic_sr=%d→%d)",
+                stt_model, self._keywords, self._mic_sr, WHISPER_SR,
             )
         except Exception:
             logger.error(
@@ -390,6 +400,7 @@ class KeywordBuffer:
             return
 
         consecutive_errors = 0
+        backoff_step = 0
         while True:
             audio = self._inq.get()
             logger.info(
@@ -413,7 +424,7 @@ class KeywordBuffer:
                 # prefer the actual keyword.  (Does not force a language.)
                 _cap = _capture_enabled()
                 _create_kwargs = dict(
-                    model="whisper-1",
+                    model=stt_model,
                     file=buf,
                     prompt="Merlin. מרלין. Hey Merlin.",
                     # Force Hebrew so Whisper stops guessing wrong languages on
@@ -423,13 +434,18 @@ class KeywordBuffer:
                     language="he",
                     temperature=0,
                 )
-                # Capture mode ONLY: ask for verbose_json so the probe can record
-                # no_speech_prob + detected language.  Off by default → the call is
-                # byte-for-byte the production call.
+                # Capture mode ONLY: ask for a structured body so the probe can record
+                # the detected language.  Off by default → the call is byte-for-byte
+                # the production call.
+                #
+                # This must NOT be "verbose_json": gpt-4o-transcribe rejects it with
+                # HTTP 400, and because capture mode was left enabled via `launchctl
+                # setenv MERLIN_CAPTURE_WAV 1`, every wake attempt 400'd until the
+                # backstop shut the keyword path down.  "json" still yields .text.
                 if _cap:
-                    _create_kwargs["response_format"] = "verbose_json"
+                    _create_kwargs["response_format"] = "json"
                 result = client.audio.transcriptions.create(**_create_kwargs)
-                text   = result.text.lower()
+                text   = (getattr(result, "text", None) or "").lower()
                 logger.info("WAKE_TRANSCRIPT=%r  speech_duration=%.2fs", text, duration_s)
 
                 wake_match = any(kw in text for kw in self._keywords)
@@ -447,6 +463,7 @@ class KeywordBuffer:
                     except Exception as _cap_err:
                         logger.warning("capture probe failed: %s", _cap_err)
                 consecutive_errors = 0
+                backoff_step = 0
             except Exception:
                 consecutive_errors += 1
                 logger.warning(
@@ -455,12 +472,34 @@ class KeywordBuffer:
                     exc_info=True,
                 )
                 if consecutive_errors >= _MAX_CONSECUTIVE_INFERENCE_ERRORS:
+                    # Back off instead of exiting.  Exiting left keyword wake dead
+                    # until a manual restart; sleeping stops the log flooding while
+                    # keeping the path recoverable on its own.
+                    pause_s = _INFERENCE_BACKOFF_S[
+                        min(backoff_step, len(_INFERENCE_BACKOFF_S) - 1)
+                    ]
                     logger.error(
-                        "Disabling keyword inference after %d consecutive errors "
-                        "to stop per-frame log flooding. Double-clap wake remains active.",
-                        consecutive_errors,
+                        "Pausing keyword inference for %ds after %d consecutive errors "
+                        "(stops per-frame log flooding). Double-clap wake remains active; "
+                        "keyword wake retries automatically.",
+                        pause_s, consecutive_errors,
                     )
-                    return
+                    time.sleep(pause_s)
+                    # Drop the audio that piled up while paused — it is stale, and
+                    # replaying it would just reproduce the same burst of failures.
+                    dropped = 0
+                    while True:
+                        try:
+                            self._inq.get_nowait()
+                            dropped += 1
+                        except queue.Empty:
+                            break
+                    logger.info(
+                        "Resuming keyword inference (dropped %d stale utterance(s))",
+                        dropped,
+                    )
+                    consecutive_errors = 0
+                    backoff_step += 1
 
 
 def _mic_sanity_check() -> None:

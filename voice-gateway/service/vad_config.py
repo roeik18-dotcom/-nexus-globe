@@ -16,7 +16,7 @@ Calibrated against observed RME Babyface Pro levels (device=2, ch1):
 # at ~0.002–0.003).  Lowered 0.006 -> 0.004 so quiet speech still crosses the
 # gate while staying above the measured noise floor.  The real fix is raising the
 # Babyface Pro input gain; this keeps the software usable until that is done.
-SPEECH_RMS_THRESHOLD: float = 0.004
+SPEECH_RMS_THRESHOLD: float = 0.003
 
 # ── Whisper input normalization ───────────────────────────────────────────────
 # VAD-gated utterances are peak-normalized to this target level before being sent

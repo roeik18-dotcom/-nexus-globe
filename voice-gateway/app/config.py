@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
 
     stt_provider: str = "whisper"
+    # Transcription model for BOTH the wake-keyword path and the command path.
+    # Keep them on the same model — they are tuned against the same mic/SNR, and a
+    # split caused a silent divergence in supported response_format values before.
+    # gpt-4o-transcribe supports response_format "json"/"text" only (NOT verbose_json).
+    stt_model: str = "gpt-4o-transcribe"
     tts_provider: str = "openai"
     openai_tts_voice: str = "onyx"
     openai_tts_model: str = "tts-1-hd"
