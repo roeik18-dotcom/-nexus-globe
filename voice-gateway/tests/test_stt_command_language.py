@@ -1,22 +1,27 @@
-"""The command transcription call must pin model, language and script bias.
+"""The command transcription call must pin model, language and temperature — and
+must send NO prompt, while the wake path keeps its own.
 
-`language="he"` is only advisory on gpt-4o-transcribe.  Observed 2026-08-01 with
-language="he" already being sent: a clean 3.07 s Hebrew capture (RMS −26 dBFS,
-norm_gain ×1.00) transcribed as 'პოლოშერტ, ბლეკ პოლოშერტ.' — right phonetics,
-Georgian script — while shorter captures returned 'こんにちは。' and 'Ebu.'.  The
-wake path never drifted because it also passes a `prompt`.
+`language="he"` is only advisory on gpt-4o-transcribe, so a prompt was added to the
+command path to bias the script.  Both forms tried on 2026-08-01 were emitted AS the
+transcript rather than biasing it:
 
-These tests pin the three arguments that keep the command path on Hebrew, so a
-future edit cannot quietly drop the bias and reintroduce the drift.
+  prose  "שיחה בעברית עם מרלין."      → returned verbatim on 5/5 cycles (18:33–18:38),
+                                         byte-identical across pre_norm_peak 0.058–0.303
+  tokens "עברית, רועי, מרלין, שעה, …" → returned complete on the cleanest capture of
+                                         the run (18:52:34, peak=1.011, gain=×1.00,
+                                         voiced=2.16s); every other transcript in that
+                                         run was a single token lifted from it
+
+The echo tracks GOOD audio, not weak audio.  So the command path now runs with no
+prompt at all, and these tests keep it that way — while asserting the wake path,
+which has never shown the drift, still passes its keyword prompt.
 """
 
-import io
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from app.config import settings
-from app.providers.stt.whisper import _HEBREW_PROMPT_BIAS
 
 WAV = b"RIFF" + b"\x00" * 40
 
@@ -34,6 +39,8 @@ async def _call_kwargs():
     return mock_client.audio.transcriptions.create.call_args.kwargs
 
 
+# --- the command path ---------------------------------------------------------
+
 @pytest.mark.asyncio
 async def test_command_stt_uses_configured_model():
     kw = await _call_kwargs()
@@ -47,41 +54,21 @@ async def test_command_stt_forces_hebrew_language():
 
 
 @pytest.mark.asyncio
-async def test_command_stt_sends_hebrew_prompt_bias():
+async def test_command_stt_sends_no_prompt():
+    """The regression this file exists for: any prompt here gets echoed back."""
     kw = await _call_kwargs()
-    assert "prompt" in kw, "command path must send a prompt bias, like the wake path"
-    assert kw["prompt"] == _HEBREW_PROMPT_BIAS
+    assert "prompt" not in kw, (
+        "command path must send no prompt — both prose and token-list biases were "
+        f"returned as the transcript; got {kw.get('prompt')!r}"
+    )
 
 
 @pytest.mark.asyncio
-async def test_prompt_bias_actually_contains_hebrew():
-    """A prompt of pure Latin text would bias the wrong way."""
-    assert any("֐" <= ch <= "׿" for ch in _HEBREW_PROMPT_BIAS)
+async def test_no_prompt_constant_left_behind():
+    """A dormant constant invites the next edit to wire it back in."""
+    import app.providers.stt.whisper as whisper_mod
 
-
-EXPECTED_PROMPT = "עברית, רועי, מרלין, שעה, היום, מחר, פילוס, נקסוס"
-
-
-@pytest.mark.asyncio
-async def test_prompt_bias_is_the_pinned_token_list():
-    assert _HEBREW_PROMPT_BIAS == EXPECTED_PROMPT
-
-
-@pytest.mark.asyncio
-async def test_prompt_bias_is_tokens_not_prose():
-    """Prose gets echoed back as the transcript — the 2026-08-01 18:33–18:38 failure.
-
-    A full-sentence prompt ("שיחה בעברית עם מרלין.") was returned verbatim on five
-    consecutive cycles, byte-identical across pre_norm_peak 0.058–0.303, because the
-    decoder continued the prompt instead of transcribing.  Bare tokens give it no
-    sentence to complete.
-    """
-    assert "." not in _HEBREW_PROMPT_BIAS, "sentence-final punctuation invites an echo"
-    assert "?" not in _HEBREW_PROMPT_BIAS
-    assert "!" not in _HEBREW_PROMPT_BIAS
-    tokens = [t.strip() for t in _HEBREW_PROMPT_BIAS.split(",")]
-    assert len(tokens) >= 4, "a token list, not a phrase"
-    assert all(t and " " not in t for t in tokens), f"each entry must be one word: {tokens}"
+    assert not hasattr(whisper_mod, "_HEBREW_PROMPT_BIAS")
 
 
 @pytest.mark.asyncio
@@ -101,7 +88,7 @@ async def test_production_call_requests_plain_text(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_transcript_still_returned_unchanged():
-    """The bias must not disturb the text extraction path."""
+    """Removing the prompt must not disturb the text extraction path."""
     from app.providers.stt.whisper import WhisperSTT
 
     mock_client = MagicMock()
@@ -111,20 +98,38 @@ async def test_transcript_still_returned_unchanged():
     assert await stt.transcribe(WAV) == "שלום עולם"
 
 
-@pytest.mark.asyncio
-async def test_command_and_wake_agree_on_language_and_temperature():
-    """The two paths must not drift apart on the settings that caused this bug."""
-    import re
+# --- the wake path must NOT be changed with it --------------------------------
+
+def _wake_src() -> str:
     from pathlib import Path
 
-    wake_src = (Path(__file__).resolve().parent.parent
-                / "service" / "wake_trigger.py").read_text()
-    # the wake path's create() kwargs
-    assert re.search(r'language\s*=\s*"he"', wake_src)
-    assert re.search(r"temperature\s*=\s*0", wake_src)
-    assert re.search(r"prompt\s*=", wake_src)
+    return (Path(__file__).resolve().parent.parent
+            / "service" / "wake_trigger.py").read_text()
 
+
+def test_wake_path_still_sends_its_prompt():
+    """Removing the command prompt must not strip the wake keyword bias."""
+    import re
+
+    src = _wake_src()
+    assert re.search(r'prompt\s*=\s*"[^"]*מרלין[^"]*"', src), (
+        "wake path must keep its keyword prompt"
+    )
+
+
+def test_wake_path_keeps_language_and_temperature():
+    import re
+
+    src = _wake_src()
+    assert re.search(r'language\s*=\s*"he"', src)
+    assert re.search(r"temperature\s*=\s*0", src)
+
+
+@pytest.mark.asyncio
+async def test_command_and_wake_agree_on_language_and_temperature():
+    """The two paths share language/temperature and differ ONLY on the prompt."""
     kw = await _call_kwargs()
     assert kw["language"] == "he"
     assert kw["temperature"] == 0
-    assert "prompt" in kw
+    assert "prompt" not in kw          # command: no bias
+    assert "prompt=" in _wake_src()    # wake: keyword bias retained

@@ -16,28 +16,28 @@ from app.providers.stt.base import STTProvider
 
 logger = logging.getLogger(__name__)
 
-# ── Hebrew script bias for the command transcription ──────────────────────────
-# `language="he"` alone is only a HINT to gpt-4o-transcribe — unlike whisper-1,
-# where it pinned the decoder's language token.  Observed 2026-08-01 with
-# language="he" already in place: a clean 3.07 s capture of Hebrew speech
-# (RMS −26 dBFS, norm_gain ×1.00) came back as 'პოლოშერტ, ბლეკ პოლოშერტ.' —
-# correct phonetics rendered in Georgian script — and shorter captures returned
-# 'こんにちは。' / 'Ebu.'.  The wake path never showed this because it also passes a
-# `prompt`, which biases the decoder toward the expected script.
+# ── No prompt on the command path ─────────────────────────────────────────────
+# The command call deliberately sends NO `prompt`.  Two prompt forms were tried on
+# 2026-08-01 and both were emitted as the transcript instead of biasing it:
 #
-# This mirrors that lever for the command path.  A prompt is a decoding bias, not
-# a constraint: it steers the script without rejecting a genuinely non-Hebrew
-# utterance.
+#   prose  "שיחה בעברית עם מרלין."           → returned verbatim on 5/5 cycles
+#                                              (18:33–18:38), byte-identical across
+#                                              pre_norm_peak 0.058–0.303
+#   tokens "עברית, רועי, מרלין, שעה, …"      → returned complete on the cleanest
+#                                              capture of the run (18:52:34,
+#                                              peak=1.011, gain=×1.00, voiced=2.16s),
+#                                              and every other transcript in that
+#                                              run was a single token lifted from it
 #
-# MUST be a bare token list, never prose.  The first attempt here was a full
-# sentence ("שיחה בעברית עם מרלין."), and gpt-4o-transcribe echoed it back verbatim
-# as the transcript on five consecutive cycles (2026-08-01 18:33–18:38) — including
-# one with pre_norm_peak=0.303 and norm_gain=×1.00, i.e. a clean, full-scale
-# capture.  The output was byte-identical regardless of input level, which is the
-# signature of the decoder continuing the prompt rather than transcribing.
-# Disconnected words give the decoder a script and vocabulary hint with no
-# sentence to complete.  The wake path has always used this form.
-_HEBREW_PROMPT_BIAS = "עברית, רועי, מרלין, שעה, היום, מחר, פילוס, נקסוס"
+# Shortening the prompt reduced the echo but did not remove it, and the echo tracks
+# GOOD audio, not weak audio — the decoder continues the prompt when it has clean
+# input to continue it with.  `language="he"` alone is the configuration that has
+# never actually been measured against clean captures, so the command path now runs
+# without a prompt and that becomes the thing under test.
+#
+# The WAKE path keeps its prompt ("Merlin. מרלין. Hey Merlin.") — it is listening for
+# a fixed keyword, where an echo of the keyword is harmless, and it has never shown
+# the drift this bias was introduced to fix.
 
 # ── Command-path audio-capture probe (instrumentation; OFF by default) ─────────
 # Mirrors the wake-path probe in service/wake_trigger.py.  Saves the EXACT WAV
@@ -132,9 +132,8 @@ class WhisperSTT(STTProvider):
             # on low-SNR mic input Whisper otherwise hallucinates foreign-language
             # stock phrases (Thai/Korean) and word repetitions.
             language="he",
-            # Script bias — see _HEBREW_PROMPT_BIAS.  language="he" is advisory on
-            # gpt-4o-transcribe; the wake path pairs it with a prompt, this mirrors it.
-            prompt=_HEBREW_PROMPT_BIAS,
+            # NO `prompt` here — see the module header.  Both a prose and a token-list
+            # bias were echoed back as the transcript, most strongly on clean audio.
             temperature=0,
             # Capture mode asks for a structured body (for language/segment metadata);
             # otherwise the production call is unchanged (response_format="text").
