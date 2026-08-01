@@ -9,6 +9,9 @@ import type { Provider } from "@/app/lib/provider/schema";
 import type { ProviderCapabilityRelation } from "@/app/lib/provider-capability-relation/schema";
 import { type PNode, type PEdge } from "./LivingPlanet";
 import LivingField from "./LivingField";
+import WorldGlobe from "./WorldGlobe";
+import { projectGlobeGraph } from "@/app/lib/philos/projectGlobeGraph";
+import { GROUP_ID, VALUE_GROUP_EVENTS } from "@/app/lib/philos/valueGroupLog";
 
 export const metadata = { title: "Philos — Living Planet" };
 
@@ -73,7 +76,13 @@ export default function PlanetPage() {
     ...gaps.slice(0, 3).map(g => `Gap · ${short(g.context?.description ?? g.id, 40)}`),
   ].filter(Boolean);
 
+  // Arcs come from the canonical event log, never from PUDM relation rows:
+  // blueprint §13 — "no line exists until it represents a real event".
+  const { nodes: eventNodes, arcs } = projectGlobeGraph(VALUE_GROUP_EVENTS, GROUP_ID);
+  const allNodes: PNode[] = [...nodes, ...eventNodes];
+
   if (nodes.length === 0) return <div style={{ padding: 40, fontFamily: "system-ui" }}>No world data.</div>;
 
-  return <LivingField nodes={nodes} edges={edges} counts={counts} sampleEvents={sampleEvents} />;
+  void LivingField; // 2D field kept available; World is now the dominant 3D globe
+  return <WorldGlobe nodes={allNodes} arcs={arcs} counts={counts} sampleEvents={sampleEvents} />;
 }

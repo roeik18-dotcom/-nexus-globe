@@ -125,6 +125,12 @@ export default function PhilosToday({ figures }: { figures: TodayFigures }) {
         <Link href="/hub/community" style={S.cta}>
           היכנס לקבוצה: <b>{figures.group_name}</b> · {figures.members} חברים · {figures.events_total} אירועים ←
         </Link>
+
+        {/* The globe is a visualization layer, reached from the hub — never the
+            front door. Deliberately secondary to the group CTA above. */}
+        <Link href="/planet" style={S.globeLink}>
+          תצוגת גלובוס — הקשרים כפי שנגזרו מהאירועים ←
+        </Link>
       </main>
     </div>
   );
@@ -165,4 +171,5 @@ const S: Record<string, React.CSSProperties> = {
   flowArr: { color: "#5f7aa6", fontSize: 18 },
 
   cta: { display: "block", marginTop: 22, textAlign: "center", padding: "15px", borderRadius: 14, background: "linear-gradient(90deg, rgba(70,120,200,0.2), rgba(52,211,153,0.14))", border: "1px solid rgba(110,160,240,0.3)", color: "#eaf1ff", fontSize: 15, fontWeight: 600, textDecoration: "none" },
+  globeLink: { display: "block", marginTop: 14, textAlign: "center", fontSize: 12.5, color: "#6b87a8", textDecoration: "none" },
 };
