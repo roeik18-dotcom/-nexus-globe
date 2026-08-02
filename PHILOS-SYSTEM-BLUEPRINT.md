@@ -52,7 +52,7 @@ backend, no writer, no multi-group runtime, and no live production data.** Every
 | 10 | Impact verification | **implemented — reference vertical slice** ¹ · **trust: missing** |
 | 11 | Canonical Event Log | **implemented — reference vertical slice** ¹ |
 | 12 | Hidden engines | **planned** |
-| 13 | Globe legend & semantics | **partially implemented** ² — the traceability rule is now **satisfied**: every node, line and HUD figure on the globe traces to an event. Still absent: per-terminal projections, and 13 of 16 event types draw nothing |
+| 13 | Globe legend & semantics | **partially implemented** ² — the traceability rule is now **satisfied**: every node, line and HUD figure on the globe traces to an event. Still absent: per-terminal projections, and 12 of 16 event types draw nothing |
 | 14 | Four journeys | **planned** |
 | 15 | Daily-life taxonomy | **planned** |
 | 16 | Privacy & exposure | **missing** — required before any second participant |
@@ -111,8 +111,10 @@ projection — the `data/*.json` ontology reads, the second node population and 
 HUD counts that described it are gone, and `app/planet` no longer imports anything
 outside `app/lib/philos`. Every population on the globe is event-backed, so the
 traceability rule holds across all three Philos screens. What the globe still lacks
-is reach, not provenance: 13 of the 16 event types draw nothing, and §13's
-per-terminal projections (WORLD=activity, PEOPLE=relationships, …) are unbuilt.
+is reach, not provenance: 12 of the 16 event types draw nothing — only
+`group.opened` (the anchor node), `member.joined`, `leader.appointed` and
+`transfer.completed` reach the screen — and §13's per-terminal projections
+(WORLD=activity, PEOPLE=relationships, …) are unbuilt.
 
 ### Naming (canonical — use these, and only these)
 
