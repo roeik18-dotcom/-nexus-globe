@@ -683,3 +683,132 @@ class TestPhilosRelevanceIsRequired:
         for e in st.person + st.music:
             assert e.philos_relevance is None
 
+
+# ── Unit B — relation integrity (I7) ─────────────────────────────────────────
+#
+# I7: `supersedes` claims true invalidation, so the target must actually be
+# `archived`. The rule is only checkable when the target is in the same file —
+# and where it is not, the honest outcome is "cannot check", never "assume
+# archived". That split is what these tests hold in place.
+
+SUPERSEDES = "unresolved_supersedes_target"
+
+
+def warns(lf) -> str:
+    return " | ".join(w.problem for w in lf.warnings)
+
+
+def rel_warnings(lf):
+    return [w for w in lf.warnings if w.location.endswith(".relations")]
+
+
+class TestSupersessionIntegrity:
+    """I7 — `supersedes` only where the target really is `archived`."""
+
+    def test_superseding_an_archived_target_is_accepted(self, tmp_path):
+        body = (entry(id="e1", relations="[{type: supersedes, target: e2}]")
+                + entry(id="e2", status="archived"))
+        lf = load(tmp_path, V2_HEAD + body)
+        assert lf.parsed and not lf.errors, problems(lf)
+        assert not rel_warnings(lf), warns(lf)
+
+    def test_superseding_an_active_target_is_an_error(self, tmp_path):
+        body = (entry(id="e1", relations="[{type: supersedes, target: e2}]")
+                + entry(id="e2", status="active"))
+        lf = load(tmp_path, V2_HEAD + body)
+        assert lf.errors, "supersedes must not point at an active target"
+        assert any("archived" in e.problem for e in lf.errors), problems(lf)
+
+    def test_superseding_a_historical_target_is_an_error(self, tmp_path):
+        """Historical is retained, not invalidated — I5 keeps the two apart."""
+        body = (entry(id="e1", relations="[{type: supersedes, target: e2}]")
+                + entry(id="e2", status="historical",
+                        section="legacy_expression", order="70"))
+        lf = load(tmp_path, V2_HEAD + body)
+        assert lf.errors, "supersedes must not point at a historical target"
+
+    def test_a_missing_target_warns_specifically_and_still_loads(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD + entry(
+            id="e1", relations="[{type: supersedes, target: nowhere}]"))
+        assert lf.parsed and not lf.errors, problems(lf)
+        assert any(SUPERSEDES in w.problem for w in lf.warnings), warns(lf)
+
+    def test_a_forward_target_warns_specifically_and_still_loads(self, tmp_path):
+        """Authoring order must stay legal — the target may be written later."""
+        body = (entry(id="e1", relations="[{type: supersedes, target: e9}]")
+                + entry(id="e2", status="archived"))
+        lf = load(tmp_path, V2_HEAD + body)
+        assert lf.parsed and not lf.errors, problems(lf)
+        assert len(lf.entries) == 2, "a forward reference must not drop the entry"
+        assert any(SUPERSEDES in w.problem for w in lf.warnings), warns(lf)
+
+    def test_an_unresolved_supersedes_warns_exactly_once(self, tmp_path):
+        """The specific warning REPLACES the generic one — never both."""
+        lf = load(tmp_path, V2_HEAD + entry(
+            id="e1", relations="[{type: supersedes, target: nowhere}]"))
+        assert len(rel_warnings(lf)) == 1, warns(lf)
+        assert SUPERSEDES in rel_warnings(lf)[0].problem
+
+    def test_the_rule_is_never_assumed_satisfied(self, tmp_path):
+        """An unresolved target must never be read as though it were archived."""
+        lf = load(tmp_path, V2_HEAD + entry(
+            id="e1", relations="[{type: supersedes, target: nowhere}]"))
+        assert not lf.errors
+        assert lf.warnings, "silence would read as a satisfied rule"
+
+    def test_a_target_that_failed_validation_reads_as_unresolved(self, tmp_path):
+        """Known limitation, pinned deliberately.
+
+        An entry rejected for its own reasons is dropped before this check, so a
+        `supersedes` pointing at it cannot be evaluated and degrades to the
+        unresolved warning rather than the archived-target error.
+        """
+        body = (entry(id="e1", relations="[{type: supersedes, target: e2}]")
+                + entry(id="e2", status="archived", section="nonsense"))
+        lf = load(tmp_path, V2_HEAD + body)
+        assert lf.errors, "the invalid target is still reported on its own terms"
+        assert any(SUPERSEDES in w.problem for w in lf.warnings), warns(lf)
+        assert not any("archived" in e.problem for e in lf.errors), problems(lf)
+
+
+class TestOtherRelationTypesUnchanged:
+    """Only `supersedes` gains a rule; every other type keeps its behaviour."""
+
+    @pytest.mark.parametrize(
+        "rtype", ["related_to", "derived_from", "succeeds_as_primary_expression"])
+    def test_an_unresolved_non_supersedes_keeps_the_generic_warning(self, tmp_path, rtype):
+        lf = load(tmp_path, V2_HEAD + entry(
+            id="e1", relations=f"[{{type: {rtype}, target: nowhere}}]"))
+        assert lf.parsed and not lf.errors, problems(lf)
+        assert len(rel_warnings(lf)) == 1, warns(lf)
+        assert "forward reference" in rel_warnings(lf)[0].problem
+        assert SUPERSEDES not in rel_warnings(lf)[0].problem
+
+    @pytest.mark.parametrize("status", ["active", "historical"])
+    def test_succeeds_as_primary_expression_never_checks_status(self, tmp_path, status):
+        """§I7's alternative for a change of expression carries no status rule."""
+        kw = {"section": "legacy_expression", "order": "70"} if status == "historical" else {}
+        body = (entry(id="e1",
+                      relations="[{type: succeeds_as_primary_expression, target: e2}]")
+                + entry(id="e2", status=status, **kw))
+        lf = load(tmp_path, V2_HEAD + body)
+        assert lf.parsed and not lf.errors, problems(lf)
+        assert not rel_warnings(lf), warns(lf)
+
+    def test_cross_links_are_untouched_by_the_supersedes_rule(self, tmp_path):
+        body = entry(id="e1") + (
+            "    cross_links:\n"
+            "      - to: person\n        entry: not-written-yet\n        relation: related_to\n"
+        )
+        lf = load(tmp_path, V2_HEAD + body)
+        assert lf.parsed and not lf.errors, problems(lf)
+        assert any(w.location.endswith(".cross_links") for w in lf.warnings), warns(lf)
+
+    def test_v1_profiles_gain_no_relation_warnings(self):
+        """v1 has no `relations` field at all — the rule must not reach back."""
+        st, loaded = load_personal_config(
+            Path(__file__).resolve().parent.parent / "profiles")
+        assert st.is_valid
+        assert st.warnings == ()
+        for lf in loaded:
+            assert lf.warnings == ()

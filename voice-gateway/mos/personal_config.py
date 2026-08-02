@@ -988,6 +988,9 @@ def load_file(path: Path) -> LoadedFile:
     # authoring impossible, and silence would hide a genuine typo.
     warnings: list[ValidationError] = []
     known = {e.id for e in entries}
+    #: I7 needs the TARGET's status, so the check runs here rather than per-entry:
+    #: this is the first point at which every entry in the file is known.
+    status_of = {e.id: e.status for e in entries}
     for e in entries:
         for link in (e.cross_links or ()):
             target = link.get("entry")
@@ -998,9 +1001,44 @@ def load_file(path: Path) -> LoadedFile:
                     e.id))
         for rel in (e.relations or ()):
             target = rel.get("target")
-            if target and target not in known:
+            if not target:
+                continue
+            rloc = f"entries[{e.source_index}].relations"
+
+            # ── I7 — supersession honesty ──
+            # `supersedes` asserts TRUE INVALIDATION, so the target must really be
+            # archived. Checkable only inside this file; where it is not, the
+            # honest outcome is "cannot check" — never "assume archived". The
+            # specific warning REPLACES the generic one so one unresolved link
+            # produces one finding, not two names for the same fact.
+            if rel.get("type") == "supersedes":
+                if target in known:
+                    target_status = status_of.get(target)
+                    if target_status != "archived":
+                        errors.append(ValidationError(
+                            source, rloc,
+                            f"supersedes target {target!r} has status "
+                            f"{target_status!r}, not 'archived' — supersedes claims "
+                            "true invalidation, while a change of active expression "
+                            "uses succeeds_as_primary_expression (I7)",
+                            e.id))
+                else:
+                    # Known limitation, stated rather than hidden: an entry that
+                    # failed its own validation was dropped above, so a supersedes
+                    # pointing at it arrives here as unresolved and degrades to
+                    # this warning instead of the archived-target error.
+                    warnings.append(ValidationError(
+                        source, rloc,
+                        f"unresolved_supersedes_target: {target!r} is not in this "
+                        "file, so I7 cannot be checked and the target is never "
+                        "assumed archived (a target rejected by its own validation "
+                        "also reads as unresolved here)",
+                        e.id))
+                continue
+
+            if target not in known:
                 warnings.append(ValidationError(
-                    source, f"entries[{e.source_index}].relations",
+                    source, rloc,
                     f"forward reference to {target!r}, which is not in this file",
                     e.id))
 
