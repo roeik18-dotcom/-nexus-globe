@@ -1,4 +1,4 @@
-"""Storage roots and portable source resolution.
+"""Storage roots, portable source resolution, and hash verification (I13).
 
 The property under test: a citation stays valid across machines, and every way
 that can fail says so out loud.
@@ -11,9 +11,12 @@ state, `errors` for the profile itself.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -21,6 +24,8 @@ from mos.storage_roots import (  # noqa: E402
     ENV_VAR,
     load_storage_roots,
     resolve_source,
+    sha256_of,
+    verify_hash,
 )
 
 # ── fixtures ─────────────────────────────────────────────────────────────────
@@ -33,6 +38,39 @@ def archive(tmp: Path, name: str = "vision.rtf", body: str = "artistic vision") 
     f = root / "music" / name
     f.write_text(body, encoding="utf-8")
     return root, f
+
+
+def profile(tmp: Path, *, sha: str | None, rel: str = "music/vision.rtf", root: str = "dropbox") -> Path:
+    d = tmp / "profiles"
+    d.mkdir(parents=True, exist_ok=True)
+    sha_line = f'    content_sha256: "{sha}"' if sha else "    content_sha256: null"
+    (d / "music.yaml").write_text(f"""\
+owner: roei
+layer: music
+schema_version: 2
+sources:
+  s-vision:
+    storage_root: {root}
+    relative_path: {rel}
+    source_kind: rtf
+{sha_line}
+entries:
+  - id: music-core-contrast
+    section: core_identity
+    type: personal_principle
+    status: active
+    value: "Contrast carries the emotion."
+    canonical_sources: [{{source_id: s-vision, evidence_ref: "vision", evidence_precision: section}}]
+    privacy: private
+    usage: {{merlin_context: true}}
+    order: 20
+    verification_status: source_backed
+""", encoding="utf-8")
+    return d
+
+
+def issues_of(state) -> str:
+    return " | ".join(str(i) for i in state.source_issues)
 
 
 # ── 1. configuration ─────────────────────────────────────────────────────────
@@ -127,3 +165,31 @@ class TestResolution:
         got, issue = resolve_source("s", "dropbox", "music/gone.rtf", {"dropbox": root})
         assert issue is not None and issue.kind == "missing_file"
         assert got is not None and got.exists is False
+
+
+# ── 3. hash verification (I13) ───────────────────────────────────────────────
+
+
+class TestHashVerification:
+    def test_null_hash_is_allowed_and_means_unverified(self, tmp_path):
+        _, f = archive(tmp_path)
+        ok, issue = verify_hash("s", f, None)
+        assert ok is None      # not True — absence of a hash is not verification
+        assert issue is None
+
+    def test_matching_hash_passes(self, tmp_path):
+        _, f = archive(tmp_path)
+        ok, issue = verify_hash("s", f, sha256_of(f))
+        assert ok is True and issue is None
+
+    def test_mismatching_hash_is_explicit(self, tmp_path):
+        _, f = archive(tmp_path)
+        ok, issue = verify_hash("s", f, "0" * 64)
+        assert ok is False
+        assert issue is not None and issue.kind == "hash_mismatch"
+
+    def test_hash_check_does_not_print_file_contents(self, tmp_path):
+        _, f = archive(tmp_path, body="a private artistic statement")
+        _, issue = verify_hash("s", f, "0" * 64)
+        assert "private artistic statement" not in str(issue)
+
