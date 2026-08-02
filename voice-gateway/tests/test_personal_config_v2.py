@@ -500,7 +500,11 @@ class TestDiagnosticsPrivacy:
     def test_summary_never_carries_the_statement_value(self, tmp_path):
         import json
         marker = "PRIVATE_MARKER_9f3a"
-        st = project([load(tmp_path, V2_HEAD + entry(value=f"'{marker}'", privacy="sensitive"))])
+        # `sensitive` carries its own redaction requirement (I3), supplied here so
+        # this stays a test about diagnostics rather than one about admission.
+        st = project([load(tmp_path, V2_HEAD + entry(
+            value=f"'{marker}'", privacy="sensitive",
+            redaction="[external_models_blocked]"))])
         assert marker not in json.dumps(st.summary(), ensure_ascii=False, default=str)
 
     def test_a_validation_error_never_echoes_the_value(self, tmp_path):
@@ -508,3 +512,174 @@ class TestDiagnosticsPrivacy:
         marker = "PRIVATE_MARKER_bad"
         st = project([load(tmp_path, V2_HEAD + entry(value=f"'{marker}'", section="nonsense"))])
         assert marker not in json.dumps(st.summary(), ensure_ascii=False, default=str)
+
+
+# ── Unit A — cross-field correctness (§2 · I3 · I17 · philos_relevance) ───────
+#
+# Every rule below is a CROSS-FIELD one: each field is individually legal and the
+# combination is not. That is the class of error the loader did not previously
+# catch — shape was validated, coupling was not.
+
+
+class TestFileLevelOwner:
+    """§2 — `owner` is the file-level answer to "whose profile is this" (I1)."""
+
+    def test_a_v2_file_without_owner_is_reported(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD.replace("owner: test-user\n", "") + entry())
+        assert lf.errors, "a v2 file with no owner must be reported"
+        assert any(e.location == "owner" for e in lf.errors), problems(lf)
+
+    def test_a_v2_file_with_owner_loads(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD + entry())
+        assert lf.parsed and not lf.errors, problems(lf)
+
+    def test_an_empty_owner_is_not_an_owner(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD.replace("owner: test-user", 'owner: ""') + entry())
+        assert lf.errors, "an empty owner string must be reported"
+
+    def test_v1_is_untouched_by_the_v2_owner_rule(self, tmp_path):
+        """v1 behaviour is frozen — the v2 requirement must not reach back."""
+        body = (
+            "layer: person\nschema_version: 1\nentries:\n"
+            "  - id: a\n    type: fact\n    statement: x\n"
+            "    confidence: stated\n    privacy: private\n"
+            "    valid_from: null\n    valid_until: null\n"
+            "    usage: { merlin: true }\n"
+        )
+        lf = load(tmp_path, body)
+        assert lf.parsed and not lf.errors, problems(lf)
+
+
+class TestDatePrecisionRequiresConfidence:
+    """I17 — `date_precision != unknown` ⇒ `date_confidence: dated`.
+
+    The explicit-`unknown` case was already covered. The gap was ABSENCE: a
+    precision stated with no confidence field at all asserts exactness nobody
+    vouched for, which is the same error the explicit case exists to stop.
+    """
+
+    def test_a_precision_with_no_date_confidence_at_all_is_reported(self, tmp_path):
+        body = V2_HEAD + entry(date_precision="exact").replace(
+            "    date_confidence: unknown\n", "")
+        lf = load(tmp_path, body)
+        assert lf.errors, "date_precision without any date_confidence must be reported"
+
+    def test_a_precision_with_dated_confidence_is_accepted(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD + entry(
+            date_precision="exact", date_confidence="dated"))
+        assert lf.parsed and not lf.errors, problems(lf)
+
+    def test_unknown_precision_with_no_date_confidence_stays_legal(self, tmp_path):
+        """Absence is only an error when a precision is claimed alongside it."""
+        body = V2_HEAD + entry().replace("    date_confidence: unknown\n", "")
+        lf = load(tmp_path, body)
+        assert lf.parsed and not lf.errors, problems(lf)
+
+
+class TestPrivacyRedactionCoupling:
+    """I3 — `privacy: sensitive` ⇒ `redaction` includes `external_models_blocked`."""
+
+    def test_sensitive_with_no_redaction_at_all_is_reported(self, tmp_path):
+        """§8 — absent `redaction` means `[none]`, so omitting it is not a bypass."""
+        lf = load(tmp_path, V2_HEAD + entry(privacy="sensitive"))
+        assert lf.errors, "sensitive with no redaction must be reported"
+
+    def test_sensitive_with_redaction_none_is_reported(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD + entry(privacy="sensitive", redaction="[none]"))
+        assert lf.errors, "sensitive with redaction [none] must be reported"
+
+    def test_sensitive_with_the_block_is_accepted(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD + entry(
+            privacy="sensitive", redaction="[external_models_blocked]"))
+        assert lf.parsed and not lf.errors, problems(lf)
+
+    def test_sensitive_with_the_block_among_others_is_accepted(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD + entry(
+            privacy="sensitive",
+            redaction="[never_verbatim, never_aloud, external_models_blocked]"))
+        assert lf.parsed and not lf.errors, problems(lf)
+
+    def test_private_needs_no_block(self, tmp_path):
+        """The rule binds `sensitive` only — `private` is local-only by class."""
+        lf = load(tmp_path, V2_HEAD + entry(privacy="private"))
+        assert lf.parsed and not lf.errors, problems(lf)
+
+    def test_a_malformed_redaction_reports_shape_once_not_twice(self, tmp_path):
+        """A list that failed shape validation must not also be read as `[none]`."""
+        lf = load(tmp_path, V2_HEAD + entry(privacy="sensitive", redaction="[shred_it]"))
+        assert lf.errors
+        assert not any("external_models_blocked" in e.problem for e in lf.errors), problems(lf)
+
+
+class TestPublicProfileGate:
+    """I3 — `public_profile` needs `public_candidate` AND `privacy != sensitive`."""
+
+    @staticmethod
+    def _public(body: str) -> str:
+        return body.replace("public_profile: false", "public_profile: true")
+
+    def test_public_profile_on_a_private_only_entry_is_reported(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD + self._public(entry(shareability="private_only")))
+        assert lf.errors, "public_profile with private_only must be reported"
+
+    def test_public_profile_on_a_sensitive_entry_is_reported(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD + self._public(entry(
+            shareability="public_candidate", privacy="sensitive",
+            redaction="[external_models_blocked]")))
+        assert lf.errors, "public_profile with privacy: sensitive must be reported"
+
+    def test_public_profile_on_a_public_candidate_is_accepted(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD + self._public(entry(
+            shareability="public_candidate", privacy="private")))
+        assert lf.parsed and not lf.errors, problems(lf)
+
+    def test_private_only_without_public_profile_is_accepted(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD + entry(shareability="private_only"))
+        assert lf.parsed and not lf.errors, problems(lf)
+
+    def test_public_profile_with_no_shareability_at_all_is_reported(self, tmp_path):
+        body = self._public(entry()).replace("    shareability: private_only\n", "")
+        lf = load(tmp_path, V2_HEAD + body)
+        assert lf.errors, "public_profile with no shareability must be reported"
+
+
+class TestPhilosRelevanceIsRequired:
+    """Locked decision — in v2 `philos_relevance` is explicit or it is an error.
+
+    `none` is an answer ("checked, no Philos relevance"); absence is the lack of
+    one. Defaulting absence to `none` would invent the decision, which is the
+    error §14 names for dates and verification alike.
+    """
+
+    def test_an_absent_philos_relevance_is_reported(self, tmp_path):
+        body = V2_HEAD + entry().replace("    philos_relevance: none\n", "")
+        lf = load(tmp_path, body)
+        assert lf.errors, "a v2 entry with no philos_relevance must be reported"
+
+    def test_it_is_never_defaulted_to_none(self, tmp_path):
+        body = V2_HEAD + entry().replace("    philos_relevance: none\n", "")
+        lf = load(tmp_path, body)
+        assert all(e.philos_relevance != "none" for e in lf.entries), (
+            "absence must not be silently materialised as 'none'")
+
+    @pytest.mark.parametrize("value", ["none", "related"])
+    def test_an_explicit_ungated_value_is_accepted(self, tmp_path, value):
+        lf = load(tmp_path, V2_HEAD + entry(philos_relevance=value))
+        assert lf.parsed and not lf.errors, problems(lf)
+
+    @pytest.mark.parametrize(
+        "value", ["bridge_candidate", "founder_candidate", "accepted_core"])
+    def test_a_promoted_value_loads_only_as_written(self, tmp_path, value):
+        """I14 — promotion is read from the file, never derived, and never
+        gated on a hardcoded entry id."""
+        lf = load(tmp_path, V2_HEAD + entry(philos_relevance=value))
+        assert lf.parsed and not lf.errors, problems(lf)
+        assert lf.entries[0].philos_relevance == value
+        assert lf.entries[0].usage.get("philos_core") is not True
+
+    def test_v1_entries_still_expose_none(self):
+        """Backward compatibility — v1 never answered this question."""
+        st, _ = load_personal_config(Path(__file__).resolve().parent.parent / "profiles")
+        for e in st.person + st.music:
+            assert e.philos_relevance is None
+

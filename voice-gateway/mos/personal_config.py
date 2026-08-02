@@ -102,7 +102,14 @@ V2_ORDER_BANDS: dict[str, tuple[int, int]] = {
 #: I10 — an evidence pointer may be omitted only at these precisions.
 V2_NULL_REF_OK = frozenset({"document", "ocr_pending"})
 
-V2_REQUIRED_ENTRY_FIELDS = ("id", "section", "type", "status", "value", "privacy")
+#: `philos_relevance` is REQUIRED in v2, not defaulted. `none` is an answer —
+#: "checked, no Philos relevance" — while absence is the lack of one, and turning
+#: absence into `none` would invent the decision. Same rule the schema applies to
+#: dates and to `verification_status`: a field that was never answered must not be
+#: made to look answered (§14, I14).
+V2_REQUIRED_ENTRY_FIELDS = (
+    "id", "section", "type", "status", "value", "privacy", "philos_relevance",
+)
 
 #: Fields every entry must carry. `valid_from`/`valid_until` may be null but must
 #: be PRESENT — an absent key means the author did not consider currency, which is
@@ -546,6 +553,23 @@ def _validate_entry_v2(
             if ok:
                 redaction = tuple(redaction_raw)
 
+    # ── I3 — privacy: sensitive demands the external-model block ──
+    # §8 makes `[none]` the value of an absent `redaction`, so omitting the list
+    # is not a way around the rule — it IS the rule's worst case. Skipped only
+    # when the list was present and already failed its shape check, so a
+    # malformed list is reported once rather than twice.
+    redaction_shape_failed = redaction_raw is not None and redaction is None
+    if raw.get("privacy") == "sensitive" and not redaction_shape_failed:
+        effective_redaction = redaction if redaction is not None else ("none",)
+        if "external_models_blocked" not in effective_redaction:
+            errs.append(ValidationError(
+                source, f"{loc}.redaction",
+                "privacy: sensitive requires redaction to include "
+                "'external_models_blocked' (I3)"
+                + ("" if redaction_raw is not None else
+                   " — an absent redaction is '[none]' (§8), not an exemption"),
+                entry_id))
+
     # ── usage: the authorisation mechanism (I2) ──
     usage_raw = raw.get("usage")
     usage: dict[str, bool] = {}
@@ -579,6 +603,25 @@ def _validate_entry_v2(
             "and v2 adds no route to it (SCHEMA-V2 §16.5)",
             entry_id))
 
+    # ── I3 — the public_profile surface has two extra conditions ──
+    # Same shape as the philos_core gate above: `usage` authorises, and a surface
+    # that publishes needs the entry to be shareable AND not sensitive. Reported
+    # separately because "never meant to leave this machine" and "meant to be
+    # public one day, not yet confirmed" are different refusals.
+    if usage.get("public_profile") is True:
+        if raw.get("shareability") != "public_candidate":
+            errs.append(ValidationError(
+                source, f"{loc}.shareability",
+                f"usage.public_profile is true but shareability is "
+                f"{raw.get('shareability')!r}, not 'public_candidate' (I3)",
+                entry_id))
+        if raw.get("privacy") == "sensitive":
+            errs.append(ValidationError(
+                source, f"{loc}.privacy",
+                "usage.public_profile is true but privacy is 'sensitive' — a "
+                "sensitive entry is never published (I3)",
+                entry_id))
+
     # ── I6 — dates are conservative ──
     date_conf = raw.get("date_confidence")
     raw_sources = raw.get("canonical_sources")
@@ -597,8 +640,11 @@ def _validate_entry_v2(
     # ── I17 — date precision is not evidence precision ──
     # An exact precision on a date we do not trust asserts more than we know. The
     # two axes move together in one direction only: no confidence, no precision.
+    # An ABSENT date_confidence counts as unknown here: a precision stated with no
+    # confidence at all vouches for exactness nobody claimed, which is the same
+    # error as stating it against an explicit `unknown`.
     date_prec = raw.get("date_precision")
-    if date_conf == "unknown" and date_prec not in (None, "unknown"):
+    if date_conf in (None, "unknown") and date_prec not in (None, "unknown"):
         errs.append(ValidationError(
             source, f"{loc}.date_precision",
             f"date_precision {date_prec!r} requires date_confidence: dated (I17)", entry_id))
@@ -881,6 +927,17 @@ def load_file(path: Path) -> LoadedFile:
     if not isinstance(layer, str) or not layer:
         errors.append(ValidationError(source, "layer", "required field missing"))
         layer = "unknown"
+
+    # §2/I1 — ownership is a file-level fact, and the only place it is recorded.
+    # v2 only: v1 files declare `owner` too, but their behaviour is frozen and a
+    # new requirement must not reach back and invalidate a file that loaded
+    # yesterday.
+    if version == 2:
+        owner = raw.get("owner")
+        if not isinstance(owner, str) or not owner:
+            errors.append(ValidationError(
+                source, "owner",
+                "required field missing — ownership is file-level (§2, I1)"))
 
     # v2 carries a file-level source registry; v1 has none. Parsed before the
     # entries because every canonical_sources reference is checked against it (I8).

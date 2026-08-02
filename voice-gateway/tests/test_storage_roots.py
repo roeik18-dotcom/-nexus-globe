@@ -66,6 +66,7 @@ entries:
     usage: {{merlin_context: true}}
     order: 20
     verification_status: source_confirmed
+    philos_relevance: none
 """, encoding="utf-8")
     return d
 
