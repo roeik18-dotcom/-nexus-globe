@@ -69,3 +69,9 @@ voice-gateway/profiles/*.yaml
 # .gitkeep negation below would be dead with the directory form.
 docs/knowledge-inventory/raw/*
 !docs/knowledge-inventory/raw/.gitkeep
+
+# ── Merlin storage roots: machine-local paths, never tracked ─────────────────
+# storage_root -> absolute base is a fact about ONE laptop. The example is
+# committed so the shape is discoverable; the real map is not.
+voice-gateway/config/storage_roots.yaml
+voice-gateway/config/storage_roots.json

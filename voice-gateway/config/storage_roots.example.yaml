@@ -1,0 +1,20 @@
+# Merlin-local storage roots — EXAMPLE. Copy to storage_roots.yaml and edit.
+#
+# A profile cites a source as `storage_root` + `relative_path` (SCHEMA-V2 §6).
+# `storage_root` is a LOGICAL key; the absolute base it maps to is a fact about
+# ONE machine, so it lives here and never in person.yaml / music.yaml.
+#
+# storage_roots.yaml is git-ignored. This example is committed so the shape is
+# discoverable — it is never used as a fallback: with no real config, source
+# resolution fails with a stated reason rather than guessing at a home directory.
+#
+# The paths below are synthetic placeholders, not anyone's real layout.
+#
+# Alternatively set MERLIN_STORAGE_ROOTS to either inline JSON or a path to a
+# file like this one:
+#   export MERLIN_STORAGE_ROOTS='{"dropbox":"/path/to/Dropbox"}'
+
+storage_roots:
+  dropbox: "/path/to/your/Dropbox"
+  music_library: "/path/to/your/Music"
+  documents: "/path/to/your/Documents"
