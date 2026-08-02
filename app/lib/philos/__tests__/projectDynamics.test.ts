@@ -10,7 +10,11 @@
 import { describe, expect, it } from "vitest";
 
 import type { PhilosEvent } from "../events";
-import { projectDynamics } from "../projectDynamics";
+import {
+  projectDynamics,
+  type DynamicsEdge,
+  type DynamicsGraph,
+} from "../projectDynamics";
 import { VALUE_GROUP_EVENTS } from "../valueGroupLog";
 
 const ev = (over: Partial<PhilosEvent> & { event_id: string }): PhilosEvent => ({
@@ -24,9 +28,14 @@ const ev = (over: Partial<PhilosEvent> & { event_id: string }): PhilosEvent => (
   ...over,
 });
 
-const explicit = (g: { edges: { edge_origin: string }[] }) =>
+// Typed against the projection's own graph type, not a structural stand-in: the
+// narrower `{ edges: { edge_origin: string }[] }` shape told the compiler an edge
+// had ONLY that field, so every later assertion on source_event_id,
+// target_event_id, evidence_level, provenance, join_key and confidence was a type
+// error even though the fields exist and the tests pass.
+const explicit = (g: DynamicsGraph): DynamicsEdge[] =>
   g.edges.filter((e) => e.edge_origin === "explicit");
-const inferred = (g: { edges: { edge_origin: string }[] }) =>
+const inferred = (g: DynamicsGraph): DynamicsEdge[] =>
   g.edges.filter((e) => e.edge_origin === "inferred");
 const has = (g: { edges: { source_event_id: string; target_event_id: string }[] }, s: string, t: string) =>
   g.edges.some((e) => e.source_event_id === s && e.target_event_id === t);
