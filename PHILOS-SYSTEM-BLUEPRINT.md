@@ -68,14 +68,20 @@ backend, no writer, no multi-group runtime, and no live production data.** Every
 ¹ **Scope note.** Validated for one seeded Value Group only; not yet generalized to
 multi-group production runtime.
 
-² **Globe scope note (verified 2026-08-02).** `projectGlobeGraph` projects
-`member.joined`, `leader.appointed` and `transfer.completed` — 3 of the 16 event
-types the log defines. **8 arcs and 10 nodes** render for the seeded group (5 joins,
-2 appointments, 1 transfer), a figure now pinned by test rather than observed by
-eye. The completed transfer carries amount, currency, resource type and value tags
-read straight off the event, and a transfer with no `resource_delta` yields an arc
-with no amount rather than a fabricated one. A legend names every line type **and
-every node type**.
+² **Globe scope note (verified 2026-08-02).** Arc coverage and node coverage are
+different counts, so they are stated separately. **Arcs:** `projectGlobeGraph` draws
+a line for `member.joined`, `leader.appointed` and `transfer.completed` — **3 of the
+16** event types the log defines. **Nodes:** `group.opened` renders the `value_group`
+anchor without producing any arc; the person and recipient nodes are endpoints of the
+three arc types above. So **4 of 16 event types are represented on the globe** in
+total, and **12 of 16 are not represented at all** — neither node nor line.
+(`person.registered` and `transfer.approved` are read as well, for node labels and
+for the recipient's identity, but draw nothing of their own.) **8 arcs and 10 nodes**
+render for the seeded group (5 joins, 2 appointments, 1 transfer), a figure now
+pinned by test rather than observed by eye. The completed transfer carries amount,
+currency, resource type and value tags read straight off the event, and a transfer
+with no `resource_delta` yields an arc with no amount rather than a fabricated one.
+A legend names every line type **and every node type**.
 
 **Nothing mocked remains on this screen.** The elements this note used to list —
 ~61 ontology nodes from `data/*.json` positioned by hashing an id, the 720-point
