@@ -45,7 +45,7 @@ sources:                    # portable source registry — see §6 and I8
 entries: [ … ]              # list of per-entry records (§3)
 ```
 `storage_roots` (the machine-specific absolute base paths) **live OUTSIDE profile data**,
-in Merlin-local config — e.g. `{ dropbox: "/Users/roei/Library/CloudStorage/Dropbox" }`.
+in Merlin-local config — e.g. `{ dropbox: "/path/to/your/Dropbox" }`.
 Moving machines changes only that external map, never the profile.
 
 ## 3. Final per-entry field dictionary
