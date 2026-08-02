@@ -12,23 +12,35 @@ specialization** — music is where v2 is proven first, and §15 states that
 `person.yaml` v2 does not begin until this model works end to end. A future layer
 adds its own `section` values and bands; it does not fork this document.*
 
-> **version: 2.0 · frozen date: 2026-08-02**
+> **version: 2.1 · frozen date: 2026-08-02** (supersedes 2.0, same day)
 > Field meanings, enums, and invariants below are stable. **Semantic changes require a
-> version bump to v2.1+** (a new dated freeze block). This document is the single
-> canonical source for the Music profile schema; if code and this document disagree,
-> this document is authoritative until a new freeze supersedes it.
+> version bump** (a new dated freeze block). This document is the single canonical source
+> for the Music profile schema; if code and this document disagree, this document is
+> authoritative until a new freeze supersedes it.
 >
-> **Status: documentation only.** No loader implements v2 yet; no v2 profile has been
-> written. See §14 (loader contract) and §15 (implementation sequence).
+> **v2.1 changes one rule (§9.1, I15):** the canonical active projection became an
+> **allowlist**. v2.0 excluded only `needs_review`; v2.1 also excludes `unverified`,
+> `inferred` and `disputed`, so only `self_confirmed`, `human_confirmed` and
+> `source_confirmed` may be projected as current. This is a semantic change and therefore
+> takes a version bump rather than an edit in place — the freeze is worth nothing if the
+> frozen text can move underneath a reader.
+>
+> **Status: v2.0 dual-read is implemented** (loader + tests). The v2.1 admission rule is
+> **specified here and not yet fully implemented**: the loader currently excludes
+> `unverified` and `needs_review` but still projects `inferred` and `disputed`. That gap is
+> tracked in §15 and must close before any v2 profile is written.
 
 ---
 
 ## 1. Frozen declaration
 - **Name:** Personal Config — Music Schema v2
-- **version:** 2.0
-- **frozen date:** 2026-08-02
-- **Change policy:** any change to a field meaning, enum value, or invariant → **v2.1+**.
-  Additive-only clarifications that do not change behaviour may be noted without a bump.
+- **version:** 2.1
+- **frozen date:** 2026-08-02 (v2.0 frozen 2026-08-02; superseded the same day by v2.1)
+- **Change policy:** any change to a field meaning, enum value, or invariant → a new
+  version + dated freeze block. Additive-only clarifications that do not change behaviour
+  may be noted without a bump.
+- **v2.0 → v2.1:** canonical active projection changed from a denylist (`needs_review` out)
+  to an **allowlist** (only the three `*_confirmed` states in). See §9.1 and I15.
 
 ## 2. Final file-level fields
 ```yaml
@@ -74,7 +86,7 @@ Moving machines changes only that external map, never the profile.
 | `cross_links` | list | `[{to, entry, relation}]` cross-domain forward refs |
 | `order` | int | presentation / Context-Selector order (§11) — **not importance** |
 | `created_at` / `updated_at` / `last_verified_at` | ts\|null | lifecycle; `last_verified_at` = re-check time, not identity start |
-| `verification_status` | enum | unverified · self_confirmed · human_confirmed · source_confirmed · inferred · disputed · needs_review (§9) |
+| `verification_status` | enum | unverified · self_confirmed · human_confirmed · source_confirmed · inferred · disputed · needs_review (§9); only the three `*_confirmed` states enter the canonical active projection (§9.1, I15) |
 
 > **Removed from v1/earlier drafts:** per-entry `owner_scope` (I1), `project_context`
 > (→ `domain_scope` + `project_refs`), the flat `confidence` (→ split), `usage.merlin` /
@@ -117,7 +129,7 @@ source_kind:      rtf · docx · txt · md · textClipping · pdf · png · pptx
 - **I12 — No precision inflation.** An entry that is `source_confirmed` at `evidence_precision: document` must **not** be presented/treated as paragraph-level evidence.
 - **I13 — Hash integrity.** `content_sha256 != null` ⇒ the loader recomputes it and, on mismatch, **reports explicitly** (never silently proceeds).
 - **I14 — Bridge default.** `philos_relevance` defaults to `none`/`related`; `bridge_candidate` and above require explicit human designation. **At freeze, the only bridge candidates are `music-core-tension-release` and `music-core-contrast`.**
-- **I15 — Review exclusion.** `verification_status == needs_review` ⇒ the entry is a **candidate**: surfaced for review but **excluded from the canonical active/confirmed projection.**
+- **I15 — Canonical active admission.** The canonical active projection is an **allowlist**: only `self_confirmed`, `human_confirmed` and `source_confirmed` may enter. `unverified` (never checked), `needs_review` (flagged for a human), `inferred` (derived, not confirmed) and `disputed` (checked and contested) are **excluded** — each retained in full, surfaced through diagnostics and review views, kept in a **separate** bucket, and neither deleted nor archived. Promotion in requires an allowed confirmed state; there is no other route (§9.1).
 - **I17 — Date precision is not evidence precision.** `date_precision` describes how
   exactly a date is known (`year` vs `exact`); `evidence_precision` describes how exactly a
   *source* was located (`document` vs `paragraph`). They are independent: a paragraph-level
@@ -134,6 +146,9 @@ source_kind:      rtf · docx · txt · md · textClipping · pdf · png · pptx
   owner re-affirming his own statement — **not** independent verification. An entry never
   verifies itself; `disputed` (checked and contested) is distinct from `unverified` (never
   checked), and a surface must never present `inferred`/`self_confirmed` as second-party-confirmed.
+  **Verified (I18) and admitted (I15) are different thresholds** and must not be collapsed:
+  `self_confirmed` is admitted to the canonical active projection but is *not* verified, so a
+  surface may state it as current while never attributing it to a second party.
 
 ## 6. Portable source model
 An entry never stores an absolute path. It references a `source_id` in the file-level
@@ -179,15 +194,55 @@ keeps "we have the doc" distinct from "we located the exact paragraph."
 - **`status`:** `active` (current), `historical` (retained for reference — the acoustic era),
   `archived` (removed from active *and* historical use). Historical ≠ archived (I5).
 - **`verification_status`** — who (or what) has confirmed the claim:
-    - `unverified` — not yet confirmed or evidenced (the honest default).
-    - `self_confirmed` — confirmed by the profile owner (Roei). **Not** independent verification (I18).
-    - `human_confirmed` — confirmed by another authorized human.
+    - `unverified` — not yet confirmed or evidenced (the honest default). **Excluded** from the
+      canonical active projection (I15).
+    - `self_confirmed` — confirmed by the profile owner (Roei). **Not** independent verification
+      (I18). Enters the canonical active projection.
+    - `human_confirmed` — confirmed by another authorized human. Enters the canonical active projection.
     - `source_confirmed` — directly supported by traceable evidence in the `sources` registry.
-    - `inferred` — a derived interpretation, not directly confirmed.
-    - `disputed` — conflicting evidence or explicit disagreement (first-class: checked-and-contested ≠ never-checked).
-    - `needs_review` — a candidate awaiting a human; excluded from the canonical active projection (I15).
-  Only `human_confirmed` and `source_confirmed` count as verified (I18). A surface must never
+      Enters the canonical active projection.
+    - `inferred` — a derived interpretation, not directly confirmed. **Excluded** from the
+      canonical active projection (I15).
+    - `disputed` — conflicting evidence or explicit disagreement (first-class:
+      checked-and-contested ≠ never-checked). **Excluded** from the canonical active projection (I15).
+    - `needs_review` — a candidate awaiting a human. **Excluded** from the canonical active
+      projection (I15).
+  Only `human_confirmed` and `source_confirmed` count as **verified** (I18). A surface must never
   present `inferred` or `self_confirmed` as though a second party had confirmed it.
+
+### 9.1 Canonical active projection — the admission rule
+The **canonical active projection** is what a surface reads when it asks "what is true about
+Roei now". Admission is an allowlist, not a denylist:
+
+| `verification_status` | Canonical active | Where it goes instead |
+|---|---|---|
+| `self_confirmed` | **enters** | — |
+| `human_confirmed` | **enters** | — |
+| `source_confirmed` | **enters** | — |
+| `unverified` | excluded | `unverified` — never checked |
+| `inferred` | excluded | `inferred` — derived, never confirmed |
+| `disputed` | excluded | `disputed` — checked and contested |
+| `needs_review` | excluded | `review_candidates` — flagged for a human |
+
+Rules that follow from the table:
+- **Promotion into the canonical active projection requires an allowed confirmed state.** There is
+  no other route in: not age, not source count, not repetition, not system inference.
+- **An excluded entry is neither deleted nor archived.** It is retained in full and remains
+  readable through diagnostics and review views. Exclusion withholds a claim from being *stated
+  as current*; it does not discard it. Deletion and `status: archived` are separate, explicit acts.
+- **The four exclusion buckets stay distinct** and are never merged into one count. "Nobody has
+  looked at this yet", "the system derived it", "we checked and it is contested" and "a human was
+  asked to look" call for different action, and one number covering all four hides which you have.
+- **Exclusion is orthogonal to `status`.** `status` answers *when* (current / historical /
+  archived); `verification_status` answers *how well checked*. An entry must clear **both** to be
+  projected as current: `status: active` **and** a confirmed state.
+
+Status handling, for completeness (I5):
+- **`historical`** — routed to the **historical projection**, never the current one. Retained in
+  full. A historical entry must also hold a confirmed state to appear there; an unconfirmed
+  historical claim is withheld exactly as an unconfirmed active one is.
+- **`archived`** — enters **neither** the current nor the historical projection. Retained and
+  inspectable, projected nowhere.
 - **Two independent date axes.** `date_confidence` answers *do we trust this date*;
   `date_precision` answers *how exactly it is known* (I17):
     - `exact` — a full date/time, or an exact date, as supported by the source.
@@ -233,7 +288,7 @@ The Core survives genre change; only `*_expression` gains a new dated record whe
 | `usage.merlin` | `usage.merlin_context` (+ `music_assistant`, `morning_brief`, `public_profile`) |
 | `usage.founder_principle_candidate` | `philos_relevance` (none/related/bridge_candidate/…) |
 | `usage.philos_core: false` | `usage.philos_core: false` (kept) + `philos_relevance != accepted_core` |
-| — (explicit defaults, never inferred) | `section`, `status: active`, `universality`, `domain_scope`, `project_refs: []`, `redaction: [none]`, `date_confidence: unknown`, `date_precision: unknown`, `order`, `created_at`, `updated_at`, `last_verified_at`, `verification_status: unverified`, `relations: []`, `cross_links: []`, `evidence_precision` |
+| — (explicit defaults, never inferred) | `section`, `status: active`, `universality`, `domain_scope`, `project_refs: []`, `redaction: [none]`, `date_confidence: unknown`, `date_precision: unknown`, `order`, `created_at`, `updated_at`, `last_verified_at`, `verification_status: unverified` (the honest default — and therefore **excluded** from the canonical active projection until explicitly confirmed, §9.1), `relations: []`, `cross_links: []`, `evidence_precision` |
 | absolute source strings | `sources` registry (`storage_root`+`relative_path`+`source_kind`+`content_sha256`) |
 | `valid_until: "historical"` | `status: historical`, `valid_until: null` |
 | **6 live v1 entries** | `artistic-identity` & `production-signature` split-retired; `vocal-and-writing`→songwriting, `show-and-styling`→styling, `brand`→branding, `studio-operating`→studio (all field-migrated) |
@@ -249,6 +304,14 @@ The Core survives genre change; only `*_expression` gains a new dated record whe
 - **A v2 file today is refused, and says so.** Until dual-read ships, `SCHEMA_VERSION = 1`
   and a v2 file produces an explicit `unsupported version 2` error rather than a partial
   read. Refusing an unknown shape beats guessing at it.
+- **Canonical active admission is an allowlist** (I15, §9.1). The loader projects an entry as
+  current only when `status: active` **and** `verification_status ∈ {self_confirmed,
+  human_confirmed, source_confirmed}`. `unverified`, `needs_review`, `inferred` and `disputed`
+  are each collected into their own bucket on the projected state — retained, inspectable, and
+  never merged into a single "withheld" count.
+- **Withholding is not absence** (I16). A profile whose entries are all excluded is **not** empty:
+  data exists and was deliberately withheld. Reporting it as empty would let a later layer
+  conclude "nothing has been declared" when the truth is "nothing has been confirmed yet".
 - **Hash mismatch explicit** (I13): if `content_sha256` is present and disagrees, the loader
   reports the mismatch — it does not silently proceed and does not auto-correct.
 - **No automatic profile rewrite.** The loader reads; it never writes, migrates-in-place, or
@@ -256,11 +319,15 @@ The Core survives genre change; only `*_expression` gains a new dated record whe
 
 ## 15. Exact implementation sequence
 1. **Loader v2 dual-read** — extend the loader to read v1 + v2 per §14. Code only; no profile change.
-2. **Migration / invariant tests** — red-first tests for I1–I18, the §13 mapping, the 6-entry disposition, evidence-precision rules, hash-mismatch reporting, `needs_review` projection-exclusion, and `order`-band enforcement.
-3. **Full `music.yaml` review artifact** — the complete v2 file produced as a proposal (not written to the live path).
-4. **User approval** — Roei approves/edits (esp. stage names, `ocr_pending` items, `identity_trait` scope).
-5. **Local-only write** — write the approved `music.yaml` locally; the pre-commit guard keeps it local (never staged/committed).
-6. **Projection verification** — loader → `personal_config` collector → Morning Snapshot: confirm current-vs-historical routing, `needs_review` exclusion, and that Merlin render obeys `usage`.
+2. **Migration / invariant tests** — red-first tests for I1–I18, the §13 mapping, the 6-entry disposition, evidence-precision rules, hash-mismatch reporting, canonical-active admission (§9.1 — all four exclusion states), and `order`-band enforcement.
+3. **Canonical-active admission (v2.1)** — narrow `_route` to the §9.1 allowlist so
+   `inferred` and `disputed` are withheld into their own buckets alongside `unverified` and
+   `needs_review`. Until this lands, the loader is at v2.0 admission and this document is
+   ahead of it.
+4. **Full `music.yaml` review artifact** — the complete v2 file produced as a proposal (not written to the live path).
+5. **User approval** — Roei approves/edits (esp. stage names, `ocr_pending` items, `identity_trait` scope).
+6. **Local-only write** — write the approved `music.yaml` locally; the pre-commit guard keeps it local (never staged/committed).
+7. **Projection verification** — loader → `personal_config` collector → Morning Snapshot: confirm current-vs-historical routing, canonical-active admission (§9.1), and that Merlin render obeys `usage`.
 
 *`person.yaml` v2 is not begun until this model is proven end-to-end on music.*
 
