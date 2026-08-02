@@ -212,6 +212,23 @@ export interface PhilosEvent {
   confidence?: number;
   impact_claim?: ImpactClaim;
   verification_status?: VerificationStatus;
+  /**
+   * Dynamics Layer (PHILOS-DYNAMICS-LAYER.md) — the event_ids that produced this
+   * event. This is the ONE envelope evolution the orchestration layer introduces:
+   * additive, optional, and treated as a schema change, not "just a projection".
+   *
+   * Tri-state, and the distinction is load-bearing:
+   *   • absent    → causality UNKNOWN (not recorded) — never read as "no cause"
+   *   • []        → explicitly NO known direct cause
+   *   • non-empty → declared direct causal parents (cause → effect)
+   *
+   * Immutable after creation: the log is append-only, so a correction is a NEW
+   * event, never an edit. A caused_by link is a DECLARATION — never proof of
+   * verified causation. `eventCausality.ts` validates the shape; whether a link is
+   * trustworthy is a separate axis (evidence_level), decided by the Step-2
+   * projection, never inferred from the mere presence of this field.
+   */
+  caused_by?: string[];
 }
 
 /**

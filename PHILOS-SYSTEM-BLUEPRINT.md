@@ -306,9 +306,18 @@ claim  →  self-report  →  evidence  →  community verification  →  extern
   "event_id":"", "actor_id":"", "entity_type":"", "entity_id":"", "event_type":"",
   "value_tags":[], "resource_delta":{}, "location":{},
   "timestamp":"", "visibility":"", "evidence":[], "confidence":0,
-  "impact_claim":{}, "verification_status":""
+  "impact_claim":{}, "verification_status":"", "caused_by":[]
 }
 ```
+`caused_by` (event_ids that produced this event) is declared here to match
+`events.ts`; it is consumed by the **Dynamics Layer**
+([`PHILOS-DYNAMICS-LAYER.md`](PHILOS-DYNAMICS-LAYER.md)) and not yet populated by any
+seed event — declared-but-unused, like `resource_delta`'s non-money kinds (§22).
+**Known drift, not resolved here:** this JSON lists `location:{}`, but the
+`PhilosEvent` interface in `events.ts` has **no** `location` field. Flagged for
+reconciliation; deliberately left unchanged, as it is outside the `caused_by`
+envelope contract this change introduces.
+
 Derived projections: feeds · timeline · statistics · budgets · profiles · impact · globe · replay · daily summaries. *(An event model already sketched for the voice system — `docs/architecture/adr-003-event-model.md` — can inform this, but Philos needs its own value/resource/impact-typed log.)*
 
 ---
