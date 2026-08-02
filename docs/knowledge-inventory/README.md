@@ -9,7 +9,7 @@ docs/knowledge-inventory/
 ├── KNOWLEDGE-INVENTORY.md           what exists · where · how much
 ├── KNOWLEDGE-EXTRACTION-REPORT.md   what the synthesis produced
 ├── MANIFEST.md                      provenance · hashes · agent ids
-├── SCHEMA.md                        Personal Config v2
+├── SCHEMA.md                        extraction artifact schema
 └── raw/                             LOCAL ONLY — git-ignored
     ├── .gitkeep
     └── BACKUP-README.md
@@ -20,7 +20,7 @@ docs/knowledge-inventory/
 | [Inventory](KNOWLEDGE-INVENTORY.md) | What files exist, where, how much, and the domain map |
 | [Extraction Report](KNOWLEDGE-EXTRACTION-REPORT.md) | Person / Music / Bridge candidates, OCR queue, decisions |
 | [Manifest](MANIFEST.md) | Workflow and agent ids, SHA-256 digests, timestamps |
-| [Schema](SCHEMA.md) | Personal Config v2 — fields, invariants, migration |
+| [Schema](SCHEMA.md) | Shape of the extraction artifacts — harvest, synthesis, manifest |
 | `raw/` | The workflow's own output — **not in git** |
 
 ## Why `raw/` is local-only
@@ -49,8 +49,11 @@ Three things remain open, and all three are listed in the Extraction Report:
 1. **39 OCR items, none processed.** The highest-value target is the full
    Morning-Trigger protocol — it specifies the `daily_opening` domain that
    Merlin's Morning Snapshot currently reports as `not_configured`.
-2. **Schema v1 cannot express the candidates.** They need `status`,
-   `valid_until`, `project_context` and `order` — hence [SCHEMA.md](SCHEMA.md).
+2. **Profile schema v1 cannot express the candidates.** They need `status`,
+   `valid_*` and lifecycle fields — specified in
+   [`voice-gateway/profiles/SCHEMA-V2.md`](../../voice-gateway/profiles/SCHEMA-V2.md),
+   which has no loader yet. Profile schemas do not live in this directory.
 3. **One resolved decision awaiting implementation:** the music identity split
    (current electronic expression, historical acoustic expression, shared
-   artistic core). See SCHEMA.md §"Worked example".
+   artistic core). Specified in
+   [`SCHEMA-V2.md`](../../voice-gateway/profiles/SCHEMA-V2.md) §10.
