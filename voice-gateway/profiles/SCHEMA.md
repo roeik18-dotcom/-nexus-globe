@@ -1,74 +1,47 @@
-# Personal Config Schema v1
+# Personal Config — schema index
 
-A **structured** personal configuration — not free-text pasted into code. Three
-separate profiles (Person, Music, Routine), each a list of typed entries. Merlin
-consumes the entries it is permitted to; Philos **Core never does**.
+Two schema versions exist. This file says which is which and which one the code
+actually reads; the versions themselves are documented separately.
 
-> Built to the rule Roei set: separate **fact / preference / belief / historical
-> pattern**, tag **validity & privacy**, and make every crossing into a shared
-> system **explicit** — never a direct copy.
+| version | status | document | loader |
+|---|---|---|---|
+| **v1** | **currently implemented** — every profile file on disk uses it | [`SCHEMA-V1.md`](./SCHEMA-V1.md) | `mos/personal_config.py`, `SCHEMA_VERSION = 1` |
+| **v2** | **frozen design, not implemented** | [`SCHEMA-V2.md`](./SCHEMA-V2.md) | none |
 
-## The four projects this belongs to
-This is project **4 — Personal Config**. It connects to **Merlin** (project 2) as
-context, and *may later* inform **Philos** (project 3) **founder principles** — but
-only through the explicit transition below.
+## Loader support today
 
-## Transition architecture (each arrow is a deliberate, human step — never automatic)
-```
-Roei Personal Config
-      │  (distil, reframe as universal — never copy verbatim)
-      ▼
-Founder Principles           ← only entries flagged founder_principle_candidate
-      │  (generalise; strip identity)
-      ▼
-Universal Philos Rules       ← the domain model; no person-specific content
-      │
-      ▼
-User-specific Profiles       ← each user's own instance, like Roei's
-```
-**No entry ever sets `usage.philos_core: true`.** The loader enforces this
-(`assert_philos_core_clean`). Personal beliefs, habits, musical identity, old
-routines, and character traits **may not** become universal Philos rules.
+`mos/personal_config.py` supports **schema_version 1 only**. A file declaring any
+other version is refused with an explicit `unsupported version N` validation error
+rather than being read on a guess — its entries are not loaded, and the refusal is
+reported rather than being silent.
 
-## Profile file shape (YAML)
-```yaml
-owner: roei
-layer: person | music | routine
-schema_version: 1
-note: <what this profile is and how to read it>
-entries:
-  - id: <kebab-case>
-    type: fact | preference | personal_principle | historical_pattern
-    statement: <plain sentence; principles/beliefs phrased NON-absolutely>
-    confidence: observed | stated | personal | inferred
-    valid_from: <year/date or null>
-    valid_until: <null = current | "historical" | date>
-    privacy: public | private | sensitive
-    usage:
-      merlin: <bool>                         # Merlin may use it as context
-      founder_principle_candidate: <bool>    # MAY inform Philos founder principles (explicit step)
-      philos_core: false                     # ALWAYS false — never a universal rule directly
-```
+A v2 file placed in this directory today therefore does **not** load. That is
+intended: v2 is frozen design awaiting a loader, not a format in use.
 
-## Type meanings (the separation Roei asked for)
-- **fact** — verifiable about the world/Roei ("Main DAW: Ableton Live").
-- **preference** — a taste or chosen way of working ("prefers heavy reverb").
-- **personal_principle** — a belief/value; **stated as a leaning, not a law of nature**.
-- **historical_pattern** — how Roei *used to* operate; `valid_until: historical` so it
-  is never treated as the current routine.
+## Files here
 
-## The three-way permission split (Roei's own rule)
-- **Roei-only** (`founder_principle_candidate: false`): communication style, music,
-  habits, schedule, personal preferences, persona.
-- **Founder-principle candidate** (`founder_principle_candidate: true`): giving
-  completes lack · tension between values · freedom as right-and-duty · truth
-  measured against action · the value-forge (כור היתוך) · balance of emotional /
-  mental / physical · id-ego-superego as an *interpretive model*.
-- **Never Core**: any belief as universal truth, habits as everyone's default,
-  musical identity, old life patterns, character traits as a moral standard.
+| file | tracked | notes |
+|---|---|---|
+| `SCHEMA.md` | ✅ | this index |
+| `SCHEMA-V1.md` | ✅ | the implemented schema |
+| `SCHEMA-V2.md` | ✅ | frozen design |
+| `person.example.yaml` · `music.example.yaml` | ✅ | synthetic, and load through the real validator |
+| `person.yaml` · `music.yaml` | ❌ **git-ignored** | Roei's own data — local only, never committed |
 
-## Deliberately excluded
-Sensitive personal data (contact details, financial, medical) and political /
-social opinions are **not** in these profiles: they are neither useful Merlin
-context nor legitimate founder principles. `privacy: sensitive` entries, if ever
-added, are withheld from the Merlin render.
+The real profiles are excluded by `.gitignore` and enforced by
+`scripts/hooks/profile_guard.py`; see that guard for why `.gitignore` alone is not
+sufficient.
+
+## The one rule that outranks both versions
+
+**`usage.philos_core` is always `false`.** A personal statement never becomes a
+universal Philos rule directly; `founder_principle_candidate: true` marks a candidate
+for an explicit human distillation step, which is automated nowhere.
+
+Enforced in `mos/personal_config.py` — the `philos_core` check inside
+`_validate_entry` — and covered by
+`tests/test_personal_config.py::test_philos_core_true_is_rejected`.
+
+*Earlier revisions of this file attributed that check to a function named
+`assert_philos_core_clean`. No such function exists: the rule is real and enforced,
+the name was not.*
