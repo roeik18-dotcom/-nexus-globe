@@ -111,6 +111,11 @@ V2_REQUIRED_ENTRY_FIELDS = (
     "id", "section", "type", "status", "value", "privacy", "philos_relevance",
 )
 
+#: §3/I1 — fields v2 REMOVED. A file still carrying one is reported, never
+#: silently accepted and never remapped: the author is asserting something the
+#: schema no longer means, and only they can say what they intended.
+V2_REMOVED_ENTRY_FIELDS = ("owner_scope",)
+
 #: Fields every entry must carry. `valid_from`/`valid_until` may be null but must
 #: be PRESENT — an absent key means the author did not consider currency, which is
 #: exactly the ambiguity `historical` exists to remove.
@@ -508,6 +513,20 @@ def _validate_entry_v2(
     for key in V2_REQUIRED_ENTRY_FIELDS:
         if key not in raw or raw[key] in (None, ""):
             errs.append(ValidationError(source, f"{loc}.{key}", "required field missing", entry_id))
+
+    # ── I1 — ownership is file-level; `owner_scope` was removed in v2 (§3) ──
+    # Reported rather than remapped: `owner` (whose profile this is) and
+    # `universality` (how far the claim reaches) answer different questions, so
+    # folding a leftover value into either would answer one the author never
+    # asked. Presence of the key is the mistake; its value is beside the point.
+    for key in V2_REMOVED_ENTRY_FIELDS:
+        if key in raw:
+            errs.append(ValidationError(
+                source, f"{loc}.{key}",
+                f"{key!r} is not part of schema v2 (§3, I1) — ownership is the "
+                "file-level 'owner' and claim scope is 'universality'; it is "
+                "reported rather than mapped onto either",
+                entry_id))
 
     errs += _enum(raw, "section", V2_SECTIONS, loc=loc, source=source, entry_id=entry_id)
     errs += _enum(raw, "type", V2_TYPES, loc=loc, source=source, entry_id=entry_id)

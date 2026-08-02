@@ -812,3 +812,77 @@ class TestOtherRelationTypesUnchanged:
         assert st.warnings == ()
         for lf in loaded:
             assert lf.warnings == ()
+
+
+# ── I1 — ownership is file-level; `owner_scope` was removed ──────────────────
+#
+# §3 lists `owner_scope` among the fields v2 removed, and I1 says why: ownership
+# is the file-level `owner`, claim scope is `universality`. The two are different
+# questions, so a leftover `owner_scope` is reported rather than quietly mapped
+# onto either — a silent remap would answer a question the author did not ask,
+# and silent acceptance would let them believe a dead field still works.
+
+
+class TestOwnerScopeIsRemoved:
+    def test_a_v2_entry_carrying_owner_scope_is_rejected(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD + entry(owner_scope="roei"))
+        assert lf.errors, "owner_scope must be reported, not ignored"
+        assert any(e.location.endswith(".owner_scope") for e in lf.errors), problems(lf)
+
+    def test_the_diagnostic_names_both_replacements(self, tmp_path):
+        """The author needs to know WHICH field answers their question."""
+        lf = load(tmp_path, V2_HEAD + entry(owner_scope="roei"))
+        joined = problems(lf)
+        assert "owner" in joined and "universality" in joined, joined
+
+    def test_the_entry_is_not_silently_kept(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD + entry(owner_scope="roei"))
+        assert lf.entries == (), "a rejected entry must not survive validation"
+
+    def test_it_is_never_remapped_onto_universality(self, tmp_path):
+        """A remap would answer `universality` with a value meant for ownership."""
+        lf = load(tmp_path, V2_HEAD + entry(owner_scope="shared", universality="personal"))
+        assert lf.errors
+        assert all(e.universality == "personal" for e in lf.entries)
+
+    def test_an_entry_without_owner_scope_stays_valid(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD + entry())
+        assert lf.parsed and not lf.errors, problems(lf)
+        assert len(lf.entries) == 1
+
+    def test_a_null_owner_scope_is_still_the_removed_field(self, tmp_path):
+        """Writing the key at all is the mistake; its value is beside the point."""
+        lf = load(tmp_path, V2_HEAD + entry(owner_scope=None))
+        assert lf.errors, "a present-but-null owner_scope is still the dead field"
+
+    def test_v1_entries_are_unaffected(self, tmp_path):
+        """v1 never rejected unknown keys and its behaviour stays frozen."""
+        body = (
+            "layer: person\nschema_version: 1\nentries:\n"
+            "  - id: a\n    type: fact\n    statement: x\n"
+            "    confidence: stated\n    privacy: private\n"
+            "    owner_scope: roei\n"
+            "    valid_from: null\n    valid_until: null\n"
+            "    usage: { merlin: true }\n"
+        )
+        lf = load(tmp_path, body)
+        assert lf.parsed and not lf.errors, problems(lf)
+        assert len(lf.entries) == 1
+
+    def test_the_live_v1_profiles_are_unchanged(self):
+        st, _ = load_personal_config(Path(__file__).resolve().parent.parent / "profiles")
+        assert st.is_valid
+        assert len(st.person) == 14 and len(st.music) == 6
+
+    def test_the_canonical_projection_is_untouched(self, tmp_path):
+        """I15 routing must not shift: a clean entry still projects as current."""
+        st = project([load(tmp_path, V2_HEAD + entry())])
+        assert len(st.music) == 1
+        assert st.withheld_total == 0
+
+    def test_a_rejected_entry_reaches_no_bucket(self, tmp_path):
+        """Rejection is a validation error, not a withheld-verification bucket."""
+        st = project([load(tmp_path, V2_HEAD + entry(owner_scope="roei"))])
+        assert st.total_entries == 0
+        assert st.withheld_total == 0, "a schema error is not a withholding decision"
+        assert not st.is_valid
