@@ -269,6 +269,8 @@ export const VALUE_GROUP_EVENTS: PhilosEvent[] = [
     value_tags: ["אחריות"],
     timestamp: "2026-07-30T11:00:00+03:00",
     visibility: "public",
+    // Dynamics flagship: the group's founding goal (ליווי קשישים) drove this proposal.
+    caused_by: ["e010"],
     payload: {
       title: "ליווי שבועי ל-10 קשישים",
       amount: 5000,
@@ -308,6 +310,8 @@ export const VALUE_GROUP_EVENTS: PhilosEvent[] = [
     value_tags: ["אחריות"],
     timestamp: "2026-07-30T15:40:00+03:00",
     visibility: "public",
+    // Dynamics flagship: the proposal led to its approval.
+    caused_by: ["e040"],
   },
 
   // votes on the second proposal — still short of quorum
@@ -324,6 +328,8 @@ export const VALUE_GROUP_EVENTS: PhilosEvent[] = [
     value_tags: ["אחריות"],
     timestamp: "2026-07-30T16:00:00+03:00",
     visibility: "public",
+    // Dynamics flagship: the approved allocation authorized this transfer.
+    caused_by: ["e047"],
     payload: {
       allocation_id: "alloc_elder_support",
       recipient: "פרויקט ליווי קשישים",
@@ -342,6 +348,8 @@ export const VALUE_GROUP_EVENTS: PhilosEvent[] = [
     value_tags: ["אחריות"],
     timestamp: "2026-07-31T13:45:00+03:00",
     visibility: "public",
+    // Dynamics flagship: the approved transfer was executed here.
+    caused_by: ["e050"],
     payload: { allocation_id: "alloc_elder_support" },
     resource_delta: { kind: "money", amount: -5000, currency: "ILS" },
     evidence: ["ledger:tx_out_0001", "receipt:rc_88213"],

@@ -236,13 +236,13 @@ describe("serialization preserves omission vs explicit []", () => {
 // ── backward compatibility on the REAL seed (§2) ─────────────────────────────
 
 describe("backward compatibility — the real seed log", () => {
-  it("the seed (no caused_by anywhere) validates clean in lenient mode", () => {
+  it("the seed validates clean in lenient mode (its flagship caused_by chain is well-formed)", () => {
     const r = validateCausality(VALUE_GROUP_EVENTS);
     expect(r.ok).toBe(true);
     expect(r.diagnostics).toEqual([]);
   });
 
-  it("the seed validates clean in strict mode too — nothing to resolve", () => {
+  it("the seed validates clean in strict mode too — every flagship parent resolves", () => {
     expect(validateCausality(VALUE_GROUP_EVENTS, "strict").ok).toBe(true);
   });
 });

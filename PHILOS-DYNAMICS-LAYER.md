@@ -1,10 +1,12 @@
-# Philos Dynamics Layer — specification (PROPOSAL, not yet canonical)
+# Philos Dynamics Layer — specification
 
-*The cross-domain causality layer: how a change in one domain is shown rolling through
-the rest. This document is a **proposal**. Nothing here is built. It grounds every claim
-in the real primitives — `app/lib/philos/events.ts`, `valueGroupLog.ts`,
-`projectGlobeGraph.ts` — and marks exactly which parts are **envelope change**, which are
-**projection**, and which are **UI/policy**, so they can be built in that order.*
+*The cross-domain causality layer: how a change in one domain is shown rolling through the
+rest. **Status:** the envelope evolution (`caused_by`) + validator (Step 1) and the
+`projectDynamics` projection (Step 2) are **implemented and tested** in
+`app/lib/philos/{eventCausality,projectDynamics}.ts`; the UI and the further projections
+(Observation / Personal / Publication) remain **proposed**. This doc grounds every claim in
+the real primitives — `events.ts`, `valueGroupLog.ts`, `projectGlobeGraph.ts` — and marks
+which parts are **envelope change**, **projection**, and **UI/policy**, built in that order.*
 
 Parent: [`PHILOS-ORCHESTRATION-LAYER.md`](PHILOS-ORCHESTRATION-LAYER.md) §6 ·
 Canonical: [`PHILOS-SYSTEM-BLUEPRINT.md`](PHILOS-SYSTEM-BLUEPRINT.md) §11, §13.
@@ -148,7 +150,11 @@ the field in the same change, or the blueprint and code drift (§8, contradictio
 
 ## 3. `projectDynamics` contract
 
-Modeled on `projectGlobeGraph(events, groupId)`. **Proposed signature — not yet in code:**
+Modeled on `projectGlobeGraph(events, groupId)`. **Implemented in `projectDynamics.ts` (Step 2).**
+The shipped signature is `projectDynamics({ events, window?, viewer?, mode? })` — no `groupId`
+(the projection spans the whole log), `mode` drives Step-1 validation, `filters` deferred, and
+`withheld` lives on `summary`; `projectDynamics.ts` is the source of truth for the exact types.
+The sketch below shows the intent:
 
 ```ts
 interface DynamicsQuery {
