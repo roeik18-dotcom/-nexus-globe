@@ -3,26 +3,44 @@
    receive untyped datum objects; the library's own prop types force `any` here. */
 
 /**
- * WorldGlobe — Philos "World" built as an operating system, not a dashboard.
- * The globe is THE object (≈70% of viewport); everything else is a thin HUD that
- * wraps it. Depth is layered: starfield → atmosphere → globe → flows → HUD.
- * Palette is deliberately near-monochrome (black + blue) so focus stays on the
- * globe. Motion is continuous: auto-rotate, animated arcs, breathing glow, and a
- * slow cinematic camera drift.
+ * WorldGlobe — the Philos globe, drawn from the canonical event log and nothing
+ * else.
+ *
+ * Every point is a node the projection produced (a value group, a person, or a
+ * transfer recipient) and every line is an event it recorded. The HUD reports
+ * only what is on screen: no ontology counts, no live indicator, no time scrub —
+ * those described data this screen does not have, which the blueprint's header
+ * rule calls a defect rather than a style choice.
+ *
+ * Depth is layered: starfield → atmosphere → globe → arcs → HUD. The starfield
+ * is the one piece of pure decoration left, and it asserts nothing.
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { PNode } from "./LivingPlanet";
-import type { GlobeArc } from "@/app/lib/philos/projectGlobeGraph";
+import type { GlobeArc, GlobeNode } from "@/app/lib/philos/projectGlobeGraph";
 
-type Counts = { entities: number; missions: number; relationships: number; communities: number };
+/**
+ * One cool accent, one warm. The warm one marks a transfer recipient and the
+ * transfer arcs that reach it — money leaving the group reads as one movement,
+ * end to end. Node type comes from the projection, so colouring by it states a
+ * fact the events carry rather than a category invented here.
+ */
+const GROUP = "#cfe4ff";
+const PERSON = "#8fd0ff";
+const RECIPIENT = "#ffce8a";
 
-// restrained palette: one cool accent, one warm accent — nothing else
-const ENTITY = "#8fd0ff";
-const MISSION = "#ffce8a";
+const NODE_COLOR: Record<GlobeNode["type"], string> = {
+  value_group: GROUP,
+  person: PERSON,
+  recipient: RECIPIENT,
+};
+const NODE_RADIUS: Record<GlobeNode["type"], number> = {
+  value_group: 0.52,
+  person: 0.32,
+  recipient: 0.42,
+};
 
 function seeded(seed: number) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
-function hash01(s: string) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return ((h >>> 0) % 100000) / 100000; }
 function fibSphere(n: number) { const o: { lat: number; lng: number }[] = []; const g = Math.PI * (3 - Math.sqrt(5)); for (let i = 0; i < n; i++) { const y = 1 - (i / Math.max(1, n - 1)) * 2, r = Math.sqrt(Math.max(0, 1 - y * y)), t = g * i; o.push({ lat: Math.asin(y) * 180 / Math.PI, lng: Math.atan2(Math.sin(t) * r, Math.cos(t) * r) * 180 / Math.PI }); } return o; }
 
 // one-element CSS starfield: a pile of box-shadow dots
@@ -32,8 +50,8 @@ function starShadows(n: number, seed: number) {
   return out.join(",");
 }
 
-export default function WorldGlobe({ nodes, arcs: eventArcs, counts }: {
-  nodes: PNode[]; arcs: GlobeArc[]; counts: Counts;
+export default function WorldGlobe({ nodes, arcs: eventArcs }: {
+  nodes: GlobeNode[]; arcs: GlobeArc[];
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const globeRef = useRef<any>(null);
@@ -57,16 +75,26 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, counts }: {
   }, [Globe]);
 
   const { points, arcs } = useMemo(() => {
-    const comms = Array.from(new Set(nodes.map(n => n.community || "general")));
-    const anchorOf = new Map(comms.map((c, i) => [c, fibSphere(comms.length)[i]]));
+    // Layout, not geography. The log records no coordinates, so giving a node a
+    // place would be inventing data. Each node instead takes a slot on an evenly
+    // spaced sphere, in the projection's own deterministic order: the same
+    // events always draw the same picture, and no position reads as a location.
+    //
+    // Anchoring by community lived here while the globe also drew ontology
+    // domains. Every node of one value group shares one community, which
+    // collapsed the anchor onto a single point — so the spread is over all nodes
+    // until a second group exists to separate.
+    const slots = fibSphere(nodes.length);
     const pos = new Map<string, { lat: number; lng: number }>();
-    const entityPts = nodes.map(n => {
-      const a = anchorOf.get(n.community || "general")!;
-      const lat = Math.max(-84, Math.min(84, a.lat + (hash01(n.id) - 0.5) * 18));
-      const lng = a.lng + (hash01(n.id + "g") - 0.5) * 18;
+    const entityPts = nodes.map((n, i) => {
+      const { lat, lng } = slots[i];
       pos.set(n.id, { lat, lng });
-      const mission = n.type === "mission";
-      return { lat, lng, color: mission ? MISSION : ENTITY, label: n.label, type: n.type, alt: 0.01 + (mission ? 0.04 : 0.015), r: mission ? 0.5 : 0.34 };
+      return {
+        lat, lng,
+        color: NODE_COLOR[n.type], r: NODE_RADIUS[n.type],
+        alt: n.type === "value_group" ? 0.04 : 0.015,
+        label: n.label, type: n.type,
+      };
     });
     // Every line is an event. An arc whose endpoints are not both placeable is
     // DROPPED rather than drawn at a guessed position — blueprint §13.
@@ -91,17 +119,17 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, counts }: {
 
   const onReady = () => { const g = globeRef.current; if (!g) return; const c = g.controls(); c.autoRotate = true; c.autoRotateSpeed = 0.35; c.enableZoom = true; c.minDistance = 160; c.maxDistance = 460; };
 
-  // Was "LIVING FORCES: PURPOSE / TRUST / KNOWLEDGE / TENSION" over these same
-  // numbers. TRUST was the relationship count — no trust ledger exists — so the
-  // labels asserted things the data does not say. Same figures, named for what
-  // they actually are, and marked as the static ontology they come from.
   // The last few arcs, newest last — every one of them is a line you can see.
   const recentArcs = eventArcs.slice(-4);
 
-  const ontologyCounts: [string, number][] = [
-    ["MISSIONS", counts.missions],
-    ["GAPS", nodes.filter(n => n.type === "gap").length],
-    ["DOMAINS", counts.communities],
+  // Counts of what is ACTUALLY DRAWN, measured off the render arrays rather than
+  // the inputs. The bar previously reported 61 ontology entities and 147 PUDM
+  // relations while 8 lines were on screen — figures that described a data set
+  // the viewer was not looking at.
+  const drawn: [string, number][] = [
+    ["nodes", points.length],
+    ["arcs", arcs.length],
+    ["relation types", new Set(arcs.map(a => a.relation)).size],
   ];
 
   return (
@@ -151,15 +179,18 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, counts }: {
               + `${d.verification_status ? ` · ${d.verification_status}` : ""}</div>`}
           />
         )}
-        {!Globe && <div style={S.loading}>initializing world…</div>}
+        {!Globe && <div style={S.loading}>initializing globe…</div>}
       </div>
 
-      {/* layer 5 — HUD that WRAPS the globe (thin, edge-hugging, no boxes) */}
-      <div style={S.topCenter}><span style={S.liveDot} /> PHILOS · WORLD — GLOBAL FIELD</div>
+      {/* layer 5 — HUD that WRAPS the globe (thin, edge-hugging, no boxes).
+          The green pulsing dot that sat here was a static "live" indicator with
+          nothing streaming behind it — named in the blueprint header as a defect
+          by example, so it is gone rather than restyled. */}
+      <div style={S.topCenter}>PHILOS · GLOBE</div>
 
       {/* Legend — blueprint §13: a line the viewer cannot decode is not
-          information. Lists only what is actually drawn, and says plainly which
-          parts are event-backed and which are not. */}
+          information. Lists exactly what is drawn, node types included, since
+          every one of them now comes from the projection. */}
       <div style={S.legend}>
         <div style={S.railHead}>LEGEND</div>
         <div style={S.legendRow}>
@@ -171,29 +202,24 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, counts }: {
           <span style={S.legendText}>membership / appointment — from the event log</span>
         </div>
         <div style={S.legendRow}>
-          <span style={{ ...S.legendDot, background: MISSION }} />
-          <span style={S.legendText}>mission</span>
+          <span style={{ ...S.legendDot, background: GROUP }} />
+          <span style={S.legendText}>value group</span>
         </div>
         <div style={S.legendRow}>
-          <span style={{ ...S.legendDot, background: ENTITY }} />
-          <span style={S.legendText}>entity · person · group · recipient</span>
+          <span style={{ ...S.legendDot, background: PERSON }} />
+          <span style={S.legendText}>person — registered in the log</span>
+        </div>
+        <div style={S.legendRow}>
+          <span style={{ ...S.legendDot, background: RECIPIENT }} />
+          <span style={S.legendText}>recipient — named by an approved transfer</span>
         </div>
         <div style={S.legendNote}>
-          Lines come from events and name the event on hover. Point positions are
-          layout, not geography.
+          Every point and line comes from an event and names it on hover. Point
+          positions are layout, not geography.
         </div>
-      </div>
-
-      <div style={S.leftRail}>
-        <div style={S.railHead}>STATIC ONTOLOGY</div>
-        {ontologyCounts.map(([l, v]) => (<div key={l} style={S.railRow}><span style={S.railL}>{l}</span><span style={S.railV}>{v}</span></div>))}
-        <div style={S.railNote}>from data/*.json — not events</div>
       </div>
 
       <div style={S.rightRail}>
-        {/* Was "LIVE STREAM" cycling rows out of data/*.json every 2.6 s — nothing
-            was live and nothing had happened. This lists the events that actually
-            drew the lines on screen, newest last, with their ids. */}
         <div style={{ ...S.railHead, textAlign: "right" }}>EVENTS ON SCREEN</div>
         {recentArcs.map(a => (
           <div key={a.event_id} style={S.streamRow}>
@@ -206,10 +232,15 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, counts }: {
 
       <div style={S.bottom}>
         <div style={S.stats}>
-          {([["entities", counts.entities], ["missions", counts.missions], ["relations", counts.relationships], ["communities", counts.communities]] as [string, number][])
-            .map(([l, v], i) => (<div key={l} style={S.stat}><span style={S.statNum}>{v}</span><span style={S.statLabel}>{l}</span>{i < 3 && <span style={S.statSep} />}</div>))}
+          {drawn.map(([l, v], i) => (
+            <div key={l} style={S.stat}>
+              <span style={S.statNum}>{v}</span>
+              <span style={S.statLabel}>{l}</span>
+              {i < drawn.length - 1 && <span style={S.statSep} />}
+            </div>
+          ))}
         </div>
-        <div style={S.scrub}><div style={S.scrubFill} /></div>
+        <div style={S.statsNote}>drawn on this screen, from the event log</div>
       </div>
     </div>
   );
@@ -222,12 +253,8 @@ const S: Record<string, React.CSSProperties> = {
   stage: { position: "absolute", inset: 0, zIndex: 1 },
   loading: { position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#4f6a99", letterSpacing: "3px", fontSize: 12 },
 
-  topCenter: { position: "absolute", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 10, fontSize: 11, letterSpacing: "3px", color: "#c3d5f2", display: "flex", alignItems: "center", gap: 9 },
-  liveDot: { width: 6, height: 6, borderRadius: "50%", background: "#34d399", boxShadow: "0 0 10px 2px #34d399" },
-  tl: { position: "absolute", top: 20, left: 22, zIndex: 10, fontSize: 9, letterSpacing: "2px", color: "#3e587f" },
-  tr: { position: "absolute", top: 20, right: 22, zIndex: 10, fontSize: 9, letterSpacing: "2px", color: "#3e587f" },
+  topCenter: { position: "absolute", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 10, fontSize: 11, letterSpacing: "3px", color: "#c3d5f2" },
 
-  leftRail: { position: "absolute", left: 24, top: "50%", transform: "translateY(-50%)", zIndex: 10, display: "flex", flexDirection: "column", gap: 2 },
   legend: { position: "absolute", left: 24, bottom: 26, zIndex: 10, display: "flex", flexDirection: "column", gap: 5, maxWidth: 250 },
   legendRow: { display: "flex", alignItems: "center", gap: 9 },
   legendLine: { width: 26, height: 1.5, borderRadius: 2, flexShrink: 0 },
@@ -236,19 +263,14 @@ const S: Record<string, React.CSSProperties> = {
   legendNote: { fontSize: 8.5, color: "#3e587f", lineHeight: 1.5, marginTop: 4 },
   rightRail: { position: "absolute", right: 24, top: "50%", transform: "translateY(-50%)", zIndex: 10, width: 190, display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" },
   railHead: { fontSize: 8.5, letterSpacing: "2.5px", color: "#3e587f", marginBottom: 8 },
-  railRow: { display: "flex", alignItems: "baseline", gap: 12, padding: "3px 0" },
-  railL: { fontSize: 9.5, letterSpacing: "1.5px", color: "#6f89b6", width: 78 },
-  railV: { fontSize: 15, fontWeight: 600, color: "#dbe7fb", fontVariantNumeric: "tabular-nums" },
   streamRow: { fontSize: 10, lineHeight: 1.5, color: "#7f97c2", textAlign: "right" },
   streamId: { color: "#3e587f" },
-  railNote: { fontSize: 8, color: "#3e587f", marginTop: 6, letterSpacing: "0.5px" },
 
-  bottom: { position: "absolute", left: "50%", bottom: 26, transform: "translateX(-50%)", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 },
+  bottom: { position: "absolute", left: "50%", bottom: 26, transform: "translateX(-50%)", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 },
   stats: { display: "flex", alignItems: "center", gap: 22 },
   stat: { display: "flex", flexDirection: "column", alignItems: "center", position: "relative" },
   statNum: { fontSize: 22, fontWeight: 700, color: "#eaf1ff", lineHeight: 1, fontVariantNumeric: "tabular-nums" },
   statLabel: { fontSize: 8, textTransform: "uppercase", letterSpacing: "1.5px", color: "#43608a", marginTop: 4 },
   statSep: { position: "absolute", right: -11, top: 2, width: 1, height: 22, background: "rgba(90,130,190,0.18)" },
-  scrub: { width: 320, height: 2, borderRadius: 2, background: "rgba(90,130,190,0.16)", position: "relative" },
-  scrubFill: { position: "absolute", left: 0, top: 0, bottom: 0, width: "62%", background: "linear-gradient(90deg, transparent, #5aa6ff)", borderRadius: 2 },
+  statsNote: { fontSize: 8.5, letterSpacing: "1px", color: "#3e587f" },
 };
