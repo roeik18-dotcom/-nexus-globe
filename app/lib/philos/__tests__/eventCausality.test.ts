@@ -247,6 +247,77 @@ describe("backward compatibility — the real seed log", () => {
   });
 });
 
+// ── invalid_timestamp: ambiguous or unparseable causal timestamps ────────────
+
+describe("invalid_timestamp — timestamps must be unambiguous to be ordered", () => {
+  const edge = (parentTs: string, childTs: string) => [
+    ev({ event_id: "p", timestamp: parentTs }),
+    ev({ event_id: "c", timestamp: childTs, caused_by: ["p"] }),
+  ];
+
+  it("valid Z (UTC) timestamps pass", () => {
+    const r = validateCausality(edge("2026-07-01T09:00:00Z", "2026-07-01T10:00:00Z"));
+    expect(r.ok).toBe(true);
+    expect(codesOf(r.diagnostics)).not.toContain("invalid_timestamp");
+  });
+
+  it("valid positive-offset timestamps pass", () => {
+    const r = validateCausality(edge("2026-07-01T09:00:00+03:00", "2026-07-01T10:00:00+03:00"));
+    expect(r.ok).toBe(true);
+    expect(codesOf(r.diagnostics)).not.toContain("invalid_timestamp");
+  });
+
+  it("valid negative-offset timestamps pass", () => {
+    const r = validateCausality(edge("2026-07-01T05:00:00-05:00", "2026-07-01T06:00:00-05:00"));
+    expect(r.ok).toBe(true);
+    expect(codesOf(r.diagnostics)).not.toContain("invalid_timestamp");
+  });
+
+  it("an offsetless timestamp fails (no host-local fallback)", () => {
+    const r = validateCausality(edge("2026-07-01T09:00:00", "2026-07-01T10:00:00Z"));
+    expect(r.ok).toBe(false);
+    expect(codesOf(r.errors)).toContain("invalid_timestamp");
+  });
+
+  it("a malformed timestamp fails", () => {
+    const r = validateCausality(edge("2026-13-45T10:00:00+03:00", "2026-07-01T10:00:00+03:00"));
+    expect(r.ok).toBe(false);
+    expect(codesOf(r.errors)).toContain("invalid_timestamp");
+  });
+
+  it("an invalid PARENT timestamp is flagged against the parent", () => {
+    const r = validateCausality(edge("nonsense", "2026-07-01T10:00:00Z"));
+    expect(r.errors.some((d) => d.code === "invalid_timestamp" && d.event_id === "p")).toBe(true);
+  });
+
+  it("an invalid CHILD timestamp is flagged against the child", () => {
+    const r = validateCausality(edge("2026-07-01T09:00:00Z", "nonsense"));
+    expect(r.errors.some((d) => d.code === "invalid_timestamp" && d.event_id === "c")).toBe(true);
+  });
+
+  it("an invalid timestamp does NOT also emit parent_after_child", () => {
+    // Offsetless "23:00" would look 'after' the child under a naive local/string
+    // compare; the gate must suppress the ordering verdict entirely.
+    const r = validateCausality(edge("2026-07-01T23:00:00", "2026-07-01T10:00:00Z"));
+    expect(codesOf(r.diagnostics)).toContain("invalid_timestamp");
+    expect(codesOf(r.diagnostics)).not.toContain("parent_after_child");
+  });
+
+  it("is reported at most once per event, not once per edge", () => {
+    const bad = ev({ event_id: "p", timestamp: "nonsense" });
+    const c1 = ev({ event_id: "c1", timestamp: "2026-07-01T10:00:00Z", caused_by: ["p"] });
+    const c2 = ev({ event_id: "c2", timestamp: "2026-07-01T11:00:00Z", caused_by: ["p"] });
+    const r = validateCausality([bad, c1, c2]);
+    expect(r.errors.filter((d) => d.code === "invalid_timestamp" && d.event_id === "p")).toHaveLength(1);
+  });
+
+  it("the real seed uses only offset-bearing timestamps — no invalid_timestamp", () => {
+    const r = validateCausality(VALUE_GROUP_EVENTS);
+    expect(codesOf(r.diagnostics)).not.toContain("invalid_timestamp");
+    expect(r.ok).toBe(true);
+  });
+});
+
 // ── robustness on malformed / out-of-type caused_by (the parsed-JSON guard) ──
 
 describe("malformed caused_by never crashes the validator", () => {

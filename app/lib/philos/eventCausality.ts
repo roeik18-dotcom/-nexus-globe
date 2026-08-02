@@ -25,6 +25,7 @@ export const CAUSALITY_DIAGNOSTIC_CODES = [
   "missing_parent",
   "causal_cycle",
   "parent_after_child",
+  "invalid_timestamp",
 ] as const;
 
 export type CausalityDiagnosticCode = (typeof CAUSALITY_DIAGNOSTIC_CODES)[number];
@@ -76,7 +77,20 @@ export function causalParents(e: PhilosEvent): string[] {
   return Array.isArray(e.caused_by) ? e.caused_by : [];
 }
 
-/** Absolute instant of an ISO-8601 timestamp; offset-aware. NaN if unparseable. */
+/**
+ * A causality timestamp is usable only if it is UNAMBIGUOUS: it must carry an
+ * explicit timezone (a trailing `Z` or `±HH:MM`) AND parse to a real instant.
+ * Offsetless strings are rejected rather than read in the host's local timezone
+ * (which would make the verdict machine-dependent), and unparseable strings are
+ * rejected rather than silently no-op'd — the two failure modes the Step-1 review
+ * surfaced. Nothing is ever compared as a raw string, and `instant()` is called
+ * only after this gate passes.
+ */
+const TZ_SUFFIX = /(?:Z|[+-]\d{2}:\d{2})$/;
+const isValidTimestamp = (ts: unknown): ts is string =>
+  typeof ts === "string" && TZ_SUFFIX.test(ts) && !Number.isNaN(Date.parse(ts));
+
+/** Absolute instant of a validated ISO-8601 timestamp; offset-aware. */
 const instant = (ts: string): number => Date.parse(ts);
 
 /**
@@ -168,6 +182,17 @@ export function validateCausality(
   for (const e of events) diagnostics.push(...validateEventCausality(e));
 
   // 2) reference + temporal checks (need the id map).
+  const flaggedTs = new Set<string>(); // invalid_timestamp at most once per event
+  const flagBadTimestamp = (evt: PhilosEvent): void => {
+    if (flaggedTs.has(evt.event_id)) return;
+    flaggedTs.add(evt.event_id);
+    diagnostics.push({
+      code: "invalid_timestamp",
+      severity: "error",
+      event_id: evt.event_id,
+      message: `timestamp "${String(evt.timestamp)}" is unparseable or lacks an explicit timezone offset`,
+    });
+  };
   for (const e of events) {
     if (!Array.isArray(e.caused_by)) continue; // absent or malformed; structural check handled it
     const checked = new Set<string>();
@@ -192,6 +217,16 @@ export function validateCausality(
         });
         continue;
       }
+      // Timestamp gate: a cause or effect whose timestamp is ambiguous (no offset)
+      // or unparseable cannot be ordered. Flag it and skip the comparison — never
+      // fall back to a host-local or raw-string ordering, and never emit
+      // parent_after_child off a timestamp we could not trust.
+      const parentOk = isValidTimestamp(parent.timestamp);
+      const childOk = isValidTimestamp(e.timestamp);
+      if (!parentOk) flagBadTimestamp(parent);
+      if (!childOk) flagBadTimestamp(e);
+      if (!parentOk || !childOk) continue;
+
       if (instant(parent.timestamp) > instant(e.timestamp)) {
         diagnostics.push({
           code: "parent_after_child",

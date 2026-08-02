@@ -396,16 +396,28 @@ contract decision, not hidden:
 - Added tests pinning the non-string `invalid_parent_id` branch and the malformed-container
   cases (previously only the empty-string half was covered).
 
-**Deferred — needs your call (would expand the specified 6-diagnostic contract):**
-- **Timestamp hardening.** `parent_after_child` uses `Date.parse`. On input that violates
-  the documented `// ISO 8601 with offset` type contract, two gaps appear: an **offsetless**
-  timestamp is interpreted in the host timezone (non-deterministic), and an **unparseable**
-  one yields `NaN`, so the check silently no-ops (a false negative that escapes "never
-  silently swallowed"). All seed data and tests carry explicit offsets, so neither fires on
-  conforming data — the offset-aware comparison is proven correct there. The clean fix adds a
-  **7th diagnostic, `invalid_timestamp`** (require an explicit offset; flag `NaN`), which is a
-  deliberate contract expansion. **Held for your decision** rather than slipped into a
-  "Step-1, don't expand" change.
+**Resolved — the 7th diagnostic, in a separate follow-up commit:**
+- **Timestamp hardening → `invalid_timestamp` (always error).** `parent_after_child`
+  previously trusted `Date.parse`, so on input violating the documented `// ISO 8601 with
+  offset` type it had two gaps: an **offsetless** timestamp was read in the host timezone
+  (non-deterministic), and an **unparseable** one yielded `NaN`, silently no-op'ing the check
+  (a false negative). Both are now caught: a timestamp used in causality validation must carry
+  an explicit `Z`/`±HH:MM` offset **and** parse to a real instant, or it is flagged
+  `invalid_timestamp` and the ordering comparison is skipped (never a host-local or raw-string
+  fallback). Seed data — all offset-bearing — stays green. This closed the module's two
+  headline promises: **deterministic** and **no silent failure**.
+
+**Final diagnostic set (7):**
+
+| Code | Severity | Fires when |
+|---|---|---|
+| `self_reference` | error | an event lists itself in `caused_by` |
+| `duplicate_parent` | error | a parent id appears more than once |
+| `invalid_parent_id` | error | a parent id is empty/non-string, or `caused_by` is not an array |
+| `missing_parent` | warning (lenient) / error (strict) | a parent id resolves to no event |
+| `parent_after_child` | error | a cause's instant is after its effect's |
+| `causal_cycle` | error | the `caused_by` graph is not a DAG |
+| `invalid_timestamp` | error | a causal timestamp is unparseable or lacks an explicit offset |
 
 ## 9. One-paragraph summary
 The Dynamics Layer is the **one** part of orchestration that is not merely a projection: it
