@@ -27,12 +27,65 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
+
+#: The version a file gets if it declares none, and the one v1 rules apply to.
 SCHEMA_VERSION = 1
 
-#: Entry `type` values the schema defines (profiles/SCHEMA.md).
+#: Versions this loader will read. Anything else is refused with a stated reason
+#: rather than parsed on a guess — an unknown shape is not a shape.
+SUPPORTED_SCHEMA_VERSIONS = frozenset({1, 2})
+
+#: Entry `type` values schema v1 defines (profiles/SCHEMA-V1.md).
 ENTRY_TYPES = frozenset({"fact", "preference", "personal_principle", "historical_pattern"})
 CONFIDENCE_LEVELS = frozenset({"observed", "stated", "personal", "inferred"})
 PRIVACY_LEVELS = frozenset({"public", "private", "sensitive"})
+
+# ── schema v2 vocabulary (profiles/SCHEMA-V2.md §4, frozen) ──────────────────
+V2_SECTIONS = frozenset({
+    "core_identity", "legacy_expression", "current_expression",
+    "branding", "songwriting", "styling", "studio",
+})
+V2_TYPES = frozenset({
+    "personal_principle", "preference", "creative_constraint",
+    "identity_trait", "historical_pattern", "fact",
+})
+V2_STATUS = frozenset({"active", "historical", "archived"})
+V2_PRIVACY = frozenset({"private", "sensitive"})
+V2_SHAREABILITY = frozenset({"public_candidate", "private_only"})
+V2_DATE_CONFIDENCE = frozenset({"unknown", "dated"})
+V2_DATE_PRECISION = frozenset({"unknown", "year", "month", "day"})
+V2_UNIVERSALITY = frozenset({"personal", "domain", "shared", "universal"})
+V2_PHILOS_RELEVANCE = frozenset({
+    "none", "related", "bridge_candidate", "founder_candidate", "accepted_core",
+})
+V2_VERIFICATION = frozenset({
+    "source_backed", "user_confirmed", "inferred", "disputed", "needs_review",
+})
+V2_EVIDENCE_PRECISION = frozenset({
+    "document", "section", "paragraph", "page", "timestamp", "ocr_pending",
+})
+V2_RELATION_TYPES = frozenset({
+    "succeeds_as_primary_expression", "derived_from", "related_to", "supersedes",
+})
+V2_CONFIDENCE = frozenset({"high", "medium", "low"})
+V2_USAGE_SURFACES = ("merlin_context", "morning_brief", "music_assistant",
+                     "philos_core", "public_profile")
+
+#: §11 locked order bands — `order` is presentation order, never importance.
+V2_ORDER_BANDS: dict[str, tuple[int, int]] = {
+    "core_identity": (10, 50),
+    "legacy_expression": (60, 90),
+    "current_expression": (100, 190),
+    "branding": (200, 10_000),
+    "songwriting": (200, 10_000),
+    "styling": (200, 10_000),
+    "studio": (200, 10_000),
+}
+
+#: I10 — an evidence pointer may be omitted only at these precisions.
+V2_NULL_REF_OK = frozenset({"document", "ocr_pending"})
+
+V2_REQUIRED_ENTRY_FIELDS = ("id", "section", "type", "status", "value", "privacy")
 
 #: Fields every entry must carry. `valid_from`/`valid_until` may be null but must
 #: be PRESENT — an absent key means the author did not consider currency, which is
@@ -80,8 +133,38 @@ class ValidationError:
 
 
 @dataclass(frozen=True)
+class SourceRef:
+    """One `canonical_sources[]` item — which source, and how precisely (§7)."""
+
+    source_id: str
+    evidence_ref: str | None
+    evidence_precision: str
+
+
+@dataclass(frozen=True)
+class RegisteredSource:
+    """A file-level `sources` entry (§6). Never holds an absolute path (I8).
+
+    `storage_root` is a logical key resolved by an EXTERNAL map, so relocating the
+    archive changes one line of machine-local config, not the profile.
+    """
+
+    source_id: str
+    storage_root: str
+    relative_path: str
+    source_kind: str | None = None
+    content_sha256: str | None = None
+
+
+@dataclass(frozen=True)
 class ConfigEntry:
-    """One validated statement, with its provenance intact."""
+    """One validated statement, with its provenance intact.
+
+    v1 and v2 entries share this type. **v2-only fields stay `None` on a v1 entry
+    rather than being defaulted** (SCHEMA-V2 §14): giving a v1 entry
+    `verification_status="inferred"` would make it look as though it answered a
+    question it was never asked — the same class of error as inventing a date.
+    """
 
     id: str
     type: str
@@ -97,13 +180,59 @@ class ConfigEntry:
     schema_version: int
     layer: str
 
+    # ── v2 only; None on every v1 entry ──
+    section: str | None = None
+    status: str | None = None
+    source_confidence: str | None = None
+    interpretation_confidence: str | None = None
+    shareability: str | None = None
+    redaction: dict[str, Any] | None = None
+    date_confidence: str | None = None
+    date_precision: str | None = None
+    domain_scope: str | None = None
+    project_refs: tuple[str, ...] | None = None
+    universality: str | None = None
+    philos_relevance: str | None = None
+    canonical_sources: tuple[SourceRef, ...] | None = None
+    relations: tuple[dict[str, str], ...] | None = None
+    cross_links: tuple[dict[str, str], ...] | None = None
+    order: int | None = None
+    created_at: str | None = None
+    updated_at: str | None = None
+    last_verified_at: str | None = None
+    verification_status: str | None = None
+
+    @property
+    def is_v2(self) -> bool:
+        return self.schema_version == 2
+
     @property
     def is_historical(self) -> bool:
-        """`valid_until: historical` — how Roei USED to operate, never current."""
+        """How Roei USED to operate — never rendered as current.
+
+        v1 says so with `valid_until: historical`; v2 with `status: historical`
+        (I5). `archived` is NOT historical: it is excluded from both the current
+        and the historical projection.
+        """
+        if self.is_v2:
+            return self.status == "historical"
         return self.type == "historical_pattern" or self.valid_until == "historical"
 
     @property
+    def is_archived(self) -> bool:
+        """I5 — removed from active *and* historical use. v1 has no equivalent."""
+        return self.status == "archived"
+
+    @property
+    def needs_review(self) -> bool:
+        """I15 — a candidate: surfaced for review, out of the canonical projection."""
+        return self.verification_status == "needs_review"
+
+    @property
     def merlin_may_use(self) -> bool:
+        """I2 — a surface reads iff its usage flag is true. `privacy` never gates this."""
+        if self.is_v2:
+            return bool(self.usage.get("merlin_context", False))
         return bool(self.usage.get("merlin", False))
 
 
@@ -131,6 +260,13 @@ class PersonalConfigState:
     #: Files that were read successfully.
     sources: tuple[str, ...] = ()
     errors: tuple[ValidationError, ...] = ()
+    #: Non-fatal findings — forward references while authoring. Reported, never fatal.
+    warnings: tuple[ValidationError, ...] = ()
+    #: v2 `status: archived` — retained and inspectable, projected nowhere (I5).
+    archived: tuple[ConfigEntry, ...] = ()
+    #: v2 `verification_status: needs_review` — surfaced for review, excluded from
+    #: the canonical active projection (I15). Not an error, not yet an answer.
+    review_candidates: tuple[ConfigEntry, ...] = ()
     #: Reserved for the change log. Empty while the projection is seed-only.
     recent_changes: tuple[dict[str, Any], ...] = ()
 
@@ -140,7 +276,16 @@ class PersonalConfigState:
 
     @property
     def is_empty(self) -> bool:
-        return self.total_entries == 0
+        """No entries AT ALL — not merely none that project.
+
+        An archived or needs_review entry is data that exists and was deliberately
+        withheld. Reporting that as empty would let the collector set
+        `absence_is_meaningful` and a later layer conclude "Roei has declared
+        nothing", when the truth is "nothing has been confirmed yet".
+        """
+        return (self.total_entries == 0
+                and not self.archived
+                and not self.review_candidates)
 
     @property
     def total_entries(self) -> int:
@@ -173,6 +318,14 @@ class PersonalConfigState:
             "sources": list(self.sources),
             "validation": "ok" if self.is_valid else f"{len(self.errors)} error(s)",
             "validation_errors": [str(e) for e in self.errors],
+            "archived": len(self.archived),
+            "review_candidates": len(self.review_candidates),
+            # v2 lifecycle, as counts. The Morning Snapshot needs to know HOW MUCH
+            # is current, retired or unreviewed — never what any of it says.
+            "active": sum(len(self.domain(d)) for d in CONFIG_DOMAINS if d != "routines_history"),
+            "historical": len(self.routines_history),
+            "unresolved_cross_links": len(self.warnings),
+            "warnings": [str(w) for w in self.warnings],
             "recent_changes": list(self.recent_changes),
         }
 
@@ -193,9 +346,294 @@ class LoadedFile:
     schema_version: int | None
     entries: tuple[ConfigEntry, ...]
     errors: tuple[ValidationError, ...]
+    #: Non-fatal findings. A forward cross-link is the canonical case: it names an
+    #: entry that does not exist YET, which is a normal state during authoring —
+    #: reporting it is useful, refusing the file is not (req 14).
+    warnings: tuple[ValidationError, ...]
+    #: v2 file-level `sources` registry, empty for v1. Kept so resolution and
+    #: hash verification happen AFTER parsing, against real config (I13).
+    registry: dict[str, "RegisteredSource"]
     mtime_iso: str | None
     existed: bool
     parsed: bool
+
+
+def _enum(
+    raw: dict, key: str, allowed: frozenset[str], *, loc: str, source: str,
+    entry_id: str | None, required: bool = True,
+) -> list[ValidationError]:
+    """One enum check, so v2's twelve of them read identically."""
+    v = raw.get(key)
+    if v is None:
+        if required:
+            return [ValidationError(source, f"{loc}.{key}", "required field missing", entry_id)]
+        return []
+    if v not in allowed:
+        return [ValidationError(source, f"{loc}.{key}", f"unknown {key} {v!r}", entry_id)]
+    return []
+
+
+def _validate_sources(
+    raw: Any, *, source: str,
+) -> tuple[dict[str, RegisteredSource], list[ValidationError]]:
+    """File-level `sources` registry (§6). I8: no absolute path may appear here."""
+    out: dict[str, RegisteredSource] = {}
+    errs: list[ValidationError] = []
+    if raw is None:
+        return out, errs
+    if not isinstance(raw, dict):
+        return out, [ValidationError(source, "sources", f"expected a mapping, got {type(raw).__name__}")]
+
+    for sid, body in raw.items():
+        loc = f"sources.{sid}"
+        if not isinstance(body, dict):
+            errs.append(ValidationError(source, loc, f"expected a mapping, got {type(body).__name__}"))
+            continue
+        root = body.get("storage_root")
+        rel = body.get("relative_path")
+        if not isinstance(root, str) or not root:
+            errs.append(ValidationError(source, f"{loc}.storage_root", "required field missing"))
+        if not isinstance(rel, str) or not rel:
+            errs.append(ValidationError(source, f"{loc}.relative_path", "required field missing"))
+        # I8 — an absolute path is a fact about one machine, not a citation.
+        for key, val in (("storage_root", root), ("relative_path", rel)):
+            if isinstance(val, str) and (val.startswith("/") or val.startswith("~")):
+                errs.append(ValidationError(
+                    source, f"{loc}.{key},",
+                    f"absolute path {val!r} — sources resolve through an external "
+                    "storage_roots map so the profile survives moving machines",
+                ))
+        if isinstance(root, str) and isinstance(rel, str) and root and rel:
+            out[str(sid)] = RegisteredSource(
+                source_id=str(sid), storage_root=root, relative_path=rel,
+                source_kind=body.get("source_kind"),
+                content_sha256=body.get("content_sha256"),
+            )
+    return out, errs
+
+
+def _validate_entry_v2(
+    raw: Any,
+    index: int,
+    *,
+    source: str,
+    layer: str,
+    sources: dict[str, RegisteredSource],
+) -> tuple[ConfigEntry | None, list[ValidationError]]:
+    """Schema v2 entry, per the frozen SCHEMA-V2.md §3–§5."""
+    loc = f"entries[{index}]"
+    errs: list[ValidationError] = []
+
+    if not isinstance(raw, dict):
+        return None, [ValidationError(source, loc, f"expected a mapping, got {type(raw).__name__}")]
+
+    entry_id = raw.get("id") if isinstance(raw.get("id"), str) else None
+
+    for key in V2_REQUIRED_ENTRY_FIELDS:
+        if key not in raw or raw[key] in (None, ""):
+            errs.append(ValidationError(source, f"{loc}.{key}", "required field missing", entry_id))
+
+    errs += _enum(raw, "section", V2_SECTIONS, loc=loc, source=source, entry_id=entry_id)
+    errs += _enum(raw, "type", V2_TYPES, loc=loc, source=source, entry_id=entry_id)
+    errs += _enum(raw, "status", V2_STATUS, loc=loc, source=source, entry_id=entry_id)
+    errs += _enum(raw, "privacy", V2_PRIVACY, loc=loc, source=source, entry_id=entry_id)
+    for key, allowed in (
+        ("shareability", V2_SHAREABILITY),
+        ("date_confidence", V2_DATE_CONFIDENCE),
+        ("date_precision", V2_DATE_PRECISION),
+        ("universality", V2_UNIVERSALITY),
+        ("philos_relevance", V2_PHILOS_RELEVANCE),
+        ("verification_status", V2_VERIFICATION),
+        ("source_confidence", V2_CONFIDENCE),
+        ("interpretation_confidence", V2_CONFIDENCE),
+    ):
+        errs += _enum(raw, key, allowed, loc=loc, source=source, entry_id=entry_id, required=False)
+
+    # ── usage: the authorisation mechanism (I2) ──
+    usage_raw = raw.get("usage")
+    usage: dict[str, bool] = {}
+    if usage_raw is None:
+        errs.append(ValidationError(source, f"{loc}.usage", "required field missing", entry_id))
+    elif not isinstance(usage_raw, dict):
+        errs.append(ValidationError(
+            source, f"{loc}.usage", f"expected a mapping, got {type(usage_raw).__name__}", entry_id))
+    else:
+        unknown = set(usage_raw) - set(V2_USAGE_SURFACES)
+        if unknown:
+            errs.append(ValidationError(
+                source, f"{loc}.usage",
+                f"unknown surface(s) {sorted(unknown)} — usage grants access to a "
+                "named surface, so an unrecognised one grants nothing and is a typo",
+                entry_id))
+        usage = {k: bool(v) for k, v in usage_raw.items()}
+
+    philos_rel = raw.get("philos_relevance")
+    if usage.get("philos_core") is True:
+        # I4 requires accepted_core; §16 non-goal 5 forbids promotion in v2 at all.
+        # Both are reported: the structural rule and the standing prohibition.
+        if philos_rel != "accepted_core":
+            errs.append(ValidationError(
+                source, f"{loc}.philos_relevance",
+                "usage.philos_core is true but philos_relevance is not accepted_core (I4)",
+                entry_id))
+        errs.append(ValidationError(
+            source, f"{loc}.usage.philos_core",
+            "must be false — Philos Core promotion requires an explicit human step "
+            "and v2 adds no route to it (SCHEMA-V2 §16.5)",
+            entry_id))
+
+    # ── I6 — dates are conservative ──
+    date_conf = raw.get("date_confidence")
+    raw_sources = raw.get("canonical_sources")
+    has_source = isinstance(raw_sources, list) and len(raw_sources) > 0
+    for key in ("valid_from", "valid_until"):
+        if raw.get(key) is not None:
+            if date_conf != "dated":
+                errs.append(ValidationError(
+                    source, f"{loc}.{key}",
+                    f"non-null {key} requires date_confidence: dated (I6)", entry_id))
+            if not has_source:
+                errs.append(ValidationError(
+                    source, f"{loc}.{key}",
+                    f"non-null {key} requires a supporting canonical_source (I6)", entry_id))
+
+    # ── I17 — date precision is not evidence precision ──
+    # An exact precision on a date we do not trust asserts more than we know. The
+    # two axes move together in one direction only: no confidence, no precision.
+    date_prec = raw.get("date_precision")
+    if date_conf == "unknown" and date_prec not in (None, "unknown"):
+        errs.append(ValidationError(
+            source, f"{loc}.date_precision",
+            f"date_precision {date_prec!r} requires date_confidence: dated (I17)", entry_id))
+
+    # ── canonical_sources: §7, I8, I10, I11 ──
+    refs: list[SourceRef] = []
+    ocr_pending = False
+    if raw_sources is not None:
+        if not isinstance(raw_sources, list):
+            errs.append(ValidationError(
+                source, f"{loc}.canonical_sources",
+                f"expected a list, got {type(raw_sources).__name__}", entry_id))
+        else:
+            for j, item in enumerate(raw_sources):
+                rloc = f"{loc}.canonical_sources[{j}]"
+                if not isinstance(item, dict):
+                    errs.append(ValidationError(source, rloc, "expected a mapping", entry_id))
+                    continue
+                sid = item.get("source_id")
+                prec = item.get("evidence_precision")
+                ref = item.get("evidence_ref")
+                if not isinstance(sid, str) or not sid:
+                    errs.append(ValidationError(source, f"{rloc}.source_id", "required field missing", entry_id))
+                elif sid not in sources:
+                    # I8 — a dangling reference is an error, never a warning
+                    errs.append(ValidationError(
+                        source, f"{rloc}.source_id",
+                        f"{sid!r} is not in the file's sources registry (I8)", entry_id))
+                if prec not in V2_EVIDENCE_PRECISION:
+                    errs.append(ValidationError(
+                        source, f"{rloc}.evidence_precision",
+                        f"unknown evidence_precision {prec!r}", entry_id))
+                elif ref in (None, "") and prec not in V2_NULL_REF_OK:
+                    errs.append(ValidationError(
+                        source, f"{rloc}.evidence_ref",
+                        f"may be null only at precision {sorted(V2_NULL_REF_OK)} (I10)", entry_id))
+                if prec == "ocr_pending":
+                    ocr_pending = True
+                if isinstance(sid, str):
+                    refs.append(SourceRef(sid, ref if isinstance(ref, str) else None, str(prec)))
+
+    verification = raw.get("verification_status")
+    if ocr_pending and verification != "needs_review":
+        errs.append(ValidationError(
+            source, f"{loc}.verification_status",
+            "an ocr_pending source means the text has not been read yet, so the "
+            "entry must be needs_review (I11)", entry_id))
+
+    # ── I9 — order sits inside its section's band (§11) ──
+    order = raw.get("order")
+    section = raw.get("section")
+    if order is not None:
+        if not isinstance(order, int):
+            errs.append(ValidationError(
+                source, f"{loc}.order", f"expected an integer, got {type(order).__name__}", entry_id))
+        elif isinstance(section, str) and section in V2_ORDER_BANDS:
+            lo, hi = V2_ORDER_BANDS[section]
+            if not lo <= order <= hi:
+                errs.append(ValidationError(
+                    source, f"{loc}.order",
+                    f"{order} is outside the {section} band {lo}–{hi} (§11, I9)", entry_id))
+
+    # ── relations / cross_links ──
+    def _links(key: str, required_keys: tuple[str, ...]) -> tuple[dict[str, str], ...]:
+        val = raw.get(key)
+        if val is None:
+            return ()
+        if not isinstance(val, list):
+            errs.append(ValidationError(
+                source, f"{loc}.{key}", f"expected a list, got {type(val).__name__}", entry_id))
+            return ()
+        out: list[dict[str, str]] = []
+        for j, item in enumerate(val):
+            lloc = f"{loc}.{key}[{j}]"
+            if not isinstance(item, dict):
+                errs.append(ValidationError(source, lloc, "expected a mapping", entry_id))
+                continue
+            for rk in required_keys:
+                if not item.get(rk):
+                    errs.append(ValidationError(source, f"{lloc}.{rk}", "required field missing", entry_id))
+            if key == "relations" and item.get("type") not in V2_RELATION_TYPES:
+                errs.append(ValidationError(
+                    source, f"{lloc}.type", f"unknown relation type {item.get('type')!r}", entry_id))
+            out.append({k: str(v) for k, v in item.items()})
+        return tuple(out)
+
+    relations = _links("relations", ("type", "target"))
+    cross_links = _links("cross_links", ("to", "entry", "relation"))
+
+    if errs:
+        return None, errs
+
+    return (
+        ConfigEntry(
+            id=str(raw["id"]),
+            type=str(raw["type"]),
+            # v2 renames `statement` to `value`; the projection keeps one field name
+            statement=str(raw["value"]),
+            # v1's flat `confidence` splits in two — neither maps onto it, so the
+            # shared field records which axis is which rather than inventing a blend
+            confidence=str(raw.get("interpretation_confidence") or raw.get("source_confidence") or ""),
+            privacy=str(raw["privacy"]),
+            valid_from=raw.get("valid_from"),
+            valid_until=raw.get("valid_until"),
+            usage=usage,
+            source_file=source,
+            source_index=index,
+            schema_version=2,
+            layer=layer,
+            section=str(raw["section"]),
+            status=str(raw["status"]),
+            source_confidence=raw.get("source_confidence"),
+            interpretation_confidence=raw.get("interpretation_confidence"),
+            shareability=raw.get("shareability"),
+            redaction=raw.get("redaction") if isinstance(raw.get("redaction"), dict) else None,
+            date_confidence=raw.get("date_confidence"),
+            date_precision=raw.get("date_precision"),
+            domain_scope=raw.get("domain_scope"),
+            project_refs=tuple(raw.get("project_refs") or ()),
+            universality=raw.get("universality"),
+            philos_relevance=raw.get("philos_relevance"),
+            canonical_sources=tuple(refs),
+            relations=relations,
+            cross_links=cross_links,
+            order=order if isinstance(order, int) else None,
+            created_at=raw.get("created_at"),
+            updated_at=raw.get("updated_at"),
+            last_verified_at=raw.get("last_verified_at"),
+            verification_status=verification,
+        ),
+        [],
+    )
 
 
 def _validate_entry(
@@ -288,7 +726,7 @@ def load_file(path: Path) -> LoadedFile:
     source = path.name
 
     if not path.exists():
-        return LoadedFile(path, None, None, (), (), None, existed=False, parsed=False)
+        return LoadedFile(path, None, None, (), (), (), {}, None, existed=False, parsed=False)
 
     mtime = _iso(path.stat().st_mtime)
 
@@ -297,7 +735,7 @@ def load_file(path: Path) -> LoadedFile:
     except Exception as exc:  # pragma: no cover - environment-dependent
         return LoadedFile(
             path, None, None, (),
-            (ValidationError(source, "<import>", f"PyYAML unavailable: {exc}"),),
+            (ValidationError(source, "<import>", f"PyYAML unavailable: {exc}"),), (), {},
             mtime, existed=True, parsed=False,
         )
 
@@ -306,18 +744,18 @@ def load_file(path: Path) -> LoadedFile:
     except Exception as exc:
         return LoadedFile(
             path, None, None, (),
-            (ValidationError(source, "<file>", f"malformed YAML: {exc.__class__.__name__}"),),
+            (ValidationError(source, "<file>", f"malformed YAML: {exc.__class__.__name__}"),), (), {},
             mtime, existed=True, parsed=False,
         )
 
     if raw is None:
         # An empty file is valid and says "no entries" — not an error.
-        return LoadedFile(path, None, None, (), (), mtime, existed=True, parsed=True)
+        return LoadedFile(path, None, None, (), (), (), {}, mtime, existed=True, parsed=True)
 
     if not isinstance(raw, dict):
         return LoadedFile(
             path, None, None, (),
-            (ValidationError(source, "<file>", f"expected a mapping at the top level, got {type(raw).__name__}"),),
+            (ValidationError(source, "<file>", f"expected a mapping at the top level, got {type(raw).__name__}"),), (), {},
             mtime, existed=True, parsed=False,
         )
 
@@ -331,20 +769,33 @@ def load_file(path: Path) -> LoadedFile:
             ValidationError(source, "schema_version", f"expected an integer, got {type(version).__name__}")
         )
         version = None
-    elif version != SCHEMA_VERSION:
+    elif version not in SUPPORTED_SCHEMA_VERSIONS:
         errors.append(
             ValidationError(
                 source, "schema_version",
-                f"unsupported version {version} (this loader understands {SCHEMA_VERSION})",
+                f"unsupported version {version} (this loader understands "
+                f"{sorted(SUPPORTED_SCHEMA_VERSIONS)})",
             )
         )
         # Refuse the entries rather than guess at a shape we do not know.
-        return LoadedFile(path, raw.get("layer"), version, (), tuple(errors), mtime, True, parsed=False)
+        return LoadedFile(path, raw.get("layer"), version, (), tuple(errors), (), {}, mtime, True, parsed=False)
 
     layer = raw.get("layer")
     if not isinstance(layer, str) or not layer:
         errors.append(ValidationError(source, "layer", "required field missing"))
         layer = "unknown"
+
+    # v2 carries a file-level source registry; v1 has none. Parsed before the
+    # entries because every canonical_sources reference is checked against it (I8).
+    registry: dict[str, RegisteredSource] = {}
+    if version == 2:
+        registry, reg_errs = _validate_sources(raw.get("sources"), source=source)
+        errors.extend(reg_errs)
+    elif raw.get("sources") is not None:
+        errors.append(ValidationError(
+            source, "sources",
+            "a sources registry is a v2 field; this file declares schema_version 1",
+        ))
 
     raw_entries = raw.get("entries")
     entries: list[ConfigEntry] = []
@@ -357,9 +808,16 @@ def load_file(path: Path) -> LoadedFile:
     else:
         seen: set[str] = set()
         for i, item in enumerate(raw_entries):
-            entry, errs = _validate_entry(
-                item, i, source=source, layer=layer, schema_version=version or SCHEMA_VERSION
-            )
+            # Version dispatch is explicit: a v1 file is read by v1 rules and
+            # gains no v2 field, so its entries look exactly as they did before.
+            if version == 2:
+                entry, errs = _validate_entry_v2(
+                    item, i, source=source, layer=layer, sources=registry
+                )
+            else:
+                entry, errs = _validate_entry(
+                    item, i, source=source, layer=layer, schema_version=version or SCHEMA_VERSION
+                )
             errors.extend(errs)
             if entry is None:
                 continue
@@ -371,20 +829,49 @@ def load_file(path: Path) -> LoadedFile:
             seen.add(entry.id)
             entries.append(entry)
 
+    # Forward cross-links: a link may name an entry authored later. That is a
+    # normal state, so it is a warning — refusing the file would make incremental
+    # authoring impossible, and silence would hide a genuine typo.
+    warnings: list[ValidationError] = []
+    known = {e.id for e in entries}
+    for e in entries:
+        for link in (e.cross_links or ()):
+            target = link.get("entry")
+            if target and target not in known:
+                warnings.append(ValidationError(
+                    source, f"entries[{e.source_index}].cross_links",
+                    f"forward reference to {target!r}, which is not in this file",
+                    e.id))
+        for rel in (e.relations or ()):
+            target = rel.get("target")
+            if target and target not in known:
+                warnings.append(ValidationError(
+                    source, f"entries[{e.source_index}].relations",
+                    f"forward reference to {target!r}, which is not in this file",
+                    e.id))
+
     return LoadedFile(
-        path, layer, version, tuple(entries), tuple(errors), mtime, existed=True, parsed=True
+        path, layer, version, tuple(entries), tuple(errors), tuple(warnings),
+        registry, mtime, existed=True, parsed=True
     )
 
 
 # ── projection ───────────────────────────────────────────────────────────────
 
 
-def _route(entry: ConfigEntry) -> str:
-    """Which projected domain an entry belongs to.
+def _route(entry: ConfigEntry) -> str | None:
+    """Which projected domain an entry belongs to, or None if it belongs to none.
 
     Historical entries leave their source domain entirely: a past routine must
     not sit in `person` where a later layer would read it as current.
+
+    Two v2 states project NOWHERE, and both are returned as None rather than
+    quietly dropped — the caller collects them so they remain inspectable:
+      * `archived` (I5) — out of the current AND the historical projection
+      * `needs_review` (I15) — a candidate, not yet part of the canonical account
     """
+    if entry.is_archived or entry.needs_review:
+        return None
     if entry.is_historical:
         return "routines_history"
     if entry.layer == "music":
@@ -408,12 +895,16 @@ def project(
     """
     buckets: dict[str, list[ConfigEntry]] = {d: [] for d in CONFIG_DOMAINS}
     errors: list[ValidationError] = []
+    warnings: list[ValidationError] = []
+    archived: list[ConfigEntry] = []
+    review_candidates: list[ConfigEntry] = []
     sources: list[str] = []
     versions: set[int] = set()
     mtimes: list[str] = []
 
     for lf in files:
         errors.extend(lf.errors)
+        warnings.extend(lf.warnings)
         if lf.existed and lf.parsed:
             sources.append(lf.path.name)
             if lf.mtime_iso:
@@ -421,7 +912,12 @@ def project(
         if lf.schema_version is not None:
             versions.add(lf.schema_version)
         for entry in lf.entries:
-            buckets[_route(entry)].append(entry)
+            domain = _route(entry)
+            if domain is None:
+                # archived or needs_review — kept, but out of the canonical view
+                (archived if entry.is_archived else review_candidates).append(entry)
+                continue
+            buckets[domain].append(entry)
 
     # Reserved seam: fold(seed, *changes). Recorded verbatim so the summary can
     # show what has moved since the seed once a change log exists.
@@ -437,6 +933,9 @@ def project(
         last_updated=max(mtimes) if mtimes else None,
         sources=tuple(sources),
         errors=tuple(errors),
+        warnings=tuple(warnings),
+        archived=tuple(archived),
+        review_candidates=tuple(review_candidates),
         recent_changes=applied_changes,
     )
 
