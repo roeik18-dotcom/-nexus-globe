@@ -60,13 +60,23 @@ V2_STATUS = frozenset({"active", "historical", "archived"})
 V2_PRIVACY = frozenset({"private", "sensitive"})
 V2_SHAREABILITY = frozenset({"public_candidate", "private_only"})
 V2_DATE_CONFIDENCE = frozenset({"unknown", "dated"})
-V2_DATE_PRECISION = frozenset({"unknown", "year", "month", "day"})
+V2_DATE_PRECISION = frozenset({"exact", "month", "year", "approximate", "unknown"})
 V2_UNIVERSALITY = frozenset({"personal", "domain", "shared", "universal"})
 V2_PHILOS_RELEVANCE = frozenset({
     "none", "related", "bridge_candidate", "founder_candidate", "accepted_core",
 })
 V2_VERIFICATION = frozenset({
-    "source_backed", "user_confirmed", "inferred", "disputed", "needs_review",
+    "unverified", "self_confirmed", "human_confirmed", "source_confirmed",
+    "inferred", "disputed", "needs_review",
+})
+#: SCHEMA-V2 §9.1 / I15 — the ONLY states admitted to the canonical active
+#: projection. An allowlist, not a denylist: a state absent here is withheld, so a
+#: future enum value cannot be projected as current merely by not being excluded.
+V2_CANONICAL_ACTIVE = frozenset({"self_confirmed", "human_confirmed", "source_confirmed"})
+
+#: SCHEMA-V2 §4/§8 — `redaction` is a LIST of these policies (never the old dict).
+V2_REDACTION = frozenset({
+    "none", "paraphrase", "never_verbatim", "never_aloud", "external_models_blocked",
 })
 V2_EVIDENCE_PRECISION = frozenset({
     "document", "section", "paragraph", "page", "timestamp", "ocr_pending",
@@ -193,7 +203,7 @@ class ConfigEntry:
     source_confidence: str | None = None
     interpretation_confidence: str | None = None
     shareability: str | None = None
-    redaction: dict[str, Any] | None = None
+    redaction: tuple[str, ...] | None = None
     date_confidence: str | None = None
     date_precision: str | None = None
     domain_scope: str | None = None
@@ -236,6 +246,26 @@ class ConfigEntry:
         return self.verification_status == "needs_review"
 
     @property
+    def is_unverified(self) -> bool:
+        """§9 — an unchecked claim; excluded from the canonical active projection."""
+        return self.verification_status == "unverified"
+
+    @property
+    def is_canonically_admitted(self) -> bool:
+        """SCHEMA-V2 §9.1 / I15 — may this entry be projected as current?
+
+        v2 admits only `self_confirmed`, `human_confirmed` and `source_confirmed`.
+
+        **A v1 entry is always admitted.** v1 has no `verification_status`, so
+        applying the v2 allowlist to it would withhold every v1 entry on the
+        grounds that it never answered a question its schema did not ask — the
+        same error as defaulting it to `unverified` (§14).
+        """
+        if not self.is_v2:
+            return True
+        return self.verification_status in V2_CANONICAL_ACTIVE
+
+    @property
     def merlin_may_use(self) -> bool:
         """I2 — a surface reads iff its usage flag is true. `privacy` never gates this."""
         if self.is_v2:
@@ -274,6 +304,18 @@ class PersonalConfigState:
     #: v2 `verification_status: needs_review` — surfaced for review, excluded from
     #: the canonical active projection (I15). Not an error, not yet an answer.
     review_candidates: tuple[ConfigEntry, ...] = ()
+    #: v2 `verification_status: unverified` — never checked at all (§9). Kept apart
+    #: from `review_candidates` because I18 makes the distinction load-bearing:
+    #: "nobody has looked at this yet" and "this was flagged for a human" call for
+    #: different action, and one count covering both hides which one you have.
+    unverified: tuple[ConfigEntry, ...] = ()
+    #: v2 `verification_status: inferred` — the system derived it; no one confirmed
+    #: it (§9.1). Withheld from the canonical projection, retained in full.
+    inferred: tuple[ConfigEntry, ...] = ()
+    #: v2 `verification_status: disputed` — checked and CONTESTED, which is not the
+    #: same as unchecked (I18). Withheld, and deliberately its own count: a
+    #: contested claim is a signal to resolve, not merely one more unconfirmed row.
+    disputed: tuple[ConfigEntry, ...] = ()
     #: Populated only when load_personal_config(verify=True).
     resolved_sources: tuple[ResolvedSource, ...] = ()
     #: Machine-local findings: unconfigured root, missing file, hash mismatch.
@@ -291,14 +333,18 @@ class PersonalConfigState:
     def is_empty(self) -> bool:
         """No entries AT ALL — not merely none that project.
 
-        An archived or needs_review entry is data that exists and was deliberately
-        withheld. Reporting that as empty would let the collector set
+        An archived, needs_review or unverified entry is data that exists and was
+        deliberately withheld. Reporting that as empty would let the collector set
         `absence_is_meaningful` and a later layer conclude "Roei has declared
         nothing", when the truth is "nothing has been confirmed yet".
         """
-        return (self.total_entries == 0
-                and not self.archived
-                and not self.review_candidates)
+        return (self.total_entries == 0 and not self.withheld_total)
+
+    @property
+    def withheld_total(self) -> int:
+        """Entries that exist but are projected nowhere (§9.1, I5)."""
+        return (len(self.archived) + len(self.review_candidates)
+                + len(self.unverified) + len(self.inferred) + len(self.disputed))
 
     @property
     def total_entries(self) -> int:
@@ -333,6 +379,10 @@ class PersonalConfigState:
             "validation_errors": [str(e) for e in self.errors],
             "archived": len(self.archived),
             "review_candidates": len(self.review_candidates),
+            "unverified": len(self.unverified),
+            "inferred": len(self.inferred),
+            "disputed": len(self.disputed),
+            "withheld_total": self.withheld_total,
             # v2 lifecycle, as counts. The Morning Snapshot needs to know HOW MUCH
             # is current, retired or unreviewed — never what any of it says.
             "active": sum(len(self.domain(d)) for d in CONFIG_DOMAINS if d != "routines_history"),
@@ -467,6 +517,34 @@ def _validate_entry_v2(
         ("interpretation_confidence", V2_CONFIDENCE),
     ):
         errs += _enum(raw, key, allowed, loc=loc, source=source, entry_id=entry_id, required=False)
+
+    # ── redaction: a LIST of policies (SCHEMA-V2 §8, I3), never the old dict shape ──
+    redaction_raw = raw.get("redaction")
+    redaction: tuple[str, ...] | None = None
+    if redaction_raw is not None:
+        if not isinstance(redaction_raw, list):
+            errs.append(ValidationError(
+                source, f"{loc}.redaction",
+                f"redaction must be a list of policies, got {type(redaction_raw).__name__} "
+                "— the v1/dict shape is rejected", entry_id))
+        else:
+            ok = True
+            unknown = [p for p in redaction_raw if p not in V2_REDACTION]
+            if unknown:
+                errs.append(ValidationError(
+                    source, f"{loc}.redaction", f"unknown redaction policy/ies {unknown}", entry_id))
+                ok = False
+            if len(redaction_raw) != len(set(redaction_raw)):
+                errs.append(ValidationError(
+                    source, f"{loc}.redaction", "duplicate redaction policies", entry_id))
+                ok = False
+            if "none" in redaction_raw and len(redaction_raw) > 1:
+                errs.append(ValidationError(
+                    source, f"{loc}.redaction",
+                    "'none' cannot coexist with another policy", entry_id))
+                ok = False
+            if ok:
+                redaction = tuple(redaction_raw)
 
     # ── usage: the authorisation mechanism (I2) ──
     usage_raw = raw.get("usage")
@@ -635,7 +713,7 @@ def _validate_entry_v2(
             source_confidence=raw.get("source_confidence"),
             interpretation_confidence=raw.get("interpretation_confidence"),
             shareability=raw.get("shareability"),
-            redaction=raw.get("redaction") if isinstance(raw.get("redaction"), dict) else None,
+            redaction=redaction,
             date_confidence=raw.get("date_confidence"),
             date_precision=raw.get("date_precision"),
             domain_scope=raw.get("domain_scope"),
@@ -884,12 +962,18 @@ def _route(entry: ConfigEntry) -> str | None:
     Historical entries leave their source domain entirely: a past routine must
     not sit in `person` where a later layer would read it as current.
 
-    Two v2 states project NOWHERE, and both are returned as None rather than
-    quietly dropped — the caller collects them so they remain inspectable:
-      * `archived` (I5) — out of the current AND the historical projection
-      * `needs_review` (I15) — a candidate, not yet part of the canonical account
+    Admission is an ALLOWLIST (§9.1, I15). `archived` is out by status (I5); every
+    other exclusion is by verification state — `unverified`, `needs_review`,
+    `inferred` and `disputed` are each withheld and returned as None rather than
+    quietly dropped, so the caller can collect them into their own buckets.
+
+    The verification gate applies BEFORE historical routing: an unconfirmed claim
+    about the past is still an unconfirmed claim, and the historical projection is
+    a record, not a holding pen.
     """
-    if entry.is_archived or entry.needs_review:
+    if entry.is_archived:
+        return None
+    if not entry.is_canonically_admitted:
         return None
     if entry.is_historical:
         return "routines_history"
@@ -917,6 +1001,9 @@ def project(
     warnings: list[ValidationError] = []
     archived: list[ConfigEntry] = []
     review_candidates: list[ConfigEntry] = []
+    unverified: list[ConfigEntry] = []
+    inferred: list[ConfigEntry] = []
+    disputed: list[ConfigEntry] = []
     sources: list[str] = []
     versions: set[int] = set()
     mtimes: list[str] = []
@@ -933,8 +1020,20 @@ def project(
         for entry in lf.entries:
             domain = _route(entry)
             if domain is None:
-                # archived or needs_review — kept, but out of the canonical view
-                (archived if entry.is_archived else review_candidates).append(entry)
+                # Withheld — into distinct buckets, never one "withheld" count.
+                # "Removed", "never checked", "derived", "contested" and "flagged
+                # for a human" call for different action (§9.1). Order is fixed so
+                # an entry in two states always lands the same way.
+                if entry.is_archived:
+                    archived.append(entry)
+                elif entry.verification_status == "needs_review":
+                    review_candidates.append(entry)
+                elif entry.verification_status == "inferred":
+                    inferred.append(entry)
+                elif entry.verification_status == "disputed":
+                    disputed.append(entry)
+                else:
+                    unverified.append(entry)
                 continue
             buckets[domain].append(entry)
 
@@ -955,6 +1054,9 @@ def project(
         warnings=tuple(warnings),
         archived=tuple(archived),
         review_candidates=tuple(review_candidates),
+        unverified=tuple(unverified),
+        inferred=tuple(inferred),
+        disputed=tuple(disputed),
         recent_changes=applied_changes,
     )
 

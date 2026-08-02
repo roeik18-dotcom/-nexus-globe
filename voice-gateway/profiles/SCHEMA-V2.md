@@ -25,10 +25,10 @@ adds its own `section` values and bands; it does not fork this document.*
 > takes a version bump rather than an edit in place — the freeze is worth nothing if the
 > frozen text can move underneath a reader.
 >
-> **Status: v2.0 dual-read is implemented** (loader + tests). The v2.1 admission rule is
-> **specified here and not yet fully implemented**: the loader currently excludes
-> `unverified` and `needs_review` but still projects `inferred` and `disputed`. That gap is
-> tracked in §15 and must close before any v2 profile is written.
+> **Status: implemented.** Dual-read and the v2.1 admission rule both ship in
+> `mos/personal_config.py`, with the five withheld buckets (`archived`,
+> `review_candidates`, `unverified`, `inferred`, `disputed`) exposed on the projected
+> state. No v2 profile has been written yet; §15 step 4 onward remains open.
 
 ---
 
@@ -320,10 +320,10 @@ The Core survives genre change; only `*_expression` gains a new dated record whe
 ## 15. Exact implementation sequence
 1. **Loader v2 dual-read** — extend the loader to read v1 + v2 per §14. Code only; no profile change.
 2. **Migration / invariant tests** — red-first tests for I1–I18, the §13 mapping, the 6-entry disposition, evidence-precision rules, hash-mismatch reporting, canonical-active admission (§9.1 — all four exclusion states), and `order`-band enforcement.
-3. **Canonical-active admission (v2.1)** — narrow `_route` to the §9.1 allowlist so
+3. **Canonical-active admission (v2.1)** — ✅ done. `_route` applies the §9.1 allowlist;
    `inferred` and `disputed` are withheld into their own buckets alongside `unverified` and
-   `needs_review`. Until this lands, the loader is at v2.0 admission and this document is
-   ahead of it.
+   `needs_review`. The v2 gate never applies to v1 entries, which have no
+   `verification_status` and would otherwise all be withheld (§14).
 4. **Full `music.yaml` review artifact** — the complete v2 file produced as a proposal (not written to the live path).
 5. **User approval** — Roei approves/edits (esp. stage names, `ocr_pending` items, `identity_trait` scope).
 6. **Local-only write** — write the approved `music.yaml` locally; the pre-commit guard keeps it local (never staged/committed).

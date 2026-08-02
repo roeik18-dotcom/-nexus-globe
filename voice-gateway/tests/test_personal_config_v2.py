@@ -1,4 +1,4 @@
-"""Schema v2 dual-read — the frozen invariants I1–I17.
+"""Schema v2 dual-read — the frozen invariants I1–I18.
 
 Source of truth: `voice-gateway/profiles/SCHEMA-V2.md`. If a test here and that
 document disagree, the document wins until a new dated freeze supersedes it.
@@ -50,7 +50,7 @@ def entry(**over) -> str:
         "date_confidence": "unknown", "date_precision": "unknown",
         "domain_scope": "music", "universality": "personal",
         "philos_relevance": "none", "order": "120",
-        "verification_status": "source_backed",
+        "verification_status": "source_confirmed",
     }
     e.update({k: ("null" if v is None else v) for k, v in over.items()})
     lines = [f"  - id: {e.pop('id')}"]
@@ -175,7 +175,8 @@ class TestProjectionRouting:
         st = project([lf])
         placed = [e.id for e in
                   st.person + st.music + st.routines_history + st.daily_opening
-                  + st.projects + st.archived + st.review_candidates]
+                  + st.projects + st.archived + st.review_candidates + st.unverified
+                  + st.inferred + st.disputed]
         assert sorted(placed) == ["a", "b", "c", "d"]
         assert len(placed) == len(set(placed)), "an entry was routed to two buckets"
 
@@ -231,7 +232,7 @@ class TestDates:
         assert lf.parsed, problems(lf)
 
     def test_unknown_date_confidence_forbids_a_precision(self, tmp_path):
-        lf = load(tmp_path, V2_HEAD + entry(date_confidence="unknown", date_precision="day"))
+        lf = load(tmp_path, V2_HEAD + entry(date_confidence="unknown", date_precision="year"))
         assert lf.errors, "precision without confidence must be reported"
 
 
@@ -317,6 +318,65 @@ class TestEnums:
         lf = load(tmp_path, V2_HEAD + entry(**{field: bad}))
         assert lf.errors, f"{field}={bad} must be rejected"
 
+    @pytest.mark.parametrize("field,stale", [
+        ("verification_status", "source_backed"),
+        ("verification_status", "user_confirmed"),
+        ("date_precision", "day"),
+    ])
+    def test_the_superseded_vocabulary_is_refused(self, tmp_path, field, stale):
+        """A freeze that still accepts the old words is not a freeze.
+
+        These three were real values in the pre-freeze draft. Silently accepting
+        them would let a stale profile load and read as though it had been
+        authored against the frozen schema.
+        """
+        lf = load(tmp_path, V2_HEAD + entry(**{field: stale}))
+        assert lf.errors, f"the superseded value {field}={stale} must be refused"
+
+
+# ── §8 · I3 — redaction is a policy LIST ─────────────────────────────────────
+
+
+class TestRedaction:
+    """`redaction` is a POLICY LIST (SCHEMA-V2 §4/§8), never the pre-freeze dict.
+
+    Merged from two classes that had drifted apart in this file — the second
+    shadowed the first, so half these assertions never ran. Every unique case from
+    both is kept.
+    """
+
+    def test_a_valid_policy_list_is_accepted(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD + entry(redaction="[never_verbatim, external_models_blocked]"))
+        assert lf.parsed and not lf.errors, problems(lf)
+        assert lf.entries[0].redaction == ("never_verbatim", "external_models_blocked")
+
+    def test_every_frozen_policy_is_accepted(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD + entry(
+            redaction="[paraphrase, never_verbatim, never_aloud, external_models_blocked]"))
+        assert lf.parsed and not lf.errors, problems(lf)
+
+    def test_the_old_dict_shape_is_refused(self, tmp_path):
+        """The pre-freeze shape, with its real field names — not a strawman."""
+        lf = load(tmp_path, V2_HEAD + entry(
+            redaction="{ required_for_logs: true, required_for_external_models: true }"))
+        assert lf.errors, "the superseded dict shape must be refused"
+
+    def test_none_cannot_coexist_with_another_policy(self, tmp_path):
+        """`none` means no constraint; alongside a constraint it is a contradiction."""
+        lf = load(tmp_path, V2_HEAD + entry(redaction="[none, never_verbatim]"))
+        assert lf.errors, "none alongside another policy must be refused"
+
+    def test_none_alone_is_fine(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD + entry(redaction="[none]"))
+        assert lf.parsed and not lf.errors, problems(lf)
+
+    def test_an_unknown_policy_is_refused(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD + entry(redaction="[shred_it]"))
+        assert lf.errors
+
+    def test_duplicate_policies_are_refused(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD + entry(redaction="[paraphrase, paraphrase]"))
+        assert lf.errors, "duplicate redaction policies must be refused"
 
 # ── no automatic migration ───────────────────────────────────────────────────
 
@@ -331,3 +391,120 @@ class TestNoAutoMigration:
 
     def test_schema_version_constant_still_declares_v1_as_the_default(self):
         assert SCHEMA_VERSION == 1
+
+
+# ── graft alignment with SCHEMA-V2.md @ 8d299b0 (verification / date / redaction) ──
+
+
+class TestVerificationStates:
+    FINAL = ["unverified", "self_confirmed", "human_confirmed",
+             "source_confirmed", "inferred", "disputed", "needs_review"]
+
+    @pytest.mark.parametrize("state", FINAL)
+    def test_every_final_verification_state_is_accepted(self, tmp_path, state):
+        lf = load(tmp_path, V2_HEAD + entry(verification_status=state))
+        assert lf.parsed and not lf.errors, problems(lf)
+
+    @pytest.mark.parametrize("stale", ["source_backed", "user_confirmed"])
+    def test_stale_verification_states_are_rejected(self, tmp_path, stale):
+        lf = load(tmp_path, V2_HEAD + entry(verification_status=stale))
+        assert lf.errors, f"{stale} was removed by 8d299b0 and must be rejected"
+
+
+class TestDatePrecisionStates:
+    @pytest.mark.parametrize("prec,conf,vf", [
+        ("unknown", "unknown", None),
+        ("exact", "dated", "2023"),
+        ("month", "dated", "2023"),
+        ("year", "dated", "2023"),
+        ("approximate", "dated", "2023"),
+    ])
+    def test_every_final_date_precision_is_accepted(self, tmp_path, prec, conf, vf):
+        kw = {"date_precision": prec, "date_confidence": conf}
+        if vf is not None:
+            kw["valid_from"] = f'"{vf}"'
+        lf = load(tmp_path, V2_HEAD + entry(**kw))
+        assert lf.parsed and not lf.errors, problems(lf)
+
+    def test_stale_day_precision_is_rejected(self, tmp_path):
+        lf = load(tmp_path, V2_HEAD + entry(
+            date_precision="day", date_confidence="dated", valid_from='"2023"'))
+        assert lf.errors, "'day' was removed by 8d299b0 and must be rejected"
+
+
+class TestUnverifiedProjection:
+    def test_unverified_is_out_of_the_canonical_active_projection(self, tmp_path):
+        st = project([load(tmp_path, V2_HEAD + entry(verification_status="unverified"))])
+        assert st.music == (), "an unverified claim must not read as confirmed config"
+        assert len(st.unverified) == 1
+
+    def test_unverified_is_counted_apart_from_needs_review(self, tmp_path):
+        """I18 — "never checked" and "flagged for a human" are different facts.
+
+        `unverified` is the schema's default (§14), so folding it into
+        `review_candidates` would make that count grow with every unreviewed entry
+        and stop meaning "someone asked for a human to look at this".
+        """
+        body = V2_HEAD + entry(id="never-checked", verification_status="unverified")
+        body += entry(id="flagged", verification_status="needs_review", order="130")
+        st = project([load(tmp_path, body)])
+        assert [e.id for e in st.unverified] == ["never-checked"]
+        assert [e.id for e in st.review_candidates] == ["flagged"]
+        assert st.summary()["unverified"] == 1
+        assert st.summary()["review_candidates"] == 1
+
+    @pytest.mark.parametrize("state", ["self_confirmed", "human_confirmed",
+                                       "source_confirmed"])
+    def test_only_the_three_confirmed_states_reach_the_projection(self, tmp_path, state):
+        """SCHEMA-V2 §9.1 / I15 — the admission allowlist, exhaustively."""
+        st = project([load(tmp_path, V2_HEAD + entry(verification_status=state))])
+        assert len(st.music) == 1, f"{state} is on the allowlist (§9.1)"
+
+    @pytest.mark.parametrize("state,bucket", [
+        ("unverified", "unverified"), ("needs_review", "review_candidates"),
+        ("inferred", "inferred"), ("disputed", "disputed"),
+    ])
+    def test_every_other_state_is_withheld_into_its_own_bucket(self, tmp_path, state, bucket):
+        """v2.1 — `inferred` is a guess and `disputed` is contested; neither is canon.
+
+        Each lands in a SEPARATE bucket. One "withheld" number would say how much is
+        missing without saying what to do about it: a guess needs evidence, a
+        contested claim needs resolving, an unchecked one needs looking at.
+        """
+        st = project([load(tmp_path, V2_HEAD + entry(verification_status=state))])
+        assert st.music == (), f"{state} must not read as current config (§9.1)"
+        assert [e.id for e in getattr(st, bucket)] == ["e1"]
+        assert st.summary()[bucket] == 1
+        assert st.summary()["withheld_total"] == 1
+
+    def test_an_unconfirmed_historical_entry_is_withheld_from_history_too(self, tmp_path):
+        """The verification gate precedes status routing.
+
+        An unconfirmed claim about the past is still unconfirmed; the historical
+        projection is a record, not a holding pen for things we never checked.
+        """
+        st = project([load(tmp_path, V2_HEAD + entry(
+            status="historical", section="legacy_expression", order="70",
+            verification_status="inferred"))])
+        assert st.routines_history == ()
+        assert len(st.inferred) == 1
+
+    def test_a_v1_entry_is_never_subject_to_the_v2_allowlist(self):
+        """v1 has no `verification_status`; applying the allowlist would erase it all."""
+        st, _ = load_personal_config(Path(__file__).resolve().parent.parent / "profiles")
+        assert len(st.person) == 14 and len(st.music) == 6
+        assert st.withheld_total == 0
+
+
+class TestDiagnosticsPrivacy:
+    def test_summary_never_carries_the_statement_value(self, tmp_path):
+        import json
+        marker = "PRIVATE_MARKER_9f3a"
+        st = project([load(tmp_path, V2_HEAD + entry(value=f"'{marker}'", privacy="sensitive"))])
+        assert marker not in json.dumps(st.summary(), ensure_ascii=False, default=str)
+
+    def test_a_validation_error_never_echoes_the_value(self, tmp_path):
+        import json
+        marker = "PRIVATE_MARKER_bad"
+        st = project([load(tmp_path, V2_HEAD + entry(value=f"'{marker}'", section="nonsense"))])
+        assert marker not in json.dumps(st.summary(), ensure_ascii=False, default=str)
