@@ -65,16 +65,6 @@ export default function PlanetPage() {
     communities: domains.size,
   };
 
-  const sampleEvents = [
-    ...missions.slice(0, 4).map(m => `Mission active · ${short(m.context?.statement ?? m.id, 40)}`),
-    ...providers.slice(0, 4).map(p => `Provider · ${p.context?.label ?? p.id}`),
-    ...vcr.slice(0, 4).map(r => {
-      const v = values.find(x => x.id === r.valueId)?.context?.label ?? "value";
-      const c = capabilities.find(x => x.id === r.capabilityId)?.context?.label ?? "capability";
-      return `Relationship · ${v} ↔ ${c}`;
-    }),
-    ...gaps.slice(0, 3).map(g => `Gap · ${short(g.context?.description ?? g.id, 40)}`),
-  ].filter(Boolean);
 
   // Arcs come from the canonical event log, never from PUDM relation rows:
   // blueprint §13 — "no line exists until it represents a real event".
@@ -84,5 +74,5 @@ export default function PlanetPage() {
   if (nodes.length === 0) return <div style={{ padding: 40, fontFamily: "system-ui" }}>No world data.</div>;
 
   void LivingField; // 2D field kept available; World is now the dominant 3D globe
-  return <WorldGlobe nodes={allNodes} arcs={arcs} counts={counts} sampleEvents={sampleEvents} />;
+  return <WorldGlobe nodes={allNodes} arcs={arcs} counts={counts} />;
 }

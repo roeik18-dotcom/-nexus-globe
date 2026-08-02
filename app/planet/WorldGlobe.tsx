@@ -32,19 +32,17 @@ function starShadows(n: number, seed: number) {
   return out.join(",");
 }
 
-export default function WorldGlobe({ nodes, arcs: eventArcs, counts, sampleEvents }: {
-  nodes: PNode[]; arcs: GlobeArc[]; counts: Counts; sampleEvents: string[];
+export default function WorldGlobe({ nodes, arcs: eventArcs, counts }: {
+  nodes: PNode[]; arcs: GlobeArc[]; counts: Counts;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const globeRef = useRef<any>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [Globe, setGlobe] = useState<any>(null);
-  const [tick, setTick] = useState(0);
   const stars = useMemo(() => starShadows(160, 7), []);
 
   useEffect(() => { let ok = true; import("react-globe.gl").then(m => { if (ok) setGlobe(() => m.default); }); return () => { ok = false; }; }, []);
   useEffect(() => { const el = wrapRef.current; if (!el) return; const u = () => setSize({ w: el.clientWidth, h: el.clientHeight }); u(); const ro = new ResizeObserver(u); ro.observe(el); return () => ro.disconnect(); }, []);
-  useEffect(() => { const id = setInterval(() => setTick(t => t + 1), 2600); return () => clearInterval(id); }, []);
 
   // cinematic camera drift — slow, continuous, never still
   useEffect(() => {
@@ -70,8 +68,6 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, counts, sampleEvent
       const mission = n.type === "mission";
       return { lat, lng, color: mission ? MISSION : ENTITY, label: n.label, type: n.type, alt: 0.01 + (mission ? 0.04 : 0.015), r: mission ? 0.5 : 0.34 };
     });
-    const r = seeded(9173);
-    const swarm = Array.from({ length: 720 }, () => ({ lat: Math.asin(r() * 2 - 1) * 180 / Math.PI, lng: r() * 360 - 180, color: `rgba(140,190,255,${(0.14 + r() * 0.32).toFixed(2)})`, alt: 0.01 + r() * 0.24, r: 0.1 + r() * 0.1, label: "", type: "" }));
     // Every line is an event. An arc whose endpoints are not both placeable is
     // DROPPED rather than drawn at a guessed position — blueprint §13.
     const arcs = eventArcs.map(a => {
@@ -90,13 +86,23 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, counts, sampleEvent
         isTransfer: a.relation === "transfer.completed",
       };
     }).filter(Boolean) as any[];
-    return { points: [...swarm, ...entityPts], arcs };
+    return { points: entityPts, arcs };
   }, [nodes, eventArcs]);
 
   const onReady = () => { const g = globeRef.current; if (!g) return; const c = g.controls(); c.autoRotate = true; c.autoRotateSpeed = 0.35; c.enableZoom = true; c.minDistance = 160; c.maxDistance = 460; };
 
-  const forces: [string, number][] = [["PURPOSE", counts.missions], ["TRUST", counts.relationships], ["KNOWLEDGE", counts.communities], ["TENSION", nodes.filter(n => n.type === "gap").length]];
-  const stream = sampleEvents.length ? Array.from({ length: 3 }, (_, i) => sampleEvents[(tick + i) % sampleEvents.length]) : [];
+  // Was "LIVING FORCES: PURPOSE / TRUST / KNOWLEDGE / TENSION" over these same
+  // numbers. TRUST was the relationship count — no trust ledger exists — so the
+  // labels asserted things the data does not say. Same figures, named for what
+  // they actually are, and marked as the static ontology they come from.
+  // The last few arcs, newest last — every one of them is a line you can see.
+  const recentArcs = eventArcs.slice(-4);
+
+  const ontologyCounts: [string, number][] = [
+    ["MISSIONS", counts.missions],
+    ["GAPS", nodes.filter(n => n.type === "gap").length],
+    ["DOMAINS", counts.communities],
+  ];
 
   return (
     <div style={S.root}>
@@ -150,8 +156,6 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, counts, sampleEvent
 
       {/* layer 5 — HUD that WRAPS the globe (thin, edge-hugging, no boxes) */}
       <div style={S.topCenter}><span style={S.liveDot} /> PHILOS · WORLD — GLOBAL FIELD</div>
-      <div style={S.tl}>ORBIT · OPTIMAL</div>
-      <div style={S.tr}>SYNC · REALTIME</div>
 
       {/* Legend — blueprint §13: a line the viewer cannot decode is not
           information. Lists only what is actually drawn, and says plainly which
@@ -181,13 +185,23 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, counts, sampleEvent
       </div>
 
       <div style={S.leftRail}>
-        <div style={S.railHead}>LIVING FORCES</div>
-        {forces.map(([l, v]) => (<div key={l} style={S.railRow}><span style={S.railL}>{l}</span><span style={S.railV}>{v}</span></div>))}
+        <div style={S.railHead}>STATIC ONTOLOGY</div>
+        {ontologyCounts.map(([l, v]) => (<div key={l} style={S.railRow}><span style={S.railL}>{l}</span><span style={S.railV}>{v}</span></div>))}
+        <div style={S.railNote}>from data/*.json — not events</div>
       </div>
 
       <div style={S.rightRail}>
-        <div style={{ ...S.railHead, textAlign: "right" }}>LIVE STREAM</div>
-        {stream.map((e, i) => (<div key={i} style={{ ...S.streamRow, opacity: 0.9 - i * 0.28 }}>{e}</div>))}
+        {/* Was "LIVE STREAM" cycling rows out of data/*.json every 2.6 s — nothing
+            was live and nothing had happened. This lists the events that actually
+            drew the lines on screen, newest last, with their ids. */}
+        <div style={{ ...S.railHead, textAlign: "right" }}>EVENTS ON SCREEN</div>
+        {recentArcs.map(a => (
+          <div key={a.event_id} style={S.streamRow}>
+            {a.relation} · {a.timestamp.slice(0, 10)}
+            <span style={S.streamId}> {a.event_id}</span>
+          </div>
+        ))}
+        {recentArcs.length === 0 && <div style={S.streamRow}>no event-backed lines</div>}
       </div>
 
       <div style={S.bottom}>
@@ -226,6 +240,8 @@ const S: Record<string, React.CSSProperties> = {
   railL: { fontSize: 9.5, letterSpacing: "1.5px", color: "#6f89b6", width: 78 },
   railV: { fontSize: 15, fontWeight: 600, color: "#dbe7fb", fontVariantNumeric: "tabular-nums" },
   streamRow: { fontSize: 10, lineHeight: 1.5, color: "#7f97c2", textAlign: "right" },
+  streamId: { color: "#3e587f" },
+  railNote: { fontSize: 8, color: "#3e587f", marginTop: 6, letterSpacing: "0.5px" },
 
   bottom: { position: "absolute", left: "50%", bottom: 26, transform: "translateX(-50%)", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 },
   stats: { display: "flex", alignItems: "center", gap: 22 },

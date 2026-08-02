@@ -71,8 +71,8 @@ function Art({ kind, color }: { kind: string; color: string }) {
     </svg>);
 }
 
-export default function OrientationHub({ nodes, arcs, counts, sampleEvents }: {
-  nodes: PNode[]; arcs: GlobeArc[]; counts: Counts; sampleEvents: string[];
+export default function OrientationHub({ nodes, arcs, counts }: {
+  nodes: PNode[]; arcs: GlobeArc[]; counts: Counts;
 }) {
   const [view, setView] = useState<"hub" | "world">("hub");
   const [bars, setBars] = useState<number[]>(() => Array.from({ length: 18 }, (_, i) => 0.3 + 0.5 * Math.abs(Math.sin(i))));
@@ -81,7 +81,7 @@ export default function OrientationHub({ nodes, arcs, counts, sampleEvents }: {
   if (view === "world") return (
     <div style={{ position: "fixed", inset: 0 }}>
       <button onClick={() => setView("hub")} style={S.back}>← Orientation</button>
-      <WorldGlobe nodes={nodes} arcs={arcs} counts={counts} sampleEvents={sampleEvents} />
+      <WorldGlobe nodes={nodes} arcs={arcs} counts={counts} />
     </div>);
 
   return (
