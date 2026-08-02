@@ -197,6 +197,90 @@ describe("flagship chain — real seed, honest edges", () => {
   });
 });
 
+// ── adversarial-pass fixes (Step-2 review) ───────────────────────────────────
+
+describe("adversarial-pass hardening", () => {
+  it("Rule A never self-loops when target_impact_event_id points at its own event", () => {
+    const v = ev({ event_id: "v", event_type: "impact.verified", entity_type: "impact", entity_id: "imp1", payload: { target_impact_event_id: "v" } });
+    expect(projectDynamics({ events: [v] }).edges).toHaveLength(0);
+  });
+
+  it("Rule A draws no edge when target_impact_event_id resolves to a non-impact.recorded event", () => {
+    const grp = ev({ event_id: "g", event_type: "group.opened", entity_id: "g1", timestamp: "2026-07-01T08:00:00+03:00" });
+    const v = ev({ event_id: "v", event_type: "impact.verified", entity_type: "impact", entity_id: "imp1", timestamp: "2026-07-01T09:00:00+03:00", payload: { target_impact_event_id: "g" } });
+    const g = projectDynamics({ events: [grp, v] });
+    expect(inferred(g)).toHaveLength(0);
+    expect(g.unresolved_claims.some((u) => u.kind === "missing_join_target" && u.reference === "g")).toBe(true);
+  });
+
+  it("a duplicated caused_by parent renders exactly one explicit edge, diagnostic still shown", () => {
+    const a = ev({ event_id: "a", timestamp: "2026-07-01T08:00:00+03:00" });
+    const c = ev({ event_id: "c", timestamp: "2026-07-01T10:00:00+03:00", caused_by: ["a", "a"] });
+    const g = projectDynamics({ events: [a, c] });
+    expect(explicit(g).filter((e) => e.source_event_id === "a" && e.target_event_id === "c")).toHaveLength(1);
+    expect(g.diagnostics.some((d) => d.code === "duplicate_parent")).toBe(true);
+  });
+
+  it("a 2-node caused_by cycle renders no explicit edge and flags causal_cycle", () => {
+    const t = "2026-07-01T10:00:00+03:00";
+    const a = ev({ event_id: "a", timestamp: t, caused_by: ["b"] });
+    const b = ev({ event_id: "b", timestamp: t, caused_by: ["a"] });
+    const g = projectDynamics({ events: [a, b] });
+    expect(explicit(g)).toHaveLength(0);
+    expect(g.diagnostics.some((d) => d.code === "causal_cycle")).toBe(true);
+  });
+
+  it("an overlapping/nested cycle leaks NO cyclic edge (SCC suppression, not per-path)", () => {
+    const t = "2026-07-01T10:00:00+03:00";
+    // a↔c is a 2-cycle NOT on findCycles' single reported path; SCC still catches it.
+    const a = ev({ event_id: "a", timestamp: t, caused_by: ["b", "c"] });
+    const b = ev({ event_id: "b", timestamp: t, caused_by: ["c"] });
+    const c = ev({ event_id: "c", timestamp: t, caused_by: ["a"] });
+    const g = projectDynamics({ events: [a, b, c] });
+    expect(explicit(g)).toHaveLength(0);
+    expect(g.diagnostics.some((d) => d.code === "causal_cycle")).toBe(true);
+  });
+
+  it("strict mode still records a dangling parent as an inspectable unresolved claim", () => {
+    const g = projectDynamics({ events: [ev({ event_id: "c", caused_by: ["ghost"] })], mode: "strict" });
+    expect(g.unresolved_claims.some((u) => u.reference === "ghost" && u.kind === "missing_causal_parent")).toBe(true);
+    expect(g.summary.unresolved_count).toBe(1);
+  });
+
+  it("a window bound without a timezone offset throws, never silently returns everything", () => {
+    expect(() => projectDynamics({ events: VALUE_GROUP_EVENTS, window: ["2026-07-03", "2026-07-10"] })).toThrow(/timezone offset/);
+  });
+
+  it("an offsetless (ambiguous) timestamp yields no explicit edge and flags invalid_timestamp", () => {
+    const p = ev({ event_id: "p", timestamp: "2026-07-01T09:00:00" });
+    const c = ev({ event_id: "c", timestamp: "2026-07-02T10:00:00+03:00", caused_by: ["p"] });
+    const g = projectDynamics({ events: [p, c] });
+    expect(explicit(g)).toHaveLength(0);
+    expect(g.diagnostics.some((d) => d.code === "invalid_timestamp")).toBe(true);
+  });
+
+  it("a private parent is hidden from a non-actor viewer; its edge is withheld and counted", () => {
+    const p = ev({ event_id: "p", event_type: "group.opened", entity_id: "g1", actor_id: "p_owner", visibility: "private", timestamp: "2026-07-01T09:00:00+03:00" });
+    const c = ev({ event_id: "c", event_type: "member.joined", actor_id: "p_pub", timestamp: "2026-07-01T10:00:00+03:00", caused_by: ["p"] });
+    const hidden = projectDynamics({ events: [p, c], viewer: "p_intruder" });
+    expect(hidden.nodes.some((n) => n.event_id === "p")).toBe(false);
+    expect(hidden.edges).toHaveLength(0);
+    expect(hidden.summary.withheld).toBe(1);
+    const shown = projectDynamics({ events: [p, c], viewer: "p_owner" });
+    expect(shown.nodes.some((n) => n.event_id === "p")).toBe(true);
+    expect(shown.edges).toHaveLength(1);
+  });
+
+  it("unresolved claims owned by a hidden event never leak past the viewer gate", () => {
+    const secret = ev({ event_id: "e_secret", actor_id: "p_owner", visibility: "private", caused_by: ["ghost"], timestamp: "2026-07-01T10:00:00+03:00" });
+    const intruder = projectDynamics({ events: [secret], viewer: "p_intruder" });
+    expect(intruder.unresolved_claims).toEqual([]);
+    expect(intruder.summary.unresolved_count).toBe(0);
+    const owner = projectDynamics({ events: [secret], viewer: "p_owner" });
+    expect(owner.unresolved_claims.some((u) => u.event_id === "e_secret")).toBe(true);
+  });
+});
+
 // ── honesty invariants ───────────────────────────────────────────────────────
 
 describe("honesty invariants", () => {

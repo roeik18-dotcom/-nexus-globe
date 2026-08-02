@@ -425,6 +425,35 @@ contract decision, not hidden:
 | `causal_cycle` | error | the `caused_by` graph is not a DAG |
 | `invalid_timestamp` | error | a causal timestamp is unparseable or lacks an explicit offset |
 
+## 8.8 Step-2 review outcome (adversarial pass, 2026-08-02)
+Six independent skeptics reviewed `projectDynamics`; **12 findings confirmed, 0 uncertain** (the
+edge-direction/semantics core came back clean). All 12 were in the new module and **fixed** in the
+same change, each pinned by a test:
+
+- **Cycle suppression (high).** Edges were suppressed by `findCycles`' reported paths, which are
+  incomplete — overlapping cycles could leak one edge rendered as a `self_report` **fact**. Now
+  suppressed by **strongly-connected-component membership** (Tarjan over the resolved `caused_by`
+  graph): an explicit edge whose parent and child share an SCC never renders. Complete, not
+  per-path.
+- **`rejectedPairs` was over-broad (med/low).** A single catch-all over `parent_id` dropped
+  *valid-but-duplicated* edges and pre-empted the unresolved-claim push for strict missing parents.
+  Split by reason: only `parent_after_child` rejects a pair; `duplicate_parent` renders once;
+  `missing_parent` flows to `unresolved_claims` in **both** modes; cycles → SCC; bad timestamps →
+  by-event.
+- **Inference allow-list (med/low).** Rule A could self-loop (`target_impact_event_id` == own id)
+  and didn't check the cause is actually an `impact.recorded` (Rule B checks both endpoints). Added
+  a self-loop guard and the missing type-gate; a mislinked FK now becomes a `missing_join_target`
+  claim, never a drawn edge.
+- **Window / viewer honesty (med).** A malformed/offsetless `window` bound silently returned the
+  whole log — now **throws**. `unresolved_claims` were computed over the full log and could **leak
+  a hidden event's id** past the viewer gate — now filtered to the displayed graph, and a
+  `summary.withheld` count states how many edges the view hid.
+- **Coverage (med/low).** The cycle, `invalid_timestamp`, and viewer-visibility rejection paths had
+  no projection-level tests — a reversed-key or dropped-guard regression would have shipped silent.
+  Added tests for each (incl. a 3-node overlapping cycle that a per-path suppression would leak).
+
+Result: 33 projectDynamics tests, full suite green.
+
 ## 9. One-paragraph summary
 The Dynamics Layer is the **one** part of orchestration that is not merely a projection: it
 adds a single optional field, `caused_by`, to the event envelope — a real, versioned schema

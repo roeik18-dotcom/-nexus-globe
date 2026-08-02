@@ -96,6 +96,8 @@ export interface DynamicsSummary {
   inferred_edges: number;
   domains: Record<Domain, number>;
   unresolved_count: number;
+  /** Edges suppressed because an endpoint was hidden by the viewer/window filter. */
+  withheld: number;
 }
 
 export interface DynamicsGraph {
@@ -160,6 +162,67 @@ const strField = (e: PhilosEvent, key: string): string | undefined => {
   return typeof v === "string" && v.length > 0 ? v : undefined;
 };
 
+/**
+ * Strongly-connected components of the resolved, non-self `caused_by` graph
+ * (child → its parents), by Tarjan. Two events share an SCC id iff they are
+ * mutually reachable — i.e. entangled in a cycle. An explicit edge whose parent
+ * and child share an SCC is cyclic and must not render as a declared fact.
+ *
+ * This is why cycle suppression can't key off `findCycles`' reported paths:
+ * findCycles guarantees only ≥1 back-edge per cycle, not every cyclic edge, so
+ * overlapping cycles would leak an edge. SCC membership suppresses them all.
+ * Deterministic — nodes are visited in `inOrder`.
+ */
+function computeSccs(
+  log: readonly PhilosEvent[],
+  byId: Map<string, PhilosEvent>,
+): Map<string, number> {
+  const adj = new Map<string, string[]>();
+  for (const e of log) {
+    const ps: string[] = [];
+    for (const p of causalParents(e)) {
+      if (typeof p === "string" && p.length > 0 && p !== e.event_id && byId.has(p)) ps.push(p);
+    }
+    adj.set(e.event_id, ps);
+  }
+
+  const sccOf = new Map<string, number>();
+  const idx = new Map<string, number>();
+  const low = new Map<string, number>();
+  const onStack = new Set<string>();
+  const stack: string[] = [];
+  let index = 0;
+  let sccCount = 0;
+
+  const strongconnect = (v: string): void => {
+    idx.set(v, index);
+    low.set(v, index);
+    index += 1;
+    stack.push(v);
+    onStack.add(v);
+    for (const w of adj.get(v) ?? []) {
+      if (!idx.has(w)) {
+        strongconnect(w);
+        low.set(v, Math.min(low.get(v) ?? 0, low.get(w) ?? 0));
+      } else if (onStack.has(w)) {
+        low.set(v, Math.min(low.get(v) ?? 0, idx.get(w) ?? 0));
+      }
+    }
+    if ((low.get(v) ?? 0) === (idx.get(v) ?? 0)) {
+      let w = "";
+      do {
+        w = stack.pop() as string;
+        onStack.delete(w);
+        sccOf.set(w, sccCount);
+      } while (w !== v);
+      sccCount += 1;
+    }
+  };
+
+  for (const e of log) if (!idx.has(e.event_id)) strongconnect(e.event_id);
+  return sccOf;
+}
+
 export function projectDynamics(query: DynamicsQuery): DynamicsGraph {
   const mode: CausalityMode = query.mode ?? "lenient";
   const log = inOrder(query.events);
@@ -169,22 +232,25 @@ export function projectDynamics(query: DynamicsQuery): DynamicsGraph {
   // ── causality validation over the FULL set (parents may sit outside a window) ──
   const report = validateCausality(log, mode);
 
-  // Relations the validator rejects must never render. Key by `${child}|${parent}`.
-  const rejectedPairs = new Set<string>();
+  // Each rejection reason is handled where it belongs — a single catch-all over
+  // `parent_id` was wrong (it dropped valid-but-duplicated edges and pre-empted
+  // the unresolved-claim push for strict missing parents):
+  //   • parent_after_child → the ONE code that rejects a specific resolvable pair.
+  //   • invalid_timestamp   → drop by event (badTimestamp).
+  //   • causal_cycle        → suppressed by SCC membership (sccOf), which is
+  //     complete where a per-reported-path set would leak overlapping cycles.
+  //   • duplicate_parent    → render once (the `done` set), diagnostic still shown.
+  //   • missing_parent      → flows to unresolved_claims in BOTH modes.
+  //   • self_reference / invalid_parent_id → caught structurally in the loop.
+  const temporallyRejected = new Set<string>(); // `${child}|${parent}`
   const badTimestamp = new Set<string>();
   for (const d of report.errors) {
-    if (d.code === "invalid_timestamp") {
-      badTimestamp.add(d.event_id);
-    } else if (d.code === "causal_cycle" && d.cycle) {
-      // path [a,b,c,a]: consecutive (x,y) means y ∈ caused_by(x) → causal edge y→x,
-      // i.e. the rejected relation is (child x, parent y).
-      for (let i = 0; i + 1 < d.cycle.length; i++) {
-        rejectedPairs.add(`${d.cycle[i]}|${d.cycle[i + 1]}`);
-      }
-    } else if (d.parent_id !== undefined) {
-      rejectedPairs.add(`${d.event_id}|${d.parent_id}`);
+    if (d.code === "invalid_timestamp") badTimestamp.add(d.event_id);
+    else if (d.code === "parent_after_child" && d.parent_id !== undefined) {
+      temporallyRejected.add(`${d.event_id}|${d.parent_id}`);
     }
   }
+  const sccOf = computeSccs(log, byId);
 
   const unresolved_claims: UnresolvedClaim[] = [];
   const edges: DynamicsEdge[] = [];
@@ -229,9 +295,9 @@ export function projectDynamics(query: DynamicsQuery): DynamicsGraph {
     for (const parentId of parents) {
       if (typeof parentId !== "string" || parentId.length === 0) continue; // invalid_parent_id
       if (parentId === child.event_id) continue; // self_reference
-      if (done.has(parentId)) continue; // duplicate — one attempt per parent
+      if (done.has(parentId)) continue; // duplicate — render once (diagnostic still shown)
       done.add(parentId);
-      if (rejectedPairs.has(`${child.event_id}|${parentId}`)) continue; // cycle / temporal / duplicate
+      if (temporallyRejected.has(`${child.event_id}|${parentId}`)) continue; // parent_after_child
       if (badTimestamp.has(child.event_id) || badTimestamp.has(parentId)) continue;
 
       const parent = byId.get(parentId);
@@ -243,6 +309,8 @@ export function projectDynamics(query: DynamicsQuery): DynamicsGraph {
         });
         continue;
       }
+      // Same SCC ⇒ the relation is part of a cycle; never render it as a fact.
+      if (sccOf.get(parent.event_id) === sccOf.get(child.event_id)) continue;
       explicitPairs.add(`${parent.event_id}->${child.event_id}`);
       pushEdge(parent, child, "explicit");
     }
@@ -254,6 +322,7 @@ export function projectDynamics(query: DynamicsQuery): DynamicsGraph {
     target: PhilosEvent,
     joinKey: keyof typeof JOIN_CONFIDENCE,
   ): void => {
+    if (source.event_id === target.event_id) return; // no self-loop (mirrors the explicit guard)
     if (explicitPairs.has(`${source.event_id}->${target.event_id}`)) return; // explicit wins
     const si = usableInstant(source.timestamp);
     const ti = usableInstant(target.timestamp);
@@ -268,7 +337,10 @@ export function projectDynamics(query: DynamicsQuery): DynamicsGraph {
       const targetId = strField(e, "target_impact_event_id");
       if (targetId === undefined) continue;
       const recorded = byId.get(targetId);
-      if (recorded === undefined) {
+      // The cause must actually be an impact.recorded (mirrors Rule B typing both
+      // endpoints). A dangling OR wrong-typed reference is a mislink, surfaced as
+      // an unresolved claim — never drawn as a causal edge.
+      if (recorded === undefined || recorded.event_type !== "impact.recorded") {
         unresolved_claims.push({
           event_id: e.event_id,
           kind: "missing_join_target",
@@ -296,6 +368,14 @@ export function projectDynamics(query: DynamicsQuery): DynamicsGraph {
   // ── 3) nodes: one per event, then filter by viewer visibility + window ──
   const from = query.window ? usableInstant(query.window[0]) : null;
   const to = query.window ? usableInstant(query.window[1]) : null;
+  // A provided-but-unusable window bound must fail loud, not silently disable the
+  // filter and return the whole log ("no silent failure").
+  if (query.window && (from === null || to === null)) {
+    throw new Error(
+      `projectDynamics: window bounds must be ISO-8601 with an explicit timezone offset ` +
+        `(Z or ±HH:MM); got [${String(query.window[0])}, ${String(query.window[1])}]`,
+    );
+  }
   const inWindow = (ts: string): boolean => {
     if (!query.window || from === null || to === null) return true;
     const t = usableInstant(ts);
@@ -355,12 +435,18 @@ export function projectDynamics(query: DynamicsQuery): DynamicsGraph {
   };
   for (const n of nodes) domains[n.domain] += 1;
 
+  // Unresolved claims are filtered to the displayed graph: a claim owned by an
+  // event the viewer/window hid must not leak that event's id, and the count must
+  // reconcile with the shown nodes/edges.
+  const visibleUnresolved = unresolved_claims.filter((u) => keptIds.has(u.event_id));
+  const withheld = edges.length - keptEdges.length;
+
   const explicit_edges = keptEdges.filter((e) => e.edge_origin === "explicit").length;
   return {
     nodes,
     edges: keptEdges,
     domain_transitions,
-    unresolved_claims,
+    unresolved_claims: visibleUnresolved,
     diagnostics: report.diagnostics,
     summary: {
       node_count: nodes.length,
@@ -368,7 +454,8 @@ export function projectDynamics(query: DynamicsQuery): DynamicsGraph {
       explicit_edges,
       inferred_edges: keptEdges.length - explicit_edges,
       domains,
-      unresolved_count: unresolved_claims.length,
+      unresolved_count: visibleUnresolved.length,
+      withheld,
     },
   };
 }
