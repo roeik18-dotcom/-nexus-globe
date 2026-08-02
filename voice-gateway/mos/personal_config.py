@@ -23,10 +23,17 @@ the state shape. Nothing downstream reads the YAML directly.
 from __future__ import annotations
 
 import datetime
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
+from .storage_roots import (
+    ResolvedSource,
+    SourceIssue,
+    load_storage_roots,
+    resolve_source,
+    verify_hash,
+)
 
 #: The version a file gets if it declares none, and the one v1 rules apply to.
 SCHEMA_VERSION = 1
@@ -267,6 +274,12 @@ class PersonalConfigState:
     #: v2 `verification_status: needs_review` — surfaced for review, excluded from
     #: the canonical active projection (I15). Not an error, not yet an answer.
     review_candidates: tuple[ConfigEntry, ...] = ()
+    #: Populated only when load_personal_config(verify=True).
+    resolved_sources: tuple[ResolvedSource, ...] = ()
+    #: Machine-local findings: unconfigured root, missing file, hash mismatch.
+    #: Kept apart from `errors` — a profile is not invalid because THIS laptop
+    #: has not configured its storage roots.
+    source_issues: tuple[SourceIssue, ...] = ()
     #: Reserved for the change log. Empty while the projection is seed-only.
     recent_changes: tuple[dict[str, Any], ...] = ()
 
@@ -326,6 +339,12 @@ class PersonalConfigState:
             "historical": len(self.routines_history),
             "unresolved_cross_links": len(self.warnings),
             "warnings": [str(w) for w in self.warnings],
+            # machine-local source health (I13). Separate from validation: a
+            # profile is not invalid because THIS laptop lacks a storage root.
+            "sources_resolved": len(self.resolved_sources),
+            "sources_verified": sum(1 for r in self.resolved_sources if r.hash_ok is True),
+            "hash_mismatches": sum(1 for i in self.source_issues if i.kind == "hash_mismatch"),
+            "source_issues": [str(i) for i in self.source_issues],
             "recent_changes": list(self.recent_changes),
         }
 
@@ -943,11 +962,64 @@ def project(
 DEFAULT_PROFILE_FILES = ("person.yaml", "music.yaml")
 
 
+def verify_sources(
+    files: Iterable[LoadedFile],
+    roots: dict[str, Path] | None = None,
+    *,
+    storage_roots: dict[str, str] | None = None,
+) -> tuple[tuple[ResolvedSource, ...], tuple[SourceIssue, ...]]:
+    """Resolve and hash-check every v2 source. Read-only, and never raises.
+
+    Separate from parsing on purpose: whether a file parses is a property of the
+    profile, whether its sources resolve is a property of THIS machine. Mixing
+    them would make a valid profile look invalid on a laptop that simply has not
+    configured its roots yet.
+    """
+    if roots is None:
+        roots, issues = load_storage_roots(storage_roots)
+        config_issues = list(issues)
+    else:
+        config_issues = []
+
+    resolved: list[ResolvedSource] = []
+    issues = list(config_issues)
+    seen: set[str] = set()
+
+    for lf in files:
+        for sid, src in (lf.registry or {}).items():
+            if sid in seen:
+                continue
+            seen.add(sid)
+            got, issue = resolve_source(sid, src.storage_root, src.relative_path, roots)
+            if issue is not None:
+                issues.append(issue)
+            if got is None or not got.exists:
+                continue
+            ok, hash_issue = verify_hash(sid, got.path, src.content_sha256)
+            if hash_issue is not None:
+                issues.append(hash_issue)
+            resolved.append(ResolvedSource(sid, got.path, True, hash_ok=ok))
+
+    return tuple(resolved), tuple(issues)
+
+
 def load_personal_config(
     profiles_dir: Path,
     filenames: Sequence[str] = DEFAULT_PROFILE_FILES,
     changes: Sequence[dict[str, Any]] = (),
+    *,
+    storage_roots: dict[str, str] | None = None,
+    verify: bool = False,
 ) -> tuple[PersonalConfigState, tuple[LoadedFile, ...]]:
-    """Load every profile file and project it. Never raises."""
+    """Load every profile file and project it. Never raises.
+
+    `verify=False` by default: resolution touches the filesystem, and the common
+    caller (the Morning Snapshot collector) wants profile health, not an archive
+    audit. Pass `verify=True` to resolve sources and check recorded hashes.
+    """
     loaded = tuple(load_file(profiles_dir / name) for name in filenames)
-    return project(loaded, changes), loaded
+    state = project(loaded, changes)
+    if verify:
+        resolved, issues = verify_sources(loaded, storage_roots=storage_roots)
+        state = replace(state, resolved_sources=resolved, source_issues=issues)
+    return state, loaded

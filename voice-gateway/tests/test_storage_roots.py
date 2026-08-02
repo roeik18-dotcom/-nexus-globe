@@ -20,6 +20,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from mos.personal_config import load_personal_config, verify_sources  # noqa: E402
 from mos.storage_roots import (  # noqa: E402
     ENV_VAR,
     load_storage_roots,
@@ -188,8 +189,115 @@ class TestHashVerification:
         assert ok is False
         assert issue is not None and issue.kind == "hash_mismatch"
 
+    def test_a_mismatch_never_reads_as_verified(self, tmp_path):
+        """The whole point: drifted content must lose its credibility."""
+        d = profile(tmp_path, sha="0" * 64)
+        root, _ = archive(tmp_path)
+        state, _ = load_personal_config(
+            d, ["music.yaml"], storage_roots={"dropbox": str(root)}, verify=True)
+        assert state.summary()["hash_mismatches"] == 1
+        assert state.summary()["sources_verified"] == 0
+
     def test_hash_check_does_not_print_file_contents(self, tmp_path):
         _, f = archive(tmp_path, body="a private artistic statement")
         _, issue = verify_hash("s", f, "0" * 64)
         assert "private artistic statement" not in str(issue)
 
+    def test_verification_mutates_nothing(self, tmp_path):
+        d = profile(tmp_path, sha=None)
+        root, f = archive(tmp_path)
+        before = [(p.read_bytes(), p.stat().st_mtime_ns) for p in (f, d / "music.yaml")]
+        load_personal_config(d, ["music.yaml"], storage_roots={"dropbox": str(root)}, verify=True)
+        after = [(p.read_bytes(), p.stat().st_mtime_ns) for p in (f, d / "music.yaml")]
+        assert before == after
+
+
+# ── 4. loader integration ────────────────────────────────────────────────────
+
+
+class TestLoaderIntegration:
+    def test_configured_root_resolves_and_verifies(self, tmp_path):
+        root, f = archive(tmp_path)
+        d = profile(tmp_path, sha=sha256_of(f))
+        state, _ = load_personal_config(
+            d, ["music.yaml"], storage_roots={"dropbox": str(root)}, verify=True)
+        assert state.is_valid
+        assert state.summary()["sources_resolved"] == 1
+        assert state.summary()["sources_verified"] == 1
+        assert state.source_issues == ()
+
+    def test_missing_root_does_not_invalidate_the_profile(self, tmp_path):
+        """A profile is not wrong because THIS machine lacks a storage root."""
+        d = profile(tmp_path, sha=None)
+        state, _ = load_personal_config(d, ["music.yaml"], storage_roots={}, verify=True)
+        assert state.is_valid, [str(e) for e in state.errors]
+        assert "unconfigured_root" in " ".join(i.kind for i in state.source_issues)
+        assert [e.id for e in state.music] == ["music-core-contrast"]
+
+    def test_verification_is_off_by_default(self, tmp_path):
+        """The common caller wants profile health, not an archive audit."""
+        d = profile(tmp_path, sha=None)
+        state, _ = load_personal_config(d, ["music.yaml"])
+        assert state.resolved_sources == ()
+        assert state.source_issues == ()
+
+    def test_missing_source_file_is_surfaced(self, tmp_path):
+        root, _ = archive(tmp_path)
+        d = profile(tmp_path, sha=None, rel="music/absent.rtf")
+        state, _ = load_personal_config(
+            d, ["music.yaml"], storage_roots={"dropbox": str(root)}, verify=True)
+        assert "missing_file" in " ".join(i.kind for i in state.source_issues)
+
+
+# ── 5. collector summary ─────────────────────────────────────────────────────
+
+
+class TestSummaryDiagnostics:
+    def test_summary_reports_the_v2_lifecycle_counts(self, tmp_path):
+        root, f = archive(tmp_path)
+        d = profile(tmp_path, sha=sha256_of(f))
+        state, _ = load_personal_config(
+            d, ["music.yaml"], storage_roots={"dropbox": str(root)}, verify=True)
+        s = state.summary()
+        for key in ("schema_version", "active", "historical", "archived",
+                    "review_candidates", "unresolved_cross_links",
+                    "sources_resolved", "sources_verified", "hash_mismatches"):
+            assert key in s, key
+        assert s["schema_version"] == 2
+
+    def test_summary_never_carries_entry_values(self, tmp_path):
+        root, f = archive(tmp_path)
+        d = profile(tmp_path, sha=sha256_of(f))
+        state, _ = load_personal_config(
+            d, ["music.yaml"], storage_roots={"dropbox": str(root)}, verify=True)
+        blob = repr(state.summary())
+        assert "Contrast carries the emotion" not in blob
+
+    def test_summary_never_carries_resolved_absolute_paths(self, tmp_path):
+        """A resolved path is machine-specific; the snapshot travels into logs."""
+        root, f = archive(tmp_path)
+        d = profile(tmp_path, sha=sha256_of(f))
+        state, _ = load_personal_config(
+            d, ["music.yaml"], storage_roots={"dropbox": str(root)}, verify=True)
+        assert str(root) not in repr(state.summary())
+
+
+# ── 6. v1 is untouched by any of this ────────────────────────────────────────
+
+
+class TestV1Unaffected:
+    def test_v1_profiles_have_no_sources_and_no_issues(self):
+        p = Path(__file__).resolve().parent.parent / "profiles"
+        state, _ = load_personal_config(
+            p, ["person.example.yaml", "music.example.yaml"], verify=True)
+        assert state.is_valid
+        assert state.resolved_sources == ()
+        # a v1 file has no registry, so no root is ever needed to read it
+        assert all(i.kind != "missing_file" for i in state.source_issues)
+
+    def test_verify_sources_on_v1_files_finds_nothing_to_do(self):
+        p = Path(__file__).resolve().parent.parent / "profiles"
+        _, loaded = load_personal_config(p, ["person.example.yaml"])
+        resolved, issues = verify_sources(loaded, roots={})
+        assert resolved == ()
+        assert issues == ()
