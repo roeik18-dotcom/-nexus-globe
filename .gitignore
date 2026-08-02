@@ -56,3 +56,16 @@ wake-diag.log
 # Tracked: schema, loader, synthetic *.example.yaml. Never: Roei's own data.
 voice-gateway/profiles/*.yaml
 !voice-gateway/profiles/*.example.yaml
+
+# ── Knowledge-extraction raw artifacts: LOCAL BACKUP, never tracked ──────────
+# The harvest/journal payloads quote source material verbatim — political,
+# family-loyalty, dating and biographical excerpts — and carry ~284 absolute
+# local paths. The synthesis neutralises that content; the raw layer does not.
+# A local backup and a git history are different needs: this survives the loss
+# of ~/cluod code (which has no remote) without entering permanent history.
+# Tracked instead: the consolidated report and a sanitized manifest.
+#
+# `raw/*` not `raw/` — git never descends into an excluded DIRECTORY, so the
+# .gitkeep negation below would be dead with the directory form.
+docs/knowledge-inventory/raw/*
+!docs/knowledge-inventory/raw/.gitkeep
