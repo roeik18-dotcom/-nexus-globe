@@ -176,11 +176,32 @@ def resolve_source(
             f"relative_path is absolute ({relative_path!r}); sources must be relative "
             "to a logical storage_root")
 
+    if not relative_path.strip():
+        # An empty path resolves to the root DIRECTORY, which would then report as a
+        # located source. A citation must point at a file, not at the archive.
+        return None, SourceIssue(
+            source_id, "absolute_path",
+            "relative_path is empty; a source must cite a file inside the storage_root")
+
     base = roots.get(storage_root)
     if base is None:
         return None, SourceIssue(
             source_id, "unconfigured_root",
             f"storage_root {storage_root!r} is not configured on this machine")
+
+    # A root that is absent or is not a directory is a MACHINE misconfiguration, and it
+    # must not be reported per-file as `missing_file`. Otherwise an unmounted drive makes
+    # every source say "not present on this machine" — which reads as "the archive lost
+    # these files" when the truth is "this laptop cannot see the archive at all".
+    if not base.exists():
+        return None, SourceIssue(
+            source_id, "unconfigured_root",
+            f"storage_root {storage_root!r} points at {base} which does not exist on this "
+            "machine (unmounted drive, or a stale storage_roots entry)")
+    if not base.is_dir():
+        return None, SourceIssue(
+            source_id, "unconfigured_root",
+            f"storage_root {storage_root!r} points at {base} which is not a directory")
 
     candidate = (base / relative_path)
     # Traversal check BEFORE touching the filesystem: `..` must not escape the
@@ -198,6 +219,13 @@ def resolve_source(
         return ResolvedSource(source_id, target, exists=False), SourceIssue(
             source_id, "missing_file",
             f"{storage_root}/{relative_path} is not present on this machine")
+
+    if target.is_dir():
+        # Found, but not citable: a directory has no content to hash and no text to
+        # quote, so calling it a resolved source would give it credibility it cannot earn.
+        return ResolvedSource(source_id, target, exists=False), SourceIssue(
+            source_id, "missing_file",
+            f"{storage_root}/{relative_path} is a directory, not a source file")
 
     return ResolvedSource(source_id, target, exists=True), None
 

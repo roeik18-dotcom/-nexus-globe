@@ -65,7 +65,7 @@ entries:
     privacy: private
     usage: {{merlin_context: true}}
     order: 20
-    verification_status: source_backed
+    verification_status: source_confirmed
 """, encoding="utf-8")
     return d
 
@@ -109,6 +109,49 @@ class TestConfiguration:
         roots, issues = load_storage_roots(env={}, config_path=cfg)
         assert roots == {}
         assert any(i.kind == "unreadable" for i in issues)
+
+    def test_explicit_beats_the_environment(self, tmp_path):
+        roots, _ = load_storage_roots(
+            {"dropbox": "/explicit"}, env={ENV_VAR: json.dumps({"dropbox": "/from-env"})})
+        assert roots["dropbox"] == Path("/explicit")
+
+    def test_the_environment_beats_the_config_file(self, tmp_path):
+        cfg = tmp_path / "roots.yaml"
+        cfg.write_text('storage_roots:\n  dropbox: "/from-file"\n', encoding="utf-8")
+        roots, _ = load_storage_roots(
+            env={ENV_VAR: json.dumps({"dropbox": "/from-env"})}, config_path=cfg)
+        assert roots["dropbox"] == Path("/from-env")
+
+    def test_malformed_json_in_the_environment_is_reported(self):
+        roots, issues = load_storage_roots(env={ENV_VAR: "{not valid json"})
+        assert roots == {}
+        assert any(i.kind == "unreadable" for i in issues)
+
+    def test_an_env_path_that_does_not_exist_is_reported(self, tmp_path):
+        roots, issues = load_storage_roots(env={ENV_VAR: str(tmp_path / "absent.yaml")})
+        assert roots == {}
+        assert any(i.kind == "unreadable" for i in issues)
+
+    def test_a_json_config_file_is_read(self, tmp_path):
+        cfg = tmp_path / "roots.json"
+        cfg.write_text(json.dumps({"storage_roots": {"dropbox": str(tmp_path)}}), encoding="utf-8")
+        roots, issues = load_storage_roots(env={}, config_path=cfg)
+        assert roots["dropbox"] == tmp_path and issues == []
+
+    def test_malformed_json_config_file_is_reported(self, tmp_path):
+        cfg = tmp_path / "roots.json"
+        cfg.write_text("{not valid", encoding="utf-8")
+        roots, issues = load_storage_roots(env={}, config_path=cfg)
+        assert roots == {} and any(i.kind == "unreadable" for i in issues)
+
+    def test_a_config_issue_never_prints_the_file_body(self, tmp_path):
+        """A broken config may still contain real paths; the diagnostic must not echo it."""
+        cfg = tmp_path / "roots.yaml"
+        cfg.write_text('storage_roots:\n  dropbox: "/Users/real/Secret"\n  bad:\n   [\n',
+                       encoding="utf-8")
+        _, issues = load_storage_roots(env={}, config_path=cfg)
+        assert issues, "a malformed config must be reported"
+        assert "/Users/real/Secret" not in " ".join(str(i) for i in issues)
 
     def test_committed_example_holds_no_real_path(self):
         ex = Path(__file__).resolve().parent.parent / "config" / "storage_roots.example.yaml"
@@ -160,6 +203,56 @@ class TestResolution:
         assert got is None
         assert issue is not None and issue.kind == "unconfigured_root"
         assert "dropbox" in issue.problem
+
+    def test_a_symlink_escaping_the_root_is_refused(self, tmp_path):
+        """The traversal an attacker actually reaches for: `..` is obvious, a link is not.
+
+        A link inside the archive pointing outside it would otherwise let a profile cite
+        any file on the machine while looking perfectly portable.
+        """
+        root, _ = archive(tmp_path)
+        secret = tmp_path / "secret.txt"
+        secret.write_text("private", encoding="utf-8")
+        (root / "music" / "link.rtf").symlink_to(secret)
+        got, issue = resolve_source("s", "dropbox", "music/link.rtf", {"dropbox": root})
+        assert got is None
+        assert issue is not None and issue.kind == "traversal"
+
+    def test_a_symlinked_root_still_resolves(self, tmp_path):
+        """The other half: /tmp is a symlink on macOS, so this must NOT be refused."""
+        root, f = archive(tmp_path)
+        alias = tmp_path / "alias"
+        alias.symlink_to(root)
+        got, issue = resolve_source("s", "dropbox", "music/vision.rtf", {"dropbox": alias})
+        assert issue is None
+        assert got is not None and got.exists
+
+    def test_an_unmounted_root_is_a_config_problem_not_a_missing_file(self, tmp_path):
+        """An absent root must not report per-file as if the archive lost the files."""
+        got, issue = resolve_source(
+            "s", "dropbox", "music/vision.rtf", {"dropbox": tmp_path / "not-mounted"})
+        assert got is None
+        assert issue is not None and issue.kind == "unconfigured_root"
+
+    def test_a_root_that_is_a_file_is_a_config_problem(self, tmp_path):
+        f = tmp_path / "not-a-dir.txt"
+        f.write_text("x", encoding="utf-8")
+        got, issue = resolve_source("s", "dropbox", "music/vision.rtf", {"dropbox": f})
+        assert got is None
+        assert issue is not None and issue.kind == "unconfigured_root"
+
+    def test_an_empty_relative_path_is_refused(self, tmp_path):
+        """It would otherwise resolve to the archive directory and report as found."""
+        root, _ = archive(tmp_path)
+        got, issue = resolve_source("s", "dropbox", "", {"dropbox": root})
+        assert got is None
+        assert issue is not None
+
+    def test_a_directory_is_not_a_source_file(self, tmp_path):
+        root, _ = archive(tmp_path)
+        got, issue = resolve_source("s", "dropbox", "music", {"dropbox": root})
+        assert issue is not None and issue.kind == "missing_file"
+        assert got is not None and got.exists is False
 
     def test_missing_file_is_explicit_and_not_treated_as_empty(self, tmp_path):
         root, _ = archive(tmp_path)
