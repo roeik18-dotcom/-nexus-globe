@@ -52,7 +52,7 @@ backend, no writer, no multi-group runtime, and no live production data.** Every
 | 10 | Impact verification | **implemented — reference vertical slice** ¹ · **trust: missing** |
 | 11 | Canonical Event Log | **implemented — reference vertical slice** ¹ |
 | 12 | Hidden engines | **planned** |
-| 13 | Globe legend & semantics | **partially implemented** ² — arcs projected from the event log for **3 of 16** event types, including `transfer.completed` with amount/currency/value; legend present; provenance (event_id, timestamp, status) reaches the tooltip. Ontology nodes and parts of the HUD remain **mocked** |
+| 13 | Globe legend & semantics | **partially implemented** ² — the traceability rule is now **satisfied**: every node, line and HUD figure on the globe traces to an event. Still absent: per-terminal projections, and 13 of 16 event types draw nothing |
 | 14 | Four journeys | **planned** |
 | 15 | Daily-life taxonomy | **planned** |
 | 16 | Privacy & exposure | **missing** — required before any second participant |
@@ -68,16 +68,28 @@ backend, no writer, no multi-group runtime, and no live production data.** Every
 ¹ **Scope note.** Validated for one seeded Value Group only; not yet generalized to
 multi-group production runtime.
 
-² **Globe scope note (verified live 2026-08-01).** `projectGlobeGraph` projects
+² **Globe scope note (verified 2026-08-02).** `projectGlobeGraph` projects
 `member.joined`, `leader.appointed` and `transfer.completed` — 3 of the 16 event
-types the log defines. 8 arcs and 10 nodes render for the seeded group; the
-completed transfer carries amount, currency, resource type and value tags read
-straight off the event, and a transfer with no `resource_delta` yields an arc with
-no amount rather than a fabricated one. A legend names each line type. Still
-**mocked** on the same screen: ~61 ontology nodes from `data/*.json` positioned by
-hashing an id, a 720-point decorative swarm, the LIVING FORCES relabelling of entity
-counts, the cycling LIVE STREAM, and the fixed `SYNC · REALTIME` / `ORBIT · OPTIMAL`
-strings. Point position is layout, never geography.
+types the log defines. **8 arcs and 10 nodes** render for the seeded group (5 joins,
+2 appointments, 1 transfer), a figure now pinned by test rather than observed by
+eye. The completed transfer carries amount, currency, resource type and value tags
+read straight off the event, and a transfer with no `resource_delta` yields an arc
+with no amount rather than a fabricated one. A legend names every line type **and
+every node type**.
+
+**Nothing mocked remains on this screen.** The elements this note used to list —
+~61 ontology nodes from `data/*.json` positioned by hashing an id, the 720-point
+decorative swarm, the LIVING FORCES relabelling of entity counts, the cycling LIVE
+STREAM, the fixed `SYNC · REALTIME` / `ORBIT · OPTIMAL` strings, the static green
+"live" dot and the 62%-filled time scrub — have all been removed. The HUD's stat bar
+now counts the render arrays themselves (nodes drawn · arcs drawn · relation types)
+instead of reporting 61 entities and 147 PUDM relations while 8 lines were on
+screen. `app/planet/__tests__/globeHonesty.test.ts` holds each removal in place and
+asserts that no `data/*.json` read reaches the route.
+
+Point position is layout, never geography: nodes take evenly spaced slots on a
+sphere in the projection's deterministic order, because the log records no
+coordinates and inventing one per node would be inventing data.
 
 ### What exists today
 
@@ -91,13 +103,16 @@ app/hub            (entry screen)          derived counts only
 ```
 
 `app/lib/philos/projectGlobeGraph.ts` extends the same chain to the globe: it
-projects arcs from the event log so each line names the event that created it.
+projects nodes and arcs from the event log so each point and line names the event
+that created it.
 
-**The chain is not yet exclusive.** `app/planet/page.tsx` still also reads the
-`data/*.json` ontology files, so the globe currently renders two populations at
-once — event-backed arcs and ontology-derived nodes whose coordinates come from
-hashing an id. Until the second is removed or given provenance, part of the globe
-still fails the traceability rule.
+**The chain is now exclusive.** `app/planet/page.tsx` reads nothing but the
+projection — the `data/*.json` ontology reads, the second node population and the
+HUD counts that described it are gone, and `app/planet` no longer imports anything
+outside `app/lib/philos`. Every population on the globe is event-backed, so the
+traceability rule holds across all three Philos screens. What the globe still lacks
+is reach, not provenance: 13 of the 16 event types draw nothing, and §13's
+per-terminal projections (WORLD=activity, PEOPLE=relationships, …) are unbuilt.
 
 ### Naming (canonical — use these, and only these)
 
@@ -484,8 +499,11 @@ Discover → Orient → Join → Act → Reflect → Learn → Grow → Influenc
 7. **No sci-fi decoration, no extra panels** — clarity before spectacle.
 
 *Guardrail 4 is satisfied — `/` enters at `/hub`, and the globe is reached from
-there. Guardrail 5 is now partly satisfied: a legend names each line type, and every
-arc states its event on hover. Guardrails 5 and 7 remain partly violated all the
-same — alongside the event-backed arcs, `app/planet` still renders ontology nodes
-positioned by hashing an id, a decorative point swarm, and HUD strings with nothing
-behind them (§13 note ²). Recorded as known debt, not approved behaviour.*
+there. Guardrail 5 is satisfied on the globe: a legend names every line and node
+type, and each arc states its event on hover. Guardrail 7 is satisfied: the ontology
+nodes, the decorative swarm, the invented HUD strings, the static live dot and the
+fixed time scrub are all removed, and the debt this note used to record is closed.
+One piece of decoration is left by choice — a CSS starfield behind the globe, which
+asserts nothing and is guarded by test to stay that way. Guardrails 1, 2, 3 and 6
+remain **planned**: the six terminals exist as a shared nav but not as a shared
+projection, and no engine orients the user.*
