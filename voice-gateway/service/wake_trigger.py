@@ -41,6 +41,7 @@ DOUBLE_CLAP_WINDOW_S = 1.0
 # ── Keyword parameters ────────────────────────────────────────────────────────
 from service.vad_config import SPEECH_RMS_THRESHOLD as VAD_THRESHOLD  # shared with merlin_service
 from service.vad_config import normalize_for_whisper  # peak-normalize quiet utterances
+from service.wake_gate import DropOldestQueue, admit  # keeps the Whisper lane fresh
 print(f"[wake_trigger] VAD_THRESHOLD={VAD_THRESHOLD:.5f} loaded from service.vad_config", flush=True)
 SPEECH_MIN_S   = 0.15     # minimum speech length before transcribing (was 0.3; marginal SM58 signal fragments into short bursts)
 SILENCE_END_S  = 0.6      # silence this long ends the utterance
@@ -235,8 +236,19 @@ class KeywordBuffer:
         self._in_speech   = False
         self._speech_start = 0.0
         self._last_speech  = 0.0
+        # Retention cap for one continuous speech run.  Without it, input that stays
+        # above threshold never leaves the `_in_speech` branch and `_chunks` grows
+        # without bound — 2026-08-01 produced a single 795 s "utterance".
+        self._retain_max   = int(mic_sr * MAX_BUFFER_S)
+        self._buffered     = 0
+        # True once this speech run has already been sent for inference, so a long
+        # run costs exactly one Whisper call instead of one per audio block.
+        self._run_flushed  = False
 
-        self._inq: queue.Queue = queue.Queue()
+        # Bounded, drop-oldest: the PortAudio callback must never block, and a deep
+        # backlog is stale by the time the serialized network lane reaches it. See
+        # service/wake_gate.py for the measurements behind this.
+        self._inq = DropOldestQueue()
 
         # telemetry
         self._frame_count = 0
@@ -255,8 +267,9 @@ class KeywordBuffer:
         Whisper's network round-trip is the most likely start of the user's
         command and must not be discarded when the wake InputStream closes.
         """
-        chunks, self._chunks = self._chunks, []
-        had_speech, self._in_speech = self._in_speech, False
+        chunks = self._chunks
+        had_speech = self._in_speech
+        self._reset_run()
         if had_speech and chunks:
             duration_s = sum(len(c) for c in chunks) / self._mic_sr
             logger.info(
@@ -304,35 +317,75 @@ class KeywordBuffer:
                 self._in_speech    = True
                 self._speech_start = now
                 self._chunks       = []
+                self._buffered     = 0
+                self._run_flushed  = False
                 logger.info(
                     "VAD on  — rms=%.4f  wake_vad_threshold=%.4f  speech_start=%.3f",
                     rms, VAD_THRESHOLD, self._speech_start,
                 )
-            self._chunks.append(pcm.copy())
             self._last_speech = now
+
+            if self._buffered < self._retain_max:
+                self._chunks.append(pcm.copy())
+                self._buffered += len(pcm)
+                # Cap reached: send the leading window NOW rather than waiting for a
+                # silence that may never come.  This also cuts wake latency — the
+                # keyword no longer waits out the rest of the sentence plus
+                # SILENCE_END_S before it is transcribed.
+                if self._buffered >= self._retain_max and not self._run_flushed:
+                    logger.info(
+                        "VAD cap — %.2fs of continuous speech buffered, flushing early",
+                        self._buffered / self._mic_sr,
+                    )
+                    self._flush(end_run=False)
+                    self._run_flushed = True
         else:
             if self._in_speech:
-                self._chunks.append(pcm.copy())
+                if self._buffered < self._retain_max:
+                    self._chunks.append(pcm.copy())
+                    self._buffered += len(pcm)
                 silence_so_far = now - self._last_speech
                 total_s        = now - self._speech_start
 
                 if silence_so_far >= SILENCE_END_S:
                     speech_s = self._last_speech - self._speech_start
-                    if speech_s >= SPEECH_MIN_S:
+                    if self._run_flushed:
+                        # Already inferred for this run at the cap — just close it.
+                        logger.info(
+                            "VAD off — run already flushed at cap (%.2fs), closing",
+                            speech_s,
+                        )
+                        self._reset_run()
+                    elif speech_s >= SPEECH_MIN_S:
                         self._flush()
                     else:
                         logger.info(
                             "VAD off — too short (%.2fs < %.2fs), discarded",
                             speech_s, SPEECH_MIN_S,
                         )
-                        self._in_speech = False
-                        self._chunks    = []
-                elif total_s >= MAX_BUFFER_S:
+                        self._reset_run()
+                elif total_s >= MAX_BUFFER_S and not self._run_flushed:
                     self._flush()
 
-    def _flush(self) -> None:
-        self._in_speech = False
+    def _reset_run(self) -> None:
+        """Close the current speech run and release its buffer."""
+        self._in_speech   = False
+        self._chunks      = []
+        self._buffered    = 0
+        self._run_flushed = False
+
+    def _flush(self, end_run: bool = True) -> None:
+        """Send the buffered utterance for inference.
+
+        `end_run=False` is the early cap-flush: the speaker is still talking, so the
+        run stays open (to detect its real end) but its audio is handed off now. The
+        buffer is released either way — retention is already at the cap.
+        """
         chunks, self._chunks = self._chunks, []
+        self._buffered = 0
+        if end_run:
+            self._in_speech   = False
+            self._run_flushed = False
         if not chunks:
             return
 
@@ -347,6 +400,23 @@ class KeywordBuffer:
             audio = resample_poly(audio, WHISPER_SR // g, self._mic_sr // g).astype(np.float32)
         rms_after = float(np.sqrt(np.mean(audio ** 2)))
         max_after = float(np.max(np.abs(audio)))
+
+        # Admission control BEFORE the network: reject utterances too short to hold
+        # the keyword, and forward only the leading window of long ones (the wake
+        # word is always at the start).  Bounds every request's payload — including
+        # the pathological 795 s flush seen on 2026-08-01.
+        audio, decision = admit(audio, WHISPER_SR)
+        if not decision.admit:
+            logger.info(
+                "WAKE_GATE reject reason=%s duration=%.2fs — not sent to Whisper",
+                decision.reason, decision.duration_s,
+            )
+            return
+        if decision.truncated:
+            logger.info(
+                "WAKE_GATE truncated %.2fs → %.2fs (leading window; keyword is at the start)",
+                decision.duration_s, decision.sent_s,
+            )
 
         # Peak-normalize the (already VAD-gated) utterance so Whisper receives a
         # healthy amplitude.  Low-level mic input otherwise triggers Whisper
@@ -363,8 +433,11 @@ class KeywordBuffer:
             rms_after, max_after, norm_gain,
             self._mic_sr, WHISPER_SR, audio.dtype, len(audio),
         )
-        self._inq.put(audio)
-        logger.info("ENQUEUE — queue_depth=%d  samples=%d", self._inq.qsize(), len(audio))
+        dropped = self._inq.put(audio)
+        logger.info(
+            "ENQUEUE — queue_depth=%d  samples=%d  evicted=%d  evicted_total=%d",
+            self._inq.qsize(), len(audio), dropped, self._inq.drops,
+        )
 
     # ── inference thread ──────────────────────────────────────────────────────
 
