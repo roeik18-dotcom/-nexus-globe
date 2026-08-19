@@ -55,6 +55,27 @@ export interface NeedRecord {
   need: Need;
   recorded_at: string;
   status: NeedStatus;
+  /**
+   * ORIGIN GROUP — store metadata, deliberately NOT a canon field.
+   *
+   * Canon closes `Need` at §12 with no group field, and that closure is kept:
+   * `need` above is untouched. This lives on the STORE RECORD, next to
+   * `recorded_at` and `status`, which are likewise facts about the recording
+   * rather than about the Need itself.
+   *
+   * WHAT IT MEANS: the person was standing in this value group when they
+   * declared this Need, and the write carried that group explicitly. It is
+   * the ONLY thing that licenses a REAL `COMMUNITY_HAS_NEED` EntityLink.
+   *
+   * WHAT IT DOES NOT MEAN: not ownership, not that the group has the need,
+   * not that the group is responsible for it. `Need.subject` remains the
+   * sovereign subject-side entry (§12) and is unchanged.
+   *
+   * Absent for every Need written from anywhere that did not state a group —
+   * including Marketplace and any pre-existing record. Absent stays absent;
+   * it is never backfilled from membership, value similarity or recency.
+   */
+  origin_group_id?: string;
 }
 
 export const NEED_APPEND_REJECTION_CODES = [

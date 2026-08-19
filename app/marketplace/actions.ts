@@ -44,6 +44,14 @@ export async function registerNeedCore(formData: FormData): Promise<RegisterActi
   // generic, honest fallback.
   const context = String(formData.get("context") ?? "").trim() || "self-reported real demand";
 
+  // ORIGIN GROUP — explicit only. Present when, and only when, the calling
+  // surface put a real group in the request (Community mounts the form with
+  // its active group; Marketplace sends nothing). It is never derived from
+  // the subject's memberships, from value similarity, from the Need text, or
+  // from "the group they were most recently looking at". Empty stays empty,
+  // and an empty value produces no link rather than a placeholder one.
+  const origin_group_id = String(formData.get("community") ?? "").trim();
+
   const now = systemClock.now();
   const ids = createIdGenerator();
   const result = await ingestNeed({
@@ -60,6 +68,8 @@ export async function registerNeedCore(formData: FormData): Promise<RegisterActi
     },
     recorded_at: now,
     status: "open",
+    // Store metadata, not a canon field — see `NeedRecord.origin_group_id`.
+    ...(origin_group_id ? { origin_group_id } : {}),
   });
 
   if (!result.ok) return { ok: false, message: result.reason === "invalid" ? "invalid Need" : result.rejections.map((r) => r.message).join("; ") };

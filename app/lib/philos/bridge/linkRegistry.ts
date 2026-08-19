@@ -109,6 +109,89 @@ export function buildDemoMarketplaceLinks(): EntityLink[] {
 }
 
 /**
+ * COMMUNITY_HAS_NEED (REAL) — from an explicit write, not an inference.
+ *
+ * A Need whose STORE RECORD carries `origin_group_id` was declared by a
+ * person who was standing in that group, and the write carried the group
+ * explicitly (Community mounts the form with its active real group; the form
+ * shows the user which group before they submit). That explicit statement is
+ * the only thing that licenses this link, and it is why the link is REAL.
+ *
+ * Canon `Need` is untouched — the group lives on the record wrapper beside
+ * `recorded_at`/`status`. `Need.subject` remains the sovereign subject-side
+ * entry (§12): this link says the need was raised IN the group, never that
+ * the group owns it.
+ *
+ * A Need without `origin_group_id` produces nothing. No backfill from
+ * membership, value similarity, text or recency.
+ */
+export function buildRealNeedCommunityLinks(
+  needs: { need_id: string; origin_group_id?: string; recorded_at?: string }[],
+  knownCommunityIds: Set<string>,
+): EntityLink[] {
+  const out: EntityLink[] = [];
+  for (const n of needs) {
+    const gid = n.origin_group_id?.trim();
+    if (!gid) continue;
+    // The group must be one this registry actually knows. A reference to an
+    // unknown group is dropped rather than materialising a phantom community.
+    if (!knownCommunityIds.has(gid)) continue;
+    out.push({
+      link_id: `link_real_need_community_${n.need_id}_${gid}`,
+      relation: "COMMUNITY_HAS_NEED",
+      source: { type: "community", canonical_id: gid, source_system: "philos_event_log", source_local_id: gid },
+      target: { type: "need", canonical_id: n.need_id, source_system: "canon_need_store", source_local_id: n.need_id },
+      provenance: "REAL",
+      confidence: 1,
+      valid_from: n.recorded_at,
+      note: "explicit origin_group_id on the Need store record — the write itself named this group; not inferred from membership, value or text",
+    });
+  }
+  return out;
+}
+
+/**
+ * ACTION_AFFECTS_COMMUNITY (REAL) — composed from recorded references only.
+ *
+ * Canon `Action.inputs[]` is a caller-supplied id array; when a person builds
+ * an Action from a Need, the need_id is in there. If that Need's record names
+ * an origin group, then the chain
+ *
+ *   Action.inputs -> need_id -> NeedRecord.origin_group_id -> group
+ *
+ * is three recorded references end to end. Nothing is inferred: the person
+ * chose the input, and a different person chose the Need's group.
+ *
+ * This does NOT claim the group owns or performed the Action — `Action.owner`
+ * is the person and stays so. It claims the Action acts on a Need that was
+ * raised in that group, which is exactly what the relation name says.
+ */
+export function buildRealActionCommunityLinks(
+  actions: { action_id: string; inputs: string[] }[],
+  needGroupById: Map<string, string>,
+): EntityLink[] {
+  const out: EntityLink[] = [];
+  for (const a of actions) {
+    const seen = new Set<string>();
+    for (const input of a.inputs) {
+      const gid = needGroupById.get(input);
+      if (!gid || seen.has(gid)) continue;
+      seen.add(gid);
+      out.push({
+        link_id: `link_real_action_community_${a.action_id}_${gid}`,
+        relation: "ACTION_AFFECTS_COMMUNITY",
+        source: { type: "action", canonical_id: a.action_id, source_system: "canon_action_store", source_local_id: a.action_id },
+        target: { type: "community", canonical_id: gid, source_system: "philos_event_log", source_local_id: gid },
+        provenance: "REAL",
+        confidence: 1,
+        note: `Action.inputs names ${input}, whose Need record carries origin_group_id=${gid}. Composed from two explicit writes; no inference.`,
+      });
+    }
+  }
+  return out;
+}
+
+/**
  * EFFECT_AFFECTS_COMMUNITY — derived, never inferred.
  *
  * The relation type was declared in `entityLink.ts` from the start and was
@@ -209,6 +292,14 @@ export function buildDefaultLinkRegistry(
    *  existing caller keeps working unchanged; omitting it simply produces no
    *  derived Effect links, exactly as before. */
   effects?: { effect_id: string; action_ref: string }[],
+  /** Canon Needs (store records) and Actions, for the REAL chain:
+   *  Need(origin_group_id) -> COMMUNITY_HAS_NEED -> Action.inputs ->
+   *  ACTION_AFFECTS_COMMUNITY -> Effect.action_ref -> EFFECT_AFFECTS_COMMUNITY.
+   *  Optional so every existing caller keeps working unchanged. */
+  canon?: {
+    needs?: { need_id: string; origin_group_id?: string; recorded_at?: string }[];
+    actions?: { action_id: string; inputs: string[] }[];
+  },
 ): EntityLink[] {
   const realGroup = projectValueGroup(realEvents, GROUP_ID, today);
   const communities: { group: ValueGroupView; provenance: LinkProvenance }[] = [];
@@ -218,11 +309,34 @@ export function buildDefaultLinkRegistry(
     if (demoGroup) communities.push({ group: demoGroup, provenance: "DEMO" });
   }
   const base = buildEntityLinkRegistry(communities);
-  // Derived last, from the base registry — so it can only ever compose links
-  // that are already present, never introduce a community of its own.
-  return effects && effects.length > 0
-    ? [...base, ...buildEffectCommunityLinks(base, effects)]
-    : base;
+
+  // The REAL chain, built in dependency order. Each stage can only compose
+  // what the stage before it produced, so nothing downstream can invent a
+  // community that no explicit write named.
+  const knownCommunityIds = new Set(communities.map((c) => c.group.group_id));
+  const needLinks = buildRealNeedCommunityLinks(canon?.needs ?? [], knownCommunityIds);
+
+  // need_id -> origin group, for the Action stage. Only needs that actually
+  // carry an origin group and resolved to a known community appear here.
+  const needGroupById = new Map<string, string>();
+  for (const l of needLinks) {
+    const needEnd = l.source.type === "need" ? l.source : l.target;
+    const communityEnd = l.source.type === "community" ? l.source : l.target;
+    if (needEnd.type === "need" && communityEnd.type === "community") {
+      needGroupById.set(needEnd.canonical_id, communityEnd.canonical_id);
+    }
+  }
+  const actionLinks = buildRealActionCommunityLinks(canon?.actions ?? [], needGroupById);
+
+  // Effects compose off the FULL action set — DEMO links included — and each
+  // inherits its own source link's provenance, so a REAL effect link appears
+  // only behind a REAL action link.
+  const withActions = [...base, ...needLinks, ...actionLinks];
+  const effectLinks = effects && effects.length > 0
+    ? buildEffectCommunityLinks(withActions, effects)
+    : [];
+
+  return [...withActions, ...effectLinks];
 }
 
 /** A registry built purely from the real seed fixture — for tests and any

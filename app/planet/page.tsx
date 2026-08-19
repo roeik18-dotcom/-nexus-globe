@@ -100,6 +100,14 @@ export default async function PlanetPage({
     events,
     todayIn(systemClock),
     canonEffects.map((e) => ({ effect_id: e.effect.effect_id, action_ref: e.effect.action_ref })),
+    {
+      needs: canonNeeds.map((n) => ({
+        need_id: n.need.need_id,
+        origin_group_id: n.origin_group_id,
+        recorded_at: n.recorded_at,
+      })),
+      actions: canonActions.map((a) => ({ action_id: a.action.action_id, inputs: a.action.inputs })),
+    },
   );
 
   // Selected System Context (semantic-unity slice): resolved through the ONE

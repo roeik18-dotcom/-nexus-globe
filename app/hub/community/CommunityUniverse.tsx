@@ -213,7 +213,7 @@ export default function CommunityUniverse({
       ) : mode === "people" ? (
         <PeopleGraph people={people} identityLink={identityLink} />
       ) : mode === "needs" ? (
-        <NeedsMode realNeedsCount={realNeedsCount} />
+        <NeedsMode realNeedsCount={realNeedsCount} realGroups={realGroups} />
       ) : mode === "resources" ? (
         <ResourcesMode realOffersCount={realOffersCount} realGroups={realGroups} />
       ) : mode === "activity" ? (
@@ -901,10 +901,18 @@ function PeopleGraph({ people, identityLink }: { people: PersonRow[]; identityLi
 
 // ── NEEDS / RESOURCES ────────────────────────────────────────────────────
 
-function NeedsMode({ realNeedsCount }: { realNeedsCount: number }) {
+function NeedsMode({ realNeedsCount, realGroups }: { realNeedsCount: number; realGroups: GroupRegistryEntry[] }) {
+  // ORIGIN GROUP for the write. Passed ONLY when exactly one real group is in
+  // scope: with several, "the group" would be a guess, and this path exists
+  // precisely because a guessed group is not allowed to create a real link.
+  // With none, or with more than one, the form ships without a group and no
+  // COMMUNITY_HAS_NEED link is created.
+  const originGroup = realGroups.length === 1
+    ? { group_id: realGroups[0].group_id, label: realGroups[0].name }
+    : undefined;
   return (
     <Section title={`צרכים פתוחים · OPEN NEEDS (${realNeedsCount})`}>
-      <CreateNeedForm />
+      <CreateNeedForm community={originGroup} />
       {realNeedsCount === 0 ? <Empty>0 Need קנוני אמיתי כרגע — השתמש בטופס למעלה כדי לרשום אחד.</Empty> : <div style={S.note}>{realNeedsCount} Need קנוני אמיתי רשום.</div>}
     </Section>
   );
