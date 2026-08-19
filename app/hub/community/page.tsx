@@ -33,6 +33,7 @@ import { findOffersForSource } from "@/app/lib/philos/canon/offerStoreAccessor";
 import { resolvePersonRef } from "@/app/lib/philos/person/personRef";
 import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
 import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePanel";
+import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
@@ -436,6 +437,14 @@ export default async function CommunityPage({
       ) : null}
 
       <div style={{ margin: "0 20px" }}>
+        <SocialValueSpinePanel
+          surface="community"
+          valueGroups={groupsWithProvenance.filter((g) => g.provenance === "REAL").length}
+          verifiedGroupRelations={identityLink.status === "VERIFIED_SAME_PERSON"
+            ? groupsWithProvenance.filter((g) => g.provenance === "REAL"
+                && g.view.members.some((m) => m.person_id === identityLink.community_member_id)).length
+            : 0}
+        />
         <SocialSourceSpinePanel surface="community" observationText={latestObservationText} />
       </div>
 

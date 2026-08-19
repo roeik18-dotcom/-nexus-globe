@@ -18,6 +18,7 @@ import { DEMO_COMMUNITIES } from "@/app/lib/philos/demoCommunities";
 import { resolvePersonRef } from "@/app/lib/philos/person/personRef";
 import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
 import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePanel";
+import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import CanonicalSlicePanel from "@/app/hub/CanonicalSlicePanel";
@@ -96,6 +97,7 @@ export default async function WorldPage() {
           subject={personRef.person_id}
         />
         {personFrame ? <PersonFrameStrip frame={personFrame} compact /> : null}
+        <SocialValueSpinePanel surface="world" />
         <SocialSourceSpinePanel surface="world" />
         <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 12, padding: "5px 12px", borderRadius: RADIUS.pill, background: STATUS.demo.bg, border: `1px solid ${STATUS.demo.border}` }}>
           <span style={{ ...TYPE.micro, color: STATUS.demo.text }}>REFERENCE ARCHITECTURE</span>
