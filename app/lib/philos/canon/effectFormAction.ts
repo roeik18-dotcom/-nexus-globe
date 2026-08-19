@@ -29,6 +29,11 @@ export type CreateEffectResult =
 /** Testable core — no `revalidatePath`. */
 export async function createEffectForCurrentUserCore(formData: FormData): Promise<CreateEffectResult> {
   const action_ref = String(formData.get("action_ref") ?? "").trim();
+  // OBSERVED-IN (t1). Optional and never inferred: the person states which
+  // Observation recorded this outcome, or states none. `recordEffect`
+  // rejects a ref that names no real Observation, so an id here is checked,
+  // not trusted. Empty stays undefined — absence is a real answer.
+  const observed_in_ref = String(formData.get("observed_in_ref") ?? "").trim();
   const context = String(formData.get("context") ?? "").trim();
   const provenance = String(formData.get("provenance") ?? "").trim();
   const statement = String(formData.get("statement") ?? "").trim();
@@ -59,6 +64,7 @@ export async function createEffectForCurrentUserCore(formData: FormData): Promis
     context,
     time: now,
     provenance,
+    ...(observed_in_ref ? { observed_in_ref } : {}),
   };
 
   try {

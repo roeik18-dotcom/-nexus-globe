@@ -257,6 +257,25 @@ export default async function MarketplacePage({
           ...offers
             .filter((o) => o.offer.source === personRef.person_id)
             .map((o) => ({ id: o.offer.offer_id, label: `offer: ${o.offer.available_resource}` })),
+          // FORWARD LINKAGE: real Observations are offered as Action inputs.
+          //
+          // `Action.inputs` is a free-form id array that already accepts a
+          // `canon_event_id`, and `CausalChainFlow` already resolves the
+          // causal chain by reading one out of it. The only reason the
+          // historical Action carries none is that this list never offered
+          // an Observation to select — the field and its consumer both
+          // existed, the choice did not.
+          //
+          // Offered, never inferred: the person picks the Observation their
+          // Action actually came from. Nothing here selects one by recency,
+          // and an Action with no originating Observation simply carries
+          // none — which is why the historical record stays UNLINKED.
+          ...canonEvents
+            .filter((ev) => ev.canon_type === "observation" && ev.payload.subject === personRef.person_id)
+            .map((ev) => ({
+              id: ev.canon_event_id,
+              label: `observation: ${ev.payload.domain}/${ev.payload.frame} · level ${ev.payload.level} · ${ev.payload.time.slice(0, 10)}`,
+            })),
         ]}
       />
 
@@ -264,6 +283,9 @@ export default async function MarketplacePage({
           option list is scoped to personRef.person_id's own real records. */}
       <div dir="rtl" style={{ padding: "0 20px" }}>
         <CreateEffectForm
+          observationOptions={canonEvents
+            .filter((ev) => ev.canon_type === "observation" && ev.payload.subject === personRef.person_id)
+            .map((ev) => ({ canon_event_id: ev.canon_event_id, label: `${ev.payload.domain}/${ev.payload.frame} · level ${ev.payload.level} · ${ev.payload.time.slice(0, 10)}` }))}
           actionOptions={actions
             .filter((a) => a.action.owner === personRef.person_id)
             .map((a) => ({ action_id: a.action.action_id, label: `${a.action.type} · ${a.action.reversibility} (${a.action.action_id.slice(0, 8)}…)` }))}

@@ -13,8 +13,14 @@ import { createEffectForCurrentUser, type CreateEffectResult } from "@/app/lib/p
 
 export default function CreateEffectForm({
   actionOptions,
+  observationOptions = [],
 }: {
   actionOptions: { action_id: string; label: string }[];
+  /** Real Observations for this subject. Offering them lets the person state
+   *  WHICH Observation recorded this outcome — the t1 half of the chain that
+   *  `Effect.observed_in_ref` exists for. Optional, and never pre-selected:
+   *  an outcome that no Observation recorded simply carries none. */
+  observationOptions?: { canon_event_id: string; label: string }[];
 }) {
   const [result, setResult] = useState<CreateEffectResult | null>(null);
   const [pending, startTransition] = useTransition();
@@ -44,6 +50,16 @@ export default function CreateEffectForm({
           <option value="">— בחר Action —</option>
           {actionOptions.map((a) => <option key={a.action_id} value={a.action_id}>{a.label}</option>)}
         </select>
+        {/* OBSERVED-IN (t1) — optional by design. "לא נרשמה בתצפית" is a real
+            answer, not a missing selection, so it is the default. */}
+        {observationOptions.length > 0 ? (
+          <select name="observed_in_ref" style={selectStyle} defaultValue="">
+            <option value="">— התוצאה לא נרשמה בתצפית (ברירת מחדל) —</option>
+            {observationOptions.map((o) => (
+              <option key={o.canon_event_id} value={o.canon_event_id}>נרשמה בתצפית: {o.label}</option>
+            ))}
+          </select>
+        ) : null}
         <input name="confidence" type="number" min={0} max={1} step={0.05} placeholder="confidence (0–1)" required style={inputStyle} />
       </div>
       <input name="statement" type="text" placeholder="statement — מה קרה בפועל?" required style={inputStyle} />
