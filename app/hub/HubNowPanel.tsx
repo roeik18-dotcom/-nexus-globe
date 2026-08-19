@@ -58,6 +58,7 @@ import type { BrainDerivation } from "@/app/lib/philos/canonical/brainDerivation
 import type { ValueGroupView } from "@/app/lib/philos/projectValueGroup";
 import { COLOR, RADIUS, SPACE, TYPE } from "@/app/lib/philos/shell/designTokens";
 import { ProvenanceBadge, type Provenance } from "@/app/lib/philos/shell/provenance";
+import { buildAttentionChain, type EpistemicStatus } from "@/app/lib/philos/attentionChain";
 import { Epistemic, EvidenceRow, ScopedNextAction } from "@/app/lib/philos/shell/epistemics";
 
 /** The two-sided reading of each typed contradiction, in the SAME domain
@@ -162,6 +163,10 @@ export default function HubNowPanel({
     (e) => !evidenceRecords.some((r) => e.includes(r.statement)),
   );
   const realGroups = valueGroups.filter((g) => g.provenance === "REAL");
+  // ATTENTION is a CHAIN, not a list. Each link states its own epistemic
+  // status, so a measured deficit and a regex hit over the observation's
+  // text can no longer render as the same kind of claim.
+  const attentionChain = buildAttentionChain({ tensions, reading, verifiedGroups: realGroups });
   const hasCore = !!(core && (core.G || core.E || core.C));
   const attentionCount = tensions.length + contradictions.length;
 
@@ -267,25 +272,30 @@ export default function HubNowPanel({
           </div>
         </Card>
 
-        {/* ── B · ATTENTION ── */}
+        {/* ── B · ATTENTION CHAIN ──
+               Six links, each with its OWN epistemic status. Previously
+               these were concatenated into one bulleted list under a single
+               count, which made a measured deficit and a token match over
+               free text look like the same kind of finding. */}
         <Card
           className="hn-b"
           title="ATTENTION"
-          p={attentionCount > 0 ? "CANON" : "UNKNOWN"}
-          count={attentionCount || undefined}
+          p={attentionChain.counts.MEASURED > 0 ? "CANON" : "UNKNOWN"}
         >
-          {attentionCount === 0 ? (
-            <Epistemic state="UNKNOWN" reason="אין תא במצב deficit ולא זוהה ניגוד בטקסט התצפית" />
-          ) : (
-            <>
-              {tensions.slice(0, 3).map((t) => (
-                <Line key={t.id} label={t.label} value={t.severity} tone={t.severity === "high" ? "warn" : "plain"} />
-              ))}
-              {contradictions.slice(0, 2).map((c) => (
-                <Line key={c.ref} label="ניגוד" value={CONTRADICTION_PAIR[c.ref]} tone="plain" note="STATIC · זיהוי טוקנים בטקסט התצפית" />
-              ))}
-            </>
-          )}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
+            {(Object.entries(attentionChain.counts) as [EpistemicStatus, number][])
+              .filter(([, n]) => n > 0)
+              .map(([st, n]) => <StatusChipMini key={st} status={st} n={n} />)}
+            {Object.values(attentionChain.counts).every((n) => n === 0)
+              ? <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>אין ממצא בשום חוליה</span>
+              : null}
+          </div>
+          {attentionChain.links.map((l, i) => (
+            <AttentionLinkRow key={l.key} link={l} index={i + 1} />
+          ))}
+          <div style={{ ...TYPE.micro, fontSize: 8, color: COLOR.textFaint, marginTop: 4, lineHeight: 1.5 }}>
+            רצף אינו סיבתיות — כל חוליה נגזרת מהחומר של הקודמת, ואינה מוסברת על ידה
+          </div>
         </Card>
 
         {/* ── C · VALUE / GROUP ── */}
@@ -470,6 +480,66 @@ function Line({ label, value, tone, note, clamp }: {
         <span style={{ ...S.lineValue, color, ...(clamp ? S.clamp : null) }}>{value}</span>
       </div>
       {note ? <div style={S.lineNote}>{note}</div> : null}
+    </div>
+  );
+}
+
+/** Per-status colour. Display hierarchy only — never a score, never
+ *  compared or summed across statuses. */
+const STATUS_TONE: Record<EpistemicStatus, string> = {
+  MEASURED: "#34d399",     // a real measurement — highest weight
+  VERIFIED: "#6fe3b4",     // a real durable record
+  INTERPRETED: "#fbbf24",  // a token match over free text — a MENTION
+  CANDIDATE: "#a78bfa",    // a proposed join, not asserted
+  UNRESOLVED: "#8798b8",   // checked, nothing found
+};
+
+function StatusChipMini({ status, n }: { status: EpistemicStatus; n: number }) {
+  return (
+    <span
+      title={`${n} פריט בסטטוס ${status}`}
+      style={{
+        ...TYPE.micro, fontSize: 8, letterSpacing: 0.4,
+        color: STATUS_TONE[status], border: `1px solid ${STATUS_TONE[status]}55`,
+        borderRadius: RADIUS.pill, padding: "1px 6px", whiteSpace: "nowrap",
+      }}
+    >
+      {status} {n}
+    </span>
+  );
+}
+
+/**
+ * One link. The status chip is always rendered — including for an empty
+ * link — because "checked and found nothing" and "not part of the model"
+ * are different statements and the chain must keep them apart.
+ */
+function AttentionLinkRow({ link, index }: { link: import("@/app/lib/philos/attentionChain").AttentionLink; index: number }) {
+  const tone = STATUS_TONE[link.status];
+  const has = link.items.length > 0;
+  return (
+    <div
+      title={`${link.derived_from}\n\nלא משתמע: ${link.not_implied}`}
+      style={{
+        borderInlineStart: `2px solid ${has ? tone : "rgba(90,111,150,0.3)"}`,
+        paddingInlineStart: 7, marginBottom: 5, opacity: has ? 1 : 0.72,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+        <span style={{ ...TYPE.micro, fontSize: 8, color: COLOR.textFaint }}>{index}</span>
+        <span style={{ ...TYPE.micro, fontSize: 8.5, color: tone, letterSpacing: 0.4 }}>{link.label}</span>
+        <span style={{ fontSize: 9, color: COLOR.textFaint }}>{link.gloss}</span>
+      </div>
+      {has ? (
+        link.items.slice(0, 2).map((it, i) => (
+          <div key={i} style={{ fontSize: 11, color: COLOR.text, lineHeight: 1.4 }}>
+            {it.text}
+            {it.detail ? <span style={{ color: COLOR.textFaint, fontSize: 9 }}> · {it.detail}</span> : null}
+          </div>
+        ))
+      ) : (
+        <div style={{ fontSize: 10, color: "#8798b8", fontStyle: "italic", lineHeight: 1.4 }}>{link.empty}</div>
+      )}
     </div>
   );
 }
