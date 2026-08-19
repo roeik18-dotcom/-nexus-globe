@@ -61,14 +61,40 @@ export type ShellSurfaceKey = "hub" | "brain" | "dynamics" | "globe" | "communit
  * just ignore it. A destination may read more than one (Dynamics reads
  * both `ctx` and `community`), so these compose rather than cascade.
  */
-const NAV: { label: string; href: string; key: ShellSurfaceKey; carriesCtx?: boolean; carriesSubject?: boolean; carriesCommunity?: boolean }[] = [
+/**
+ * NAV ORDER — and the one place the social-value family is expressed.
+ *
+ * Community, Globe and World are ADJACENT because they are one structural
+ * family sharing a conceptual spine:
+ *
+ *   contradictions -> values -> group values / value groups
+ *   -> social structure (Community) -> network (Globe) -> wider system (World)
+ *
+ * Marketplace sits BEFORE them, outside the family. It is an operational
+ * mechanism (Need -> Capability/Resource/Offer -> Match -> Commitment ->
+ * Action -> Effect); it consumes the family's consequences and does not
+ * define the contradiction/value/group ontology. Leaving it between
+ * Community and Globe split the family visually, which is why it moved.
+ *
+ * **This order is a product decision, not the master's.**
+ * `PHILOS-SYSTEM-LANGUAGE.md` §8 numbers the terminals 1-7 with
+ * COMMUNITY 4, MARKETPLACE 5, GLOBE 6, WORLD 7. That numbering is
+ * preserved in `TERMINAL` and in the master; only the nav sequence differs,
+ * and it differs deliberately. Routes are unchanged.
+ *
+ * `family` marks the three that read as one group. It carries NO colour
+ * claim: each keeps its own source-defined Colour Role (Community GREEN,
+ * Globe GREEN+PURPLE, World WHITE+PURPLE). The relationship is structural,
+ * not chromatic — World is not green and must never be shown as green.
+ */
+const NAV: { label: string; href: string; key: ShellSurfaceKey; carriesCtx?: boolean; carriesSubject?: boolean; carriesCommunity?: boolean; family?: "social" }[] = [
   { label: "Hub", href: "/hub", key: "hub", carriesSubject: true },
   { label: "Brain", href: "/brain", key: "brain", carriesSubject: true },
   { label: "Dynamics", href: "/dynamics", key: "dynamics", carriesCtx: true, carriesCommunity: true },
-  { label: "Community", href: "/hub/community", key: "community", carriesCommunity: true },
   { label: "Marketplace", href: "/marketplace", key: "marketplace", carriesCtx: true },
-  { label: "Globe", href: "/planet", key: "globe", carriesCtx: true },
-  { label: "World", href: "/world", key: "world" },
+  { label: "Community", href: "/hub/community", key: "community", carriesCommunity: true, family: "social" },
+  { label: "Globe", href: "/planet", key: "globe", carriesCtx: true, family: "social" },
+  { label: "World", href: "/world", key: "world", family: "social" },
 ];
 
 function StatusPill({ label, value, kind }: { label: string; value: string; kind: "real" | "demo" | "unknown" | "blocked" | "verified" | "claimed" | "needs_attention" | "active" | "completed" }) {
@@ -272,10 +298,20 @@ export function SystemShell({
             if (item.carriesSubject && subjectValue) parts.push(`subject=${encodeURIComponent(subjectValue)}`);
             if (item.carriesCommunity && communityValue) parts.push(`community=${encodeURIComponent(communityValue)}`);
             const href = parts.length > 0 ? `${item.href}?${parts.join("&")}` : item.href;
+            // SOCIAL-VALUE FAMILY cue: one continuous hairline under the three
+            // adjacent members. Deliberately the faintest thing that reads as
+            // grouping — it must not compete with a terminal's own accent, and
+            // it carries NO colour claim: each member keeps its source-defined
+            // Colour Role (Community GREEN · Globe GREEN+PURPLE · World
+            // WHITE+PURPLE). Neutral on purpose, because tinting it green
+            // would assert a family colour the Colour Master denies.
+            const fam: React.CSSProperties = item.family === "social"
+              ? { borderBottom: `2px solid ${COLOR.borderStrong}`, borderRadius: "8px 8px 0 0" }
+              : {};
             return here ? (
               <span
                 key={item.label}
-                style={{ fontSize: 11.5, fontWeight: 700, padding: "6px 14px", borderRadius: 8, color: "#02101f", background: terminal.accent }}
+                style={{ fontSize: 11.5, fontWeight: 700, padding: "6px 14px", borderRadius: 8, color: "#02101f", background: terminal.accent, ...fam }}
               >
                 {item.label}
               </span>
@@ -283,7 +319,7 @@ export function SystemShell({
               <a
                 key={item.label}
                 href={href}
-                style={{ fontSize: 11.5, fontWeight: 500, padding: "6px 14px", borderRadius: 8, color: COLOR.textDim, textDecoration: "none" }}
+                style={{ fontSize: 11.5, fontWeight: 500, padding: "6px 14px", borderRadius: 8, color: COLOR.textDim, textDecoration: "none", ...fam }}
               >
                 {item.label}
               </a>
