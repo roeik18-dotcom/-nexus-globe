@@ -1,0 +1,22 @@
+# Agent #2 — echo_probe. Inert, test-only specialist whose ONLY purpose is to
+# prove the factory contract: adding an agent = ONE manifest file + ZERO
+# infrastructure changes. It grants nothing (default-deny throughout) and has no
+# side effects. It is NOT wired to any runtime.
+
+agent_id: echo_probe
+agent_class: specialist
+name: Echo Probe
+role: test_probe
+description: >-
+  Inert P0 factory-proof specialist. Registers as agent #2 to demonstrate that a
+  second agent requires only a manifest file. Does nothing at runtime.
+
+primary_domain: GENERAL
+# allowed_domains omitted -> deny-by-default collapses to {GENERAL} only (no cross-domain).
+# knowledge_sources omitted -> reads nothing.
+# authority omitted -> none.   capabilities omitted -> no system/side-effect caps.
+# memory_scope omitted -> read:[] write:[] (no global memory, no memory write).
+# allowed_tools omitted -> no tools.   channels omitted -> not admitted anywhere.
+
+status: disabled                     # inert
+notes: P0 factory proof only. No process control, no network, no external side effects.

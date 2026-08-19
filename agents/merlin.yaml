@@ -1,0 +1,53 @@
+# Agent #1 — Merlin. DESCRIBES the CURRENT live voice runtime (pid 82246); grants
+# nothing new. Merlin is an INTERFACE agent (voice_assistant), NOT a SYSTEM agent:
+# owning the voice surface is not system authority (INTERFACE ROLE != SYSTEM AUTHORITY).
+# This manifest changes no live behavior — P0 does not wire the runtime.
+
+agent_id: merlin
+agent_class: interface
+name: Merlin
+role: voice_assistant
+description: >-
+  Primary human-facing voice interface (wake, command capture, barge-in,
+  turn-taking, Day Opening, audio playback). Answers from the single routed
+  domain master; the live path issues no tools.
+persona: merlin                      # -> voice-gateway/prompts/merlin.md (live persona)
+
+# Domain access — matches the LIVE app/domain_router routing set exactly.
+# STUDIO and SYSTEM are intentionally absent (not granted).
+primary_domain: GENERAL
+allowed_domains: [GENERAL, MUSIC, HUMAN_CONFIG, PHILOS]
+knowledge_sources: [GENERAL, MUSIC, HUMAN_CONFIG, PHILOS]   # masters domain_router may retrieve
+
+# Authority — behavior-mapped, explicitly NOT system. The live runtime has NO
+# formal authority model; read_only reflects the VERIFIED behavior: Merlin reads
+# knowledge masters and produces speech, and performs NO external/tool/filesystem/
+# network/process mutation. (Voice is an I/O surface, not an authority tier.)
+authority: read_only
+capabilities: []                     # live path: no filesystem/network/process/delegation
+
+# Memory — the live launchd voice service injects NO relationship memory into prompts
+# (context is hard-reset to the routed master only; memory is pull-based, never pushed).
+# So read/write are empty and that is HONEST, not a placeholder.
+memory_scope:
+  read: []
+  write: []
+
+allowed_tools: []
+denied_tools: []
+
+runtime_limits:
+  max_concurrency: 1                 # single active turn (turn_state ownership)
+  max_tokens: null                   # UNRESOLVED: no token accounting exists in the live runtime
+  timeout_s: null                    # UNRESOLVED: turn timeouts are audio/VAD-driven, not token/wall budgets
+  budget_tokens: null                # UNRESOLVED: no budget meter today
+
+input_channels: [voice, control_panel]
+output_channels: [voice, control_panel]
+
+status: enabled                      # currently running (pid 82246)
+
+notes: >-
+  UNRESOLVED fields marked null are not invented: the live runtime has no
+  token/timeout/budget accounting (see audit CONTROL_PLANE gaps). 'knowledge_sources'
+  is domain-master retrieval, which is distinct from relationship 'memory' (empty here).

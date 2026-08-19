@@ -66,6 +66,7 @@ import {
 } from "../lib/proof";
 import LiveFeed from "./LiveFeed";
 import GlobeLiveLayer from "./GlobeLiveLayer";
+import CanonGlobeMarkers from "./CanonGlobeMarkers";
 import DynamicsPanel from "./DynamicsPanel";
 import NoaPanel from "./NoaPanel";
 
@@ -901,6 +902,10 @@ export default function Page() {
 
         {/* ── GLOBE LIVE LAYER ── */}
         <GlobeLiveLayer proofTrustMap={proofTrustMap} />
+
+        {/* ── CANON GLOBE MARKERS — real PHILOS canon data, independent of the
+             mock/local layer above (systemic-integration-audit, Globe slice 1) ── */}
+        <CanonGlobeMarkers />
 
       </div>
 
