@@ -6,7 +6,8 @@
  * Explicitly authorized, read-only, this pass (see
  * PHILOS-PRODUCT-MASTER-LEDGER.md §23): reads
  * `קונפינג-אדם-MASTER-PRODUCTION-2.1-TAXONOMY-AUDITED-PROGRESS.xlsx` from
- * its real location. Path-resolution logic (highest MASTER-PRODUCTION
+ * its real location (see `HUMAN_DIR_CANDIDATES` — the directory moved once
+ * already, so resolution tries the current layout then the legacy one). Path-resolution logic (highest MASTER-PRODUCTION
  * version) mirrors `voice-gateway/app/master_config.py::human_master_path()`
  * exactly — same directory, same version-picking rule — so this module
  * and the separate Merlin track never disagree about which file is
@@ -31,10 +32,39 @@ import path from "path";
 import os from "os";
 import ExcelJS from "exceljs";
 
-const HUMAN_DIR = path.join(
-  os.homedir(),
+/**
+ * Candidate locations for the real Human Config master directory, in
+ * priority order. First existing one wins.
+ *
+ * This was a single hardcoded path and it broke: the workbook lives under
+ * `Dropbox/+אדם/…`, but the constant still pointed at
+ * `Dropbox/----text----/+אדם/…` — an intermediate folder that no longer
+ * exists. The file had not moved and nothing was lost; `/hub/human-config`
+ * simply reported "Human Config — לא זמין" for a directory that was never
+ * going to be there, which reads as missing data rather than as a stale
+ * constant.
+ *
+ * A list rather than a replacement constant, because this has now moved
+ * once: swapping one absolute path for another leaves the same failure
+ * mode in place. The legacy location is kept as a fallback so a machine
+ * that still has the old layout keeps working.
+ *
+ * Read-only either way — nothing in this module writes to Dropbox.
+ */
+const HUMAN_DIR_CANDIDATES = [
+  // Verified present (2026-08-19): holds the authorized 2.1 workbook.
+  "Library/CloudStorage/Dropbox/+אדם/קונפינג-אדם-מאגר-אב-שלד-היררכי",
+  // Legacy layout — the `----text----` level was removed upstream.
   "Library/CloudStorage/Dropbox/----text----/+אדם/קונפינג-אדם-מאגר-אב-שלד-היררכי",
-);
+].map((rel) => path.join(os.homedir(), rel));
+
+/** The first candidate that actually exists on this machine, or `null`. */
+function resolveHumanDir(): string | null {
+  for (const dir of HUMAN_DIR_CANDIDATES) {
+    if (fs.existsSync(dir)) return dir;
+  }
+  return null;
+}
 const HUMAN_SHEET = "MASTER_UNITS";
 
 export interface MasterUnitRecord {
@@ -128,7 +158,8 @@ export interface HumanConfigSource {
 const AUTHORIZED_HUMAN_MASTER_FILENAME = "קונפינג-אדם-MASTER-PRODUCTION-2.1-TAXONOMY-AUDITED-PROGRESS.xlsx";
 
 function resolveHumanMasterPath(): string | null {
-  if (!fs.existsSync(HUMAN_DIR)) return null;
+  const HUMAN_DIR = resolveHumanDir();
+  if (!HUMAN_DIR) return null;
   const authorizedPath = path.join(HUMAN_DIR, AUTHORIZED_HUMAN_MASTER_FILENAME);
   if (fs.existsSync(authorizedPath)) return authorizedPath;
 
