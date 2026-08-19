@@ -1138,8 +1138,15 @@ export default function DynamicsView({
   personContext,
   defaultLifecycle,
   domainStates,
+  personFrameSlot,
 }: {
   view: DynamicsViewModel;
+  /** The shared PERSON-IN-CONTEXT frame, rendered server-side in page.tsx
+   *  and threaded here as a slot — this component is `"use client"` and
+   *  cannot resolve the frame itself. It is REFERENCE, and sits ABOVE the
+   *  chronology it is a frame for; it never enters the causal chain, never
+   *  becomes a stage, and never fills STATE(t0)/STATE(t1). */
+  personFrameSlot?: React.ReactNode;
   canon?: CanonDynamicsGraph;
   selected?: SelectedContext;
   timeRange?: TimeRangeSummary;
@@ -1224,6 +1231,12 @@ export default function DynamicsView({
         subject={selected?.status === "found" && selected.subject ? selected.subject : REAL_CURRENT_SUBJECT}
         identityLink={identityLink}
       />
+
+      {/* PERSON-IN-CONTEXT frame — ABOVE the chronology, because it is the
+          frame the chronology is OF. Reference only: it never enters the
+          causal chain, never becomes a stage, and never fills
+          STATE(t0)/STATE(t1) — those still read real Observations only. */}
+      {personFrameSlot}
 
       {/* PRIMARY — the one causal timeline. Ledger §33: with no explicit
           `?ctx=` selecting a canon subject, default to REAL_CURRENT_SUBJECT

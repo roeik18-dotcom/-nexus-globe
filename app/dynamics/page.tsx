@@ -68,6 +68,8 @@ import { linksByRelation } from "@/app/lib/philos/bridge/entityLink";
 import { resolveShellIdentityLink } from "@/app/lib/philos/community/resolveShellIdentityLink";
 import { buildActionLifecycleSummary } from "@/app/lib/philos/canon/actionLifecycle";
 import { resolvePersonRef } from "@/app/lib/philos/person/personRef";
+import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
+import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import { findDomainStatesForSubject } from "@/app/lib/philos/canon/domainStateStoreAccessor";
 import DynamicsView, { type CommunityCapitalContext, type SelectedContext, type TimeRangeSummary } from "./DynamicsView";
@@ -151,6 +153,8 @@ export default async function DynamicsPage({
   const personRef = resolvePersonRef(params.subject);
   // STEP 2 — the frame this screen's readings are relative to (canon §19).
   const personContext = resolvePersonContext({ person: personRef, asOf: systemClock.now() });
+  // SAME shared accessor as every other surface.
+  const personFrame = await resolvePersonFrame({ subject: personRef.person_id, asOf: systemClock.now() }).catch(() => null);
   const ctxRaw = typeof params.ctx === "string" ? params.ctx : undefined;
   const selected = await resolveSharedContext(parseSystemContextRef(ctxRaw), { viewerId: viewer.person_id });
 
@@ -204,5 +208,5 @@ export default async function DynamicsPage({
   const dynamicsSubject = selected?.status === "found" && selected.system === "canon" && selected.subject ? selected.subject : personRef.person_id;
   const domainStates = await findDomainStatesForSubject(dynamicsSubject).catch(() => []);
 
-  return <DynamicsView view={view} canon={canon} selected={selected} timeRange={timeRange} community={community} today={todayIn(systemClock)} identityLink={identityLink} personContext={personContext} defaultLifecycle={defaultLifecycle} domainStates={domainStates} />;
+  return <DynamicsView personFrameSlot={personFrame ? <PersonFrameStrip frame={personFrame} compact /> : null} view={view} canon={canon} selected={selected} timeRange={timeRange} community={community} today={todayIn(systemClock)} identityLink={identityLink} personContext={personContext} defaultLifecycle={defaultLifecycle} domainStates={domainStates} />;
 }

@@ -48,6 +48,8 @@ import { loadEffects } from "@/app/lib/philos/canon/effectStoreAccessor";
 import { loadNeeds } from "@/app/lib/philos/canon/needStoreAccessor";
 import { loadOffers } from "@/app/lib/philos/canon/offerStoreAccessor";
 import { resolvePersonRef } from "@/app/lib/philos/person/personRef";
+import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
+import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import CanonicalSlicePanel from "@/app/hub/CanonicalSlicePanel";
 import ObservationReadingPanel from "@/app/lib/philos/shell/ObservationReadingPanel";
@@ -91,6 +93,8 @@ export default async function PlanetPage({
   const personRef = resolvePersonRef(params.subject);
   // STEP 2 — the frame this screen's readings are relative to (canon §19).
   const personContext = resolvePersonContext({ person: personRef, asOf: systemClock.now() });
+  // SAME shared accessor as every other surface.
+  const personFrame = await resolvePersonFrame({ subject: personRef.person_id, asOf: systemClock.now() }).catch(() => null);
   const ctxRaw = typeof params.ctx === "string" ? params.ctx : undefined;
   const selected = await resolveSharedContext(parseSystemContextRef(ctxRaw));
 
@@ -187,6 +191,7 @@ export default async function PlanetPage({
       canonEffects={canonEffects}
       canonNeeds={canonNeeds}
       canonOffers={canonOffers}
+      personFrameSlot={personFrame ? <PersonFrameStrip frame={personFrame} compact /> : null}
       observationStrip={observationStrip}
       canonicalSlice={
         <>

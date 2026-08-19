@@ -23,6 +23,8 @@ import { loadActions } from "@/app/lib/philos/canon/actionStoreAccessor";
 import { loadEffects } from "@/app/lib/philos/canon/effectStoreAccessor";
 import { loadCanonEvents } from "@/app/lib/philos/canon/canonEventStoreAccessor";
 import { resolvePersonRef } from "@/app/lib/philos/person/personRef";
+import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
+import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import MatchActionFlow from "./MatchActionFlow";
 import OpportunityCandidates from "./OpportunityCandidates";
@@ -123,6 +125,11 @@ export default async function MarketplacePage({
   const personRef = resolvePersonRef(params.subject);
   // STEP 2 — the frame this screen's readings are relative to (canon §19).
   const personContext = resolvePersonContext({ person: personRef, asOf: systemClock.now() });
+  // SAME shared accessor as Hub/Brain — this surface resolves no
+  // frame of its own and cannot redefine Human Base / Value / Domain.
+  const personFrame = await resolvePersonFrame({
+    subject: personRef.person_id, asOf: systemClock.now(),
+  }).catch(() => null);
   const ctxRaw = typeof params.ctx === "string" ? params.ctx : undefined;
   const selected = await resolveSelectedContext(parseSystemContextRef(ctxRaw));
   const subject = selected.status === "found" ? selected.subject : undefined;
@@ -181,6 +188,7 @@ export default async function MarketplacePage({
 
       {/* PRIMARY — real PHILOS canonical graph (Marketplace Legacy
           Convergence pass). Leads every normal visit, `?ctx=` or not. */}
+      {personFrame ? <PersonFrameStrip frame={personFrame} compact /> : null}
       <RealMarketplace
         needs={needs} offers={offers} actions={actions} effects={effects} identityLink={identityLink}
         realGroup={philosGroupsRealView ? { name: philosGroupsRealView.name, central_value: philosGroupsRealView.central_value } : undefined}

@@ -16,6 +16,8 @@ import { projectValueGroup, type ValueGroupView } from "@/app/lib/philos/project
 import { GROUP_ID as COMMUNITY_GROUP_ID } from "@/app/lib/philos/valueGroupLog";
 import { DEMO_COMMUNITIES } from "@/app/lib/philos/demoCommunities";
 import { resolvePersonRef } from "@/app/lib/philos/person/personRef";
+import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
+import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import CanonicalSlicePanel from "@/app/hub/CanonicalSlicePanel";
 import ObservationReadingPanel from "@/app/lib/philos/shell/ObservationReadingPanel";
@@ -33,6 +35,11 @@ export default async function WorldPage() {
   const personRef = resolvePersonRef();
   // STEP 2 — the frame this screen's readings are relative to (canon §19).
   const personContext = resolvePersonContext({ person: personRef, asOf: systemClock.now() });
+  // SAME shared accessor as Hub/Brain — this surface resolves no
+  // frame of its own and cannot redefine Human Base / Value / Domain.
+  const personFrame = await resolvePersonFrame({
+    subject: personRef.person_id, asOf: systemClock.now(),
+  }).catch(() => null);
   // Operational-groups pass — the ONE shared profile for World's
   // group-relevance block below.
   const worldGroupProfile = await buildOperationalGroupProfile().catch(() => null);
@@ -87,6 +94,7 @@ export default async function WorldPage() {
           purpose="ארכיטקטורת ייחוס — משימות/פערים/יכולות/ספקים לדוגמה, לא מציאות קנונית נצפית."
           subject={personRef.person_id}
         />
+        {personFrame ? <PersonFrameStrip frame={personFrame} compact /> : null}
         <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 12, padding: "5px 12px", borderRadius: RADIUS.pill, background: STATUS.demo.bg, border: `1px solid ${STATUS.demo.border}` }}>
           <span style={{ ...TYPE.micro, color: STATUS.demo.text }}>REFERENCE ARCHITECTURE</span>
           <span style={{ fontSize: 10.5, color: COLOR.textDim }}>— PUDM legacy dataset, לא Observation/Action/Effect קנוני אמיתי</span>

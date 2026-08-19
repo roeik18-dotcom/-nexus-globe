@@ -445,7 +445,7 @@ function starShadows(n: number, seed: number) {
   return out.join(",");
 }
 
-export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry, identityLink, personContext, canonActions, canonEffects, canonNeeds, canonOffers, canonicalSlice, observationStrip }: {
+export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry, identityLink, personContext, canonActions, canonEffects, canonNeeds, canonOffers, canonicalSlice, observationStrip, personFrameSlot }: {
   nodes: GlobeNode[]; arcs: GlobeArc[]; selected?: SelectedContext; registry?: EntityLink[]; identityLink?: ShellIdentityLink;
   /** STEP 2 — the frame this screen's readings are relative to (canon §19). */
   personContext?: PersonContext;
@@ -462,6 +462,12 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
    *  `nodes`/`arcs` (the sphere's own real entity population, untouched) —
    *  same "inspector/HUD only, never spatial" rule `CanonActivityPanel`
    *  already established. */
+  /** The shared PERSON-IN-CONTEXT frame, rendered server-side in page.tsx
+   *  and passed as a slot — same reason as `canonicalSlice` below: this
+   *  component is `"use client"` and cannot import an async Server
+   *  Component. The frame is REFERENCE and may contextualise what is shown;
+   *  it never becomes a node or an arc, and never a coordinate. */
+  personFrameSlot?: ReactNode;
   canonicalSlice?: ReactNode;
   /** 7-terminal propagation — a compact, always-VISIBLE strip for the
    *  latest real Observation's value/group relation, server-rendered in
@@ -666,6 +672,13 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
           subject={selected?.status === "found" && selected.subject ? selected.subject : REAL_CURRENT_SUBJECT}
           identityLink={identityLink}
         />
+        {/* The shared frame sits in the header band, in normal flow, so
+            Globe's top-of-page hierarchy matches every other surface:
+            IDENTITY/CONTEXT -> HUMAN BASE/VALUE/DOMAIN -> live content.
+            Deliberately NOT in the bottom-left overlay: that panel is a
+            floating, height-capped stack and the frame collided with the
+            observation strip there. */}
+        {personFrameSlot ? <div style={{ marginTop: 8 }}>{personFrameSlot}</div> : null}
       </div>
 
       {selected && selected.status !== "none" ? (

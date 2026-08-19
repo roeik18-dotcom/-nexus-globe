@@ -31,6 +31,8 @@ import { isEffectVerified } from "@/app/lib/philos/canon/effect";
 import { findNeedsForSubject } from "@/app/lib/philos/canon/needStoreAccessor";
 import { findOffersForSource } from "@/app/lib/philos/canon/offerStoreAccessor";
 import { resolvePersonRef } from "@/app/lib/philos/person/personRef";
+import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
+import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
 import { AuditHeading, AuditSection } from "@/app/lib/philos/shell/epistemics";
@@ -140,6 +142,22 @@ export default async function CommunityPage({
     ...(group ? [{ view: group, provenance: "REAL" as const }] : []),
     ...demoViews.map((d) => ({ view: d.view, provenance: "DEMO" as const })),
   ];
+  // SAME shared accessor as every other surface. Community DOES have real
+  // membership evidence, so it passes it: the value axis is VERIFIED here
+  // rather than projected-less. Only REAL groups the identity-linked member
+  // actually belongs to — DEMO groups and mere value similarity never
+  // qualify, so config can never imply membership.
+  const personFrame = await resolvePersonFrame({
+    subject: personRef.person_id,
+    asOf: systemClock.now(),
+    verifiedGroups: identityLink.status === "VERIFIED_SAME_PERSON"
+      ? groupsWithProvenance.filter(
+          (g) => g.provenance === "REAL"
+            && g.view.members.some((m) => m.person_id === identityLink.community_member_id),
+        )
+      : [],
+  }).catch(() => null);
+
   const pudmValuesRaw = readJsonStore<Value>(path.join(process.cwd(), "data", "values.json"));
   const pudmValues: PudmValueSource[] = pudmValuesRaw.map((v) => ({ id: v.id, context: { label: v.context.label, domain: v.context.domain } }));
   const valueRegistry = buildValueRegistry(groupsWithProvenance, pudmValues);
@@ -397,6 +415,12 @@ export default async function CommunityPage({
           identityLink={identityLink}
         />
       </div>
+
+      {personFrame ? (
+        <div style={{ margin: "12px 20px 0" }}>
+          <PersonFrameStrip frame={personFrame} compact />
+        </div>
+      ) : null}
 
       {entityContext.status === "found_entity" ? (
         <div dir="rtl" style={{ margin: "12px 20px 0" }}>
