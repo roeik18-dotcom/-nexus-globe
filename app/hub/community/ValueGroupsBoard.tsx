@@ -100,7 +100,17 @@ function GroupCard({ data }: { data: ValueGroupCardData }) {
   const detailHref = `?mode=groups&community=${encodeURIComponent(view.group_id)}`;
 
   return (
-    <article style={{ ...S.card, opacity: provenance === "DEMO" ? 0.82 : 1, borderColor: provenance === "REAL" ? "rgba(52,211,153,0.4)" : "rgba(251,191,36,0.35)" }}>
+    <article style={{
+      ...S.card,
+      /* REAL must dominate DEMO. A REAL group carries a real membership and
+         real money; a DEMO group is illustrative. They previously read as
+         near-equals (0.82 opacity, comparable borders), so the one real
+         group on this board did not stand out among three columns. */
+      opacity: provenance === "DEMO" ? 0.62 : 1,
+      borderColor: provenance === "REAL" ? "rgba(52,211,153,0.55)" : "rgba(251,191,36,0.22)",
+      borderWidth: provenance === "REAL" ? 2 : 1,
+      background: provenance === "REAL" ? "rgba(52,211,153,0.045)" : undefined,
+    }}>
       <div style={S.cardHead}>
         <a href={detailHref} style={S.cardTitle}>{view.name}</a>
         <ProvenanceBadge p={prov} />
@@ -115,18 +125,9 @@ function GroupCard({ data }: { data: ValueGroupCardData }) {
         meta={data.leadingFamily ? `via ${data.leadingFamily.via_base_value} · CANDIDATE_VALUE_FAMILY / REVIEW_REQUIRED` : undefined}
         italic={!data.leadingFamily} />
 
-      <FieldRow label="OBSERVATION ↔ GROUP" provenance={data.observationState === "MATCHED" ? "REAL" : "UNKNOWN"}
-        value={data.observationState}
-        meta={data.observationState === "UNRESOLVED" ? "התצפית האחרונה אינה מצטלבת ערכית עם הקבוצה — חברות אישית אינה מאשרת רלוונטיות" : "join ערכי מהתצפית האחרונה"}
-        italic={data.observationState === "UNRESOLVED"} />
-
       <FieldRow label="MEMBERS" provenance={prov}
         value={`${view.members.length} חברים`}
         meta={view.members.slice(0, 3).map((m) => m.display_name).join(", ") + (view.members.length > 3 ? "…" : "")} />
-
-      <FieldRow label="QUALITY" provenance="UNKNOWN"
-        value={`${QUALITY_GROUP_MODEL.status} — אין נוסחת איכות`}
-        meta="המקור דחה זאת במפורש · חברות ≠ איכות · VALUE GROUP ≠ QUALITY GROUP" italic />
 
       <FieldRow label="BUDGET / RESOURCES" provenance={prov}
         value={`${view.budget.available} ${view.budget.currency} זמין`}
@@ -166,6 +167,21 @@ function GroupCard({ data }: { data: ValueGroupCardData }) {
           : "אין אירוע הצטרפות"}
         italic={!data.capital && !data.membership} />
 
+      {/* AUDIT tier — diagnostics, resolved-relation reasoning and raw ids.
+          Real and unchanged, but they answered a different question than
+          "what is this group doing", so they no longer occupy the card's
+          primary column. */}
+      <details style={S.cardAudit}>
+        <summary style={S.cardAuditSummary}>אבחון · קשרים · פרובננס — DETAILS</summary>
+      <FieldRow label="OBSERVATION ↔ GROUP" provenance={data.observationState === "MATCHED" ? "REAL" : "UNKNOWN"}
+        value={data.observationState}
+        meta={data.observationState === "UNRESOLVED" ? "התצפית האחרונה אינה מצטלבת ערכית עם הקבוצה — חברות אישית אינה מאשרת רלוונטיות" : "join ערכי מהתצפית האחרונה"}
+        italic={data.observationState === "UNRESOLVED"} />
+
+      <FieldRow label="QUALITY" provenance="UNKNOWN"
+        value={`${QUALITY_GROUP_MODEL.status} — אין נוסחת איכות`}
+        meta="המקור דחה זאת במפורש · חברות ≠ איכות · VALUE GROUP ≠ QUALITY GROUP" italic />
+
       <FieldRow label="RELATIONS" provenance={data.resolvedRelations.length === 0 ? "UNKNOWN" : data.provenance === "DEMO" ? "DEMO" : data.resolvedRelations.some((r) => r.provenance !== "VALUE_JOIN") ? "REAL" : "STATIC"}
         value={data.resolvedRelations.length === 0
           ? "אין קשר אמיתי בין הצופה לקבוצה — לא מומצא"
@@ -179,6 +195,8 @@ function GroupCard({ data }: { data: ValueGroupCardData }) {
         value={data.personRelation.linked ? "חבר מאומת · VERIFIED_SAME_PERSON" : "אין קשר מאומת לצופה"}
         meta={data.personRelation.linked && data.personRelation.memberId ? `member: ${data.personRelation.memberId}` : "הקשר לא נטען — לא מומצא"}
         italic={!data.personRelation.linked} />
+
+      </details>
 
       <a href={detailHref} style={S.detailLink}>פירוט מלא של הקבוצה ←</a>
     </article>
@@ -199,6 +217,8 @@ function FieldRow({ label, value, meta, provenance, italic }: { label: string; v
 }
 
 const S: Record<string, React.CSSProperties> = {
+  cardAudit: { marginTop: 6, borderTop: `1px solid ${COLOR.border}`, paddingTop: 4 },
+  cardAuditSummary: { cursor: "pointer", fontSize: 8.5, letterSpacing: 1.1, color: COLOR.textFaint, padding: "2px 0" },
   band: {
     background: "linear-gradient(180deg, rgba(91,156,246,0.07), rgba(11,15,26,0.9))",
     border: `1px solid ${COLOR.borderStrong}`,

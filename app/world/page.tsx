@@ -20,6 +20,7 @@ import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
 import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePanel";
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
+import SocialZoomStrip from "@/app/lib/philos/shell/SocialZoomStrip";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import CanonicalSlicePanel from "@/app/hub/CanonicalSlicePanel";
@@ -97,7 +98,27 @@ export default async function WorldPage() {
           purpose="ארכיטקטורת ייחוס — משימות/פערים/יכולות/ספקים לדוגמה, לא מציאות קנונית נצפית."
           subject={personRef.person_id}
         />
-        {personFrame ? <PersonFrameStrip frame={personFrame} compact /> : null}
+        {/* FAMILY ORIENTATION — World is the SYSTEM zoom level of the same
+            social/value model Community and Globe show at GROUP and NETWORK
+            scope. This is what stops World reading as an independent
+            reference application. */}
+        <SocialZoomStrip surface="world" />
+
+        {/* SECONDARY — reference frame, collapsed, so World's primary
+            question (what is happening at the wider system level) is not
+            preceded by a block of repeated person context. */}
+        {personFrame ? (
+          <div dir="rtl" style={{ marginBottom: 8 }}>
+            <details>
+              <summary style={{ cursor: "pointer", fontSize: 10, letterSpacing: 1, color: COLOR.textFaint, padding: "2px 0" }}>
+                מסגרת אדם · ערך · דומיין (reference frame)
+              </summary>
+              <div style={{ marginTop: 6 }}>
+                <PersonFrameStrip frame={personFrame} compact />
+              </div>
+            </details>
+          </div>
+        ) : null}
         <SocialValueSpinePanel surface="world" />
         {/* No store records a verified EXTERNAL/system event, so both roles are
             honestly UNKNOWN rather than 0 — nothing was checked and found empty. */}
@@ -107,6 +128,24 @@ export default async function WorldPage() {
           <span style={{ ...TYPE.micro, color: STATUS.demo.text }}>REFERENCE ARCHITECTURE</span>
           <span style={{ fontSize: 10.5, color: COLOR.textDim }}>— PUDM legacy dataset, לא Observation/Action/Effect קנוני אמיתי</span>
         </div>
+        {/* PRIMARY / AUDIT ORDER — World's primary question is "what is
+            happening at the wider system level", and its answer is the map
+            below. The observation reading, group-relevance block and
+            person/value state are AUDIT tier: real and unchanged, but they
+            used to render BEFORE the visualization and pushed it past the
+            fold. They now follow it. Nothing was removed. */}
+      </div>
+      <WorldView
+        missions={missions}
+        gaps={gaps}
+        values={values}
+        capabilities={capabilities}
+        vcRelations={vcRelations}
+        providers={providers}
+        pcRelations={pcRelations}
+        communityGroupsByValueId={communityGroupsByValueId}
+      />
+      <div dir="rtl" style={{ padding: "0 20px 20px", position: "relative", zIndex: 1 }}>
         {/* Phase 6C — "replacing static-only dependency where canon data
             exists": World's PUDM/Fashion content below stays exactly what
             it was (REFERENCE ARCHITECTURE, static, never removed — see the
@@ -154,16 +193,6 @@ export default async function WorldPage() {
           <CanonicalSlicePanel subject={personRef.person_id} asOf={systemClock.now()} />
         </AuditSection>
       </div>
-      <WorldView
-        missions={missions}
-        gaps={gaps}
-        values={values}
-        capabilities={capabilities}
-        vcRelations={vcRelations}
-        providers={providers}
-        pcRelations={pcRelations}
-        communityGroupsByValueId={communityGroupsByValueId}
-      />
     </div>
   );
 }

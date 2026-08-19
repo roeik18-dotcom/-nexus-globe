@@ -35,6 +35,7 @@ import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
 import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePanel";
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
+import SocialZoomStrip from "@/app/lib/philos/shell/SocialZoomStrip";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
@@ -431,9 +432,27 @@ export default async function CommunityPage({
         />
       </div>
 
+      {/* FAMILY ORIENTATION — where this surface sits in the SOCIAL family.
+          Community is the GROUP zoom level. Not navigation (that is the nav
+          capsule) and not a causal chain. */}
+      <div style={{ margin: "10px 20px 0" }}>
+        <SocialZoomStrip surface="community" />
+      </div>
+
+      {/* SECONDARY — the reference frame is "what can be asked/measured", not
+          a measured state. It ships collapsed so the PRIMARY question of this
+          surface (which values/groups matter, and what are they doing) is not
+          pushed below a block of reference context. */}
       {personFrame ? (
-        <div style={{ margin: "12px 20px 0" }}>
-          <PersonFrameStrip frame={personFrame} compact />
+        <div dir="rtl" style={{ margin: "8px 20px 0" }}>
+          <details>
+            <summary style={{ cursor: "pointer", fontSize: 10, letterSpacing: 1, color: "#5a6f96", padding: "2px 0" }}>
+              מסגרת אדם · ערך · דומיין (reference frame)
+            </summary>
+            <div style={{ marginTop: 6 }}>
+              <PersonFrameStrip frame={personFrame} compact />
+            </div>
+          </details>
         </div>
       ) : null}
 

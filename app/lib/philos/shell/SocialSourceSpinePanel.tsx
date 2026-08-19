@@ -77,6 +77,33 @@ export default function SocialSourceSpinePanel({
         </span>
       </div>
 
+      {/* PRIMARY SUMMARY — what a reader needs to know without opening
+          anything: the source model exists, how big it is, and where the
+          full provenance lives. Everything below is AUDIT tier and ships
+          collapsed: L1–L5 formulas, the base-opposition inventory, review
+          metadata, confidence and the non-promotion argument all used to
+          occupy primary space on three surfaces at once. */}
+      <div style={S.summary}>
+        <span style={S.summaryStat}><b>{dimensions.length}</b> שכבות מדידות · SOURCE</span>
+        <span style={S.summarySep} aria-hidden>·</span>
+        <span style={S.summaryStat}><b>{oppositions.length}</b> ניגודי בסיס במלאי</span>
+        <span style={S.summarySep} aria-hidden>·</span>
+        {observationText ? (
+          <span style={S.summaryStat}><b>{detected.length}</b> אזכורים בטקסט התצפית <i>(אזכור ≠ ניגוד שהתקיים)</i></span>
+        ) : (
+          <span style={S.summaryStat}>לא נבדק מול טקסט תצפית</span>
+        )}
+        <span style={S.summarySep} aria-hidden>·</span>
+        <span style={S.summaryStat}>
+          <b>S = Σ(L1..L6) אינו מחושב</b> — §13 אי-קידום, ו-L6 הוא GAP מוצהר
+        </span>
+      </div>
+
+      <details style={S.audit}>
+        <summary style={S.auditSummary}>
+          מקור · נוסחאות · פרובננס · טקסונומיה — SOURCE / AUDIT
+        </summary>
+
       {/* L1–L5 — real quoted formulas, SOURCE tier */}
       <div style={S.subHead}>שכבות מדידות · MEASURABLE DIMENSIONS ({dimensions.length})</div>
       {dimensions.slice(0, limit).map((d) => <Row key={d.canonical_id} c={d} mono />)}
@@ -118,6 +145,7 @@ export default function SocialSourceSpinePanel({
           דורשת מצב-קודם בר-השוואה ו-Effect מאומת; בלעדיהם השינוי נשאר UNKNOWN.
         </div>
       </div>
+      </details>
     </section>
   );
 }
@@ -154,6 +182,17 @@ const S: Record<string, React.CSSProperties> = {
   layerGloss: { fontSize: 10, color: COLOR.textDim },
   layerNote: { fontSize: 9, color: COLOR.textFaint, lineHeight: 1.5, marginTop: 2 },
   subHead: { ...TYPE.micro, fontSize: 8, color: COLOR.textFaint, margin: "7px 0 3px" },
+  summary: {
+    display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" as const,
+    margin: "7px 0 2px", fontSize: 10, color: COLOR.textDim, lineHeight: 1.5,
+  },
+  summaryStat: { color: COLOR.textDim },
+  summarySep: { color: COLOR.textFaint },
+  audit: { marginTop: 4 },
+  auditSummary: {
+    cursor: "pointer", ...TYPE.micro, fontSize: 8.5, letterSpacing: 1.1,
+    color: COLOR.textFaint, padding: "3px 0",
+  },
   row: { display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 7, padding: "3px 8px", background: "rgba(90,120,180,0.05)", borderRadius: RADIUS.sm, marginBottom: 2 },
   rowLabel: { color: COLOR.text, flex: 1, minWidth: 170 },
   rowMeta: { fontSize: 8.5, color: COLOR.textFaint, fontFamily: "ui-monospace, monospace" },
