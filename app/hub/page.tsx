@@ -21,8 +21,8 @@ import { classifyObservationText, type ContradictionMatch } from "@/app/lib/phil
 import { RAW_FAMILIES, SUBVALUES } from "@/app/lib/philos/community/valueUniverse328";
 import { buildPersonInstance, buildValueDomainInstance } from "@/app/lib/philos/canonical/personInstance";
 import { buildBrainDerivation, type BrainDerivation } from "@/app/lib/philos/canonical/brainDerivation";
-import { buildActivePersonRefs, buildActiveMusicRefs } from "@/app/lib/philos/canonical/activeConfig";
-import { MUSIC_CANON_DOMAIN_ID } from "@/app/lib/philos/canonical/musicMasterLoader";
+import { buildActivePersonRefs } from "@/app/lib/philos/canonical/activeConfig";
+import { availableDomainConfigs } from "@/app/lib/philos/canonical/domainConfigRegistry";
 import { HUMAN_CANON_DOMAIN_ID } from "./CanonicalSlicePanel";
 import type { MeasuredStateSpace } from "@/app/lib/philos/orientationCore";
 import type { TensionItem } from "@/app/lib/philos/tension";
@@ -277,7 +277,12 @@ export default async function HubPage({
         lifecycle,
         instances: [
           buildPersonInstance({ subject_id: subject, domain_id: HUMAN_CANON_DOMAIN_ID, records: myDomainStates, source_kind: "CANON", source_refs: buildActivePersonRefs().refObjects, asOf: nowAsOf }),
-          buildValueDomainInstance({ subject_id: subject, domain_id: MUSIC_CANON_DOMAIN_ID, records: myDomainStates, source_kind: "CANON", source_refs: buildActiveMusicRefs().refObjects, asOf: nowAsOf }),
+          ...availableDomainConfigs().map((slot) =>
+            buildValueDomainInstance({
+              subject_id: subject, domain_id: slot.domain_id, records: myDomainStates,
+              source_kind: "CANON", source_refs: slot.activeConfig().refObjects, asOf: nowAsOf,
+            }),
+          ),
         ],
         pendingNeeds: pendingNeeds.map((n) => ({ need_id: n.need.need_id, desired_change: n.need.desired_change })),
         hasRealObservation: !!(core.G || core.E || core.C),

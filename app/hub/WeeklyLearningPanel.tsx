@@ -10,23 +10,28 @@
 import { findDomainStatesForSubject } from "@/app/lib/philos/canon/domainStateStoreAccessor";
 import { buildActionLifecycleSummary } from "@/app/lib/philos/canon/actionLifecycle";
 import { buildPersonInstance, buildValueDomainInstance } from "@/app/lib/philos/canonical/personInstance";
-import { buildActivePersonRefs, buildActiveMusicRefs } from "@/app/lib/philos/canonical/activeConfig";
+import { buildActivePersonRefs } from "@/app/lib/philos/canonical/activeConfig";
+import { availableDomainConfigs } from "@/app/lib/philos/canonical/domainConfigRegistry";
 import { buildBrainDerivation } from "@/app/lib/philos/canonical/brainDerivation";
 import { buildWeeklyLearningSummary } from "@/app/lib/philos/canonical/weeklyLearning";
-import { MUSIC_CANON_DOMAIN_ID } from "@/app/lib/philos/canonical/musicMasterLoader";
 import { HUMAN_CANON_DOMAIN_ID } from "./CanonicalSlicePanel";
 
 export default async function WeeklyLearningPanel({ subject, asOf }: { subject: string; asOf: string }) {
   const domainStates = await findDomainStatesForSubject(subject);
   const human = buildPersonInstance({ subject_id: subject, domain_id: HUMAN_CANON_DOMAIN_ID, records: domainStates, source_kind: "CANON", source_refs: buildActivePersonRefs().refObjects, asOf });
-  const music = buildValueDomainInstance({ subject_id: subject, domain_id: MUSIC_CANON_DOMAIN_ID, records: domainStates, source_kind: "CANON", source_refs: buildActiveMusicRefs().refObjects, asOf });
+  const domainInstances = availableDomainConfigs().map((slot) =>
+    buildValueDomainInstance({
+      subject_id: subject, domain_id: slot.domain_id, records: domainStates,
+      source_kind: "CANON", source_refs: slot.activeConfig().refObjects, asOf,
+    }),
+  );
   const lifecycle = await buildActionLifecycleSummary(subject);
   // hasRealObservation=true here means "do not claim first-observation" —
   // this panel has no canon read of its own; an unproven claim is worse
   // than a suppressed prompt (next-action truth, 2026-08-17).
-  const brain = buildBrainDerivation({ subject_id: subject, lifecycle, instances: [human, music], hasRealObservation: true });
+  const brain = buildBrainDerivation({ subject_id: subject, lifecycle, instances: [human, ...domainInstances], hasRealObservation: true });
   const weekly = buildWeeklyLearningSummary({
-    subject_id: subject, now: asOf, lifecycle, instances: [human, music],
+    subject_id: subject, now: asOf, lifecycle, instances: [human, ...domainInstances],
     unresolvedUnknowns: brain.unknown, nextActionLabel: brain.next_action?.label ?? null,
   });
 

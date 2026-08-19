@@ -42,11 +42,12 @@ import { buildDefaultLinkRegistry } from "@/app/lib/philos/bridge/linkRegistry";
 import { linksForEntity } from "@/app/lib/philos/bridge/entityLink";
 import { REAL_CURRENT_SUBJECT } from "@/app/lib/philos/subjectRegistry";
 import { buildPersonInstance, buildValueDomainInstance } from "@/app/lib/philos/canonical/personInstance";
-import { buildActivePersonRefs, buildActiveMusicRefs } from "@/app/lib/philos/canonical/activeConfig";
+import { buildActivePersonRefs } from "@/app/lib/philos/canonical/activeConfig";
+import { availableDomainConfigs } from "@/app/lib/philos/canonical/domainConfigRegistry";
 import { buildBrainDerivation } from "@/app/lib/philos/canonical/brainDerivation";
 import { projectCanonDynamics } from "@/app/lib/philos/canon/projectCanonDynamics";
 import { HUMAN_CANON_DOMAIN_ID } from "@/app/hub/CanonicalSlicePanel";
-import { MUSIC_CANON_DOMAIN_ID, musicMasterMeta, readyMusicRecords, summarizeMusicMaster } from "@/app/lib/philos/canonical/musicMasterLoader";
+import { musicMasterMeta, readyMusicRecords, summarizeMusicMaster } from "@/app/lib/philos/canonical/musicMasterLoader";
 import { humanMasterMeta, summarizeHumanMaster } from "@/app/lib/philos/canonical/humanMasterLoader";
 import { colorMasterMeta, loadColorMaster, whiteColorConflict } from "@/app/lib/philos/canonical/colorMasterLoader";
 
@@ -76,7 +77,14 @@ export async function GET(request: Request): Promise<Response> {
   try {
     const domainStates = await findDomainStatesForSubject(subject);
     const human = buildPersonInstance({ subject_id: subject, domain_id: HUMAN_CANON_DOMAIN_ID, records: domainStates, source_kind: "CANON", source_refs: buildActivePersonRefs().refObjects, asOf });
-    const music = buildValueDomainInstance({ subject_id: subject, domain_id: MUSIC_CANON_DOMAIN_ID, records: domainStates, source_kind: "CANON", source_refs: buildActiveMusicRefs().refObjects, asOf });
+    // One instance per REGISTERED domain slot — this route names no domain.
+    const domainInstances = availableDomainConfigs().map((slot) =>
+      buildValueDomainInstance({
+        subject_id: subject, domain_id: slot.domain_id, records: domainStates,
+        source_kind: "CANON", source_refs: slot.activeConfig().refObjects, asOf,
+      }),
+    );
+    const music = domainInstances[0];
 
     const lifecycle = await buildActionLifecycleSummary(subject);
 
