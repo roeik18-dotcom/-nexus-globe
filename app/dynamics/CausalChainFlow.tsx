@@ -362,6 +362,7 @@ export default function CausalChainFlow({
         hasAnyAction={sortedActions.length > 0}
         hasEffect={!!latestEffect}
         hasVerifiedEvidence={!!verifiedOutcome}
+        hasObservedInRef={!!latestEffect?.effect.effect.observed_in_ref}
       />
 
       <OpenBoundaryBand
@@ -417,10 +418,10 @@ export default function CausalChainFlow({
  * linking two observations), NOT_COMPARABLE (feature absent on one side).
  */
 function TemporalBlockBand({
-  observationCount, hasLinkedAction, hasAnyAction, hasEffect, hasVerifiedEvidence,
+  observationCount, hasLinkedAction, hasAnyAction, hasEffect, hasVerifiedEvidence, hasObservedInRef,
 }: {
   observationCount: number; hasLinkedAction: boolean; hasAnyAction: boolean;
-  hasEffect: boolean; hasVerifiedEvidence: boolean;
+  hasEffect: boolean; hasVerifiedEvidence: boolean; hasObservedInRef: boolean;
 }) {
   const steps: { label: string; ok: boolean; note: string }[] = [
     { label: "תצפית t0", ok: observationCount > 0,
@@ -431,8 +432,10 @@ function TemporalBlockBand({
       note: hasAnyAction ? (hasLinkedAction ? "קיימת ומקושרת לתצפית" : "קיימת, אך ללא קישור מפורש לתצפית") : "אין Action" },
     { label: "Effect", ok: hasEffect, note: hasEffect ? "קיים" : "אין Effect מקושר" },
     { label: "עדות מאומתת", ok: hasVerifiedEvidence, note: hasVerifiedEvidence ? "קיימת" : "אין אימות מקושר" },
-    { label: "קישור Effect ↔ Observation(t1)", ok: false,
-      note: "אין שדה בסכימה שמבטא זאת — ראה BLOCKER" },
+    { label: "קישור Effect ↔ Observation(t1)", ok: hasObservedInRef,
+      note: hasObservedInRef
+        ? "ה-Effect מצביע על התצפית שבה נרשמה התוצאה"
+        : "השדה observed_in_ref קיים בסכימה אך אינו מאוכלס ברשומה הזו" },
   ];
   const firstBlock = steps.find((s) => !s.ok);
 
@@ -458,7 +461,7 @@ function TemporalBlockBand({
       </div>
       <div style={{ fontSize: 9.5, color: COLOR.textDim, lineHeight: 1.6, marginTop: 5 }}>
         המצב האמיתי כרגע: <b>תצפית אחת</b> → אין t1 בת-השוואה → Action קיים → Effect קיים →
-        אך <b>אין קישור מאומת ל-Observation(t1)</b> → <b>שינוי = UNKNOWN</b>.
+        אך <b>אין תצפית שנייה להשוות אליה</b> → <b>שינוי = UNKNOWN</b>.
         זו לולאה פתוחה כנה, לא כשל. לא נבנתה תצפית שנייה כדי לגרום למסך להיראות שלם.
       </div>
     </div>

@@ -464,3 +464,33 @@ describe("FULL_PRIOR_RUNTIME_REGRESSION_PASS", () => {
     expect(validateTransfer(transfer).valid).toBe(true);
   });
 });
+
+describe("observed_in_ref — the t1 link (ratified 2026-08-19)", () => {
+  const base = (over: Partial<import("../effect").Effect> = {}): import("../effect").Effect => ({
+    effect_id: "e1", action_ref: "a1", subject: "s", concerns_subject_internal_state: false,
+    claimed_outcome: { statement: "x", provenance: "self_reported", verifier_type: "self", confidence: 1, time: "2026-08-01T00:00:00+03:00", method: "m" },
+    context: "c", time: "2026-08-01T00:00:00+03:00", provenance: "self_reported", ...over,
+  });
+
+  it("is OPTIONAL — an Effect without it stays valid (every pre-existing record)", () => {
+    const e = base();
+    expect(e.observed_in_ref).toBeUndefined();
+    expect(validateEffect(e).valid).toBe(true);
+  });
+
+  it("accepts a real canon_event_id", () => {
+    expect(validateEffect(base({ observed_in_ref: "c47fbabb-6e38-426f-bea6-18bc1a367350" })).valid).toBe(true);
+  });
+
+  it("rejects present-but-empty — that is a caller bug, not 'no observation'", () => {
+    const r = validateEffect(base({ observed_in_ref: "" }));
+    expect(r.valid).toBe(false);
+    expect(r.errors.some((x) => x.field === "observed_in_ref" && x.reason === "empty")).toBe(true);
+  });
+
+  it("absence is a real state, never a default", () => {
+    // the distinction the field exists to preserve
+    expect(validateEffect(base({ observed_in_ref: undefined })).valid).toBe(true);
+    expect(validateEffect(base({ observed_in_ref: "   " })).valid).toBe(false);
+  });
+});

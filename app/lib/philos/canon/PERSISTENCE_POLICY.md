@@ -31,6 +31,34 @@ primitive's own file already established before this document existed.
 | `OutcomeVerification` | `outcomeVerification.ts` | **CALLER-SUPPLIED**, not independently persisted | Embedded inside a persisted `Effect.claimed_outcome`/`verified_outcome` (see `Effect` row); no independent store of its own. |
 | `Learning` / `State'` / `StateDelta` | `learning.ts` + `learningStore.ts` + `stateDelta.ts` | **PERSISTED** (`Learning` + computed `StateDelta`), gated; approved this pass | `deriveLearning` itself is unchanged — still never computes a candidate Level/Stability, only gates a caller-proposed one (§26's regeneration premise stays an open empirical assumption). What's new: the gated result (`state_prime` or `no_update`) is now durably recorded via `learningStore.ts`, and `LearningRecord.delta` — a strictly descriptive `computeStateDelta(prior, state_prime)` — is computed once at record-creation time and stored alongside it (never inside canon's own `Learning` type). `delta: null` for every `no_update` Learning is a real, meaningful, persisted value, not "not computed". This is still not a `CellState` store: nothing here writes a new "current" CellState anywhere — see the `CellState` row above, unchanged. |
 
+## Ratified schema addition — `Effect.observed_in_ref` (2026-08-19)
+
+The temporal chain could express `Action -> Observation(t0)` (via
+`Action.inputs`, already read that way by `CausalChainFlow`) but had **no
+way to express the other half**: which Observation recorded what happened
+*after*. Two real observations could therefore be compared, but a change
+could never be attributed to an Action, because no record said the second
+observation was the one that observed this Effect.
+
+`Effect.observed_in_ref?: string` closes exactly that gap and nothing more.
+
+- **On `Effect`, not on `Observation`** — an Observation is a MEASUREMENT;
+  giving it a pointer at an Action would place a causal claim inside a
+  measurement record, and canon §6 already defines `Observation.reference`
+  as the baseline a Level was measured against, not a record link. `Effect`
+  is already the chain's linking record (it carries `action_ref`).
+- **Optional, load-bearing** — every Effect recorded before this field
+  existed stays structurally valid. Absent means "no Observation recorded
+  this outcome", a real state, never a default.
+- **Checked, not trusted** — `actionLifecycle.ts::recordEffect` rejects an
+  `observed_in_ref` that does not name a real, already-stored Observation,
+  with the same discipline it already applies to `action_ref`.
+- **Grants no change claim** — it says which Observation recorded the
+  outcome. Whether anything changed still requires the comparison to find a
+  real difference, and whether that difference is a state transition is
+  still governed by [`STATE-TRANSITION-BOUNDARY.md`](./STATE-TRANSITION-BOUNDARY.md),
+  which remains open.
+
 ## The rule this table encodes
 
 A primitive gets its own store only when **both** are true:

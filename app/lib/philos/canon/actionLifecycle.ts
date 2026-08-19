@@ -62,6 +62,7 @@ import { type DeriveLearningParams, deriveLearning } from "./learning";
 import { learningStore, findLearningsForEffect } from "./learningStoreAccessor";
 import type { LearningRecord } from "./learningStore";
 import { computeStateDelta, type StateDelta } from "./stateDelta";
+import { canonEventStore } from "./canonEventStoreAccessor";
 
 // ── PROPOSED ACTION / ACTOR — record a real Action ─────────────────────────
 
@@ -109,10 +110,32 @@ export class EffectReferentialIntegrityError extends Error {
  * scope), never assumed. This is the persisted analogue of
  * `verticalSlice.ts`'s in-memory `effect_action_ref_mismatch` gate.
  */
+export class ObservedInReferentialIntegrityError extends Error {
+  readonly observed_in_ref: string;
+  constructor(ref: string) {
+    super(`Effect.observed_in_ref "${ref}" does not reference any real, already-stored Observation — refusing to record an Effect as observed in an Observation that does not exist`);
+    this.name = "ObservedInReferentialIntegrityError";
+    this.observed_in_ref = ref;
+  }
+}
+
 export async function recordEffect(effect: Effect, recordedAt: string): Promise<EffectRecord> {
   const actions = await loadActions();
   const actionExists = actions.some((r) => r.action.action_id === effect.action_ref);
   if (!actionExists) throw new EffectReferentialIntegrityError(effect.action_ref);
+
+  // OBSERVED-IN (t1). Checked with exactly the same discipline as
+  // `action_ref` above: if the field is present it must name a REAL,
+  // already-stored Observation. An unchecked pointer would let the temporal
+  // chain claim an outcome was observed in a record that never existed —
+  // the precise failure this field was added to prevent.
+  if (effect.observed_in_ref !== undefined) {
+    const events = await canonEventStore().load();
+    const obsExists = events.some(
+      (e) => e.canon_type === "observation" && e.canon_event_id === effect.observed_in_ref,
+    );
+    if (!obsExists) throw new ObservedInReferentialIntegrityError(effect.observed_in_ref);
+  }
 
   const [stored] = await effectStore().append([{ effect, recorded_at: recordedAt }]);
   return stored;

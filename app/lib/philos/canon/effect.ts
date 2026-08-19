@@ -89,6 +89,40 @@ export interface Effect {
   context: string;
   time: string;
   provenance: string;
+  /**
+   * OBSERVED-IN — the `canon_event_id` of the Observation in which this
+   * Effect's outcome was actually recorded. The t1 half of the temporal
+   * chain.
+   *
+   * **Why this field exists.** `Action.inputs` could already name the
+   * Observation an Action came FROM (t0), and `CausalChainFlow` already
+   * reads it that way. Nothing could express the other half: which
+   * Observation recorded what happened AFTER. Without it, two real
+   * observations could be compared but a change could never be attributed
+   * to an Action, because no record said the second observation was the one
+   * that observed this Effect. Ratified 2026-08-19 as the minimum addition
+   * that closes that gap.
+   *
+   * **Why it lives on Effect and not on Observation.** An Observation is a
+   * MEASUREMENT. Giving it a pointer at an Action would put a causal claim
+   * inside a measurement record, and canon §6 already defines
+   * `Observation.reference` as what the Level was measured against — a
+   * baseline, not a record link. `Effect` is already the chain's linking
+   * record (it carries `action_ref`), so the second link belongs here too.
+   *
+   * **Optional, and that is load-bearing.** Every Effect recorded before
+   * this field existed stays structurally valid, and an Effect whose
+   * outcome was never observed in a later Observation simply does not carry
+   * it. Absent means "no observation recorded this outcome" — a real state,
+   * never a default to fill in.
+   *
+   * **It does not license a change claim by itself.** It says which
+   * Observation recorded the outcome. Whether the person's state changed
+   * still needs the comparison to find a real difference, and the
+   * Learning/State' boundary still governs whether that difference is a
+   * state transition (`STATE-TRANSITION-BOUNDARY.md`).
+   */
+  observed_in_ref?: string;
 }
 
 export type EffectError =
@@ -100,7 +134,8 @@ export type EffectError =
   | { field: "verified_outcome"; reason: "invalid"; errors: OutcomeVerificationError[] }
   | { field: "context"; reason: "empty" }
   | { field: "time"; reason: "invalid_or_no_offset" }
-  | { field: "provenance"; reason: "empty" };
+  | { field: "provenance"; reason: "empty" }
+  | { field: "observed_in_ref"; reason: "empty" };
 
 export interface ValidationResult {
   valid: boolean;
@@ -141,6 +176,12 @@ export function validateEffect(e: Effect): ValidationResult {
     }
   } else {
     errors.push({ field: "claimed_outcome", reason: "invalid", errors: [] });
+  }
+
+  // Optional, but not free-form: present-and-empty is a caller bug, not
+  // "no observation". Absent is the honest way to say there is none.
+  if (e.observed_in_ref !== undefined && !nonEmpty(e.observed_in_ref)) {
+    errors.push({ field: "observed_in_ref", reason: "empty" });
   }
 
   if (e.verified_outcome !== undefined) {
