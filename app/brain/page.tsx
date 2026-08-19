@@ -19,6 +19,8 @@ import EntityContextPanel from "@/app/lib/philos/shell/EntityContextPanel";
 import StateDiffPanel from "@/app/lib/philos/shell/StateDiffPanel";
 import BrainV2, { type ValueContext } from "./BrainV2";
 import CanonicalBrainPanel from "./CanonicalBrainPanel";
+import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
+import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import ObservationReadingPanel from "@/app/lib/philos/shell/ObservationReadingPanel";
 import GroupOpsPanel from "@/app/lib/philos/shell/GroupOpsPanel";
 import { resolvePersonRef } from "@/app/lib/philos/person/personRef";
@@ -75,6 +77,11 @@ export default async function BrainPage({
   // do inline (`typeof params.subject === "string" ? … : REAL_CURRENT_SUBJECT`,
   // and `resolveDefaultSubject` always returned REAL_CURRENT_SUBJECT).
   const subject = personRef.person_id;
+  // The SAME frame Hub resolves, via the SAME accessor. Brain projects
+  // less of it (compact), but never a different meaning. Brain resolves no
+  // verified group memberships of its own, so the value axis is honestly
+  // empty here rather than re-derived differently.
+  const personFrame = await resolvePersonFrame({ subject, asOf: systemClock.now() }).catch(() => null);
   let core: OrientationCore | undefined;
   let knownNeeds: KnownNeedResult = EMPTY_NEEDS;
   let lifecycle: ActionLifecycleSummary = EMPTY_LIFECYCLE;
@@ -174,6 +181,7 @@ export default async function BrainPage({
             state Hub + Dynamics already render (`CanonicalSlicePanel`,
             unmodified), plus Brain's own derived WHAT_CHANGED/WHY_IT_CHANGED/
             EVIDENCE/UNKNOWN/HYPOTHESES/NEXT_ACTION narrative. */}
+        {personFrame ? <PersonFrameStrip frame={personFrame} compact /> : null}
         <CanonicalBrainPanel
             subject={subject ?? personRef.person_id} asOf={systemClock.now()} lifecycle={lifecycle}
             pendingNeedsForBrain={needsRequiringAction(knownNeeds, lifecycle).map((n) => ({ need_id: n.need.need_id, desired_change: n.need.desired_change }))}

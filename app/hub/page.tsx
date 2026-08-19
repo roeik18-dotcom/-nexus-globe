@@ -15,6 +15,8 @@ import { buildMeasuredStateSpace } from "@/app/lib/philos/orientationCore";
 import { findKnownNeeds, buildActionSpaceSummary, needsRequiringAction, resolveSharedContext } from "@/app/lib/philos/sharedContext";
 import { parseSystemContextRef } from "@/app/lib/systemContext";
 import HubNowPanel from "./HubNowPanel";
+import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
+import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import ConfigQuestionsPanel from "./ConfigQuestionsPanel";
 import { deriveObservationReading, type ObservationReading } from "@/app/lib/philos/canon/observationReading";
 import { classifyObservationText, type ContradictionMatch } from "@/app/lib/philos/valueSystem/classifier";
@@ -122,6 +124,9 @@ export default async function HubPage({
   // `commandCenterSection` below can use it — never all 251 Value
   // Universe entries, only THIS viewer's own real memberships.
   const hubIdentityLink = await resolveShellIdentityLink();
+  // PERSON-IN-CONTEXT — resolved ONCE, through the shared accessor, so Hub
+  // and every other surface answer "who, in what frame" identically.
+  let personFrame: Awaited<ReturnType<typeof resolvePersonFrame>> | null = null;
   let hubValueContext: HubValueContext = { verified: false, memberships: [] };
   // Phase 8 — the full ValueGroupView objects (not just the trimmed
   // membership summary above) for `PersonNowPanel`'s VALUE GROUPS section,
@@ -185,6 +190,16 @@ export default async function HubPage({
   try {
     const canon = await projectCanonDynamics();
     const subject = personRef.person_id;
+    // PERSON-IN-CONTEXT — resolved once, through the shared accessor, so
+    // Hub and every other surface answer "who, in what frame" identically.
+    // `myValueGroups` is already resolved above, so the value axis carries
+    // only REAL verified relations; `activeDomainId` is resolved from a
+    // real DomainState INSIDE the accessor, never supplied by this page.
+    personFrame = await resolvePersonFrame({
+      subject,
+      asOf: systemClock.now(),
+      verifiedGroups: myValueGroups.filter((g) => g.provenance === "REAL"),
+    }).catch(() => null);
     resolvedSubject = subject;
     if (subject) {
       const core = buildMeasuredStateSpace(canon, subject);
@@ -418,6 +433,12 @@ export default async function HubPage({
           {/* HUB NOW — the product "now" view: PERSON NOW / ATTENTION /
               ACTIVE DOMAIN / PROJECT / RELEVANT VALUES / GROUP RELATION /
               OPEN NEED / WHAT CHANGED / NEXT ACTION / RECENT EVIDENCE. */}
+          {/* PERSON-IN-CONTEXT frame — the shared reference frame every
+              surface reads, rendered ABOVE the measured state it is a frame
+              FOR. It does not depend on `nowInputs`: the frame exists even
+              when nothing has been measured yet, which is exactly when
+              saying so matters most. */}
+          {personFrame ? <PersonFrameStrip frame={personFrame} /> : null}
           {nowInputs ? (
             <HubNowPanel
               subject={nowInputs.subject}
