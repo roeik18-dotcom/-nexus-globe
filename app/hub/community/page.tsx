@@ -148,6 +148,18 @@ export default async function CommunityPage({
   // rather than projected-less. Only REAL groups the identity-linked member
   // actually belongs to — DEMO groups and mere value similarity never
   // qualify, so config can never imply membership.
+  // The latest real Observation's own free text — used only to report which
+  // of the 24 source oppositions it NAMES. A mention, never a measurement.
+  const latestObservationText = await (async () => {
+    try {
+      const { canonEventStore } = await import("@/app/lib/philos/canon/canonEventStoreAccessor");
+      const events = await canonEventStore().load();
+      const obs = events.filter((e) => e.canon_type === "observation" && e.payload.subject === personRef.person_id);
+      const latest = [...obs].sort((a, b) => b.payload.time.localeCompare(a.payload.time))[0];
+      return latest ? String(latest.payload.context ?? "") : undefined;
+    } catch { return undefined; }
+  })();
+
   const personFrame = await resolvePersonFrame({
     subject: personRef.person_id,
     asOf: systemClock.now(),
@@ -424,7 +436,7 @@ export default async function CommunityPage({
       ) : null}
 
       <div style={{ margin: "0 20px" }}>
-        <SocialSourceSpinePanel surface="community" />
+        <SocialSourceSpinePanel surface="community" observationText={latestObservationText} />
       </div>
 
       {entityContext.status === "found_entity" ? (

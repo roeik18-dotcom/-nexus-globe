@@ -30,6 +30,7 @@
  * rows; none may promote one.
  */
 import { SOURCE_CONCEPTS, type SourceConcept } from "../community/sourceValueModel";
+import { detectBaseOppositions } from "../valueSystem/baseOppositionDetector";
 import { COLOR, RADIUS, SPACE, TYPE } from "./designTokens";
 import { ProvenanceBadge } from "./provenance";
 
@@ -41,10 +42,24 @@ const LAYER_OF_SURFACE: Record<"community" | "globe" | "world", { layer: string;
 
 export default function SocialSourceSpinePanel({
   surface, limit = 6,
-}: { surface: "community" | "globe" | "world"; limit?: number }) {
+  observationText,
+}: {
+  surface: "community" | "globe" | "world";
+  limit?: number;
+  /** The current Observation's own free text, when the caller has one.
+   *  Used ONLY to report which of the 24 the text NAMES — a mention, never
+   *  a measurement, and never joined to the 5 runtime classes. */
+  observationText?: string;
+}) {
   const oppositions = SOURCE_CONCEPTS.filter((c) => c.type === "CONTINUUM");
   const dimensions = SOURCE_CONCEPTS.filter((c) => c.type === "MEASURABLE_DIMENSION");
   const here = LAYER_OF_SURFACE[surface];
+  const detected = observationText ? detectBaseOppositions(observationText) : [];
+  const detectedIds = new Set(detected.map((d) => d.contradiction_id));
+  // Detected ones first, so a real signal is not buried under the list.
+  const orderedOppositions = [...oppositions].sort(
+    (a, b) => Number(detectedIds.has(b.canonical_id)) - Number(detectedIds.has(a.canonical_id)),
+  );
 
   return (
     <section dir="rtl" style={S.band}>
@@ -67,8 +82,14 @@ export default function SocialSourceSpinePanel({
       {dimensions.slice(0, limit).map((d) => <Row key={d.canonical_id} c={d} mono />)}
 
       {/* the 24 base oppositions */}
-      <div style={S.subHead}>ניגודי בסיס · BASE OPPOSITIONS ({oppositions.length} מתוך 30 שחולצו)</div>
-      {oppositions.slice(0, limit).map((c) => <Row key={c.canonical_id} c={c} />)}
+      <div style={S.subHead}>
+        ניגודי בסיס · BASE OPPOSITIONS ({oppositions.length} מתוך 30 שחולצו)
+        {observationText ? ` · ${detected.length} מוזכרים בטקסט התצפית` : " · לא נבדק מול טקסט"}
+      </div>
+      {orderedOppositions.slice(0, limit).map((c) => (
+        <Row key={c.canonical_id} c={c} named={detectedIds.has(c.canonical_id)}
+             pole={detected.find((d) => d.contradiction_id === c.canonical_id)?.matched_pole} />
+      ))}
       {oppositions.length > limit ? (
         <div style={S.more}>ועוד {oppositions.length - limit} — ראה AUDIT</div>
       ) : null}
@@ -88,19 +109,28 @@ export default function SocialSourceSpinePanel({
           דורש להמציא את L6.
         </div>
         <div style={S.gapLine}>
-          <b>צבירת ניגודי בסיס לפני/אחרי Action — חסומה, ולא בגלל היעדר נתונים.</b> ה-runtime
-          מזהה 5 ניגודים ממדיים (INTERNAL↔EXTERNAL, PHYSICAL↔EMOTIONAL …) בעוד שהמקור מגדיר
-          {" "}{oppositions.length} ניגודי בסיס אחרים לגמרי. אין מיפוי בין שתי אוצרות המילים,
-          ובניית מיפוי כזה תהיה המצאה — לא גזירה.
+          <b>24 ניגודי המקור מזוהים עכשיו ישירות מהטקסט</b> — לפי צמדי המילים של המקור עצמו,
+          בלי שום מיפוי ל-5 מחלקות ה-runtime. שתי השכבות נשארות נפרדות, וכל זיהוי מסומן
+          <code> NO_MAPPING</code>.
+          <br />
+          כל זיהוי הוא <b>אזכור, לא מדידה</b> (<code>INTERPRETED_CONTRADICTION</code>), והמקור
+          אינו נותן עוצמה — <code>magnitude = UNRESOLVED</code>. צבירה לפני/אחרי Action עדיין
+          דורשת מצב-קודם בר-השוואה ו-Effect מאומת; בלעדיהם השינוי נשאר UNKNOWN.
         </div>
       </div>
     </section>
   );
 }
 
-function Row({ c, mono = false }: { c: SourceConcept; mono?: boolean }) {
+function Row({ c, mono = false, named = false, pole }: { c: SourceConcept; mono?: boolean; named?: boolean; pole?: string }) {
   return (
-    <div style={S.row}>
+    <div style={{ ...S.row, ...(named ? { background: "rgba(251,191,36,0.10)", border: "1px solid rgba(251,191,36,0.3)" } : null) }}>
+      {named ? (
+        <span title="הטקסט מזכיר את הקוטב הזה. אזכור — לא מדידה, ולא מקושר ל-5 מחלקות ה-runtime."
+              style={{ ...TYPE.micro, fontSize: 7.5, color: "#fbbf24", whiteSpace: "nowrap" }}>
+          מוזכר{pole ? ` · ${pole}` : ""}
+        </span>
+      ) : null}
       <span style={{ ...S.rowLabel, fontFamily: mono ? "ui-monospace, monospace" : undefined, fontSize: mono ? 10 : 11 }}>
         {c.source_wording}
       </span>
