@@ -17,6 +17,8 @@ import { parseSystemContextRef } from "@/app/lib/systemContext";
 import HubNowPanel from "./HubNowPanel";
 import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
 import SystemRoleRail from "@/app/lib/philos/shell/SystemRoleRail";
+import SocialValueSummaryLine from "@/app/lib/philos/shell/SocialValueSummaryLine";
+import { detectBaseOppositions } from "@/app/lib/philos/valueSystem/baseOppositionDetector";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import ConfigQuestionsPanel from "./ConfigQuestionsPanel";
 import { deriveObservationReading, type ObservationReading } from "@/app/lib/philos/canon/observationReading";
@@ -440,6 +442,15 @@ export default async function HubPage({
               when nothing has been measured yet, which is exactly when
               saying so matters most. */}
           {personFrame ? <PersonFrameStrip frame={personFrame} /> : null}
+          {/* SOCIAL-VALUE summary — one line. The chain lives on Community
+              and the provenance on Brain; Hub says only what touches this
+              person, and keeps SOURCE counts visually distinct from REAL. */}
+          {nowInputs ? (
+            <SocialValueSummaryLine
+              verifiedGroupRelations={myValueGroups.filter((g) => g.provenance === "REAL").length}
+              namedBaseOppositions={detectBaseOppositions(nowInputs.reading?.context ?? "").length}
+            />
+          ) : null}
           {/* SYSTEM ROLES — the 7 canonical colour roles from the Colour
               Source Lock, each showing whether a REAL record currently
               carries it. Counts only, no flow between colours (the lock
