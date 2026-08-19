@@ -125,6 +125,72 @@ conceptual material.
 `COLOR_RELATION_STATUS = UNKNOWN`. No line in either file connects a
 contradiction to a canonical colour role. Nothing assigned.
 
+## Addendum (same day) — contextual triage of `=`
+
+`=` stays **AMBIGUOUS_RELATION by default**. It was NOT read globally as
+contradiction. Triage used only localized source evidence, never semantic
+intuition.
+
+| triage class | rows |
+|---|---:|
+| J. UNRESOLVED | 177 |
+| C. ASSOCIATION_CHAIN | 41 |
+| H. PROSE / NOTE | 10 |
+| J. UNRESOLVED (SOURCE_CONFLICT) | 7 |
+| A. CONTRADICTION_SUPPORTED_BY_CONTEXT | 4 |
+| I. CORRUPTED | 2 |
+| B. EQUIVALENCE_SUPPORTED_BY_CONTEXT | 2 |
+
+**A self-correction worth recording.** A first triage pass put 181 rows in
+class A on the grounds that they sat "inside a contradiction-titled source
+block". That was an artifact, not evidence: the two contradiction headings
+in file 1 span the entire document, so block membership discriminated
+nothing. Re-run with a 25-line proximity window to a heading, class A drops
+to **4**. Weak evidence that flatters the result is worse than none.
+
+`ההפך של X הוא Y` followed by `X=Y` is recorded as **SOURCE_CONFLICT**, not
+resolved: if `=` meant opposition the prose would be redundant, and if it
+meant equality it contradicts the prose. 7 such rows.
+
+### Review set: 187 rows -> 23 decisions
+
+Rows are not the unit of review. The `=` lines fall into 23 contiguous
+drafting regions, and `=` plausibly carries one meaning within a region.
+One decision therefore resolves many rows — the largest region covers 109.
+
+- 10 decisions cover 170 rows
+- 12 are singletons
+- sorted by information value: source conflicts first, then region size
+
+The queue lives in `raw/review-queue-2026-08-19.json` (git-ignored) and
+carries only: decision id, source location, rows covered, conflict count,
+up to 3 sample relations, proposed classification, why unresolved.
+
+### Promotion
+
+Every item stays at **LEVEL 0 / LEVEL 1**. The 4 class-A rows reached
+`LEVEL_1_SOURCE_CANDIDATE`; **nothing** reached
+`SOURCE_REVIEWED_CONTRADICTION` or `RUNTIME_DETECTABLE_CONTRADICTION`.
+`LINGUISTIC_CLASS = UNRESOLVED` on every row — the source's 5 classes are
+preserved but unassigned, because its own worked examples lost their
+intra-pair separators in extraction.
+
+### MISSING_VALUE_COMPOSITION_RELATION
+
+`VALUE_COMPOSITION_STATUS` remains **UNRESOLVED**, and the expanded
+inventory was NOT used to fabricate it. To support `Contradiction(s) ->
+Value` the source would have to state at least one of:
+
+1. a named Value together with the specific contradictions it is composed of;
+2. a rule of the form "a Value arises when poles A and B are held in
+   tension / balanced / traded off";
+3. a worked example naming a Value and >=2 contradictions with their roles
+   (reinforcing, opposing, constraining);
+4. a direction rule saying which pole a Value orients toward.
+
+None of the four appears in either file. Until one does, any
+contradiction->Value edge would be invented.
+
 ## What was NOT done
 
 No chain collapsed into a pair · no 5↔24 mapping · no runtime detector
