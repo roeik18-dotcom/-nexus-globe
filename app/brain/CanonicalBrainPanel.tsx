@@ -42,8 +42,8 @@ import { findDomainStatesForSubject } from "@/app/lib/philos/canon/domainStateSt
 import type { ActionLifecycleSummary } from "@/app/lib/philos/canon/actionLifecycle";
 import { buildBrainDerivation } from "@/app/lib/philos/canonical/brainDerivation";
 import { buildPersonInstance, buildValueDomainInstance } from "@/app/lib/philos/canonical/personInstance";
-import { buildActivePersonRefs, buildActiveMusicRefs } from "@/app/lib/philos/canonical/activeConfig";
-import { MUSIC_CANON_DOMAIN_ID } from "@/app/lib/philos/canonical/musicMasterLoader";
+import { buildActivePersonRefs } from "@/app/lib/philos/canonical/activeConfig";
+import { availableDomainConfigs } from "@/app/lib/philos/canonical/domainConfigRegistry";
 import { HUMAN_CANON_DOMAIN_ID } from "@/app/hub/CanonicalSlicePanel";
 import CanonicalSlicePanel from "@/app/hub/CanonicalSlicePanel";
 import { ProvenanceBadge, type Provenance } from "@/app/lib/philos/shell/provenance";
@@ -88,9 +88,17 @@ export default async function CanonicalBrainPanel({ subject, asOf, lifecycle, pe
 }) {
   const domainStates = await findDomainStatesForSubject(subject);
   const personInstance = buildPersonInstance({ subject_id: subject, domain_id: HUMAN_CANON_DOMAIN_ID, records: domainStates, source_kind: "CANON", source_refs: buildActivePersonRefs().refObjects, asOf });
-  const musicInstance = buildValueDomainInstance({ subject_id: subject, domain_id: MUSIC_CANON_DOMAIN_ID, records: domainStates, source_kind: "CANON", source_refs: buildActiveMusicRefs().refObjects, asOf });
+  // Every AVAILABLE domain slot, from the registry — Brain names no domain
+  // of its own (`canonical/domainConfigRegistry.ts`). Music appears because
+  // it is registered, not because it is written here.
+  const domainInstances = availableDomainConfigs().map((slot) =>
+    buildValueDomainInstance({
+      subject_id: subject, domain_id: slot.domain_id, records: domainStates,
+      source_kind: "CANON", source_refs: slot.activeConfig().refObjects, asOf,
+    }),
+  );
   const derivation = buildBrainDerivation({
-    subject_id: subject, lifecycle, instances: [personInstance, musicInstance],
+    subject_id: subject, lifecycle, instances: [personInstance, ...domainInstances],
     pendingNeeds: pendingNeedsForBrain ?? [], hasRealObservation: hasRealObservation ?? false,
   });
   const learnings = learningRows(lifecycle);

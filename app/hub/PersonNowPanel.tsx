@@ -17,7 +17,8 @@
  * for the (now secondary) sections below. No second derivation, no new
  * store, no fabricated field.
  *
- * Canonical refs (Human/Music) are shown as resolved, concise semantic
+ * Canonical refs (Human base + each registered domain slot) are shown as
+ * resolved, concise semantic
  * summaries (`resolveCanonicalRef` → label + type/function + provenance) —
  * never the raw `SOURCE_TEXT`, matching Phase 4's own structural guarantee
  * that no runtime instance ever carries it.
@@ -26,7 +27,6 @@ import { findDomainStatesForSubject } from "@/app/lib/philos/canon/domainStateSt
 import { buildPersonInstance, buildValueDomainInstance } from "@/app/lib/philos/canonical/personInstance";
 import { buildBrainDerivation } from "@/app/lib/philos/canonical/brainDerivation";
 import { resolveCanonicalRef } from "@/app/lib/philos/canonical/canonicalRef";
-import { MUSIC_CANON_DOMAIN_ID } from "@/app/lib/philos/canonical/musicMasterLoader";
 import { HUMAN_CANON_DOMAIN_ID } from "./CanonicalSlicePanel";
 import type { ActionLifecycleSummary } from "@/app/lib/philos/canon/actionLifecycle";
 import type { TensionItem } from "@/app/lib/philos/tension";
@@ -35,7 +35,8 @@ import type { ValueGroupView } from "@/app/lib/philos/projectValueGroup";
 import type { CarryForwardState, ClosingQuestion } from "@/app/lib/philos/dayClosingFusion";
 import { STATUS, COLOR, TYPE } from "@/app/lib/philos/shell/designTokens";
 import { ProvenanceBadge as ProvBadge, type Provenance } from "@/app/lib/philos/shell/provenance";
-import { buildActivePersonRefs, buildActiveMusicRefs, type ActiveConfigSet } from "@/app/lib/philos/canonical/activeConfig";
+import { buildActivePersonRefs, type ActiveConfigSet } from "@/app/lib/philos/canonical/activeConfig";
+import { availableDomainConfigs } from "@/app/lib/philos/canonical/domainConfigRegistry";
 
 /**
  * PRIORITIES — an ORDERED reading of the same real backlog already on this
@@ -96,16 +97,25 @@ export default async function PersonNowPanel({
   hasRealObservation?: boolean;
 }) {
   const domainStates = await findDomainStatesForSubject(subject);
-  // Person + Music config ACTIVATION — the same two mechanical folds every
+  // Person + DOMAIN config ACTIVATION — the same mechanical folds every
   // other instance-building call site now uses. Refs only: the config
   // section below renders WHO/WHAT IS KNOWN; `current_state` stays whatever
   // was really observed (UNKNOWN otherwise), never filled from the config.
   const activePerson = buildActivePersonRefs();
-  const activeMusic = buildActiveMusicRefs();
+  // The domain axis comes from the registry, so this panel names no domain.
+  // One card per AVAILABLE slot; each is labelled by its own slot label.
+  const domainSlots = availableDomainConfigs();
   const human = buildPersonInstance({ subject_id: subject, domain_id: HUMAN_CANON_DOMAIN_ID, records: domainStates, source_kind: "CANON", source_refs: activePerson.refObjects, asOf });
-  const music = buildValueDomainInstance({ subject_id: subject, domain_id: MUSIC_CANON_DOMAIN_ID, records: domainStates, source_kind: "CANON", source_refs: activeMusic.refObjects, asOf });
+  const domainViews = domainSlots.map((slot) => ({
+    slot,
+    config: slot.activeConfig(),
+    instance: buildValueDomainInstance({
+      subject_id: subject, domain_id: slot.domain_id, records: domainStates,
+      source_kind: "CANON", source_refs: slot.activeConfig().refObjects, asOf,
+    }),
+  }));
   const brain = buildBrainDerivation({
-    subject_id: subject, lifecycle, instances: [human, music],
+    subject_id: subject, lifecycle, instances: [human, ...domainViews.map((d) => d.instance)],
     pendingNeeds: pendingNeedsForBrain ?? [], hasRealObservation: hasRealObservation ?? false,
   });
 
@@ -122,18 +132,26 @@ export default async function PersonNowPanel({
 
       <div style={S.grid2}>
         <StateCard title="PERSON NOW · Human" instance={human} config={activePerson} configGloss="פרופיל, ממדים ופרמטרים זמינים" />
-        <StateCard title="ACTIVE VALUE/DOMAIN · Music" instance={music} config={activeMusic} configGloss="העדפות, יכולות, מודל workflow ופרמטרים" />
+        {domainViews.map((d) => (
+          <StateCard
+            key={d.slot.domain_id}
+            title={`AVAILABLE DOMAIN · ${d.slot.label_he}`}
+            instance={d.instance}
+            config={d.config}
+            configGloss="קונפיג דומיין — זמין, לא נבחר; אינו מצב חי"
+          />
+        ))}
       </div>
 
       <div style={S.sectionRow}>
-        <Section provenance="CANON" title={`WHAT CHANGED (${brain.changes.filter((c) => c.what_changed).length + [human, music].filter((i) => i.changed).length})`}>
-          {[human, music].some((i) => i.changed) || brain.changes.length > 0 ? (
+        <Section provenance="CANON" title={`WHAT CHANGED (${brain.changes.filter((c) => c.what_changed).length + [human, ...domainViews.map((d) => d.instance)].filter((i) => i.changed).length})`}>
+          {[human, ...domainViews.map((d) => d.instance)].some((i) => i.changed) || brain.changes.length > 0 ? (
             <>
-              {[human, music].filter((i) => i.changed).map((i) => (
+              {[human, ...domainViews.map((d) => d.instance)].filter((i) => i.changed).map((i) => (
                 // A DomainState instance changing means a new READING was
                 // recorded — not that a canonical State′ transition occurred
                 // (`canon/STATE-TRANSITION-BOUNDARY.md`). The row says so.
-                <Row key={i.domain_id} left={`${i.domain_id === HUMAN_CANON_DOMAIN_ID ? "Human" : "Music"} — נרשמה קריאת DomainState`} right={i.timestamp} />
+                <Row key={i.domain_id} left={`${i.domain_id === HUMAN_CANON_DOMAIN_ID ? "Human" : (availableDomainConfigs().find((d) => d.domain_id === i.domain_id)?.label_he ?? i.domain_id)} — נרשמה קריאת DomainState`} right={i.timestamp} />
               ))}
               {brain.changes.slice(0, 3).map((c) => (
                 <Row key={c.action_id} left={c.what_changed_label} right={`${c.verification_state} · ${c.recorded_at.slice(0, 10)}`} />
