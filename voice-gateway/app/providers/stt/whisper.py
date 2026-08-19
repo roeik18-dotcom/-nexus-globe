@@ -12,7 +12,7 @@ from openai import AsyncOpenAI
 
 from app.audio.utils import audio_to_file_like, validate_audio
 from app.config import settings
-from app.providers.stt.base import STTProvider
+from app.providers.stt.base import STTProvider, Transcription
 
 logger = logging.getLogger(__name__)
 
@@ -120,41 +120,80 @@ class WhisperSTT(STTProvider):
         return "whisper"
 
     async def transcribe(self, audio_bytes: bytes) -> str:
+        """Plain-text callers (bench/direct_bench.py, app/main.py, the
+        control panel's mic-test) — delegates to transcribe_detailed() so
+        there is exactly one code path making the real API call, not two
+        that could silently diverge."""
+        result = await self.transcribe_detailed(audio_bytes)
+        return result.text
+
+    async def transcribe_detailed(self, audio_bytes: bytes) -> Transcription:
+        """The command path (service/merlin_service.py::run_conversation_session)
+        uses this directly for the STT safety gate (service/turn_guard.py).
+
+        model=settings.stt_command_model ("whisper-1" as of 2026-08-07 — see
+        app/config.py's comment for the real-hardware comparison this was
+        decided from). response_format="verbose_json" always: whisper-1
+        accepts it (unlike gpt-4o-transcribe, which 400s — that asymmetry is
+        exactly why this is a SEPARATE model setting from the wake path's
+        stt_model, not a shared one) and it is the only way to get
+        no_speech_prob / avg_logprob / compression_ratio per segment.
+        """
         validate_audio(audio_bytes)
 
         file_like = audio_to_file_like(audio_bytes, "audio.wav")
 
-        _cap = _cmd_capture_enabled()
-        _kwargs = dict(
-            model=settings.stt_model,
+        t0 = time.time()
+        response = await self._client.audio.transcriptions.create(
+            model=settings.stt_command_model,
             file=file_like,
-            # Force Hebrew + deterministic decoding to match the wake path:
-            # on low-SNR mic input Whisper otherwise hallucinates foreign-language
-            # stock phrases (Thai/Korean) and word repetitions.
+            # Force Hebrew + deterministic decoding: on low-SNR mic input
+            # Whisper otherwise hallucinates foreign-language stock phrases
+            # and word repetitions.
             language="he",
-            # NO `prompt` here — see the module header.  Both a prose and a token-list
-            # bias were echoed back as the transcript, most strongly on clean audio.
+            # NO `prompt` — see the module header: both a prose and a
+            # token-list bias were echoed back as the transcript, most
+            # strongly on clean audio.
             temperature=0,
-            # Capture mode asks for a structured body (for language/segment metadata);
-            # otherwise the production call is unchanged (response_format="text").
-            # NOTE: gpt-4o-transcribe rejects "verbose_json" with HTTP 400 — only
-            # "json" and "text" are accepted.  Requesting verbose_json here is what
-            # took the wake path down (3 consecutive 400s → keyword inference off).
-            response_format="json" if _cap else "text",
+            response_format="verbose_json",
         )
-        response = await self._client.audio.transcriptions.create(**_kwargs)
+        latency_ms = round((time.time() - t0) * 1000)
 
-        # Extract the transcript defensively: the SDK returns a bare `str` for
-        # response_format="text" and an object with `.text` for "json".  Keying this
-        # off `_cap` alone silently yields "" whenever the two disagree — which reads
-        # downstream as "no speech" rather than as an error.  Handle both shapes.
         text = _response_text(response)
+        segs = getattr(response, "segments", None) or []
+        segments = [
+            {
+                "text": getattr(s, "text", ""),
+                "start_s": getattr(s, "start", None),
+                "end_s": getattr(s, "end", None),
+                "no_speech_prob": getattr(s, "no_speech_prob", None),
+                "avg_logprob": getattr(s, "avg_logprob", None),
+                "compression_ratio": getattr(s, "compression_ratio", None),
+            }
+            for s in segs
+        ]
+        no_speech_probs = [s["no_speech_prob"] for s in segments if s["no_speech_prob"] is not None]
+        # Canonical 0..1 confidence (ADR-002): 1 - mean(no_speech_prob) across
+        # segments. No segments at all (empty transcript, or a model/response
+        # shape without segment data) means there is no basis for confidence,
+        # not confidence of 1.0 — leave it None rather than assert certainty
+        # the response never provided.
+        confidence = (1.0 - (sum(no_speech_probs) / len(no_speech_probs))) if no_speech_probs else None
 
-        if _cap:
+        if _cmd_capture_enabled():
             try:
                 _save_cmd_capture(audio_bytes, response)
             except Exception as _e:  # never let instrumentation break transcription
                 logger.warning("command capture probe failed: %s", _e)
 
         logger.debug("whisper transcribed %d bytes → %r", len(audio_bytes), text[:80])
-        return text
+        return Transcription(
+            text=text,
+            language=getattr(response, "language", None),
+            confidence=confidence,
+            segments=segments,
+            duration_s=getattr(response, "duration", None),
+            provider=self.name,
+            model=settings.stt_command_model,
+            latency_ms=latency_ms,
+        )

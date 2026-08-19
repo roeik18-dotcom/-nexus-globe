@@ -1,0 +1,13 @@
+# Live barge acceptance — read-only capture from PID 82246 log
+# Required chain: BARGE_MIC_RMS -> USER_SPEECH_CONFIRMED -> PLAYBACK_TERMINATION_REQUESTED -> PLAYBACK_TERMINATED -> ASSISTANT_TURN_INTERRUPTED
+## turn 78 confirmed interrupt sequence:
+2026-08-11 00:01:07,063 INFO    merlin.service — BARGE_MIC_RMS turn_id=78 rms=0.00746 output_rms=0.12223 mic_ch=1 run_count=0 threshold=0.00400 floor_rms=0.00006 correlation=0.000 barge_candidate=True
+2026-08-11 00:01:07,124 INFO    merlin.service — BARGE_MIC_RMS turn_id=78 rms=0.00669 output_rms=0.07654 mic_ch=1 run_count=1 threshold=0.00400 floor_rms=0.00006 correlation=0.132 barge_candidate=True
+2026-08-11 00:01:07,187 INFO    merlin.service — BARGE_MIC_RMS turn_id=78 rms=0.01140 output_rms=0.13703 mic_ch=1 run_count=2 threshold=0.00400 floor_rms=0.00006 correlation=0.168 barge_candidate=True
+2026-08-11 00:01:07,252 INFO    merlin.service — BARGE_MIC_RMS turn_id=78 rms=0.00662 output_rms=0.02661 mic_ch=1 run_count=3 threshold=0.00400 floor_rms=0.00006 correlation=-0.286 barge_candidate=True
+2026-08-11 00:01:07,257 INFO    merlin.service — USER_SPEECH_CONFIRMED turn_id=78 rms=0.00662 output_rms=0.02661 mic_ch=1 correlation=-0.325
+2026-08-11 00:01:07,257 INFO    merlin.service — PLAYBACK_TERMINATION_REQUESTED turn_id=78
+2026-08-11 00:01:07,257 INFO    merlin.service — PLAYBACK_TERMINATED turn_id=78
+2026-08-11 00:01:07,524 INFO    merlin.service — ASSISTANT_TURN_INTERRUPTED old_turn_id=78
+## running vocabulary confirmation (BARGE_CORR present, BARGE_LEAK absent):
+BARGE_CORR total=430  BARGE_LEAK total=0

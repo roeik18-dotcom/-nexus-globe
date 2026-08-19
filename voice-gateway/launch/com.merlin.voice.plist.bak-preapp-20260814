@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.merlin.voice</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/roei/-nexus-globe/voice-gateway/.venv/bin/python3</string>
+        <string>/Users/roei/-nexus-globe/voice-gateway/service/merlin_service.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/roei/-nexus-globe/voice-gateway</string>
+
+    <key>ProcessType</key>
+    <string>Interactive</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>ThrottleInterval</key>
+    <integer>5</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/roei/Library/Logs/Merlin/service.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/roei/Library/Logs/Merlin/service.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/roei</string>
+    </dict>
+</dict>
+</plist>

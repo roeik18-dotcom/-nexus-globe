@@ -1,0 +1,17 @@
+barge_in_confirm_s
+barge_in_threshold
+continuous_conversation_active
+control_panel_port
+double_clap_wake_enabled
+keyword_wake_backend
+keyword_wake_configured
+last_interruption_ts
+last_llm_end_ts
+last_stt_success_ts
+last_tts_start_ts
+last_wake_source
+last_wake_ts
+mic_input_device_name
+noise_floor_estimate
+turn_controller_state
+wake_stream_open

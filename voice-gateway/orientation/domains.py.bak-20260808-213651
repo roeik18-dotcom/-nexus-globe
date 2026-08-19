@@ -1,0 +1,89 @@
+"""DOMAIN REGISTRY — the declarative catalog of what Merlin can orient about.
+
+Stable IDs + typed metadata + a default policy per domain. The registry maps each
+domain to the Day-Opening collector domain-ids it corresponds to, so the existing
+collectors can be represented through this model WITHOUT editing them.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+from .policy import DomainPolicy, Proactivity
+
+
+@dataclass(frozen=True)
+class Domain:
+    id: str
+    label_he: str
+    description: str
+    default_policy: DomainPolicy
+    day_opening_source_ids: tuple[str, ...] = ()   # day_opening_collectors domain ids that feed this
+
+
+def _p(**kw) -> DomainPolicy:
+    return DomainPolicy(**kw)
+
+
+# Ordered registry. Priority/proactivity are sensible defaults, all operator-overridable.
+_DOMAINS: tuple[Domain, ...] = (
+    Domain("philos", "Philos אוריינטציה", "Philos orientation & system development",
+           _p(priority=8, proactivity=Proactivity.MEDIUM), ("philos", "personal_orientation")),
+    Domain("projects", "פרויקטים", "Active projects across Nexus/Globe",
+           _p(priority=7, proactivity=Proactivity.MEDIUM), ("nexus_globe",)),
+    Domain("tasks_open_loops", "משימות ולולאות פתוחות", "Open tasks / unfinished loops",
+           _p(priority=8, proactivity=Proactivity.HIGH)),
+    Domain("merlin_dev", "פיתוח מרלין", "Merlin voice-runtime development & health",
+           _p(priority=6, proactivity=Proactivity.LOW), ("merlin",)),
+    Domain("merlin_control_center", "מרכז בקרה מרלין", "Merlin control-panel development",
+           _p(priority=5, proactivity=Proactivity.LOW)),
+    Domain("studio", "אולפן", "Studio logistics / routing / monitoring (RME, Voloco)",
+           _p(priority=7, proactivity=Proactivity.MEDIUM), ("studio", "professional_readiness")),
+    Domain("music_production", "הפקה מוזיקלית", "Production workflow, arrangement, mix, master",
+           _p(priority=7, proactivity=Proactivity.MEDIUM)),
+    Domain("plugins", "תוספים", "Plugins / tools inventory & learning priority",
+           _p(priority=4, proactivity=Proactivity.LOW)),
+    Domain("music_course", "קורס הפקה", "Production course / curriculum / skill tree",
+           _p(priority=5, proactivity=Proactivity.LOW), ("course",)),
+    Domain("human_config", "הגדרת אדם", "Human Configuration (personal orientation knowledge)",
+           _p(priority=6, proactivity=Proactivity.MEDIUM), ("human_config",)),
+    Domain("music_config", "הגדרת מוזיקה", "Music Configuration (artistic identity)",
+           _p(priority=6, proactivity=Proactivity.MEDIUM), ("music_config",)),
+    Domain("daily_priorities", "עדיפויות היום", "Today's most important actions (<=3)",
+           _p(priority=9, proactivity=Proactivity.HIGH)),
+    Domain("decisions", "החלטות", "Decisions currently requiring attention",
+           _p(priority=8, proactivity=Proactivity.MEDIUM)),
+    Domain("blockers", "חסמים", "Active blockers across domains",
+           _p(priority=9, proactivity=Proactivity.HIGH)),
+    Domain("followups", "מעקבים", "Reminders / follow-ups",
+           _p(priority=6, proactivity=Proactivity.MEDIUM)),
+    Domain("day_opening", "פתיח יום", "Morning orientation composition",
+           _p(priority=7, proactivity=Proactivity.MEDIUM, conversation_inclusion=False)),
+)
+
+_BY_ID = {d.id: d for d in _DOMAINS}
+
+
+def all_domains() -> tuple[Domain, ...]:
+    return _DOMAINS
+
+
+def domain_ids() -> list[str]:
+    return [d.id for d in _DOMAINS]
+
+
+def get_domain(domain_id: str) -> Domain | None:
+    return _BY_ID.get(domain_id)
+
+
+def default_policies() -> dict[str, DomainPolicy]:
+    """A fresh copy of each domain's default policy, keyed by id."""
+    return {d.id: DomainPolicy(**d.default_policy.__dict__) for d in _DOMAINS}
+
+
+def day_opening_domain_map() -> dict[str, str]:
+    """Maps a day_opening collector domain-id -> orientation domain id."""
+    out: dict[str, str] = {}
+    for d in _DOMAINS:
+        for src in d.day_opening_source_ids:
+            out[src] = d.id
+    return out

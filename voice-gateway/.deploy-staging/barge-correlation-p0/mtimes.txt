@@ -1,0 +1,9 @@
+2026-08-10 20:38:42  service/barge_detector.py
+2026-08-10 20:39:05  service/merlin_service.py
+2026-08-10 23:10:22  service/control_panel.py
+2026-08-10 23:11:32  service/control_panel.html
+2026-08-10 01:28:42  service/control_state.py
+2026-08-10 12:04:18  service/wake_trigger.py
+2026-08-09 11:50:31  service/turn_state.py
+2026-08-08 22:04:10  service/vad_config.py
+2026-08-10 19:35:41  service/day_opening_runner.py

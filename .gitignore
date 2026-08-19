@@ -185,3 +185,15 @@ corpus/*/*
 !voice-gateway/service/control_panel.html.bak-console-20260810-230950
 !voice-gateway/service/control_panel.html.bak-precolor
 !voice-gateway/service/control_panel.py.bak-console-20260810-230950
+
+# ── Merlin relationship memory: personal runtime state, never tracked ────────
+# 817 accumulated memories about the user — preferences, habits, events, and 25
+# memories about other PEOPLE. Runtime state written by the assistant, not
+# source. It was tracked and reached a remote branch before this rule existed;
+# `git rm --cached` (same commit) stops it going further. The local file stays
+# on disk, untouched.
+#
+# Directory-scoped, and deliberately NOT `memory/`: the memory CODE lives at
+# voice-gateway/app/memory/ and must stay trackable. Only the data store here
+# is excluded.
+voice-gateway/memory/relationship/

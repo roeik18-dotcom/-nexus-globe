@@ -95,8 +95,13 @@ async def test_whisper_stt_transcribe_calls_openai():
     assert result == "שלום עולם"
     mock_client.audio.transcriptions.create.assert_awaited_once()
     call_kwargs = mock_client.audio.transcriptions.create.call_args.kwargs
-    assert call_kwargs["model"] == settings.stt_model
-    assert call_kwargs["response_format"] == "text"
+    # Command-path model is deliberately separate from the wake path's
+    # settings.stt_model — see app/config.py's stt_command_model comment
+    # (2026-08-07 real-hardware comparison).
+    assert call_kwargs["model"] == settings.stt_command_model
+    # Always verbose_json now: the STT confidence gate (service/turn_guard.py)
+    # needs no_speech_prob/compression_ratio, only available via verbose_json.
+    assert call_kwargs["response_format"] == "verbose_json"
 
 
 @pytest.mark.asyncio

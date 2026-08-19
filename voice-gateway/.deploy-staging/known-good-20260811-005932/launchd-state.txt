@@ -1,0 +1,72 @@
+# launchctl list (label line):
+82246	-15	com.merlin.voice
+
+# launchctl print gui/501/com.merlin.voice (state excerpt):
+	path = /Users/roei/Library/LaunchAgents/com.merlin.voice.plist
+	state = running
+	program = /Users/roei/Applications/Merlin.app/Contents/MacOS/Merlin
+	stdout path = /Users/roei/Library/Logs/Merlin/service.log
+	stderr path = /Users/roei/Library/Logs/Merlin/service.log
+		PATH => /usr/bin:/bin:/usr/sbin:/sbin
+		PATH => /opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin
+	domain = gui/501 [100024]
+	pid = 82246
+		state = active
+		state = active
+	job state = running
+	properties = keepalive | runatload | inferred program | managed LWCR | has LWCR
+
+# plist path + contents:
+/Users/roei/Library/LaunchAgents/com.merlin.voice.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.merlin.voice</string>
+
+    <!--
+      ProgramArguments points at the compiled Mach-O inside the app bundle.
+      macOS attributes the process to com.merlin.voice (the TCC-granted bundle).
+      The C launcher reads MERLIN_PYTHON and MERLIN_SERVICE from env and execs python3.
+    -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/roei/Applications/Merlin.app/Contents/MacOS/Merlin</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/roei/-nexus-globe/voice-gateway</string>
+
+    <key>ProcessType</key>
+    <string>Interactive</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>ThrottleInterval</key>
+    <integer>5</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/roei/Library/Logs/Merlin/service.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/roei/Library/Logs/Merlin/service.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/roei</string>
+        <!-- consumed by the compiled C launcher in Merlin.app/Contents/MacOS/Merlin -->
+        <key>MERLIN_PYTHON</key>
+        <string>/Users/roei/-nexus-globe/voice-gateway/.venv/bin/python3</string>
+        <key>MERLIN_SERVICE</key>
+        <string>/Users/roei/-nexus-globe/voice-gateway/service/merlin_service.py</string>
+    </dict>
+</dict>
+</plist>

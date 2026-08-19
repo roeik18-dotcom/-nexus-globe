@@ -1,0 +1,14 @@
+# Live barge fingerprint from PID 82246 (read-only capture)
+## BARGE_CORR (running vocabulary; NOT my BARGE_LEAK):
+2026-08-11 00:01:07,256 INFO    merlin.barge_detector — BARGE_CORR rms=0.00662 output_rms=0.02661 floor=0.00006 zero_lag_corr=0.119 max_lag_corr=-0.325 lag_ms=4.5 run_s=0.19 correlated=False
+2026-08-11 00:24:29,091 INFO    merlin.barge_detector — BARGE_CORR rms=0.00797 output_rms=0.05268 floor=0.00059 zero_lag_corr=0.091 max_lag_corr=-0.214 lag_ms=2.5 run_s=0.00 correlated=False
+2026-08-11 00:24:29,157 INFO    merlin.barge_detector — BARGE_CORR rms=0.00429 output_rms=0.01975 floor=0.00059 zero_lag_corr=0.008 max_lag_corr=-0.301 lag_ms=18.0 run_s=0.06 correlated=False
+## threshold=0.00400:
+threshold=0.00400
+## proven interrupt chain (most recent complete sequence):
+2026-08-10 23:56:37,518 INFO    merlin.service — PLAYBACK_TERMINATED turn_id=77
+2026-08-10 23:56:37,787 INFO    merlin.service — ASSISTANT_TURN_INTERRUPTED old_turn_id=77
+2026-08-11 00:01:07,257 INFO    merlin.service — USER_SPEECH_CONFIRMED turn_id=78 rms=0.00662 output_rms=0.02661 mic_ch=1 correlation=-0.325
+2026-08-11 00:01:07,257 INFO    merlin.service — PLAYBACK_TERMINATION_REQUESTED turn_id=78
+2026-08-11 00:01:07,257 INFO    merlin.service — PLAYBACK_TERMINATED turn_id=78
+2026-08-11 00:01:07,524 INFO    merlin.service — ASSISTANT_TURN_INTERRUPTED old_turn_id=78

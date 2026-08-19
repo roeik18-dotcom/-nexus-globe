@@ -11,6 +11,15 @@ build/
 *.aiff
 *.mp3
 *.log
+# ── exception: the known-good rollback capture ───────────────────────────────
+# `.deploy-staging/known-good-*/LIVE_ACCEPTANCE.log` is NOT a runtime log. It
+# is a 1.6 KB one-off acceptance capture that is part of a checksummed
+# known-good rollback point, exists nowhere else, and cannot be regenerated.
+# The blanket `*.log` above was silently swallowing it, which would have lost a
+# unique recovery artefact in the very commit meant to preserve one.
+# Verified clean before excepting: zero transcript content (RMS/correlation
+# telemetry only), zero absolute paths.
+!.deploy-staging/known-good-*/LIVE_ACCEPTANCE.log
 *.wav
 *.bak
 client/*.bak

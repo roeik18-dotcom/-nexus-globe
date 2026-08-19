@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Merlin — Operator Console</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#283040; --txt:#e6edf3; --dim:#8b98a9;
+    /* ── 8-COLOR SEMANTIC PALETTE (single source of truth) ─────────────────
+       green=ok/active/online/listening   amber=warning/partial/transitional
+       red=error/stop/muted/interrupted    blue=user input/transcript/controls
+       purple=assistant/TTS/playback       cyan=routing/domains/knowledge/memory
+       orange=Day Opening workflow         gray=idle/unavailable/not-exposed  */
+    --green:#3fb950; --blue:#58a6ff; --amber:#d29922; --red:#f85149; --gray:#6b7280;
+    --purple:#bc8cff; --cyan:#39c5cf; --orange:#f0883e; --red-strong:#ff1f1f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  a{color:var(--blue)}
+  /* raw color utilities (all 8) */
+  .c-green{color:var(--green)} .c-blue{color:var(--blue)} .c-amber{color:var(--amber)} .c-red{color:var(--red)} .c-gray{color:var(--gray)}
+  .c-purple{color:var(--purple)} .c-cyan{color:var(--cyan)} .c-orange{color:var(--orange)}
+  .bg-green{background:var(--green)} .bg-blue{background:var(--blue)} .bg-amber{background:var(--amber)} .bg-red{background:var(--red)} .bg-gray{background:var(--gray)}
+  .bg-purple{background:var(--purple)} .bg-cyan{background:var(--cyan)} .bg-orange{background:var(--orange)}
+
+  /* ── REUSABLE SEMANTIC STATUS TOKENS ─────────────────────────────────────
+     Each maps a MEANING to exactly one --sc color, so the same state is always
+     the same color everywhere. Use on a .badge/.sdot/.stext or any element. */
+  .status-ok         {--sc:var(--green)}
+  .status-warning    {--sc:var(--amber)}
+  .status-error      {--sc:var(--red)}
+  .status-info       {--sc:var(--blue)}
+  .status-assistant  {--sc:var(--purple)}
+  .status-routing    {--sc:var(--cyan)}
+  .status-day-opening{--sc:var(--orange)}
+  .status-idle       {--sc:var(--gray)}
+  .badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:.3px;
+    color:var(--sc,var(--gray));background:color-mix(in srgb,var(--sc,var(--gray)) 16%,transparent);
+    border:1px solid color-mix(in srgb,var(--sc,var(--gray)) 40%,transparent)}
+  .sdot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;background:var(--sc,var(--gray))}
+  .stext{color:var(--sc,var(--gray))}
+
+  /* ── COLOR LEGEND ────────────────────────────────────────────────────────*/
+  #legend{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;background:var(--panel);
+    border:1px solid var(--line);border-radius:10px;padding:7px 14px;font-size:11px;color:var(--dim)}
+  #legend .lgttl{font-weight:700;color:var(--txt);text-transform:uppercase;letter-spacing:.6px;font-size:10px;margin-right:4px}
+  #legend .lg{display:flex;align-items:center;gap:5px}
+  #legend .sw{width:11px;height:11px;border-radius:3px;display:inline-block;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+
+  /* TOP BAR */
+  #topbar{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;gap:14px;align-items:center;
+    padding:8px 14px;background:#0a0e14;border-bottom:1px solid var(--line)}
+  #topbar .brand{font-weight:700;letter-spacing:.5px;font-size:15px}
+  .tb{display:flex;flex-direction:column;line-height:1.15}
+  .tb .k{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
+  .tb .v{font-size:12px;font-weight:600}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
+  #tbUpdate{margin-left:auto;font-size:10px;color:var(--dim)}
+
+  .wrap{max-width:1500px;margin:0 auto;padding:14px;display:grid;gap:14px;
+    grid-template-columns:repeat(12,1fr)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0}
+  .card h2{margin:0 0 10px;font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--dim);font-weight:700}
+  .span12{grid-column:span 12}.span8{grid-column:span 8}.span6{grid-column:span 6}.span4{grid-column:span 4}.span3{grid-column:span 3}
+  @media(max-width:1000px){.span8,.span6,.span4,.span3{grid-column:span 12}}
+
+  /* MAIN STATE */
+  #mainState{display:flex;align-items:center;gap:20px}
+  #stateOrb{width:120px;height:120px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    flex-direction:column;border:4px solid var(--gray);flex:0 0 auto}
+  #stateOrb .big{font-size:19px;font-weight:800;letter-spacing:.5px}
+  #stateOrb .sub{font-size:10px;color:var(--dim)}
+  .orb-blue{border-color:var(--blue)!important;box-shadow:0 0 26px rgba(88,166,255,.35);animation:pulse 1.7s ease-in-out infinite}
+  .orb-green{border-color:var(--green)!important;box-shadow:0 0 22px rgba(63,185,80,.3)}
+  .orb-amber{border-color:var(--amber)!important;box-shadow:0 0 24px rgba(210,153,34,.35)}
+  .orb-red{border-color:var(--red)!important;box-shadow:0 0 24px rgba(248,81,73,.4)}
+  .orb-purple{border-color:var(--purple)!important;box-shadow:0 0 26px rgba(188,140,255,.4);animation:pulse 1.5s ease-in-out infinite}
+  .orb-cyan{border-color:var(--cyan)!important;box-shadow:0 0 22px rgba(57,197,207,.32)}
+  .orb-orange{border-color:var(--orange)!important;box-shadow:0 0 24px rgba(240,136,62,.4);animation:pulse 1.7s ease-in-out infinite}
+  .orb-gray{border-color:var(--gray)!important}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.72}}
+  #mainMeta{flex:1;min-width:0}
+  .kv{display:grid;grid-template-columns:150px 1fr;gap:3px 10px;font-size:12px}
+  .kv .k{color:var(--dim)} .kv .v{font-weight:600;word-break:break-word}
+  .transcript{background:#0a0e14;border:1px solid var(--line);border-radius:6px;padding:6px 8px;margin-top:4px;
+    max-height:70px;overflow:auto;font-size:12px;direction:rtl;border-left:3px solid var(--line)}
+  .transcript.user{border-left-color:var(--blue)}          /* user input = blue */
+  .transcript.assistant{border-left-color:var(--purple)}   /* Merlin/TTS = purple */
+  .na{color:var(--gray);font-style:italic}
+
+  .pill{display:inline-block;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:.3px;
+    border:1px solid transparent}
+  .pill.green{background:rgba(63,185,80,.15);color:var(--green);border-color:rgba(63,185,80,.35)} .pill.blue{background:rgba(88,166,255,.15);color:var(--blue);border-color:rgba(88,166,255,.35)}
+  .pill.amber{background:rgba(210,153,34,.15);color:var(--amber);border-color:rgba(210,153,34,.35)} .pill.red{background:rgba(248,81,73,.15);color:var(--red);border-color:rgba(248,81,73,.35)}
+  .pill.gray{background:rgba(107,114,128,.15);color:var(--gray);border-color:rgba(107,114,128,.3)}
+  .pill.purple{background:rgba(188,140,255,.15);color:var(--purple);border-color:rgba(188,140,255,.35)}
+  .pill.cyan{background:rgba(57,197,207,.15);color:var(--cyan);border-color:rgba(57,197,207,.35)}
+  .pill.orange{background:rgba(240,136,62,.15);color:var(--orange);border-color:rgba(240,136,62,.4)}
+
+  /* DOMAIN */
+  .domgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  @media(max-width:1000px){.domgrid{grid-template-columns:repeat(2,1fr)}}
+  .dom{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px;border-top:2px solid rgba(57,197,207,.4)}
+  .dom.sel{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan) inset}   /* routing/domains = cyan */
+  .dom .name{font-weight:700;font-size:12px;color:var(--cyan)}
+  .dom .m{font-size:10px;color:var(--dim);margin-top:3px}
+
+  /* progress */
+  .bar{height:8px;background:#0a0e14;border-radius:5px;overflow:hidden;margin:6px 0}
+  .bar > i{display:block;height:100%}
+
+  /* controls */
+  .ctlgrp{margin-bottom:8px}
+  .ctlgrp .lbl{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px}
+  button{background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:7px;padding:6px 10px;
+    font-size:12px;cursor:pointer;margin:2px 2px 0 0}
+  button:hover:not(:disabled){border-color:var(--blue)}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  /* semantic action buttons — color == meaning */
+  button.ok{border-color:#1f5f2e;color:#7ee787;background:#10261a} button.ok:hover:not(:disabled){border-color:var(--green);box-shadow:0 0 8px rgba(63,185,80,.3)}
+  button.warn{border-color:#5a4712;color:#e8c06a;background:#241d0c} button.warn:hover:not(:disabled){border-color:var(--amber);box-shadow:0 0 8px rgba(210,153,34,.3)}
+  button.danger{border-color:#5a2020;color:#ff9b93;background:#241111} button.danger:hover:not(:disabled){border-color:var(--red);box-shadow:0 0 8px rgba(248,81,73,.3)}
+  button.danger.active{background:#3a1414;border-color:var(--red);color:#ffb3ac}   /* mute currently ON = red */
+  button.kill{border-color:var(--red);color:#fff;background:#5a1414;font-weight:700} button.kill:hover:not(:disabled){background:#7a1a1a;border-color:var(--red-strong);box-shadow:0 0 12px rgba(255,31,31,.55)}
+  button.info{border-color:#1f4d7a;color:#9cd0ff;background:#0f2035} button.info:hover:not(:disabled){border-color:var(--blue);box-shadow:0 0 8px rgba(88,166,255,.3)}
+  button.dayopening{border-color:#6b3d16;color:#f0a868;background:#2a1808} button.dayopening:hover:not(:disabled){border-color:var(--orange);box-shadow:0 0 8px rgba(240,136,62,.35)}
+  button.primary{border-color:#1f6feb;background:#132a4a}
+  input[type=text]{background:#0a0e14;border:1px solid var(--line);color:var(--txt);border-radius:6px;padding:6px 8px;flex:1}
+  select{background:#0a0e14;border:1px solid var(--line);color:var(--txt);border-radius:6px;padding:5px}
+
+  table{width:100%;border-collapse:collapse;font-size:11px}
+  td,th{padding:3px 6px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+  th{color:var(--dim);font-weight:600;text-transform:uppercase;font-size:9px}
+  .tl{max-height:230px;overflow:auto}
+  .warnbar{background:rgba(210,153,34,.12);border:1px solid #4a3b12;border-radius:8px;padding:8px 12px;
+    color:#e8c06a;font-weight:600;font-size:12px}
+
+  /* ── DAY OPENING orange section identity ─────────────────────────────────*/
+  .card-dayopening{border-color:rgba(240,136,62,.45);box-shadow:inset 3px 0 0 var(--orange)}
+  .card-dayopening h2{color:var(--orange)}
+  .card-dayopening h2::before{content:"◐ ";}
+  #doClapLbl:has(#doClap:checked){color:var(--orange)!important;font-weight:700}  /* double-clap enabled = orange */
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span class="brand">◆ MERLIN</span>
+  <div class="tb"><span class="k">Service</span><span class="v" id="tbService">—</span></div>
+  <div class="tb"><span class="k">PID</span><span class="v" id="tbPid">—</span></div>
+  <div class="tb"><span class="k">Port</span><span class="v" id="tbPort">127.0.0.1:8802</span></div>
+  <div class="tb"><span class="k">Runtime</span><span class="v" id="tbRuntime">—</span></div>
+  <div class="tb"><span class="k">Listening</span><span class="v" id="tbListen">—</span></div>
+  <div class="tb"><span class="k">Playback</span><span class="v" id="tbPlay">—</span></div>
+  <div class="tb"><span class="k">In-mute</span><span class="v" id="tbInMute">—</span></div>
+  <div class="tb"><span class="k">Out-mute</span><span class="v" id="tbOutMute">—</span></div>
+  <div class="tb"><span class="k">Turn</span><span class="v" id="tbTurn">—</span></div>
+  <div class="tb"><span class="k">Day Opening</span><span class="v" id="tbDO">—</span></div>
+  <div class="tb"><span class="k">WebSocket</span><span class="v" id="tbWs">—</span></div>
+  <span id="tbUpdate">connecting…</span>
+</div>
+
+<div class="wrap">
+
+  <!-- COLOR LEGEND -->
+  <div class="span12" id="legend">
+    <span class="lgttl">Legend</span>
+    <span class="lg"><i class="sw" style="background:var(--green)"></i>Active</span>
+    <span class="lg"><i class="sw" style="background:var(--amber)"></i>Warning</span>
+    <span class="lg"><i class="sw" style="background:var(--red)"></i>Error / Stop</span>
+    <span class="lg"><i class="sw" style="background:var(--blue)"></i>User / Input</span>
+    <span class="lg"><i class="sw" style="background:var(--purple)"></i>Merlin / Playback</span>
+    <span class="lg"><i class="sw" style="background:var(--cyan)"></i>Routing / Memory</span>
+    <span class="lg"><i class="sw" style="background:var(--orange)"></i>Day Opening</span>
+    <span class="lg"><i class="sw" style="background:var(--gray)"></i>Idle</span>
+  </div>
+
+  <!-- config incompleteness operational warning (backend-driven) -->
+  <div class="span12" id="covWarnWrap" style="display:none"><div class="warnbar" id="covWarn"></div></div>
+
+  <!-- 1. MAIN STATE -->
+  <div class="card span8">
+    <h2>Merlin — Now</h2>
+    <div id="mainState">
+      <div id="stateOrb" class="orb-gray"><span class="big" id="orbState">—</span><span class="sub" id="orbSub"></span></div>
+      <div id="mainMeta">
+        <div class="kv">
+          <div class="k">Turn ID</div><div class="v" id="msTurn">—</div>
+          <div class="k">Playback active</div><div class="v" id="msPlay">—</div>
+          <div class="k">Uptime</div><div class="v" id="msUptime">—</div>
+          <div class="k">STT model</div><div class="v" id="msStt">—</div>
+        </div>
+        <div class="k stext status-info" style="margin-top:6px">Last user transcript</div>
+        <div class="transcript user" id="msTranscript"><span class="na">—</span></div>
+        <div class="k stext status-assistant" style="margin-top:4px">Current assistant response</div>
+        <div class="transcript assistant" id="msResponse"><span class="na">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. CONTROLS (high priority: stop/mute) -->
+  <div class="card span4">
+    <h2>Controls</h2>
+    <div id="controls"></div>
+    <div style="display:flex;gap:6px;margin-top:6px">
+      <input type="text" id="sendText" placeholder="Send exactly what Merlin should hear…"
+             onkeydown="if(event.key==='Enter')sendAsUser()">
+      <button class="info" onclick="sendAsUser()">Send</button>
+    </div>
+    <div id="ctlNote" style="font-size:10px;color:var(--dim);margin-top:4px;min-height:12px"></div>
+  </div>
+
+  <!-- 3. LIVE TURN -->
+  <div class="card span6">
+    <h2>Live Turn</h2>
+    <div class="kv" id="turnKv"></div>
+  </div>
+
+  <!-- 4. DAY OPENING -->
+  <div class="card span6 card-dayopening">
+    <h2>Day Opening</h2>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <span class="pill gray" id="doPill">—</span>
+      <button class="dayopening" id="doStart" onclick="startDayOpening()">▶ Start Day Opening</button>
+      <label id="doClapLbl" style="font-size:11px;color:var(--dim)"><input type="checkbox" id="doClap" onchange="toggleClap()"> ◐ double-clap</label>
+    </div>
+    <div class="bar"><i id="doBar" class="bg-gray" style="width:0%"></i></div>
+    <div class="kv" id="doKv"></div>
+  </div>
+
+  <!-- 5. DOMAIN + COVERAGE -->
+  <div class="card span8">
+    <h2>Domains & Config Coverage</h2>
+    <div class="domgrid" id="domGrid"></div>
+  </div>
+
+  <!-- 6. AUDIO / BARGE HEALTH -->
+  <div class="card span4">
+    <h2>Audio & Barge Health</h2>
+    <div class="kv" id="audioKv"></div>
+  </div>
+
+  <!-- 6b. VOICE / WAKE -->
+  <div class="card span4">
+    <h2>Voice / Wake</h2>
+    <div class="kv" id="wakeKv"></div>
+  </div>
+
+  <!-- 6c. COMMAND CAPTURE -->
+  <div class="card span4">
+    <h2>Command Capture</h2>
+    <div class="kv" id="captureKv"></div>
+  </div>
+
+  <!-- 6d. BARGE-IN DETAIL -->
+  <div class="card span6">
+    <h2>Barge-In</h2>
+    <div class="kv" id="bargeKv"></div>
+  </div>
+
+  <!-- 6e. NETWORK -->
+  <div class="card span6">
+    <h2>Network</h2>
+    <div class="kv" id="netKv"></div>
+  </div>
+
+  <!-- 7. ERROR SURFACE -->
+  <div class="card span5">
+    <h2>Errors / Degraded</h2>
+    <div id="errSurface"><span class="na">none recent</span></div>
+  </div>
+
+  <!-- 8. EVENT TIMELINE -->
+  <div class="card span7">
+    <h2>Event Timeline <span style="font-weight:400;text-transform:none;color:var(--dim)">(operational events; debug spam filtered)</span></h2>
+    <div class="tl"><table><thead><tr><th>Time</th><th>Turn</th><th>Source</th><th>Event</th><th>Result</th></tr></thead>
+      <tbody id="tlBody"></tbody></table></div>
+  </div>
+
+  <div class="span12" style="text-align:center;color:var(--dim);font-size:10px;padding:4px">
+    Live via REST polling (1.5s) — not WebSocket. Every value above is fetched from the running backend.
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let LAST={};                 // last full snapshot, for control-safety derivations
+
+function col(kind){return 'c-'+kind;}
+// runtime state → semantic color: listening=green, user in/processing=blue,
+// Merlin computing=amber(transitional), Merlin speaking=purple, interrupted/error=red.
+function runtimeColor(s){return{IDLE:'gray',LISTENING:'green',CAPTURING:'blue',TRANSCRIBING:'blue',THINKING:'amber',
+  SPEAKING:'purple',INTERRUPTING:'red',INTERRUPTED:'red',ERROR:'red'}[s]||'gray';}
+// Day Opening state → orange while active, green done, red interrupted/error, gray idle.
+function doColor(s){return{IDLE:'gray',COLLECTING:'orange',PLAYING:'orange',COMPLETED:'green',INTERRUPTED:'red',
+  ABORTED_BY_RESTART:'amber',ERROR:'red'}[s]||'gray';}
+// coverage = health semantics (not domain identity): complete=green, partial/unmapped=amber, missing=red.
+function covColor(s){return{COMPLETE:'green',PARTIAL:'amber',MISSING:'red',UNMAPPED:'amber',UNKNOWN:'gray'}[s]||'gray';}
+function pill(txt,kind){return `<span class="pill ${kind}">${esc(txt)}</span>`;}
+function dot(kind){return `<span class="dot bg-${kind}"></span>`;}
+function boolPill(v,onTxt,offTxt,onKind='amber',offKind='gray'){return v?pill(onTxt,onKind):pill(offTxt,offKind);}
+function na(){return '<span class="na">NOT EXPOSED</span>';}
+
+async function getJSON(u){try{const r=await fetch(u);if(!r.ok)return null;return await r.json();}catch(e){return null;}}
+
+async function refresh(){
+  const [st,turn,cov,doStat,audio,ev]=await Promise.all([
+    getJSON('/api/status'),getJSON('/api/turn'),getJSON('/api/config_coverage'),
+    getJSON('/api/day_opening/status'),getJSON('/api/audio'),getJSON('/api/events?n=120')
+  ]);
+  const now=new Date().toLocaleTimeString();
+  if(!st){$('tbUpdate').innerHTML=`${dot('red')}CONNECTION STALE — no backend response (${now})`;return;}
+  LAST={st,turn,cov,doStat,audio};
+  $('tbUpdate').innerHTML=`${dot('green')}updated ${now}`;
+
+  // ---- TOP BAR ----
+  const online=!!st.service_running, rc=runtimeColor(st.runtime_state);
+  $('tbService').innerHTML=online?`${dot('green')}ONLINE`:`${dot('red')}OFFLINE`;
+  $('tbPid').innerHTML=(st.service_pid_count>1?`${dot('red')}`:'')+esc(st.service_pid ?? '—')+(st.service_pid_count>1?` (×${st.service_pid_count}!)`:'');
+  $('tbPort').textContent='127.0.0.1:'+(st.control_panel_port ?? '8802');
+  $('tbRuntime').innerHTML=`${dot(rc)}${esc(st.runtime_state||'UNKNOWN')}`;
+  $('tbListen').innerHTML=st.capture_active?`${dot('green')}YES`:`${dot('gray')}no`;
+  $('tbPlay').innerHTML=st.playback_active?`${dot('purple')}YES`:`${dot('gray')}no`;
+  $('tbInMute').innerHTML=st.input_muted?`${dot('red')}MUTED`:`${dot('gray')}open`;
+  $('tbOutMute').innerHTML=st.muted?`${dot('red')}MUTED`:`${dot('gray')}open`;
+  $('tbTurn').textContent=st.active_turn_id ?? '—';
+  $('tbDO').innerHTML=`${dot(doColor(st.day_opening_state))}${esc(st.day_opening_state||'IDLE')}`;
+  // /ws/status exists in the backend but this UI intentionally uses bounded REST
+  // polling (honest — not claiming realtime we don't consume).
+  $('tbWs').innerHTML=`${dot('amber')}REST poll <span style="font-size:9px;color:var(--gray)">(ws avail, unused)</span>`;
+
+  // ---- MAIN STATE ----
+  const orb=$('stateOrb');orb.className='orb-'+rc;
+  $('orbState').textContent=st.runtime_state||'UNKNOWN';
+  $('orbSub').textContent=st.muted?'OUTPUT MUTED':(st.input_muted?'INPUT MUTED':'');
+  $('msTurn').textContent=st.active_turn_id ?? '—';
+  $('msPlay').innerHTML=st.playback_active?pill('ACTIVE','purple'):pill('idle','gray');
+  $('msUptime').textContent=st.uptime_seconds!=null?Math.round(st.uptime_seconds)+'s':'—';
+  $('msStt').textContent=st.stt_model||'—';
+  $('msTranscript').innerHTML=st.current_transcript?esc(st.current_transcript):'<span class="na">—</span>';
+  $('msResponse').innerHTML=st.current_response?esc(st.current_response):'<span class="na">—</span>';
+
+  // ---- LIVE TURN ----
+  const rd=st.last_route_decision||{};
+  const conf=(rd.confidence!=null)?(+rd.confidence).toFixed(3):null;
+  const interrupted=(st.runtime_state==='INTERRUPTING')||(st.cancelled_turn_ids&&st.cancelled_turn_ids.length&&st.cancelled_turn_ids.includes(st.active_turn_id));
+  $('turnKv').innerHTML=[
+    ['Turn ID', esc((turn&&turn.turn_id) ?? st.active_turn_id ?? '—')],
+    ['User transcript', (turn&&(turn.stt_result||turn.mic_capture_text))?`<span class="c-blue">${esc(turn.stt_result||turn.mic_capture_text)}</span>`:'<span class="na">—</span>'],
+    ['Route / domain', rd.domain?pill(rd.domain,rd.domain==='general'?'gray':'cyan'):'<span class="na">no route yet</span>'],
+    ['Router confidence', conf!=null?(`<span class="c-cyan">${conf}</span>`+(conf==='0.000'?' '+pill('zero-cue','amber'):'')):na()],
+    ['Retrieved units', rd.retrieved_unit_ids?`<span class="c-cyan">${rd.retrieved_unit_ids.length}</span>`:na()],
+    ['Fallback reason', rd.fallback_reason?`<span class="c-amber">${esc(rd.fallback_reason)}</span>`:'<span class="na">—</span>'],
+    ['Memory included', na()+' <span style="font-size:10px;color:var(--gray)">(not in /api/status)</span>'],
+    ['Memory rejected/domain', na()],
+    ['TTS text', (turn&&turn.tts_text)?`<span class="c-purple">${esc(turn.tts_text.slice(0,80))}</span>`:'<span class="na">—</span>'],
+    ['Playback', st.playback_active?pill('ACTIVE','purple'):pill('idle','gray')],
+    ['Interrupted', interrupted?pill('YES','red'):pill('no','gray')],
+    ['Turn controller state', st.turn_controller_state?pill(st.turn_controller_state, st.turn_controller_state==='STANDBY'?'gray':'blue'):na()],
+    ['Continuous conversation', st.turn_controller_state!=null?boolPill(st.continuous_conversation_active,'ACTIVE','standby','green','gray'):na()],
+    ['Last error', st.last_error?('<span class="c-red">'+esc(st.last_error)+'</span>'):'<span class="na">none</span>'],
+  ].map(([k,v])=>`<div class="k">${k}</div><div class="v">${v}</div>`).join('');
+
+  // ---- CONFIG COVERAGE + DOMAIN CARDS ----
+  const covByDom={};(cov&&cov.domains||[]).forEach(c=>covByDom[c.domain]=c);
+  const selDom=rd.domain||null;
+  const doms=[
+    {key:'general',name:'GENERAL',c:null},
+    {key:'human',name:'HUMAN CONFIG',c:covByDom.human},
+    {key:'music',name:'MUSIC',c:covByDom.music},
+    {key:'philos',name:'PHILOS',c:covByDom.philos},
+  ];
+  const selMap={general:'general',human:'human_config',music:'music_config',philos:'philos'};
+  $('domGrid').innerHTML=doms.map(d=>{
+    const sel=(selDom===selMap[d.key]);
+    const c=d.c;
+    let body;
+    if(d.key==='general'){
+      body=`<div class="m">no master • base model answers</div><div class="m">coverage: ${pill('N/A','gray')}</div>`;
+    }else if(c){
+      const parts=[`status: ${pill(c.status,covColor(c.status))}`];
+      if(c.known!=null)parts.push(`known: <b>${c.known}</b>`);
+      if(c.partial!=null&&c.partial>0)parts.push(`open: ${c.partial}`);
+      if(c.unmapped!=null&&c.unmapped>0)parts.push(`unmapped: ${c.unmapped}`);
+      if(c.total_rows!=null)parts.push(`rows: ${c.total_rows}`);
+      body=`<div class="m">${parts.join(' • ')}</div>`;
+    }else body=`<div class="m">${na()}</div>`;
+    return `<div class="dom ${sel?'sel':''}"><div class="name">${d.name}${sel?' '+pill('SELECTED','cyan'):''}</div>${body}</div>`;
+  }).join('');
+
+  // config incompleteness warning bar (backend-driven)
+  const h=covByDom.human,m=covByDom.music,p=covByDom.philos;
+  const warns=[];
+  if(h&&h.status!=='COMPLETE')warns.push(`HUMAN CONFIG — ${h.status}`);
+  if(m&&m.status!=='COMPLETE')warns.push(`MUSIC CONFIG — ${m.status}`);
+  if(warns.length){
+    $('covWarnWrap').style.display='';
+    $('covWarn').innerHTML='⚠ '+warns.join('  •  ')+'  —  Philos continues to expand from these sources (config coverage is not complete).';
+  }else $('covWarnWrap').style.display='none';
+
+  // ---- DAY OPENING ----
+  const ds=st.day_opening_state||'IDLE', dc=doColor(ds);
+  $('doPill').className='pill '+dc;$('doPill').textContent=ds;
+  const planned=(doStat&&doStat.planned_chars!=null)?doStat.planned_chars:null;
+  const spoken=(doStat&&doStat.spoken_chars!=null)?doStat.spoken_chars:0;
+  const prog=(doStat&&doStat.progress!=null)?Math.min(100,Math.round(doStat.progress*100)):0;
+  const barKind=(ds==='COMPLETED')?'green':(ds==='INTERRUPTED'||ds==='ERROR')?'red':(ds==='PLAYING'||ds==='COLLECTING'?'orange':'gray');
+  $('doBar').className='bg-'+barKind;$('doBar').style.width=prog+'%';
+  const started=(doStat&&doStat.started_at)?new Date(doStat.started_at*1000).toLocaleTimeString():na();
+  const naLive=(txt)=>na()+' <span style="font-size:10px;color:var(--gray)">('+txt+')</span>';
+  $('doKv').innerHTML=[
+    ['State', pill(ds,dc)],
+    ['Turn ID', (doStat&&doStat.turn_id!=null)?doStat.turn_id:naLive('not persisted per-run')],
+    ['Current section', (doStat&&doStat.current_section!=null)?doStat.current_section:naLive('not tracked live')],
+    ['Section total', (doStat&&doStat.section_total!=null)?doStat.section_total:na()],
+    ['Progress', (planned!=null)?`${prog}% (${spoken}/${planned} chars)`:na()],
+    ['Fully spoken', (doStat&&doStat.fully_spoken!=null)?(doStat.fully_spoken?pill('YES','green'):pill('NO','amber')):na()],
+    ['Interrupted', (doStat&&doStat.interrupted!=null)?(doStat.interrupted?pill('YES','red'):pill('no','gray')):na()],
+    ['Started at', started],
+    ['Completed at', (doStat&&doStat.completed_at)?new Date(doStat.completed_at*1000).toLocaleTimeString():na()],
+    ['Last error', (doStat&&doStat.last_error)?('<span class="c-red">'+esc(doStat.last_error)+'</span>'):'<span class="na">none</span>'],
+  ].map(([k,v])=>`<div class="k">${k}</div><div class="v">${v}</div>`).join('');
+  // control-safety for Start
+  const doBusy=(ds==='COLLECTING'||ds==='PLAYING');
+  $('doStart').disabled=doBusy || st.runtime_state!=='IDLE';
+  $('doStart').title=doBusy?'Day Opening already running':(st.runtime_state!=='IDLE'?'runtime must be IDLE':'');
+  if(doStat)$('doClap').checked=!!doStat.double_clap_enabled;
+
+  // ---- AUDIO / BARGE HEALTH (honest: barge DEGRADED, AEC PARTIAL) ----
+  const a=audio||{};
+  $('audioKv').innerHTML=[
+    ['Input device', na()],
+    ['Output device', na()],
+    ['Sample rate', a.sample_rate?(a.sample_rate+' Hz'):na()],
+    ['Mic channel', a.selected_mic_channel!=null?('ch '+a.selected_mic_channel):na()],
+    ['Command RMS thr', a.vad_threshold!=null?a.vad_threshold.toFixed(5):(a.speech_threshold!=null?a.speech_threshold.toFixed(5):na())],
+    ['Selected ch RMS', a.selected_channel_rms!=null?a.selected_channel_rms.toFixed(5):na()],
+    ['Playback active', st.playback_active?pill('YES','purple'):pill('no','gray')],
+    ['Input muted', st.input_muted?pill('YES','red'):pill('no','gray')],
+    ['Output muted', st.muted?pill('YES','red'):pill('no','gray')],
+    ['Barge-in health', pill('DEGRADED','amber')+' <span style="font-size:10px;color:var(--gray)">(live Day Opening still self-barges)</span>'],
+    ['AEC', pill('PARTIAL / EXPERIMENTAL','amber')+' <span style="font-size:10px;color:var(--gray)">(ERLE high but residual self-barge)</span>'],
+  ].map(([k,v])=>`<div class="k">${k}</div><div class="v">${v}</div>`).join('');
+
+  // ---- VOICE / WAKE ----
+  const tsFmt=(t)=>t?new Date(t*1000).toLocaleTimeString():null;
+  $('wakeKv').innerHTML=[
+    ['Mic device', st.mic_input_device_name?esc(st.mic_input_device_name):na()],
+    ['Active mic channel', st.selected_mic_channel!=null?('ch '+st.selected_mic_channel):na()],
+    ['Wake stream', st.wake_stream_open?pill('OPEN','green'):pill('CLOSED','gray')+' <span style="font-size:10px;color:var(--gray)">(open only while runtime_state=IDLE)</span>'],
+    ['Keyword wake', st.keyword_wake_configured==null?na():(st.keyword_wake_configured?pill('ENABLED · '+st.keyword_wake_backend,'green'):pill('DISABLED','gray')+' <span style="font-size:10px;color:var(--gray)">(double-clap only)</span>')],
+    ['Double-clap wake', st.double_clap_wake_enabled?pill('ENABLED','green')+' <span style="font-size:10px;color:var(--gray)">(always-on fallback)</span>':na()],
+    ['Last wake source', st.last_wake_source?pill(st.last_wake_source,'blue'):'<span class="na">none this session</span>'],
+    ['Last wake time', tsFmt(st.last_wake_ts)||'<span class="na">none this session</span>'],
+  ].map(([k,v])=>`<div class="k">${k}</div><div class="v">${v}</div>`).join('');
+
+  // ---- COMMAND CAPTURE ----
+  $('captureKv').innerHTML=[
+    ['Listening state', pill(st.runtime_state||'UNKNOWN', runtimeColor(st.runtime_state))],
+    ['COMMAND_RMS_THRESHOLD', a.vad_threshold!=null?a.vad_threshold.toFixed(5):na()],
+    ['Capture active', st.capture_active?pill('YES','blue'):pill('no','gray')],
+    ['Last user transcript', st.current_transcript?`<span class="c-blue">${esc(st.current_transcript).slice(0,120)}</span>`:'<span class="na">—</span>'],
+    ['STT confidence', a.last_transcription_confidence!=null?(+a.last_transcription_confidence).toFixed(3):na()],
+    ['Last STT rejection reason', st.last_rejection_reason?`<span class="c-amber">${esc(st.last_rejection_reason)}</span>`:'<span class="na">none</span>'],
+  ].map(([k,v])=>`<div class="k">${k}</div><div class="v">${v}</div>`).join('');
+
+  // ---- BARGE-IN ----
+  $('bargeKv').innerHTML=[
+    ['Enabled', pill('YES','green')+' <span style="font-size:10px;color:var(--gray)">(structural — detector always constructed per turn)</span>'],
+    ['Live threshold (BARGE_IN_RMS)', st.barge_in_threshold!=null?st.barge_in_threshold.toFixed(4):na()],
+    ['Confirm window (s)', st.barge_in_confirm_s!=null?st.barge_in_confirm_s.toFixed(2):na()],
+    ['Current / last mic RMS', st.selected_channel_rms!=null?st.selected_channel_rms.toFixed(5):na()],
+    ['Dynamic floor RMS (capture-side)', st.noise_floor_estimate!=null?st.noise_floor_estimate.toFixed(5):na()],
+    ['Last candidate', na()+' <span style="font-size:10px;color:var(--gray)">(logged, not pushed to control_state)</span>'],
+    ['Last confirmation', na()+' <span style="font-size:10px;color:var(--gray)">(logged, not pushed to control_state)</span>'],
+    ['Last interruption', tsFmt(st.last_interruption_ts)||'<span class="na">none this session</span>'],
+    ['Playback active', st.playback_active?pill('YES','purple'):pill('no','gray')],
+  ].map(([k,v])=>`<div class="k">${k}</div><div class="v">${v}</div>`).join('');
+
+  // ---- NETWORK ----
+  $('netKv').innerHTML=[
+    ['API reachable', na()+' <span style="font-size:10px;color:var(--gray)">(no live health-check probe exists)</span>'],
+    ['Last error', st.last_error?('<span class="c-red">'+esc(st.last_error)+'</span>'):'<span class="na">none</span>'],
+    ['Last successful STT', tsFmt(st.last_stt_success_ts)||'<span class="na">none this session</span>'],
+    ['Last LLM end', tsFmt(st.last_llm_end_ts)||'<span class="na">none this session</span>'],
+    ['Last TTS start', tsFmt(st.last_tts_start_ts)||'<span class="na">none this session</span>'],
+  ].map(([k,v])=>`<div class="k">${k}</div><div class="v">${v}</div>`).join('');
+
+  // ---- ERROR SURFACE ----
+  const errs=[];
+  if(st.last_error)errs.push({t:'',src:'runtime',msg:st.last_error});
+  if(st.invariant_violations&&st.invariant_violations.length)errs.push({t:'',src:'invariant',msg:st.invariant_violations.join('; ')});
+  (ev&&ev.events||[]).filter(e=>/error|ERROR|fail|EXC/i.test((e.event||'')+(e.result||''))).slice(-6).forEach(e=>{
+    errs.push({t:e.ts?new Date(e.ts*1000).toLocaleTimeString():'',src:e.component||e.source||'',msg:(e.event||'')+' '+(e.payload_summary||e.result||'')});
+  });
+  $('errSurface').innerHTML=errs.length
+    ? errs.map(e=>`<div style="margin-bottom:4px">${dot('red')}<b>${esc(e.src||'?')}</b> <span style="color:var(--dim)">${esc(e.t)}</span><br><span class="c-red" style="font-size:11px">${esc(e.msg).slice(0,220)}</span></div>`).join('')
+    : `${dot('green')}<span style="color:var(--dim)">none recent</span>`;
+
+  // ---- EVENT TIMELINE (filter debug spam) ----
+  const IMPORTANT=/WAKE|CAPTURE|STT|ROUTE|MEMORY|TTS_START|PLAYBACK_START|USER_SPEECH_CONFIRMED|PLAYBACK_TERMINATED|TURN|INTERRUPT|DAY_OPENING|ERROR|CANCEL|BARGE-IN|MUTE|RESET/i;
+  const SPAM=/BARGE_CHANNEL_RMS|BARGE_CALLBACK|BARGE_MIC_RMS|BARGE_SELECTED_RMS|VAD heartbeat|vad-near|BARGE_CORR/i;
+  const rows=(ev&&ev.events||[]).filter(e=>{const t=(e.event||'')+' '+(e.component||'');return IMPORTANT.test(t)&&!SPAM.test(t);}).slice(-40).reverse();
+  $('tlBody').innerHTML=rows.map(e=>`<tr>
+     <td>${esc(e.ts?new Date(e.ts*1000).toLocaleTimeString():'')}</td>
+     <td>${esc(e.turn_id ?? '')}</td>
+     <td>${esc(e.component||e.source||'')}</td>
+     <td>${esc(e.event||'')}</td>
+     <td>${esc((e.result||e.payload_summary||'')).slice(0,60)}</td></tr>`).join('')
+     || `<tr><td colspan="5" class="na">no operational events yet</td></tr>`;
+
+  renderControls(st);
+}
+
+// ---- CONTROLS (grouped, real endpoints, state-derived safety) ----
+function renderControls(st){
+  const playing=!!st.playback_active, muted=!!st.muted, inMuted=!!st.input_muted;
+  const paused=(st.vad_state==='PAUSED'||st.runtime_state==='PAUSED');
+  const g=(lbl,btns)=>`<div class="ctlgrp"><div class="lbl">${lbl}</div>${btns}</div>`;
+  const b=(txt,fn,opts={})=>`<button class="${opts.cls||''}" ${opts.dis?'disabled':''} title="${opts.title||''}" onclick="${fn}">${txt}</button>`;
+  $('controls').innerHTML=
+    g('Voice',
+      b('⏹ Stop Speaking','call(\'stop_speaking\')',{cls:'danger',dis:!playing,title:playing?'':'no active playback'})+
+      b(muted?'🔊 Unmute Out':'🔇 Mute Out', muted?'call(\'unmute\')':'call(\'mute\')',{cls:muted?'danger active':''})+
+      b(inMuted?'🎙 Unmute In':'🎙🚫 Mute In', inMuted?'call(\'unmute_input\')':'call(\'mute_input\')',{cls:inMuted?'danger active':''}))+
+    g('Listening',
+      b('🎙 Start','call(\'start_listening\')',{cls:'ok'})+b('🛑 Stop','call(\'stop_listening\')',{cls:'danger'})+
+      b('⏸ Pause','call(\'pause_listening\')',{cls:'warn',dis:paused})+b('▶ Resume','call(\'resume_listening\')',{cls:'ok',dis:!paused}))+
+    g('Turn',
+      b('✂ Cancel Turn','call(\'cancel_turn\')',{cls:'danger',dis:st.active_turn_id==null})+
+      b('🧺 Clear Queue','call(\'clear_queue\')',{cls:'warn'})+
+      b('↺ Reset Turn','confirmed(\'reset_turn\',\'Reset turn numbering? Conversation stays intact.\')',{cls:'warn'}))+
+    g('Session',
+      b('🧹 Clear Conversation','confirmed(\'clear_conversation\',\'Clear conversation history? (does NOT touch knowledge masters)\')',{cls:'warn'})+
+      b('⟲ Reset Session','confirmed(\'reset_session\',\'Reset turn state + conversation history?\')',{cls:'danger'}))+
+    g('Service',
+      b('⟳ Restart Service','confirmed(\'restart_service\',\'Restart Merlin? Old process exits, new starts.\')',{cls:'danger'})+
+      b('☠ Emergency Kill','confirmed(\'emergency_kill\',\'Kill the service process now? (launchd KeepAlive may relaunch it)\')',{cls:'kill'}))+
+    g('Tools',
+      b('🎚 Test Mic 5s','call(\'test_mic?duration_s=5\')',{cls:'info'})+
+      `<select id="chanSel" onchange="setChannel()"><option value="auto">AUTO ch</option>${
+        [0,1,2,3,4,5].map(c=>`<option value="${c}" ${st.forced_mic_channel==c?'selected':''}>ch ${c}</option>`).join('')}</select>`);
+}
+
+async function call(ep){
+  $('ctlNote').textContent='… '+ep;
+  try{const r=await fetch('/api/'+ep,{method:'POST'});const d=await r.json().catch(()=>({}));
+    $('ctlNote').innerHTML=(r.ok&&d.ok!==false)?`${dot('green')}${ep} ok`:`${dot('red')}${ep}: ${esc(d.error||r.status)}`;}
+  catch(e){$('ctlNote').innerHTML=`${dot('red')}${ep}: ${esc(e.message)}`;}
+  setTimeout(refresh,400);
+}
+function confirmed(ep,msg){if(confirm(msg))call(ep);}
+async function sendAsUser(){const t=$('sendText').value.trim();if(!t)return;
+  await fetch('/api/send_as_user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
+  $('sendText').value='';$('ctlNote').innerHTML=`${dot('green')}sent as user`;setTimeout(refresh,400);}
+async function startDayOpening(){$('ctlNote').textContent='starting Day Opening…';
+  const r=await fetch('/api/day_opening/start',{method:'POST'});const d=await r.json().catch(()=>({}));
+  $('ctlNote').innerHTML=(r.ok)?`${dot('green')}Day Opening started`:`${dot('red')}${esc(d.error||r.status)}`;setTimeout(refresh,500);}
+async function toggleClap(){await fetch('/api/day_opening/double_clap',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({enabled:$('doClap').checked})});setTimeout(refresh,300);}
+async function setChannel(){const v=$('chanSel').value;
+  await fetch('/api/force_channel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:v})});setTimeout(refresh,300);}
+
+// AC — full snapshot before live updates, then poll
+refresh().then(()=>setInterval(refresh,1500));
+</script>
+</body>
+</html>

@@ -43,8 +43,12 @@ async def _call_kwargs():
 
 @pytest.mark.asyncio
 async def test_command_stt_uses_configured_model():
+    # Command-path model is deliberately separate from the wake path's
+    # settings.stt_model as of 2026-08-07 — see app/config.py's
+    # stt_command_model comment (real-hardware whisper-1 vs gpt-4o-transcribe
+    # comparison).
     kw = await _call_kwargs()
-    assert kw["model"] == settings.stt_model
+    assert kw["model"] == settings.stt_command_model
 
 
 @pytest.mark.asyncio
@@ -79,11 +83,14 @@ async def test_command_stt_decoding_stays_deterministic():
 
 
 @pytest.mark.asyncio
-async def test_production_call_requests_plain_text(monkeypatch):
-    """Capture mode off → response_format="text" (unchanged production shape)."""
+async def test_production_call_always_requests_verbose_json(monkeypatch):
+    """2026-08-07: the command path always requests verbose_json now,
+    capture-mode or not — the STT confidence gate (service/turn_guard.py)
+    needs no_speech_prob/compression_ratio on every real call, not just
+    capture-mode diagnostic runs."""
     monkeypatch.delenv("MERLIN_CAPTURE_WAV", raising=False)
     kw = await _call_kwargs()
-    assert kw["response_format"] == "text"
+    assert kw["response_format"] == "verbose_json"
 
 
 @pytest.mark.asyncio

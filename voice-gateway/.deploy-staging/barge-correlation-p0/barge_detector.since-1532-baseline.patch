@@ -1,0 +1,262 @@
+--- .backups/barge_detector.py.20260810-153230.bak	2026-08-10 15:32:30
++++ service/barge_detector.py	2026-08-10 20:38:42
+@@ -76,13 +76,45 @@
+ # EMA smoothing factor for the dynamic floor tracker (higher = adapts faster).
+ FLOOR_EMA_ALPHA = 0.05
+ 
+-# Zero-lag Pearson correlation (mean-removed, normalized) between a mic block
+-# and the concurrently-written output block, at/above which the mic block is
+-# treated as speaker leakage rather than independent speech. 1.0 = identical
+-# waveform shape; independent speech over unrelated playback is close to 0.
++# Pearson correlation (mean-removed, normalized) between a mic block and the
++# concurrently-written output block, at/above which the mic block is treated as
++# speaker leakage rather than independent speech. 1.0 = identical waveform
++# shape; independent speech over unrelated playback is close to 0.
+ CORRELATION_THRESHOLD = 0.6
+ 
++# BOUNDED ACOUSTIC-LAG SEARCH (2026-08-10). Speaker->room->mic propagation
++# delays the leakage waveform relative to the output block by a few ms, so the
++# ZERO-LAG correlation used before this reads near-zero on genuine leakage
++# (live self-barge measured 0.132) and fails to reject it -> false self-barge
++# during Day Opening. Searching a small lag window (mic delayed 0..MAX_CORR_LAG_MS
++# relative to output) recovers the aligned correlation. Proven on real Merlin
++# TTS: leakage at 6-15 ms acoustic delay reads zero-lag ~-0.1..-0.3 (missed) but
++# max-lag ~0.79-0.99 (rejected); an INDEPENDENT utterance over the same output
++# reads max-lag ~0.26 (kept) — the window is too short to manufacture a spurious
++# match, so real barge-in is preserved. Still a heuristic, not AEC.
++# WIDENED 2026-08-10 (barge P0): 25 ms was SHORTER than the real Babyface ->
++# speaker -> room -> mic delay. The AEC stream-delay alone is 40 ms, so the
++# aligned residual echo sits BEYOND a 25 ms search and the max-lag correlation
++# read ~0 on genuine leakage (live: false self-barge with correlation ~0 while
++# output_rms 0.02-0.12). The window must reach the physical delay. 120 ms covers
++# device buffering + a large room; the search is bounded (never unbounded) and
++# stays real-time via a coarse step and running only on barge CANDIDATE blocks.
++MAX_CORR_LAG_MS = 120.0
++CORR_LAG_STEP = 24     # 0.5 ms @48k — coarse enough to stay real-time in the callback
+ 
++# REVERB-TAIL GATE (2026-08-10). The residual self-barge that survived AEC is
++# Merlin's own room reverb decaying AFTER an output chunk/word ends: the current
++# render is already silent so the AEC has nothing to subtract, and the tail is
++# too decorrelated for the lag search. Live-proven: every false confirm had
++# output_rms ~0.0005 (silent) moments after a loud chunk, mic ~0.006. If the
++# RECENT output was active but the CURRENT frame's output is quiet, we are inside
++# the bounded reverb-decay window and mic energy is the tail, not the user. This
++# never touches the active-playback path (output loud -> AEC cleans echo -> real
++# user speech survives), so real barge-in is preserved.
++REVERB_TAIL_MS = 300.0        # bounded reverb-decay window after output goes quiet
++REVERB_ACTIVE_RMS = 0.005     # output RMS above which Merlin is "producing sound"
++
++
+ class BargeInWindowDetector:
+     def __init__(
+         self,
+@@ -136,13 +168,29 @@
+         self._run_count = 0
+         self._run_seconds = 0.0          # accumulated voiced duration of the current run
+         self._floor_rms = 0.0
++        # Bounded ring of recently-written output (mono float64) so the leakage
++        # lag search can reference output from PREVIOUS callbacks — the acoustic
++        # speaker->mic delay may cross a block boundary.
++        self._output_history: np.ndarray = np.zeros(0, dtype=np.float64)
+ 
+         self.chunks: list[np.ndarray] = []
+         self.confirmed = False
+         # Set by the most recent feed() call — for callers that want to log
+         # *why* a block was accepted/rejected (BARGE trace lines).
++        # When the mic feed is AEC-cleaned (real echo cancellation upstream),
++        # correlation is NO LONGER the primary leakage-rejection decision — the
++        # echo is already removed, so the energy/floor gate on the clean signal
++        # decides. Correlation is still COMPUTED and logged (BARGE_CORR) but must
++        # not reject. Set False by the AEC playback path; True preserves the
++        # pre-AEC behavior for callers that still pass raw mic.
++        self.correlation_reject_enabled: bool = True
+         self.last_reject_reason: str | None = None
+-        self.last_correlation: float = 0.0
++        self.last_correlation: float = 0.0          # the DECISION correlation (max-lag, clean mic)
++        self.last_correlation_zero: float = 0.0     # zero-lag, kept for diagnostics/compare
++        self.last_correlation_raw: float = 0.0      # max-lag on the RAW (pre-AEC) mic — diagnostic
++        self.last_correlation_lag_ms: float = 0.0   # acoustic lag (ms) at max correlation
++        self.last_selected_lag_samples: int = 0     # acoustic lag (samples) at max correlation
++        self.last_history_samples: int = 0          # output-history depth available to the search
+ 
+     def _push_preroll(self, block: np.ndarray, *, correlated: bool) -> None:
+         """Bounded ring of the pre-onset audio, USER-ELIGIBLE ONLY.
+@@ -186,6 +234,64 @@
+             return 0.0
+         return float(np.sum(m * o) / denom)
+ 
++    def _update_output_history(self, output_block: np.ndarray) -> None:
++        """Append the just-written output block to a bounded history so the lag
++        search can reference output played in PREVIOUS callbacks (the acoustic
++        speaker->mic delay can push leakage across a block boundary)."""
++        self._output_history = np.concatenate(
++            [self._output_history, output_block.astype(np.float64)]
++        )
++        # Must hold at least one full mic block PLUS the widest lag we search, so
++        # every candidate lag correlates a FULL-length window (no partial-window
++        # shrinkage — the regression guarded by requirement #3) even at max lag.
++        max_lag_samp = int(MAX_CORR_LAG_MS / 1000.0 * (self.sample_rate or 48_000))
++        cap = 2 * max(1, output_block.size) + max_lag_samp
++        if self._output_history.size > cap:
++            self._output_history = self._output_history[-cap:]
++
++    def _max_lag_correlation(self, mic_block: np.ndarray) -> tuple[float, float, int]:
++        """Max |Pearson correlation| of the FULL mic block against the output
++        history delayed by 0..MAX_CORR_LAG_MS. Using the history means every lag
++        compares FULL-length windows (no partial-window shrinkage that inflates
++        narrowband correlation) and the delay may span callback boundaries.
++        Returns (signed_max_corr, lag_ms, lag_samples); (0.0, 0.0, 0) when there
++        isn't enough signal/history to judge. Runs only on barge CANDIDATE blocks."""
++        N = mic_block.size
++        hist = self._output_history
++        if N < 16 or hist.size < N + 8:
++            return 0.0, 0.0, 0
++        m = mic_block.astype(np.float64); m = m - m.mean()
++        mnorm = float(np.sqrt(np.sum(m * m)))
++        if mnorm <= 1e-9:
++            return 0.0, 0.0, 0
++        max_lag = min(int(MAX_CORR_LAG_MS / 1000.0 * (self.sample_rate or 48_000)), hist.size - N)
++        end = hist.size
++        best = 0.0
++        best_lag = 0
++        for lag in range(0, max_lag + 1, CORR_LAG_STEP):
++            ref = hist[end - N - lag: end - lag]        # N samples of output, delayed by `lag`
++            if ref.size != N:
++                continue
++            r = ref - ref.mean()
++            denom = mnorm * float(np.sqrt(np.sum(r * r)))
++            if denom <= 1e-12:
++                continue
++            c = float(np.sum(m * r) / denom)
++            if abs(c) > abs(best):
++                best = c
++                best_lag = lag
++        return best, best_lag / max(1, (self.sample_rate or 48_000)) * 1000.0, best_lag
++
++    def _recent_output_rms(self, window_ms: float = REVERB_TAIL_MS) -> float:
++        """RMS of the output written over the last `window_ms` — used to detect
++        the reverb-decay window (Merlin was just producing sound)."""
++        h = self._output_history
++        if h.size == 0:
++            return 0.0
++        n = int(window_ms / 1000.0 * (self.sample_rate or 48_000))
++        seg = h[-n:] if n and h.size > n else h
++        return float(np.sqrt(np.mean(seg * seg))) if seg.size else 0.0
++
+     def feed(
+         self,
+         block: np.ndarray,
+@@ -193,15 +299,25 @@
+         *,
+         output_rms: float = 0.0,
+         output_block: np.ndarray | None = None,
++        raw_block: np.ndarray | None = None,
+     ) -> bool:
+         """Consume one block. Returns True the instant continuous speech is confirmed.
+ 
+         `output_rms` / `output_block`: level and exact waveform of the audio
+         simultaneously being written to the speaker this same block (0.0 /
+-        None if not known or not playing). See the module docstring — this
+-        drives the dynamic-floor + correlation leakage discrimination, not
+-        real AEC.
++        None if not known or not playing). `block`/`rms` are the mic the ENERGY
++        gate judges (AEC-cleaned when AEC is upstream). `raw_block` is the
++        OPTIONAL pre-AEC mic — correlated too, for live diagnostics only (never
++        the decision), so the raw-vs-clean leakage separation is visible in the
++        BARGE_LEAK trace on real hardware.
+ 
++        Leakage discrimination is the BOUNDED-LAG correlation of the DECISION mic
++        (`block`) against the output HISTORY: after AEC the residual echo is a
++        delayed, attenuated — but still output-correlated — copy, aligned only at
++        the real device/acoustic lag, so the lag search across callback
++        boundaries recovers it while independent user speech reads ~0 at every
++        lag. This is a heuristic, not AEC.
++
+         Once confirmed, `.chunks` holds pre-roll + every above-threshold-run
+         block collected so far — the candidate first fragment of the user's
+         interrupting utterance.
+@@ -209,23 +325,69 @@
+         if self.confirmed:
+             return True
+ 
++        # Keep the output history continuous across EVERY playing block (not just
++        # candidates) so the lag search can reach back across callback boundaries.
++        if output_block is not None:
++            self._update_output_history(output_block)
++
+         above_floor = rms >= self.threshold and rms >= (self._floor_rms + self.floor_margin)
+         correlated = False
+         corr = 0.0
+-        if above_floor and output_rms > 0.0 and output_block is not None:
+-            corr = self._correlation(block, output_block)
+-            correlated = abs(corr) >= self.correlation_threshold
++        corr_zero = 0.0
++        corr_raw = 0.0
++        lag_ms = 0.0
++        lag_samples = 0
++        hist_samples = int(self._output_history.size)
++        if above_floor and output_rms > 0.0 and self._output_history.size > 0:
++            # BOUNDED-LAG max correlation against the output HISTORY (not zero-lag:
++            # the real speaker->mic delay shifts leakage out of zero-lag alignment).
++            corr_zero = self._correlation(block, output_block) if output_block is not None else 0.0
++            corr, lag_ms, lag_samples = self._max_lag_correlation(block)
++            if raw_block is not None:                       # diagnostic-only compare
++                corr_raw, _, _ = self._max_lag_correlation(raw_block)
++            # ALWAYS ON. The prior `correlation_reject_enabled = not aec.enabled`
++            # gate DISABLED this whenever AEC ran, so nothing rejected the loud-
++            # output residual echo -> false self-barge. AEC lowers the echo LEVEL;
++            # this lag correlation rejects whatever residual still correlates.
++            correlated = self.correlation_reject_enabled and abs(corr) >= self.correlation_threshold
++            _log.info(
++                "BARGE_LEAK mic_rms=%.5f output_rms=%.5f floor_rms=%.5f "
++                "max_abs_correlation=%.3f selected_lag_samples=%d selected_lag_ms=%.1f "
++                "zero_lag_corr=%.3f raw_corr=%.3f history_samples_available=%d run_s=%.2f correlated=%s",
++                rms, output_rms, self._floor_rms, abs(corr), lag_samples, lag_ms,
++                corr_zero, corr_raw, hist_samples, self._run_seconds, correlated,
++            )
+         self.last_correlation = corr
++        self.last_correlation_zero = corr_zero
++        self.last_correlation_raw = corr_raw
++        self.last_correlation_lag_ms = lag_ms
++        self.last_selected_lag_samples = lag_samples
++        self.last_history_samples = hist_samples
+ 
++        # REVERB-TAIL GATE: current render quiet + recent output active => the mic
++        # energy is Merlin's own decaying tail, not the user. Bounded window; the
++        # active-playback path is unaffected (output loud => this is False).
++        in_reverb_tail = False
++        if above_floor and output_rms < REVERB_ACTIVE_RMS:
++            recent_out = self._recent_output_rms()
++            in_reverb_tail = recent_out >= REVERB_ACTIVE_RMS
++            if in_reverb_tail:
++                _log.info(
++                    "BARGE_REVERB_TAIL rms=%.5f output_rms=%.5f recent_output_rms=%.5f "
++                    "-> rejected (Merlin's own reverb tail, not user)",
++                    rms, output_rms, recent_out,
++                )
++
+         block_s = block.shape[0] / max(1, self.sample_rate)
+-        is_speech = above_floor and not correlated
++        is_speech = above_floor and not correlated and not in_reverb_tail
+         if is_speech:
+             self.last_reject_reason = None
+             self._run_count += 1
+             self._run_seconds += block_s
+-            self.chunks.append(block)          # confirmed-run block — never correlated
++            self.chunks.append(block)          # confirmed-run block — clean near-end
+         else:
+             self.last_reject_reason = (
++                "reverb_tail" if in_reverb_tail else
+                 "correlated_with_output" if correlated else "below_floor_or_threshold"
+             )
+             self._run_count = max(0, self._run_count - 1)
+@@ -233,7 +395,8 @@
+             if self._run_count == 0:
+                 self.chunks.clear()
+                 self._run_seconds = 0.0
+-            self._push_preroll(block, correlated=correlated)
++            # reverb-tail blocks must not seed the user prefill either
++            self._push_preroll(block, correlated=(correlated or in_reverb_tail))
+             # Ambient-floor tracking: only adapt toward blocks that are not
+             # currently building/holding a speech run, so real speech cannot
+             # raise its own floor and start suppressing itself.

@@ -1,0 +1,144 @@
+ M ../.gitignore
+ M ../PHILOS-SYSTEM-BLUEPRINT.md
+ M ../app/hub/PhilosToday.tsx
+ M ../app/hub/ValueHub.tsx
+ M ../app/hub/community/page.tsx
+ M ../app/hub/page.tsx
+ M ../app/lib/philos/__tests__/projectValueGroup.test.ts
+ M ../app/lib/philos/eventCausality.ts
+ M ../app/lib/philos/projectDynamics.ts
+ M ../app/lib/philos/projectValueGroup.ts
+ M ../app/planet/__tests__/globeHonesty.test.ts
+ M ../app/planet/page.tsx
+ M app/adapters/claude.py
+ M app/config.py
+ M app/context_builder.py
+ A app/control_events.py
+ A app/language_gate.py
+ M app/providers/stt/whisper.py
+ M client/push_to_talk.py
+ A config/merlin_control.json
+ A config/merlin_control.last_known_good.json
+ A config/merlin_control_schema.py
+ A dashboard/control_center.html
+ A dashboard/runtime_server.py
+ M memory/relationship/memories.json
+ M prompts/merlin.md
+ M service/merlin_service.py
+ M service/vad_config.py
+ M service/wake_trigger.py
+ A tests/test_control_config.py
+ A tests/test_language_gate.py
+ M tests/test_stt.py
+ M tests/test_stt_command_language.py
+?? ../CANONICAL-REPO-DECISION.md
+?? ../PHILOS-DYNAMICS-UI-CONTRACT.md
+?? ../app/dynamics/
+?? ../app/hub/actions.ts
+?? ../app/lib/__tests__/
+?? ../app/lib/philos-event-store.ts
+?? ../app/lib/philos-viewer.ts
+?? ../app/lib/philos/__tests__/dynamicsView.test.ts
+?? ../app/lib/philos/__tests__/eventStore.test.ts
+?? ../app/lib/philos/__tests__/joinGroup.test.ts
+?? ../app/lib/philos/__tests__/postUpdate.test.ts
+?? ../app/lib/philos/__tests__/proposeAllocation.test.ts
+?? ../app/lib/philos/__tests__/recordImpact.test.ts
+?? ../app/lib/philos/__tests__/viewerIdentity.test.ts
+?? ../app/lib/philos/commands/
+?? ../app/lib/philos/dynamicsView.ts
+?? ../app/lib/philos/eventStore.ts
+?? ../app/lib/philos/viewer.ts
+?? ../app/lib/philos/viewerIdentity.ts
+?? ../corpus/
+?? ../docs/MERLIN_RUNTIME_CAPABILITY_AUDIT.md
+?? .deploy-staging/
+?? MERLIN-RUNTIME-ARCHITECTURE-REVIEW.md
+?? MERLIN_KNOWLEDGE_GAP_REPORT.md
+?? app/context_builder.py.bak-master-20260808-215137
+?? app/context_builder.py.bak-orientation-20260808-204325
+?? app/domain_router.py
+?? app/domain_router.py.bak-master-20260808-215137
+?? app/master_config.py
+?? app/trace_context.py
+?? app/voice_intents.py
+?? architecture_audit.txt
+?? audit/
+?? client/capture_guard.py
+?? config/merlin_control.json.bak-bargetiming-20260808-165144
+?? dashboard/dashboard_models.py
+?? dashboard/events.jsonl
+?? dashboard/live_dashboard.py
+?? docs/
+?? executive/
+?? intelligence/
+?? orientation/
+?? project_knowledge/
+?? prompts/merlin.md.bak-domaindiscipline-20260808-213651
+?? repair_patches/
+?? runtime.dot
+?? runtime/
+?? service/aec.py
+?? service/barge_detector.py
+?? service/barge_detector.py.bak-bargetiming-20260808-165144
+?? service/config_coverage.py
+?? service/control_panel.html
+?? service/control_panel.html.bak-console-20260810-230950
+?? service/control_panel.html.bak-precolor
+?? service/control_panel.py
+?? service/control_panel.py.bak-console-20260810-230950
+?? service/control_state.py
+?? service/day_opening_collectors.py
+?? service/day_opening_models.py
+?? service/day_opening_planner.py
+?? service/day_opening_renderer.py
+?? service/day_opening_runner.py
+?? service/merlin_service.py.bak-bargerms-20260808-222024
+?? service/merlin_service.py.bak-before-command-guard
+?? service/merlin_service.py.bak-fix-20260806-005404
+?? service/merlin_service.py.bak-single-turn-20260806-004823
+?? service/merlin_service.py.bak.20260805-233729
+?? service/merlin_service.py.bak.command-min
+?? service/merlin_service.py.bak.single-pipeline.20260806-005117
+?? service/merlin_service.py.bak.single-turn.20260806-005030
+?? service/mic_channel.py
+?? service/turn_guard.py
+?? service/turn_state.py
+?? service/vad_config.py.bak-cmdvad-20260808-220237
+?? service/wake_trigger.py.bak.20260805-160100
+?? service/wake_trigger.py.bak.20260805-160340
+?? state/
+?? telemetry/
+?? tests/test_barge_detector.py
+?? tests/test_barge_lag_correlation.py
+?? tests/test_barge_prefill_purity.py
+?? tests/test_barge_vad_constants_lock.py
+?? tests/test_capture_guard.py
+?? tests/test_control_panel.py
+?? tests/test_day_opening_12section.py
+?? tests/test_day_opening_collectors.py
+?? tests/test_day_opening_pipeline.py
+?? tests/test_day_opening_planner.py
+?? tests/test_day_opening_renderer.py
+?? tests/test_day_opening_runner.py
+?? tests/test_domain_router.py
+?? tests/test_history_scoping_and_intents.py
+?? tests/test_memory_gate_widened.py
+?? tests/test_mic_channel.py
+?? tests/test_openwakeword_wake.py
+?? tests/test_phantom_and_stuck_state.py
+?? tests/test_porcupine_wake.py
+?? tests/test_post_barge_continuation.py
+?? tests/test_post_playback_capture_guard.py
+?? tests/test_push_to_talk_guard.py
+?? tests/test_routing_probe_and_persona.py
+?? tests/test_runtime_knowledge_fix.py
+?? tests/test_runtime_server.py
+?? tests/test_stt_ab_harness.py
+?? tests/test_turn_guard.py
+?? tests/test_turn_guard_hallucination_gate.py
+?? tests/test_turn_state.py
+?? tests/test_turn_taking.py
+?? tools/mic_meter.py
+?? tools/record_merlin_wakeword.py
+?? tools/stt_ab_harness.py

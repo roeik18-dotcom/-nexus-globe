@@ -39,6 +39,14 @@ try:
 except ImportError:
     _HAS_AFPLAY = False
 
+# Pre-capture audio-conflict guard (self-contained; see client/capture_guard.py).
+# Package import first (tests, where voice-gateway is on the path), then the flat
+# script import (running `python client/push_to_talk.py`, where client/ is on the path).
+try:
+    from client.capture_guard import default_guard, pre_capture_check
+except ImportError:  # pragma: no cover - script-context fallback
+    from capture_guard import default_guard, pre_capture_check
+
 logging.basicConfig(level=logging.WARNING)
 
 SAMPLE_RATE = 16_000
@@ -73,18 +81,103 @@ def record_until_release(stop_event: threading.Event) -> bytes:
     return buf.getvalue()
 
 
-def play_audio(data: bytes) -> None:
-    """Play audio bytes via afplay (macOS). Detects AIFF vs MP3 by magic bytes."""
-    suffix = ".aiff" if data[:4] == b"FORM" else ".mp3"
-    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
-        f.write(data)
-        tmp = Path(f.name)
+# ── interruptible TTS playback (barge-in) ────────────────────────────────────
+# afplay runs as a tracked child process so it can be killed mid-sentence. Guarded
+# by a lock because playback runs on an executor thread while the stop key fires on
+# the keyboard-listener thread.
+_playback_lock = threading.Lock()
+_playback_proc: "subprocess.Popen | None" = None
+
+
+def stop_playback() -> bool:
+    """Barge-in: interrupt Merlin's current TTS playback. Returns True if something was
+    playing and was stopped, False if nothing was playing. Safe to call any time — the
+    play_audio `finally` still clears the TTS mark so the capture guard stays consistent."""
+    with _playback_lock:
+        proc = _playback_proc
+    if proc is None or proc.poll() is not None:
+        return False
     try:
-        subprocess.run(["afplay", str(tmp)], check=True, capture_output=True)
-    except (FileNotFoundError, subprocess.CalledProcessError):
-        print("[audio] cannot play — saved to", tmp)
+        proc.terminate()
+    except Exception:
+        return False
+    return True
+
+
+def play_audio(data: bytes) -> None:
+    """Play Merlin's TTS audio, marking TTS active for the capture guard so playback
+    (and a short cooldown after it) is never mistaken for the user. The mark always
+    clears in ``finally`` — even if afplay is missing or fails — so the post-TTS
+    cooldown is preserved."""
+    default_guard().tts.mark_started()
+    try:
+        _play_audio_impl(data)
+    finally:
+        default_guard().tts.mark_ended()
+
+
+def _play_audio_impl(data: bytes) -> None:
+    """Play AIFF/MP3/WAV or raw 24 kHz PCM16 mono via afplay."""
+    if data[:4] in {b"FORM", b"RIFF"} or data[:3] == b"ID3" or data[:2] == b"\\xff\\xfb":
+        suffix = ".aiff" if data[:4] == b"FORM" else ".wav" if data[:4] == b"RIFF" else ".mp3"
+        payload = data
+    else:
+        pcm = np.frombuffer(data, dtype="<i2")
+        buf = io.BytesIO()
+        wavfile.write(buf, 24_000, pcm)
+        suffix = ".wav"
+        payload = buf.getvalue()
+
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
+        f.write(payload)
+        tmp = Path(f.name)
+
+    global _playback_proc
+    try:
+        proc = subprocess.Popen(["afplay", str(tmp)])
+    except FileNotFoundError as exc:
+        print("[audio] cannot play — saved to", tmp, exc)
         return
+    with _playback_lock:
+        _playback_proc = proc
+    try:
+        proc.wait()  # blocks until playback ends OR stop_playback() terminates it
+    finally:
+        with _playback_lock:
+            if _playback_proc is proc:
+                _playback_proc = None
     tmp.unlink(missing_ok=True)
+
+
+# ── capture-guard integration ────────────────────────────────────────────────
+# Honest, user-facing block reasons. `mic_not_quiet` is described as POSSIBLE
+# speaker/room contamination — never as proven system audio. `system_audio_active`
+# stays false unless a real output-detection provider (ScreenCaptureKit / BlackHole /
+# CoreAudio) is configured; see client/capture_guard.py.
+_BLOCK_MESSAGES = {
+    "system_audio_active": "System audio detected — pause music/video before speaking.",
+    "mic_not_quiet": "Background or speaker sound detected — wait for quiet or use override.",
+    "tts_active": "Merlin is still speaking — one moment.",
+    "tts_cooldown": "Merlin is still speaking — one moment.",
+    "mic_unavailable": "Microphone unavailable — check the input device.",
+}
+
+
+def block_message(reason: str) -> str:
+    return _BLOCK_MESSAGES.get(reason, f"Capture blocked ({reason}).")
+
+
+def try_start_recording(override: bool, start_fn, notify=print) -> bool:
+    """Run the pre-capture guard, then decide. On allow, call ``start_fn`` (which opens
+    the mic and records) and return True. On block, ``notify`` the mapped reason and
+    return False WITHOUT calling ``start_fn`` — the mic is never opened and nothing is
+    enqueued or sent to STT. ``override=True`` (an explicit key) bypasses the block."""
+    result = pre_capture_check(override=override)
+    if not result.allow:
+        notify(block_message(result.reason))
+        return False
+    start_fn()
+    return True
 
 
 async def run(host: str, port: int) -> None:
@@ -98,28 +191,46 @@ async def run(host: str, port: int) -> None:
         if msg.get("type") == "session_start":
             print(f"Session: {msg['session_id']}")
 
-        print("\nHold SPACE to speak. Release to send. Press Ctrl+C to quit.\n")
+        print("\nHold SPACE to speak. Release to send. ESC stops Merlin. Ctrl+C quits.\n")
 
         loop = asyncio.get_running_loop()
         stop_recording = threading.Event()
         recording = False
+        override_held = False
         audio_queue: asyncio.Queue = asyncio.Queue()
 
-        def on_press(key):
+        def _begin_recording() -> None:
             nonlocal recording
+            recording = True
+            stop_recording.clear()
+            print("● Recording…", end="\r", flush=True)
+
+            def _record():
+                wav = record_until_release(stop_recording)
+                loop.call_soon_threadsafe(audio_queue.put_nowait, wav)
+
+            threading.Thread(target=_record, daemon=True).start()
+
+        def on_press(key):
+            nonlocal override_held
+            if key == pynput_kb.Key.esc:
+                # Barge-in: stop Merlin mid-sentence.
+                if stop_playback():
+                    print("⏹  Stopped Merlin.        ", end="\r", flush=True)
+                return
+            if key in (pynput_kb.Key.shift, pynput_kb.Key.shift_r):
+                override_held = True
+                return
             if key == pynput_kb.Key.space and not recording:
-                recording = True
-                stop_recording.clear()
-                print("● Recording…", end="\r", flush=True)
-
-                def _record():
-                    wav = record_until_release(stop_recording)
-                    loop.call_soon_threadsafe(audio_queue.put_nowait, wav)
-
-                threading.Thread(target=_record, daemon=True).start()
+                # Pre-capture guard. Hold SHIFT while pressing SPACE to override.
+                # A blocked check prints its reason and never opens the mic.
+                try_start_recording(override_held, _begin_recording)
 
         def on_release(key):
-            nonlocal recording
+            nonlocal recording, override_held
+            if key in (pynput_kb.Key.shift, pynput_kb.Key.shift_r):
+                override_held = False
+                return
             if key == pynput_kb.Key.space and recording:
                 recording = False
                 stop_recording.set()

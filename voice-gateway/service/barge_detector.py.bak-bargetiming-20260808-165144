@@ -1,0 +1,211 @@
+"""Continuous-speech-window confirmation for barge-in (PHASE 3 / PHASE 4).
+
+Split out of the PortAudio callback so the "is this really the user
+interrupting, or a click/cough/speaker-leakage transient" decision is
+testable without an audio device — mirrors the existing pattern in
+service/merlin_service.py::_CommandCapture, which does the same split for
+the record_utterance VAD gate.
+
+Confirmation rule: sustained above-threshold energy across `confirm_frames`
+consecutive blocks, with linear decay (not a hard reset) on a below-threshold
+block. Decay — not reset — is deliberate: real speech has micro-pauses
+between syllables/words that a hard reset would treat as noise and never
+accumulate to confirmation. A single-block transient (click, cough) decays
+back to 0 in one step and can never reach confirm_frames; only sustained
+energy can. This mirrors the tuning already proven in the pre-fix
+BARGE_IN_FRAMES/`barge_count = max(0, barge_count - 1)` logic in
+stream_response — extracted here unchanged, not reinvented.
+
+Retains a bounded pre-roll ring (same shape as
+COMMAND_PREROLL_S/_CommandCapture._push_preroll and
+wake_trigger.KeywordBuffer's post-keyword buffer) so that once a barge-in is
+confirmed, `.chunks` includes the audio from BEFORE the gate crossed
+threshold — the onset of the interrupting utterance is not lost.
+
+Self-playback / echo discrimination (NOT acoustic echo cancellation):
+2026-08-08 — the original rule required mic RMS to exceed the concurrent
+output RMS by ECHO_MARGIN ("the user must be louder than the speakers").
+Live hardware evidence (BARGE_SELECTED_RMS legitimately above threshold —
+0.011, 0.017, 0.028 — with echo_margin_ok=False on every one of them) showed
+this rejects real speech any time Merlin's TTS is playing at a comparable or
+louder level than the user, which is the common case, not the edge case.
+Requiring "louder than the speakers" is the wrong test — a person doesn't
+have to out-shout playback to be heard by a near-field mic.
+
+Replaced with two independent, complementary signals, both computed from
+data already available in the duplex callback (no real AEC/adaptive filter
+needed):
+
+1. Dynamic noise floor: an exponential moving average of RMS observed on
+   blocks that were NOT part of a confirmed-or-building speech run (i.e.
+   genuine ambient/room noise, updated continuously). Mic energy must clear
+   `floor + floor_margin` as well as the absolute `threshold` — this is a
+   *relative* bar against the room, not against the speaker output.
+2. Correlation with the output reference: the caller passes the exact
+   output block it just wrote to the speaker this same callback (available
+   for free in a full-duplex stream — a non-duplex design would not have
+   this). Acoustic leakage from speaker to mic is a scaled/filtered but
+   time-aligned copy of that block, so it correlates strongly with it;
+   independent human speech does not. A block whose (zero-lag, mean-removed)
+   correlation with the output reference is at/above `correlation_threshold`
+   is rejected as leakage regardless of its RMS; a block with low
+   correlation is accepted even if comparable in level to the output.
+
+This is still a heuristic, not AEC — it does not adapt to room impulse
+response and a pathological echo path could defeat it. Live testing on the
+actual Babyface/speaker placement is what proves whether it's sufficient.
+"""
+
+from __future__ import annotations
+
+from collections import deque
+
+import numpy as np
+
+
+# Additional margin (linear RMS) required above the dynamic ambient floor.
+# Matches the documented ambient noise floor (~0.002-0.003, see
+# service/merlin_service.py BARGE_IN_RMS comment) — small on purpose since the
+# absolute `threshold` already does most of the floor work in a quiet room;
+# this only starts to bind when the room itself is noisy.
+FLOOR_MARGIN = 0.003
+
+# EMA smoothing factor for the dynamic floor tracker (higher = adapts faster).
+FLOOR_EMA_ALPHA = 0.05
+
+# Zero-lag Pearson correlation (mean-removed, normalized) between a mic block
+# and the concurrently-written output block, at/above which the mic block is
+# treated as speaker leakage rather than independent speech. 1.0 = identical
+# waveform shape; independent speech over unrelated playback is close to 0.
+CORRELATION_THRESHOLD = 0.6
+
+
+class BargeInWindowDetector:
+    def __init__(
+        self,
+        *,
+        threshold: float,
+        confirm_frames: int,
+        preroll_s: float = 0.30,
+        sample_rate: int = 48_000,
+        floor_margin: float = FLOOR_MARGIN,
+        floor_ema_alpha: float = FLOOR_EMA_ALPHA,
+        correlation_threshold: float = CORRELATION_THRESHOLD,
+        echo_margin: float | None = None,
+    ) -> None:
+        self.threshold = threshold
+        self.confirm_frames = confirm_frames
+        self.preroll_s = preroll_s
+        self.sample_rate = sample_rate
+        self.floor_margin = floor_margin
+        self.floor_ema_alpha = floor_ema_alpha
+        self.correlation_threshold = correlation_threshold
+        # Accepted-but-unused: kept so any remaining caller passing the old
+        # `echo_margin=` kwarg does not crash. The "must be louder than the
+        # speakers" rule it implemented is gone — see module docstring
+        # (2026-08-08 rewrite). Exposed as an attribute (not just discarded)
+        # because service/merlin_service.py's diagnostic logging still reads
+        # `detector.echo_margin` in one legacy log line during the rollout.
+        self.echo_margin = echo_margin
+
+        self._preroll: deque[np.ndarray] = deque()
+        self._preroll_samples = 0
+        self._run_count = 0
+        self._floor_rms = 0.0
+
+        self.chunks: list[np.ndarray] = []
+        self.confirmed = False
+        # Set by the most recent feed() call — for callers that want to log
+        # *why* a block was accepted/rejected (BARGE trace lines).
+        self.last_reject_reason: str | None = None
+        self.last_correlation: float = 0.0
+
+    def _push_preroll(self, block: np.ndarray) -> None:
+        cap = int(self.preroll_s * (self.sample_rate or 48_000))
+        self._preroll.append(block)
+        self._preroll_samples += len(block)
+        while self._preroll and self._preroll_samples - len(self._preroll[0]) >= cap:
+            self._preroll_samples -= len(self._preroll.popleft())
+
+    @staticmethod
+    def _correlation(mic_block: np.ndarray, output_block: np.ndarray) -> float:
+        """Zero-lag Pearson correlation between two same-callback blocks.
+
+        Returns 0.0 (== "not correlated") whenever there isn't enough signal
+        to judge — silence on either side, mismatched/degenerate blocks —
+        rather than raising or guessing. A short lag is not searched: within
+        one duplex callback (tens of ms), direct speaker->mic acoustic
+        propagation delay is a small fraction of the block and zero-lag
+        already tracks it well enough for a heuristic (not real AEC).
+        """
+        n = min(mic_block.size, output_block.size)
+        if n < 8:
+            return 0.0
+        m = mic_block[:n].astype(np.float64)
+        o = output_block[:n].astype(np.float64)
+        m = m - m.mean()
+        o = o - o.mean()
+        denom = float(np.sqrt(np.sum(m * m) * np.sum(o * o)))
+        if denom <= 1e-12:
+            return 0.0
+        return float(np.sum(m * o) / denom)
+
+    def feed(
+        self,
+        block: np.ndarray,
+        rms: float,
+        *,
+        output_rms: float = 0.0,
+        output_block: np.ndarray | None = None,
+    ) -> bool:
+        """Consume one block. Returns True the instant continuous speech is confirmed.
+
+        `output_rms` / `output_block`: level and exact waveform of the audio
+        simultaneously being written to the speaker this same block (0.0 /
+        None if not known or not playing). See the module docstring — this
+        drives the dynamic-floor + correlation leakage discrimination, not
+        real AEC.
+
+        Once confirmed, `.chunks` holds pre-roll + every above-threshold-run
+        block collected so far — the candidate first fragment of the user's
+        interrupting utterance.
+        """
+        if self.confirmed:
+            return True
+
+        above_floor = rms >= self.threshold and rms >= (self._floor_rms + self.floor_margin)
+        correlated = False
+        corr = 0.0
+        if above_floor and output_rms > 0.0 and output_block is not None:
+            corr = self._correlation(block, output_block)
+            correlated = abs(corr) >= self.correlation_threshold
+        self.last_correlation = corr
+
+        is_speech = above_floor and not correlated
+        if is_speech:
+            self.last_reject_reason = None
+            self._run_count += 1
+            self.chunks.append(block)
+        else:
+            self.last_reject_reason = (
+                "correlated_with_output" if correlated else "below_floor_or_threshold"
+            )
+            self._run_count = max(0, self._run_count - 1)
+            if self._run_count == 0:
+                self.chunks.clear()
+            self._push_preroll(block)
+            # Ambient-floor tracking: only adapt toward blocks that are not
+            # currently building/holding a speech run, so real speech cannot
+            # raise its own floor and start suppressing itself.
+            if self._run_count == 0:
+                self._floor_rms = (
+                    (1.0 - self.floor_ema_alpha) * self._floor_rms + self.floor_ema_alpha * rms
+                )
+
+        if self._run_count >= self.confirm_frames:
+            self.confirmed = True
+            self.chunks = list(self._preroll) + self.chunks
+            self._preroll.clear()
+            self._preroll_samples = 0
+            return True
+        return False

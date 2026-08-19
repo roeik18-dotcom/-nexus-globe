@@ -1,0 +1,310 @@
+===== MERLIN CONVERGENCE AUDIT =====
+יום ד׳ אוג׳ 05 2026 23:19:44 IDT
+
+===== ENTRYPOINTS =====
+
+===== DUPLICATE RUNTIME COMPONENTS =====
+__init__.py
+base.py
+mock.py
+router.py
+store.py
+trace.py
+
+===== IMPORT DEPENDENCIES =====
+Binary file client/__pycache__/voice.cpython-314.pyc matches
+Binary file mos/__pycache__/alpha.cpython-314.pyc matches
+from __future__ import annotations
+from .alpha import AlphaRuntime
+from .calibration import Calibrator
+from .cognition import CognitionEngine, Orientation, OrientationInput
+from .cognition import CognitionEngine, OrientationInput
+from .collectors import default_collectors
+from .events import Event
+from .events import Event, EventBus, new_event
+from .events import Event, new_event
+from .events import EventBus, new_event
+from .executor import Executor
+from .extractor import extract_memories
+from .intent_bridge import to_bus
+from .learning import Learner
+from .learning import Priors
+from .personal_config import DEFAULT_MAX_AGE_DAYS, load_personal_config
+from .philos_seam import OrientationAlgorithm
+from .philos_seam import OrientationAlgorithm, RuleStub, SeamResult
+from .planner import Planner
+from .response import Responder
+from .schema import Memory
+from .schema import Memory, _now
+from .snapshot import (
+from .storage_roots import (
+from .store import JsonlEventStore
+from .store import MemoryStore
+from .tools import run_tool
+from .world_graph import WorldGraph
+from abc import ABC, abstractmethod
+from app import turn_context
+from app.adapters.base import VoiceAdapter
+from app.adapters.claude import ClaudeAdapter
+from app.adapters.merlin import MerlinAdapter, VoiceSessionContext
+from app.agents.definition import AgentDefinition
+from app.agents.registry import AgentRegistry
+from app.agents.router import AgentRouter
+from app.audio.sentence import SentenceBuffer
+from app.audio.utils import audio_to_file_like, validate_audio
+from app.config import build_system_prompt_with_task, settings
+from app.config import settings
+from app.context_builder import ContextBuilder
+from app.context_builder import load_memory_dict
+from app.delegation.bus import DelegationBus, DelegationRequest, DelegationResult
+from app.delegation.bus import DelegationRequest, DelegationResult
+from app.delegation.rules import should_delegate
+from app.essence_context import fetch_essence_context
+from app.essence_context import observe_exchange
+from app.memory import MemoryStore, extract_memories
+from app.memory_candidates import candidate_registry
+from app.memory_promotion import promote as _promote_to_memory
+from app.observability.json_log import json_log_subscriber
+from app.providers.stt.base import STTProvider
+from app.recall import default_recall_policy
+from app.router import build_orchestrator, build_stt, build_tts
+from app.session import registry
+from app.summary import (
+from app.summary import summary_latency_registry, summary_registry
+from app.task import task_registry
+from app.tool_memory import tool_memory_registry
+from app.tool_memory import ToolMemoryEntry, tool_memory_registry
+from app.trace import SystemSnapshot, TraceStep
+from app.trace import TraceStep
+from app.trace import TraceStep, TurnTrace
+from app.trace import TurnTrace
+from app.trace_bus import trace_bus
+from collections import Counter
+from collections import Counter, defaultdict
+from collections import deque
+from collections.abc import Callable
+from contextlib import asynccontextmanager
+from contextvars import ContextVar
+from dataclasses import asdict
+from dataclasses import dataclass
+from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+from datetime import datetime
+from datetime import datetime, timezone
+from dotenv import load_dotenv
+from enum import Enum
+from enum import Enum, auto
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from math import gcd
+from openai import AsyncOpenAI
+from pathlib import Path
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from scipy.io import wavfile
+from scipy.signal import resample_poly
+from service.vad_config import COMMAND_RMS_THRESHOLD as SILENCE_RMS
+from service.vad_config import normalize_for_whisper  # peak-normalize quiet utterances
+from service.vad_config import SPEECH_RMS_THRESHOLD as VAD_THRESHOLD  # shared with merlin_service
+from service.wake_gate import DropOldestQueue, admit  # keeps the Whisper lane fresh
+from service.wake_trigger import WakeTrigger
+from the durable log. Components are v0/simple — that is exactly the point: the chain
+from typing import Any
+from typing import Any, Callable, Optional
+from typing import Any, Iterable, Sequence
+from typing import Any, Literal
+from typing import Any, Protocol, runtime_checkable
+from typing import AsyncGenerator
+from typing import AsyncIterator
+from typing import Callable
+from typing import Callable, Mapping, Protocol, Sequence
+from typing import Callable, Protocol
+from typing import Iterator
+from typing import Literal
+from typing import Optional
+from typing import Optional, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, AsyncIterator
+import anthropic
+import argparse
+import asyncio
+import dataclasses
+import datetime
+import hashlib
+import httpx
+import io
+import itertools
+import json
+import logging
+import math
+import numpy as np
+import ormsgpack
+import os
+import platform
+import queue
+import re
+import shutil
+import sounddevice as sd
+import struct
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+import uuid
+import wave
+import wave as _wave_mod
+
+===== BAK FILES =====
+./.env.bak.1785324978
+./.env.bak.pre-merlin-fix
+./service/wake_trigger.py.bak.20260805-160100
+./service/merlin_service.py.bak
+./service/merlin_service.py.bak-before-command-guard
+./service/merlin_service.py.bak.command-min
+./service/wake_trigger.py.bak.20260805-160340
+./service/vad_config.py.bak
+./client/voice.py.bak
+
+===== ORPHAN MODULES =====
+dashboard/runtime_server.py
+dashboard/dashboard_models.py
+dashboard/live_dashboard.py
+executive/executive_summary.py
+executive/context_switch.py
+executive/risk_engine.py
+executive/mission_planner.py
+executive/priority_engine.py
+executive/opportunity_engine.py
+telemetry/project_health.py
+telemetry/latency_metrics.py
+telemetry/resource_monitor.py
+telemetry/system_health.py
+intelligence/dependency_graph.py
+intelligence/anomaly_detector.py
+intelligence/importance_ranker.py
+intelligence/trend_detector.py
+runtime/state_store.py
+runtime/resume_runtime.py
+runtime/event_bus.py
+runtime/world_state.py
+runtime/change_detector.py
+state/session_state.py
+state/world_snapshot.py
+state/runtime_state.py
+
+===== TEST COVERAGE TARGETS =====
+tests/__init__.py
+tests/test_adapters_base.py
+tests/test_agent_orchestrator.py
+tests/test_agent_registry.py
+tests/test_agent_router.py
+tests/test_audio_utils.py
+tests/test_bench_stats.py
+tests/test_calibration.py
+tests/test_capture_guard.py
+tests/test_clap_detection.py
+tests/test_cognition.py
+tests/test_command_buffering.py
+tests/test_context_builder.py
+tests/test_current_time_context.py
+tests/test_delegation.py
+tests/test_echo_adapter.py
+tests/test_essence_context_orientation.py
+tests/test_essence_context.py
+tests/test_false_start_guard.py
+tests/test_intent_bridge.py
+tests/test_learning.py
+tests/test_memory_candidates.py
+tests/test_memory_promotion.py
+tests/test_merlin_adapter.py
+tests/test_morning_snapshot.py
+tests/test_orientation.py
+tests/test_persona_merlin.py
+tests/test_personal_config_snapshot.py
+tests/test_personal_config_v2.py
+tests/test_personal_config.py
+tests/test_planner.py
+tests/test_profile_guard.py
+tests/test_push_to_talk_guard.py
+tests/test_recall.py
+tests/test_router.py
+tests/test_runtime.py
+tests/test_scenarios.py
+tests/test_sentence_buffer.py
+tests/test_session.py
+tests/test_storage_roots.py
+tests/test_store.py
+tests/test_streaming_pipeline.py
+tests/test_stt_command_language.py
+tests/test_stt.py
+tests/test_summary.py
+tests/test_task.py
+tests/test_tool_memory.py
+tests/test_tools.py
+tests/test_trace_bus.py
+tests/test_trace.py
+tests/test_vad_thresholds.py
+tests/test_voice_activation.py
+tests/test_voice_bridge.py
+tests/test_wake_buffering.py
+tests/test_wake_gate.py
+tests/test_wake_key_validation.py
+tests/test_world_graph.py
+
+===== GIT STATUS =====
+ M ../.gitignore
+ M ../PHILOS-SYSTEM-BLUEPRINT.md
+ M ../app/hub/PhilosToday.tsx
+ M ../app/hub/ValueHub.tsx
+ M ../app/hub/community/page.tsx
+ M ../app/hub/page.tsx
+ M ../app/lib/philos/__tests__/projectValueGroup.test.ts
+ M ../app/lib/philos/eventCausality.ts
+ M ../app/lib/philos/projectDynamics.ts
+ M ../app/lib/philos/projectValueGroup.ts
+ M ../app/planet/__tests__/globeHonesty.test.ts
+ M ../app/planet/page.tsx
+ M client/push_to_talk.py
+ M memory/relationship/memories.json
+ M service/merlin_service.py
+ M service/vad_config.py
+ M service/wake_trigger.py
+?? ../CANONICAL-REPO-DECISION.md
+?? ../PHILOS-DYNAMICS-UI-CONTRACT.md
+?? ../app/dynamics/
+?? ../app/hub/actions.ts
+?? ../app/lib/__tests__/
+?? ../app/lib/philos-event-store.ts
+?? ../app/lib/philos-viewer.ts
+?? ../app/lib/philos/__tests__/dynamicsView.test.ts
+?? ../app/lib/philos/__tests__/eventStore.test.ts
+?? ../app/lib/philos/__tests__/joinGroup.test.ts
+?? ../app/lib/philos/__tests__/postUpdate.test.ts
+?? ../app/lib/philos/__tests__/proposeAllocation.test.ts
+?? ../app/lib/philos/__tests__/recordImpact.test.ts
+?? ../app/lib/philos/__tests__/viewerIdentity.test.ts
+?? ../app/lib/philos/commands/
+?? ../app/lib/philos/dynamicsView.ts
+?? ../app/lib/philos/eventStore.ts
+?? ../app/lib/philos/viewer.ts
+?? ../app/lib/philos/viewerIdentity.ts
+?? ../corpus/
+?? architecture_audit.txt
+?? audit/
+?? client/capture_guard.py
+?? dashboard/
+?? executive/
+?? intelligence/
+?? runtime.dot
+?? runtime/
+?? service/merlin_service.py.bak-before-command-guard
+?? service/merlin_service.py.bak.command-min
+?? service/wake_trigger.py.bak.20260805-160100
+?? service/wake_trigger.py.bak.20260805-160340
+?? state/
+?? telemetry/
+?? tests/test_capture_guard.py
+?? tests/test_push_to_talk_guard.py
+
+===== RUNTIME GRAPH =====
+-rw-r--r--  1 rwyqryty  staff   266K  5 אוג׳ 23:10 runtime.dot

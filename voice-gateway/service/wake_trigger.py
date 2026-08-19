@@ -33,10 +33,63 @@ CHUNK_MS    = 20       # InputStream block size in ms
 CHUNK_SIZE  = int(SAMPLE_RATE * CHUNK_MS / 1000)   # 320 — kept for compat
 
 # ── Clap parameters ───────────────────────────────────────────────────────────
-CLAP_THRESHOLD       = 0.10
+CLAP_THRESHOLD       = 0.030
 CLAP_MAX_S           = 0.25
 CLAP_GAP_MIN_S       = 0.05
 DOUBLE_CLAP_WINDOW_S = 1.0
+
+# 2026-08-15 — CLAP_THRESHOLD alone missed most live claps. Root cause: it
+# gates on RMS averaged over one whole callback block (~70ms at the observed
+# 44.1kHz/3072-sample framing), but a hand clap's actual acoustic energy is
+# often 5-20ms — well under the block size. A loud, genuine clap straddling a
+# block boundary or shorter than the block dilutes to a frame-RMS well below
+# 0.10 even though it was clearly audible, while a slightly longer/louder/
+# better-aligned clap survives the same averaging. This is duration-dilution,
+# not a threshold-value problem — same physical clap, different luck with
+# block alignment. Evidence: [wake] wrote logs recorded three separate
+# peak=1.000000 (full-scale) events this session (2026-08-14 18:54:26,
+# 19:08:36; 2026-08-15 02:02:55) that never registered as an RMS-crossing
+# burst at all.
+#
+# Fix: OR in a peak check alongside the existing RMS gate — peak amplitude
+# isn't diluted by silence elsewhere in the block, so it reflects a short
+# transient's true loudness regardless of alignment. Purely additive: every
+# clap the RMS gate already caught still triggers identically; this only
+# catches ones RMS was diluting away.
+#
+# CLAP_PEAK_THRESHOLD=0.35 is evidence-grounded, not guessed: across 41,673
+# two-second-window peak samples logged this session (spanning the full
+# multi-hour session, many hours of normal room activity/speech/movement),
+# only 5 ever exceeded 0.35 — the 3 known peak=1.0 events, one 0.777, one
+# 0.362 — a 0.012% rate. Since window-peak is the max of every ~70ms frame
+# peak inside it, a window staying under 0.35 proves every frame inside it
+# also stayed under 0.35, so this is a real (not optimistic) false-positive
+# bound against everything else that happened in the room this session.
+# 2026-08-17 20:39 LIVE REGRESSION recalibration: the user clapped at the
+# CURRENT (post-gain-fix) interface level and the strongest measured burst
+# reached rms=0.0596 / peak=0.110 — ~60%/31% of the old 0.100/0.350 gates,
+# so no clap could ever wake at today's real levels (the 0.35 evidence
+# above was collected at a different input gain era, incl. full-scale 1.0
+# events that today's chain never produces). New gates sit ON MEASURED
+# DATA: claps this session = rms 0.036–0.060 / peak 0.071–0.110; normal
+# speech bursts = rms ≤0.024. rms 0.030 / peak 0.065 pass every measured
+# clap while staying above every measured speech burst; the DOUBLE-clap
+# pattern gate (two bursts + gap) still guards against single transients.
+CLAP_PEAK_THRESHOLD  = 0.065
+
+# Diagnostic-only: bounded per-frame clap-detector visibility for live wake
+# troubleshooting. Auto-expires so it can never spam steady-state logs forever.
+# Does not affect detection behavior — read-only instrumentation.
+#
+# 2026-08-15 — was 45.0. Measured directly against the 5-attempt reliability
+# test: every listening cycle this session ran 181s-424s before any clap
+# activity (user hesitation/pacing between attempts), so the 45s window had
+# already expired before EVERY SINGLE clap in that test, successful or not —
+# zero frame-level diagnostic data survived for any of the 5 attempts.
+# Widened to comfortably exceed the largest observed gap (424s) with margin,
+# so the next live test actually produces usable per-frame evidence instead
+# of another blind spot. Still bounded (not permanent), same as before.
+CLAP_DIAG_WINDOW_S = 900.0
 
 # ── Keyword parameters ────────────────────────────────────────────────────────
 from service.vad_config import SPEECH_RMS_THRESHOLD as VAD_THRESHOLD  # shared with merlin_service
@@ -176,18 +229,30 @@ def _query_mic_rate() -> int:
 class ClapDetector:
     """Stateful per-frame clap detector. Feed RMS values; fires on double clap."""
 
-    def __init__(self, on_double_clap: threading.Event):
+    def __init__(self, on_double_clap: threading.Event, source_box: list | None = None):
         self._trigger       = on_double_clap
         self._in_burst      = False
         self._burst_start   = 0.0
         self._last_clap_end = 0.0
         self._clap_times: list[float] = []
+        # Day Opening double-clap trigger (Control Panel): lets the caller
+        # tell, after event.wait() returns, whether THIS detector fired vs
+        # the keyword detector — both share the same `event`. None (default)
+        # is byte-identical to pre-Day-Opening behavior.
+        self._source_box = source_box
+        self._diag_deadline = time.monotonic() + CLAP_DIAG_WINDOW_S
 
-    def feed(self, rms: float, now: float) -> None:
-        if rms > CLAP_THRESHOLD:
+    def feed(self, rms: float, peak: float, now: float) -> None:
+        diag = now <= self._diag_deadline
+        condition = "below_threshold_idle"
+        above = rms > CLAP_THRESHOLD or peak > CLAP_PEAK_THRESHOLD
+        if above:
             if not self._in_burst:
                 self._in_burst    = True
                 self._burst_start = now
+                condition = "burst_opened"
+            else:
+                condition = "burst_continuing"
         else:
             if self._in_burst:
                 self._in_burst = False
@@ -195,7 +260,21 @@ class ClapDetector:
                 gap_since_last = now - self._last_clap_end
                 if burst_dur <= CLAP_MAX_S and gap_since_last >= CLAP_GAP_MIN_S:
                     self._last_clap_end = now
+                    condition = "burst_closed_accepted"
                     self._record_clap(now)
+                elif burst_dur > CLAP_MAX_S:
+                    condition = f"burst_closed_rejected_too_long({burst_dur:.3f}s>{CLAP_MAX_S}s)"
+                else:
+                    condition = f"burst_closed_rejected_gap_too_short({gap_since_last:.3f}s<{CLAP_GAP_MIN_S}s)"
+        if diag:
+            logger.info(
+                "[clap-diag] t=%.3f rms=%.6f peak=%.6f rms_thr=%.3f peak_thr=%.3f "
+                "in_burst=%s burst_dur=%.3f gap=%.3f condition=%s",
+                now, rms, peak, CLAP_THRESHOLD, CLAP_PEAK_THRESHOLD, self._in_burst,
+                (now - self._burst_start) if self._in_burst else 0.0,
+                now - self._last_clap_end,
+                condition,
+            )
 
     def _record_clap(self, now: float) -> None:
         self._clap_times = [t for t in self._clap_times if now - t <= DOUBLE_CLAP_WINDOW_S]
@@ -204,12 +283,118 @@ class ClapDetector:
         if len(self._clap_times) >= 2:
             self._clap_times.clear()
             logger.info("double-clap wake trigger fired")
+            if self._source_box is not None:
+                self._source_box[0] = "clap"
             self._trigger.set()
+
+
+# ── On-device wake-word (Porcupine) — the production wake classifier ─────────
+# Replaces the cloud-STT wake path ("audio -> OpenAI transcribe -> search merlin").
+# Fully local / offline. Config comes from the environment; if it is missing we
+# fail CLEARLY (PORCUPINE_CONFIG_MISSING) and never fall back to cloud Whisper.
+# AccessKey from the standard Picovoice env name (PICOVOICE_ACCESS_KEY), with
+# the legacy PORCUPINE_ACCESS_KEY accepted as a fallback. The secret lives only
+# in the gitignored .env (loaded via dotenv), never hard-coded here.
+PORCUPINE_ACCESS_KEY   = (os.environ.get("PICOVOICE_ACCESS_KEY")
+                          or os.environ.get("PORCUPINE_ACCESS_KEY") or "").strip()
+PORCUPINE_KEYWORD_PATH = os.environ.get("PORCUPINE_KEYWORD_PATH", "").strip()
+
+# openWakeWord on-device wake (2026-08-09) — key-free alternative to Porcupine.
+# A custom "Merlin" model (.onnx) is trained OFFLINE (see tools/train_merlin_wakeword.md)
+# and pointed at here. When MERLIN_OWW_MODEL_PATH is unset/missing the backend is
+# simply not selected (double-clap stays active) — identical fail-clear posture as
+# Porcupine, never a cloud-Whisper fallback.
+MERLIN_OWW_MODEL_PATH = os.environ.get("MERLIN_OWW_MODEL_PATH", "").strip()
+MERLIN_OWW_THRESHOLD  = float(os.environ.get("MERLIN_OWW_THRESHOLD", "0.5") or "0.5")
+
+
+class PorcupineDetector:
+    """On-device keyword spotter. Every mic frame (mono float32 @ mic_sr) is
+    resampled to Porcupine's 16 kHz int16 and fed in frame_length chunks to
+    porcupine.process(); process() returns True the instant the keyword fires.
+    Reuses the EXISTING wake InputStream — opens no second microphone stream."""
+
+    def __init__(self, access_key: str, keyword_path: str, mic_sr: int, sensitivity: float = 0.5):
+        import pvporcupine
+        self._pp = pvporcupine.create(
+            access_key=access_key, keyword_paths=[keyword_path], sensitivities=[sensitivity],
+        )
+        self.target_sr = self._pp.sample_rate      # 16000
+        self.frame_len = self._pp.frame_length     # 512
+        self._mic_sr   = int(mic_sr)
+        self._residual = np.zeros(0, dtype=np.int16)
+
+    def process(self, pcm_native: np.ndarray) -> bool:
+        if self._mic_sr != self.target_sr:
+            from math import gcd
+            g = gcd(self._mic_sr, self.target_sr)
+            pcm = resample_poly(pcm_native, self.target_sr // g, self._mic_sr // g)
+        else:
+            pcm = pcm_native
+        i16 = (np.clip(pcm, -1.0, 1.0) * 32767).astype(np.int16)
+        self._residual = np.concatenate([self._residual, i16]) if self._residual.size else i16
+        fired = False
+        while len(self._residual) >= self.frame_len:
+            frame = self._residual[:self.frame_len]
+            self._residual = self._residual[self.frame_len:]
+            if int(self._pp.process(frame)) >= 0:
+                fired = True
+        return fired
+
+    def close(self) -> None:
+        try:
+            self._pp.delete()
+        except Exception:
+            pass
+
+
+class OpenWakeWordDetector:
+    """On-device openWakeWord spotter (NO API key). Duck-type-identical to
+    PorcupineDetector — process(mono float32 @ mic_sr) -> bool, close() — so it
+    drops into KeywordBuffer's existing detector slot with no callback changes.
+    Resamples to 16 kHz and feeds openWakeWord's 1280-sample (80 ms) int16
+    frames to a custom 'Merlin' ONNX model; fires when its score crosses
+    `threshold`. Reuses the EXISTING wake InputStream — no second mic stream."""
+    backend_name = "openwakeword"
+
+    def __init__(self, model_path: str, mic_sr: int, threshold: float = 0.5):
+        from openwakeword.model import Model
+        # inference_framework='onnx' → onnxruntime (ships a py3.14 wheel); the
+        # bundled melspectrogram/embedding feature models are reused automatically.
+        self._model = Model(wakeword_models=[model_path], inference_framework="onnx")
+        self.target_sr = 16000
+        self.frame_len = 1280                 # 80 ms @ 16 kHz — openWakeWord's frame
+        self._mic_sr = int(mic_sr)
+        self._threshold = float(threshold)
+        self._residual = np.zeros(0, dtype=np.int16)
+
+    def process(self, pcm_native: np.ndarray) -> bool:
+        if self._mic_sr != self.target_sr:
+            from math import gcd
+            g = gcd(self._mic_sr, self.target_sr)
+            pcm = resample_poly(pcm_native, self.target_sr // g, self._mic_sr // g)
+        else:
+            pcm = pcm_native
+        i16 = (np.clip(pcm, -1.0, 1.0) * 32767).astype(np.int16)
+        self._residual = np.concatenate([self._residual, i16]) if self._residual.size else i16
+        fired = False
+        while len(self._residual) >= self.frame_len:
+            frame = self._residual[:self.frame_len]
+            self._residual = self._residual[self.frame_len:]
+            scores = self._model.predict(frame)
+            if scores and max(scores.values()) >= self._threshold:
+                fired = True
+        return fired
+
+    def close(self) -> None:
+        pass
 
 
 class KeywordBuffer:
     """
-    VAD-gated Whisper keyword spotter.
+    Wake keyword spotter. With an on-device `porcupine` detector it is the
+    production path (no cloud). Without one it is the legacy VAD-gated Whisper
+    spotter (kept only for non-Porcupine callers/tests).
 
     Accumulates speech chunks from the microphone stream at ``mic_sr`` Hz.
     When an utterance ends, it resamples to WHISPER_SR and sends it to the
@@ -224,9 +409,13 @@ class KeywordBuffer:
         keyword: str = "merlin",
         *,
         mic_sr: int = WHISPER_SR,
+        source_box: list | None = None,
+        porcupine: "PorcupineDetector | None" = None,
     ):
         self._trigger  = trigger
         self._api_key  = openai_api_key
+        self._source_box = source_box
+        self._porcupine = porcupine   # on-device wake; when set, no cloud STT is used
         # Match both the English keyword and its Hebrew transliteration so
         # Whisper transcribing Hebrew speech ("מרלין") also fires the trigger.
         self._keywords = frozenset({keyword.lower(), "מרלין"})
@@ -254,7 +443,11 @@ class KeywordBuffer:
         self._frame_count = 0
         self._peak_rms    = 0.0
 
-        threading.Thread(target=self._inference_loop, daemon=True).start()
+        # Only the legacy cloud path needs the Whisper inference thread. With an
+        # on-device Porcupine detector NO OpenAI transcription runs while waiting
+        # for the wake word (requirement 13).
+        if self._porcupine is None:
+            threading.Thread(target=self._inference_loop, daemon=True).start()
 
     # ── audio callback path (runs on the PortAudio thread) ───────────────────
 
@@ -282,6 +475,22 @@ class KeywordBuffer:
 
     def feed(self, pcm: np.ndarray, rms: float) -> None:
         now = time.monotonic()
+
+        # ── On-device wake classification (production path) ──────────────────
+        # Replaces "audio -> OpenAI transcribe -> search 'merlin'". Fires the
+        # SAME handoff (source_box='keyword' + trigger.set) the Whisper path did.
+        # The VAD chunk accumulation below still runs so drain_pending() returns
+        # the post-keyword command audio for record_utterance().
+        if self._porcupine is not None:
+            try:
+                if self._porcupine.process(pcm):
+                    if self._source_box is not None:
+                        self._source_box[0] = "keyword"
+                    logger.info("WAKE_KEYWORD_DETECTED backend=%s",
+                                getattr(self._porcupine, "backend_name", "porcupine"))
+                    self._trigger.set()
+            except Exception:
+                logger.exception("on-device wake process failed")
 
         self._frame_count += 1
         if rms > self._peak_rms:
@@ -526,6 +735,8 @@ class KeywordBuffer:
 
                 if wake_match:
                     logger.info("keyword detected — waking Merlin")
+                    if self._source_box is not None:
+                        self._source_box[0] = "keyword"
                     self._trigger.set()
 
                 # Instrumentation probe (E2) — saves the exact Whisper-bound buffer
@@ -644,9 +855,17 @@ class WakeTrigger:
     — actually deliver audio.  KeywordBuffer resamples to 16 kHz before Whisper.
     """
 
-    def __init__(self, openai_api_key: str = "", keyword: str = "merlin"):
+    def __init__(self, openai_api_key: str = "", keyword: str = "merlin",
+                 *, external_trigger: threading.Event | None = None):
         self._keyword = keyword
         self._sanity_done = False   # run _mic_sanity_check only on first wake
+        # Control Panel "START LISTENING": if given, THIS event is used as the
+        # wake signal instead of a fresh local one, so an external .set() call
+        # satisfies the exact same event.wait() a real keyword/clap detection
+        # would — the InputStream still closes via the same `with` block, no
+        # second stream is ever opened, nothing is left dangling. None (the
+        # default) is byte-identical to the pre-Control-Panel behavior.
+        self._external_trigger = external_trigger
 
         # Validate the key ONCE at startup.  If it is missing/corrupted/masked we
         # disable the keyword path entirely (self._api_key = "") so the OpenAI
@@ -676,12 +895,15 @@ class WakeTrigger:
             flush=True,
         )
 
-    async def wait(self) -> list[np.ndarray]:
+    async def wait(self) -> tuple[list[np.ndarray], str]:
         """Block until a keyword or double clap is detected.
 
-        Returns any audio chunks buffered after the keyword utterance ended
-        (accumulated during Whisper's network latency).  These are the most
-        likely start of the user's command and should be passed to
+        Returns (pending_chunks, source) where source is "keyword" or "clap"
+        — the Day Opening double-clap trigger (Control Panel) needs to know
+        which detector fired, since both share the same underlying event.
+        pending_chunks: any audio chunks buffered after the keyword utterance
+        ended (accumulated during Whisper's network latency). These are the
+        most likely start of the user's command and should be passed to
         record_utterance() as a prefill so they are not silently dropped.
         """
         loop = asyncio.get_running_loop()
@@ -690,10 +912,10 @@ class WakeTrigger:
         # thread can acquire it without contention.
         return await loop.run_in_executor(None, self._wait_blocking)
 
-    def _wait_blocking(self) -> list[np.ndarray]:
+    def _wait_blocking(self) -> tuple[list[np.ndarray], str]:
         """Open the mic stream and block until a wake event fires.
 
-        Returns any post-keyword audio chunks (see drain_pending).
+        Returns (pending_chunks, source) — see wait()'s docstring.
         """
         import os
         import sys
@@ -716,16 +938,33 @@ class WakeTrigger:
             id(_mod2) if _mod2 else -1,
         )
 
-        logger.info("sd.query_devices():\n%s", sd.query_devices())
-        logger.info("sd.default.device    = %s", sd.default.device)
-        logger.info("sd.default.channels  = %s", sd.default.channels)
-        logger.info("sd.default.samplerate= %s", sd.default.samplerate)
+        # 2026-08-17 21:09 CRASH-LOOP FIX: this diagnostic block RAISED while
+        # logging the DeviceList repr once the default input became the
+        # iPhone Continuity mic (bidi/format chars in the Hebrew device
+        # name) — killing the whole wake loop in an endless retry backoff.
+        # Diagnostics must never be fatal.
+        try:
+            logger.info("sd.query_devices():\n%s", str(sd.query_devices()).replace("%", "%%"))
+            logger.info("sd.default.device    = %s", str(sd.default.device))
+            logger.info("sd.default.channels  = %s", str(sd.default.channels))
+            logger.info("sd.default.samplerate= %s", str(sd.default.samplerate))
+        except Exception:
+            logger.info("device diagnostics unavailable (formatting)")
 
-        event    = threading.Event()
-        clap     = ClapDetector(on_double_clap=event)
-        kw_box   = [None]   # filled after stream opens so we have the real sr
+        event      = self._external_trigger if self._external_trigger is not None else threading.Event()
+        event.clear()   # in case a stale .set() from a previous cycle (or a pre-emptive manual trigger) lingers
+        # RUNTIME TRUTH (2026-08-17): the default label is the path that
+        # never overwrites it — the EXTERNAL/manual trigger (panel Wake /
+        # SEND AS USER). It used to default to "keyword", so every manual
+        # wake was logged as source=keyword while the keyword detector was
+        # UNAVAILABLE — a direct status/timeline contradiction. The real
+        # detectors overwrite this explicitly ("keyword" / "clap").
+        source_box = ["manual"]
+        clap       = ClapDetector(on_double_clap=event, source_box=source_box)
+        kw_box     = [None]   # filled after stream opens so we have the real sr
 
         _WAKE_CH    = 1        # Babyface channel index that carries the mic signal
+                               # (clamped below for mono/low-channel devices — 2026-08-17)
         _sr_box     = [0]      # filled once stream opens; needed for WAV save
         _wake_buf   = []       # rolling channel-1 PCM frames (capped at 2 s)
         _wake_total = [0]      # total samples currently in _wake_buf
@@ -744,8 +983,10 @@ class WakeTrigger:
                 indata_2d = indata[:, np.newaxis] if indata.ndim == 1 else indata
 
                 # Extract the designated wake channel (hardcoded; not argmax)
-                pcm = indata_2d[:, _WAKE_CH].astype(np.float32)
+                _ch = min(_WAKE_CH, indata_2d.shape[1] - 1)
+                pcm = indata_2d[:, _ch].astype(np.float32)
                 rms = float(np.sqrt(np.mean(pcm ** 2)))
+                peak = float(np.max(np.abs(pcm))) if pcm.size else 0.0
 
                 # One-time startup log: dtype, shape, raw signal range
                 if not _cb_logged[0]:
@@ -781,7 +1022,7 @@ class WakeTrigger:
                         except Exception as _wav_err:
                             logger.warning("[wake] wavfile.write failed: %s", _wav_err)
 
-                clap.feed(rms, now)
+                clap.feed(rms, peak, now)
                 kw = kw_box[0]
                 if kw:
                     kw.feed(pcm, rms)
@@ -819,17 +1060,58 @@ class WakeTrigger:
                     stream.device, actual_sr, stream.channels, stream.blocksize, _e,
                 )
 
-            # Build KeywordBuffer now that we know the real sample rate
-            if self._api_key:
-                kw_box[0] = KeywordBuffer(
-                    event, self._api_key, self._keyword, mic_sr=actual_sr,
-                )
-                logger.info(
-                    "Wake modes: keyword('%s') + double-clap (mic_sr=%d)",
-                    self._keyword, actual_sr,
-                )
+            # Build the wake keyword spotter now that we know the real sample
+            # rate. PRODUCTION wake = on-device Porcupine (replaces cloud STT).
+            # If its config is missing we fail CLEARLY and never fall back to
+            # cloud Whisper — double-clap stays active on its own path.
+            # Backend priority: openWakeWord (key-free, chosen 2026-08-09) if a
+            # custom model is present, else Porcupine if its key+ppn are present,
+            # else double-clap only. Never a cloud-Whisper fallback.
+            _oww_ok = bool(MERLIN_OWW_MODEL_PATH) and os.path.exists(MERLIN_OWW_MODEL_PATH)
+            _kw_ok = bool(PORCUPINE_ACCESS_KEY) and bool(PORCUPINE_KEYWORD_PATH) and os.path.exists(PORCUPINE_KEYWORD_PATH)
+            if _oww_ok:
+                try:
+                    _det = OpenWakeWordDetector(MERLIN_OWW_MODEL_PATH, mic_sr=actual_sr,
+                                                threshold=MERLIN_OWW_THRESHOLD)
+                    kw_box[0] = KeywordBuffer(
+                        event, "", self._keyword, mic_sr=actual_sr,
+                        source_box=source_box, porcupine=_det,
+                    )
+                    logger.info(
+                        "WAKE_BACKEND=openwakeword WAKE_KEYWORD=Merlin WAKE_LOCAL=true "
+                        "mic_sr=%d target_sr=%d frame_len=%d threshold=%.2f model=%s",
+                        actual_sr, _det.target_sr, _det.frame_len, MERLIN_OWW_THRESHOLD, MERLIN_OWW_MODEL_PATH,
+                    )
+                    logger.info("Wake modes: keyword(openWakeWord on-device) + double-clap (mic_sr=%d)", actual_sr)
+                except Exception as exc:
+                    logger.error("OWW_INIT_FAILED %s — keyword wake DISABLED (double-clap only). "
+                                 "NOT falling back to cloud Whisper.", exc)
+                    kw_box[0] = None
+            elif _kw_ok:
+                try:
+                    _pp = PorcupineDetector(PORCUPINE_ACCESS_KEY, PORCUPINE_KEYWORD_PATH, mic_sr=actual_sr)
+                    kw_box[0] = KeywordBuffer(
+                        event, "", self._keyword, mic_sr=actual_sr,
+                        source_box=source_box, porcupine=_pp,
+                    )
+                    logger.info(
+                        "WAKE_BACKEND=porcupine WAKE_KEYWORD=Merlin WAKE_LOCAL=true "
+                        "mic_sr=%d target_sr=%d frame_len=%d keyword_path=%s",
+                        actual_sr, _pp.target_sr, _pp.frame_len, PORCUPINE_KEYWORD_PATH,
+                    )
+                    logger.info("Wake modes: keyword(Porcupine on-device) + double-clap (mic_sr=%d)", actual_sr)
+                except Exception as exc:
+                    logger.error("PORCUPINE_INIT_FAILED %s — keyword wake DISABLED (double-clap only). "
+                                 "NOT falling back to cloud Whisper.", exc)
+                    kw_box[0] = None
             else:
-                logger.info("Wake mode: double-clap only (no OpenAI key, mic_sr=%d)", actual_sr)
+                logger.error(
+                    "WAKE_KEYWORD_CONFIG_MISSING oww_model=%r porcupine_key_set=%s porcupine_ppn=%r — "
+                    "keyword wake DISABLED (double-clap still active). NOT falling back to cloud Whisper.",
+                    MERLIN_OWW_MODEL_PATH or "(unset)", bool(PORCUPINE_ACCESS_KEY),
+                    PORCUPINE_KEYWORD_PATH or "(unset)",
+                )
+                kw_box[0] = None
 
             logger.info("=== calling event.wait() — stream is live ===")
             event.wait()
@@ -843,8 +1125,9 @@ class WakeTrigger:
             pending = kw_box[0].drain_pending()
 
         logger.info(
-            "=== _wait_blocking RETURN === pending_chunks=%d  total_pending_samples=%d",
+            "=== _wait_blocking RETURN === pending_chunks=%d  total_pending_samples=%d  source=%s",
             len(pending),
             sum(len(c) for c in pending),
+            source_box[0],
         )
-        return pending
+        return pending, source_box[0]

@@ -1,0 +1,575 @@
+===== TREE =====
+.
+./-nexus-globe
+./-nexus-globe/.git
+./-nexus-globe/app
+./-nexus-globe/artifacts
+./-nexus-globe/data
+./-nexus-globe/docs
+./-nexus-globe/public
+./-nexus-globe/research
+./-nexus-globe/scripts
+./.claude
+./.pytest_cache
+./.pytest_cache/v
+./.venv
+./.venv/bin
+./.venv/include
+./.venv/lib
+./.venv/share
+./app
+./app/__pycache__
+./app/adapters
+./app/agents
+./app/audio
+./app/delegation
+./app/memory
+./app/observability
+./app/providers
+./bench
+./bench/__pycache__
+./bench/results
+./client
+./client/__pycache__
+./config
+./dashboard
+./executive
+./intelligence
+./launch
+./launch/__pycache__
+./memory
+./memory/persistent
+./memory/relationship
+./mos
+./mos/__pycache__
+./node_modules
+./node_modules/.vite
+./profiles
+./prompts
+./runtime
+./service
+./service/__pycache__
+./state
+./telemetry
+./tests
+./tests/__pycache__
+./tools
+./tools/__pycache__
+
+===== PY FILES =====
+./-nexus-globe/research/simulation/stage0_null_fep.py
+./-nexus-globe/research/simulation/stage0b_constraint_convergence.py
+./-nexus-globe/research/simulation/stage0c_convergence_harness.py
+./-nexus-globe/research/simulation/stage0d_arch_marketplace_convergence.py
+./-nexus-globe/research/simulation/transition_engine_sim.py
+./-nexus-globe/research/simulation/transition_engine_stability.py
+./app/__init__.py
+./app/adapters/__init__.py
+./app/adapters/base.py
+./app/adapters/claude.py
+./app/adapters/echo.py
+./app/adapters/merlin.py
+./app/agents/__init__.py
+./app/agents/definition.py
+./app/agents/orchestrator.py
+./app/agents/registry.py
+./app/agents/router.py
+./app/audio/__init__.py
+./app/audio/sentence.py
+./app/audio/utils.py
+./app/config.py
+./app/context_builder.py
+./app/delegation/__init__.py
+./app/delegation/bus.py
+./app/delegation/rules.py
+./app/essence_context.py
+./app/main.py
+./app/memory_candidates.py
+./app/memory_promotion.py
+./app/memory/__init__.py
+./app/memory/extractor.py
+./app/memory/schema.py
+./app/memory/store.py
+./app/observability/__init__.py
+./app/observability/json_log.py
+./app/providers/__init__.py
+./app/providers/stt/__init__.py
+./app/providers/stt/base.py
+./app/providers/stt/mock.py
+./app/providers/stt/whisper.py
+./app/providers/tts/__init__.py
+./app/providers/tts/elevenlabs_tts.py
+./app/providers/tts/fish_tts.py
+./app/providers/tts/mock.py
+./app/providers/tts/openai_tts.py
+./app/providers/tts/system_tts.py
+./app/recall.py
+./app/router.py
+./app/session.py
+./app/summary.py
+./app/task.py
+./app/tool_memory.py
+./app/trace_bus.py
+./app/trace.py
+./app/turn_context.py
+./bench/direct_bench.py
+./bench/gen_audio.py
+./bench/report.py
+./bench/run_bench.py
+./bench/sentences.py
+./client/capture_guard.py
+./client/push_to_talk.py
+./client/voice.py
+./dashboard/dashboard_models.py
+./dashboard/live_dashboard.py
+./dashboard/runtime_server.py
+./debug_wake.py
+./executive/context_switch.py
+./executive/executive_summary.py
+./executive/mission_planner.py
+./executive/opportunity_engine.py
+./executive/priority_engine.py
+./executive/risk_engine.py
+./intelligence/anomaly_detector.py
+./intelligence/dependency_graph.py
+./intelligence/importance_ranker.py
+./intelligence/trend_detector.py
+./launch/mic_test.py
+./mos/__init__.py
+./mos/alpha.py
+./mos/calibration.py
+./mos/cognition.py
+./mos/collectors.py
+./mos/events.py
+./mos/executor.py
+./mos/intent_bridge.py
+./mos/latency.py
+./mos/learning.py
+./mos/morning.py
+./mos/orientation.py
+./mos/personal_config.py
+./mos/philos_seam.py
+./mos/planner.py
+./mos/response.py
+./mos/runtime.py
+./mos/snapshot.py
+./mos/storage_roots.py
+./mos/store.py
+./mos/tools.py
+./mos/trace.py
+./mos/voice_bridge.py
+./mos/world_graph.py
+./runtime/change_detector.py
+./runtime/event_bus.py
+./runtime/resume_runtime.py
+./runtime/state_store.py
+./runtime/world_state.py
+./service/__init__.py
+./service/merlin_service.py
+./service/vad_config.py
+./service/wake_gate.py
+./service/wake_trigger.py
+./state/runtime_state.py
+./state/session_state.py
+./state/world_snapshot.py
+./telemetry/latency_metrics.py
+./telemetry/project_health.py
+./telemetry/resource_monitor.py
+./telemetry/system_health.py
+./tests/__init__.py
+./tests/test_adapters_base.py
+./tests/test_agent_orchestrator.py
+./tests/test_agent_registry.py
+./tests/test_agent_router.py
+./tests/test_audio_utils.py
+./tests/test_bench_stats.py
+./tests/test_calibration.py
+./tests/test_capture_guard.py
+./tests/test_clap_detection.py
+./tests/test_cognition.py
+./tests/test_command_buffering.py
+./tests/test_context_builder.py
+./tests/test_current_time_context.py
+./tests/test_delegation.py
+./tests/test_echo_adapter.py
+./tests/test_essence_context_orientation.py
+./tests/test_essence_context.py
+./tests/test_false_start_guard.py
+./tests/test_intent_bridge.py
+./tests/test_learning.py
+./tests/test_memory_candidates.py
+./tests/test_memory_promotion.py
+./tests/test_merlin_adapter.py
+./tests/test_morning_snapshot.py
+./tests/test_orientation.py
+./tests/test_persona_merlin.py
+./tests/test_personal_config_snapshot.py
+./tests/test_personal_config_v2.py
+./tests/test_personal_config.py
+./tests/test_planner.py
+./tests/test_profile_guard.py
+./tests/test_push_to_talk_guard.py
+./tests/test_recall.py
+./tests/test_router.py
+./tests/test_runtime.py
+./tests/test_scenarios.py
+./tests/test_sentence_buffer.py
+./tests/test_session.py
+./tests/test_storage_roots.py
+./tests/test_store.py
+./tests/test_streaming_pipeline.py
+./tests/test_stt_command_language.py
+./tests/test_stt.py
+./tests/test_summary.py
+./tests/test_task.py
+./tests/test_tool_memory.py
+./tests/test_tools.py
+./tests/test_trace_bus.py
+./tests/test_trace.py
+./tests/test_vad_thresholds.py
+./tests/test_voice_activation.py
+./tests/test_voice_bridge.py
+./tests/test_wake_buffering.py
+./tests/test_wake_gate.py
+./tests/test_wake_key_validation.py
+./tests/test_world_graph.py
+./tools/audio_perception.py
+./tools/living_globe.py
+./tools/log_metrics.py
+./tools/mission_control.py
+./tools/silero_probe.py
+./tools/wake_ab_report.py
+
+===== MAIN ENTRYPOINTS =====
+./-nexus-globe/research/simulation/stage0_null_fep.py:247:if __name__ == "__main__":
+./bench/gen_audio.py:97:def main():
+./bench/gen_audio.py:123:if __name__ == "__main__":
+./bench/direct_bench.py:268:def main() -> None:
+./bench/direct_bench.py:279:    asyncio.run(_main_async(args))
+./bench/direct_bench.py:282:if __name__ == "__main__":
+./bench/run_bench.py:312:def main():
+./bench/run_bench.py:331:    results = asyncio.run(runner(audio_path, args.n, args.label, args.host, args.port))
+./bench/run_bench.py:336:if __name__ == "__main__":
+./bench/report.py:125:def main():
+./bench/report.py:257:if __name__ == "__main__":
+./tools/mission_control.py:357:def main():
+./tools/mission_control.py:381:if __name__ == "__main__":
+./tools/silero_probe.py:54:def main():
+./tools/silero_probe.py:118:if __name__ == "__main__":
+./tools/audio_perception.py:112:def main():
+./tools/audio_perception.py:162:if __name__ == "__main__":
+./tools/living_globe.py:205:def main():
+./tools/living_globe.py:229:if __name__ == "__main__":
+./tools/log_metrics.py:212:def main() -> None:
+./tools/log_metrics.py:301:if __name__ == "__main__":
+./tools/wake_ab_report.py:232:def main(argv=None):
+./tools/wake_ab_report.py:265:if __name__ == "__main__":
+./app/main.py:581:if __name__ == "__main__":
+./app/main.py:583:    uvicorn.run("app.main:app", host="0.0.0.0", port=8765, reload=False)
+./launch/mic_test.py:36:def main() -> None:
+./launch/mic_test.py:65:if __name__ == "__main__":
+./debug_wake.py:271:    result = asyncio.run(_smoke())
+./tests/test_echo_adapter.py:21:    result = asyncio.run(collect())
+./tests/test_echo_adapter.py:27:    asyncio.run(adapter.reset("s1"))  # must not raise
+./tests/test_streaming_pipeline.py:157:    result = asyncio.run(_run_pipeline(_MultiSentenceAdapter()))
+./tests/test_streaming_pipeline.py:162:    result = asyncio.run(_run_pipeline(_MultiSentenceAdapter()))
+./tests/test_streaming_pipeline.py:168:    result = asyncio.run(_run_pipeline(_MultiSentenceAdapter()))
+./tests/test_streaming_pipeline.py:174:    result = asyncio.run(_run_pipeline(_MultiSentenceAdapter()))
+./tests/test_streaming_pipeline.py:179:    result = asyncio.run(_run_pipeline(_MultiSentenceAdapter()))
+./tests/test_streaming_pipeline.py:189:    result = asyncio.run(_run_pipeline(EchoAdapter(), text="Hello world, how are you today?"))
+./tests/test_streaming_pipeline.py:195:    result = asyncio.run(_run_pipeline(_EmptyAdapter()))
+./tests/test_streaming_pipeline.py:205:    result = asyncio.run(_run_pipeline(EchoAdapter(), text="Just one chunk of text here"))
+./tests/test_streaming_pipeline.py:213:    result = asyncio.run(_run_pipeline(_MultiSentenceAdapter()))
+./tests/test_streaming_pipeline.py:220:    result = asyncio.run(_run_pipeline(_MultiSentenceAdapter()))
+./tests/test_streaming_pipeline.py:225:    result = asyncio.run(_run_pipeline(_EmptyAdapter()))
+./tests/test_streaming_pipeline.py:234:    result = asyncio.run(
+./tests/test_streaming_pipeline.py:247:    result = asyncio.run(
+./tests/test_streaming_pipeline.py:256:    result = asyncio.run(_run_pipeline(_EmptyAdapter(), timeout_ms=50))
+./tests/test_agent_router.py:21:    return asyncio.run(router.route(transcript, agents))
+./tests/test_agent_router.py:33:        asyncio.run(router.route("hello", []))
+./tests/test_agent_orchestrator.py:36:    return asyncio.run(coro)
+./mos/world_graph.py:91:if __name__ == "__main__":
+./mos/store.py:99:if __name__ == "__main__":
+./mos/morning.py:125:if __name__ == "__main__":  # `python -m mos.morning`
+./mos/trace.py:91:if __name__ == "__main__":
+./mos/orientation.py:123:if __name__ == "__main__":
+./mos/cognition.py:130:if __name__ == "__main__":
+./mos/runtime.py:123:if __name__ == "__main__":
+./mos/intent_bridge.py:88:if __name__ == "__main__":
+./mos/alpha.py:103:if __name__ == "__main__":
+./mos/voice_bridge.py:61:if __name__ == "__main__":
+./service/merlin_service.py.bak:896:async def main() -> None:
+./service/merlin_service.py.bak:951:if __name__ == "__main__":
+./service/merlin_service.py.bak:952:    asyncio.run(main())
+./service/merlin_service.py.bak-before-command-guard:895:async def main() -> None:
+./service/merlin_service.py.bak-before-command-guard:950:if __name__ == "__main__":
+./service/merlin_service.py.bak-before-command-guard:951:    asyncio.run(main())
+./service/merlin_service.py:903:async def main() -> None:
+./service/merlin_service.py:958:if __name__ == "__main__":
+./service/merlin_service.py:959:    asyncio.run(main())
+./service/merlin_service.py.bak.command-min:896:async def main() -> None:
+./service/merlin_service.py.bak.command-min:951:if __name__ == "__main__":
+./service/merlin_service.py.bak.command-min:952:    asyncio.run(main())
+./client/push_to_talk.py:305:def main() -> None:
+./client/push_to_talk.py:312:        asyncio.run(run(args.host, args.port))
+./client/push_to_talk.py:317:if __name__ == "__main__":
+./client/voice.py:1025:def main() -> None:
+./client/voice.py:1068:        asyncio.run(_run(args.host, args.port, args.activation))
+./client/voice.py:1073:if __name__ == "__main__":
+./client/voice.py.bak:118:def main() -> None:
+./client/voice.py.bak:125:        asyncio.run(run(args.host, args.port))
+./client/voice.py.bak:130:if __name__ == "__main__":
+
+===== IMPORT GRAPH =====
+Binary file client/__pycache__/voice.cpython-314.pyc matches
+Binary file mos/__pycache__/alpha.cpython-314.pyc matches
+from __future__ import annotations
+from .alpha import AlphaRuntime
+from .calibration import Calibrator
+from .cognition import CognitionEngine, Orientation, OrientationInput
+from .cognition import CognitionEngine, OrientationInput
+from .collectors import default_collectors
+from .events import Event
+from .events import Event, EventBus, new_event
+from .events import Event, new_event
+from .events import EventBus, new_event
+from .executor import Executor
+from .extractor import extract_memories
+from .intent_bridge import to_bus
+from .learning import Learner
+from .learning import Priors
+from .personal_config import DEFAULT_MAX_AGE_DAYS, load_personal_config
+from .philos_seam import OrientationAlgorithm
+from .philos_seam import OrientationAlgorithm, RuleStub, SeamResult
+from .planner import Planner
+from .response import Responder
+from .schema import Memory
+from .schema import Memory, _now
+from .snapshot import (
+from .storage_roots import (
+from .store import JsonlEventStore
+from .store import MemoryStore
+from .tools import run_tool
+from .world_graph import WorldGraph
+from abc import ABC, abstractmethod
+from app import turn_context
+from app.adapters.base import VoiceAdapter
+from app.adapters.claude import ClaudeAdapter
+from app.adapters.merlin import MerlinAdapter, VoiceSessionContext
+from app.agents.definition import AgentDefinition
+from app.agents.registry import AgentRegistry
+from app.agents.router import AgentRouter
+from app.audio.sentence import SentenceBuffer
+from app.audio.utils import audio_to_file_like, validate_audio
+from app.config import build_system_prompt_with_task, settings
+from app.config import settings
+from app.context_builder import ContextBuilder
+from app.context_builder import load_memory_dict
+from app.delegation.bus import DelegationBus, DelegationRequest, DelegationResult
+from app.delegation.bus import DelegationRequest, DelegationResult
+from app.delegation.rules import should_delegate
+from app.essence_context import fetch_essence_context
+from app.essence_context import observe_exchange
+from app.memory import MemoryStore, extract_memories
+from app.memory_candidates import candidate_registry
+from app.memory_promotion import promote as _promote_to_memory
+from app.observability.json_log import json_log_subscriber
+from app.providers.stt.base import STTProvider
+from app.recall import default_recall_policy
+from app.router import build_orchestrator, build_stt, build_tts
+from app.session import registry
+from app.summary import (
+from app.summary import summary_latency_registry, summary_registry
+from app.task import task_registry
+from app.tool_memory import tool_memory_registry
+from app.tool_memory import ToolMemoryEntry, tool_memory_registry
+from app.trace import SystemSnapshot, TraceStep
+from app.trace import TraceStep
+from app.trace import TraceStep, TurnTrace
+from app.trace import TurnTrace
+from app.trace_bus import trace_bus
+from collections import Counter
+from collections import Counter, defaultdict
+from collections import deque
+from collections.abc import Callable
+from contextlib import asynccontextmanager
+from contextvars import ContextVar
+from dataclasses import asdict
+from dataclasses import dataclass
+from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+from datetime import datetime
+from datetime import datetime, timezone
+from dotenv import load_dotenv
+from enum import Enum
+from enum import Enum, auto
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from math import gcd
+from openai import AsyncOpenAI
+from pathlib import Path
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from scipy.io import wavfile
+from scipy.signal import resample_poly
+from service.vad_config import COMMAND_RMS_THRESHOLD as SILENCE_RMS
+from service.vad_config import normalize_for_whisper  # peak-normalize quiet utterances
+from service.vad_config import SPEECH_RMS_THRESHOLD as VAD_THRESHOLD  # shared with merlin_service
+from service.wake_gate import DropOldestQueue, admit  # keeps the Whisper lane fresh
+from service.wake_trigger import WakeTrigger
+from the durable log. Components are v0/simple — that is exactly the point: the chain
+from typing import Any
+from typing import Any, Callable, Optional
+from typing import Any, Iterable, Sequence
+from typing import Any, Literal
+from typing import Any, Protocol, runtime_checkable
+from typing import AsyncGenerator
+from typing import AsyncIterator
+from typing import Callable
+from typing import Callable, Mapping, Protocol, Sequence
+from typing import Callable, Protocol
+from typing import Iterator
+from typing import Literal
+from typing import Optional
+from typing import Optional, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, AsyncIterator
+import anthropic
+import argparse
+import asyncio
+import dataclasses
+import datetime
+import hashlib
+import httpx
+import io
+import itertools
+import json
+import logging
+import math
+import numpy as np
+import ormsgpack
+import os
+import platform
+import queue
+import re
+import shutil
+import sounddevice as sd
+import struct
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+import uuid
+import wave
+import wave as _wave_mod
+
+===== TODO/FIXME =====
+./-nexus-globe/package-lock.json:7398:      "integrity": "sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==",
+./architecture_audit.txt:466:===== TODO/FIXME =====
+
+===== GIT STATUS =====
+ M ../.gitignore
+ M ../PHILOS-SYSTEM-BLUEPRINT.md
+ M ../app/hub/PhilosToday.tsx
+ M ../app/hub/ValueHub.tsx
+ M ../app/hub/community/page.tsx
+ M ../app/hub/page.tsx
+ M ../app/lib/philos/__tests__/projectValueGroup.test.ts
+ M ../app/lib/philos/eventCausality.ts
+ M ../app/lib/philos/projectDynamics.ts
+ M ../app/lib/philos/projectValueGroup.ts
+ M ../app/planet/__tests__/globeHonesty.test.ts
+ M ../app/planet/page.tsx
+ M client/push_to_talk.py
+ M memory/relationship/memories.json
+ M service/merlin_service.py
+ M service/vad_config.py
+ M service/wake_trigger.py
+?? ../CANONICAL-REPO-DECISION.md
+?? ../PHILOS-DYNAMICS-UI-CONTRACT.md
+?? ../app/dynamics/
+?? ../app/hub/actions.ts
+?? ../app/lib/__tests__/
+?? ../app/lib/philos-event-store.ts
+?? ../app/lib/philos-viewer.ts
+?? ../app/lib/philos/__tests__/dynamicsView.test.ts
+?? ../app/lib/philos/__tests__/eventStore.test.ts
+?? ../app/lib/philos/__tests__/joinGroup.test.ts
+?? ../app/lib/philos/__tests__/postUpdate.test.ts
+?? ../app/lib/philos/__tests__/proposeAllocation.test.ts
+?? ../app/lib/philos/__tests__/recordImpact.test.ts
+?? ../app/lib/philos/__tests__/viewerIdentity.test.ts
+?? ../app/lib/philos/commands/
+?? ../app/lib/philos/dynamicsView.ts
+?? ../app/lib/philos/eventStore.ts
+?? ../app/lib/philos/viewer.ts
+?? ../app/lib/philos/viewerIdentity.ts
+?? ../corpus/
+?? architecture_audit.txt
+?? client/capture_guard.py
+?? dashboard/
+?? executive/
+?? intelligence/
+?? runtime.dot
+?? runtime/
+?? service/merlin_service.py.bak-before-command-guard
+?? service/merlin_service.py.bak.command-min
+?? service/wake_trigger.py.bak.20260805-160100
+?? service/wake_trigger.py.bak.20260805-160340
+?? state/
+?? telemetry/
+?? tests/test_capture_guard.py
+?? tests/test_push_to_talk_guard.py
+
+===== TOP LEVEL =====
+total 9840
+drwxr-xr-x  26 rwyqryty  staff        832 22 יולי 11:42 -nexus-globe
+drwxr-xr-x  50 rwyqryty  staff       1600  5 אוג׳ 23:18 .
+drwxr-xr-x  48 rwyqryty  staff       1536  3 אוג׳ 18:08 ..
+drwxr-xr-x   3 rwyqryty  staff         96 25 יולי 15:34 .claude
+-rw-r--r--@  1 rwyqryty  staff       8196 27 יולי 21:08 .DS_Store
+-rw-------   1 rwyqryty  staff        503  1 אוג׳ 12:07 .env
+-rw-------   1 rwyqryty  staff        872 29 יולי 14:36 .env.bak.1785324978
+-rw-------   1 rwyqryty  staff        668  1 אוג׳ 12:07 .env.bak.pre-merlin-fix
+-rw-r--r--   1 rwyqryty  staff       3501 29 יולי 12:28 .env.example
+-rw-------   1 rwyqryty  staff        985 29 יולי 14:31 .env.save
+-rw-r--r--   1 rwyqryty  staff        287 31 יולי 16:36 .gitignore
+drwxr-xr-x   6 rwyqryty  staff        192 25 יולי 15:28 .pytest_cache
+drwxr-xr-x   9 rwyqryty  staff        288 31 יולי 13:41 .venv
+drwxr-xr-x  26 rwyqryty  staff        832  1 אוג׳ 20:02 app
+-rw-r--r--   1 rwyqryty  staff      18463  5 אוג׳ 23:18 architecture_audit.txt
+drwxr-xr-x  10 rwyqryty  staff        320 25 יולי 15:28 bench
+drwxr-xr-x   7 rwyqryty  staff        224  3 אוג׳ 17:38 client
+drwxr-xr-x   3 rwyqryty  staff         96  2 אוג׳ 11:06 config
+drwxr-xr-x   5 rwyqryty  staff        160  5 אוג׳ 23:12 dashboard
+-rw-r--r--   1 rwyqryty  staff       9910 28 יולי 14:13 debug_wake.py
+drwxr-xr-x   8 rwyqryty  staff        256  5 אוג׳ 23:12 executive
+drwxr-xr-x   6 rwyqryty  staff        192  5 אוג׳ 23:12 intelligence
+-rw-r--r--   1 rwyqryty  staff     480000 25 יולי 15:04 jarvis-response.mp3
+drwxr-xr-x  10 rwyqryty  staff        320  2 אוג׳ 12:26 launch
+drwxr-xr-x   4 rwyqryty  staff        128 28 יולי 14:13 memory
+-rw-r--r--   1 rwyqryty  staff       2831 30 יולי 17:38 MERLIN-BASELINE-v1.md
+drwxr-xr-x  27 rwyqryty  staff        864  2 אוג׳ 18:44 mos
+drwxr-xr-x   3 rwyqryty  staff         96  1 אוג׳ 22:48 node_modules
+-rw-r--r--   1 rwyqryty  staff      18058  1 אוג׳ 23:00 PERSONAL-CONFIG-DESIGN.md
+drwxr-xr-x  11 rwyqryty  staff        352  2 אוג׳ 21:04 profiles
+drwxr-xr-x   6 rwyqryty  staff        192 31 יולי 11:12 prompts
+-rw-r--r--   1 rwyqryty  staff       4046 22 יולי 11:36 README.md
+-rw-r--r--   1 rwyqryty  staff        223 24 יולי 23:09 requirements-client.txt
+-rw-r--r--   1 rwyqryty  staff        230 28 יולי 14:13 requirements-service.txt
+-rw-r--r--   1 rwyqryty  staff        237 29 יולי 12:28 requirements.txt
+drwxr-xr-x   7 rwyqryty  staff        224  5 אוג׳ 23:12 runtime
+-rw-r--r--   1 rwyqryty  staff     272507  5 אוג׳ 23:10 runtime.dot
+drwxr-xr-x  14 rwyqryty  staff        448  5 אוג׳ 16:03 service
+-rwxr-xr-x   1 rwyqryty  staff       4808 28 יולי 14:13 start.sh
+-rw-r--r--   1 rwyqryty  staff       1128 25 יולי 14:54 startup.log
+drwxr-xr-x   5 rwyqryty  staff        160  5 אוג׳ 23:12 state
+drwxr-xr-x   6 rwyqryty  staff        192  5 אוג׳ 23:12 telemetry
+-rw-r--r--   1 rwyqryty  staff      74550 25 יולי 15:03 test.aiff
+-rw-r--r--   1 rwyqryty  staff      55220 25 יולי 15:03 test.wav
+drwxr-xr-x  60 rwyqryty  staff       1920  3 אוג׳ 17:35 tests
+drwxr-xr-x  11 rwyqryty  staff        352 31 יולי 20:08 tools
+-rw-r--r--   1 rwyqryty  staff    1316307 25 יולי 16:50 wake_inference_keys
+-rw-r--r--   1 rwyqryty  staff  117366553 26 יולי 16:24 wake-diag.log
+-rw-r--r--   1 rwyqryty  staff    1316307 25 יולי 16:50 wake.log
+-rw-r--r--   1 rwyqryty  staff    1316307 25 יולי 16:50 wake.loggrep

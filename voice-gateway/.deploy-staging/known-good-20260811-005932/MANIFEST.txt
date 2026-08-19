@@ -1,0 +1,53 @@
+# Merlin KNOWN-GOOD live-source snapshot
+created_ts        : 20260811-005932 (local)
+snapshot_path     : .deploy-staging/known-good-20260811-005932
+purpose           : rollback/preservation baseline. NOT permission to deploy.
+
+## Running process (frozen)
+pid               : 82246
+process_start     : Mon Aug 10 2026 20:10:02
+exec              : /Library/Frameworks/Python.framework/Versions/3.14/.../Python
+port_8802_owner   : Python PID 82246
+launchagent       : com.merlin.voice (see launchd-state.txt)
+venv_python       : Python 3.14.3
+
+## Git
+git_head          : 3bbfdc730c211daf6fa4a130a635a24e72c8926c
+worktree_dirty    : YES
+
+## Barge/VAD constants — FROM DISK SOURCE (caveat below)
+  BARGE_IN_RMS    = 0.0040 # mic energy that counts as user speaking over Merlin.
+  BARGE_IN_ENABLED = True
+  BARGE_IN_CONFIRM_S = 0.20 # ~200 ms of sustained real user speech confirms a barge-in.
+  COMMAND_RMS_THRESHOLD: float = 0.003
+## Barge/VAD constants — LIVE-OBSERVED from PID 82246 log
+  BARGE_IN_RMS(live)          = 0.00400  (threshold=0.00400 in BARGE_MIC_RMS)
+  COMMAND_RMS_THRESHOLD(live) = 0.00300  (record_utterance log)
+  running barge vocabulary    = BARGE_CORR (NOT BARGE_LEAK)
+
+## CAVEAT (per operator directive)
+  Disk-source constants above are the CURRENT DISK values. An mtime older than the
+  20:10 process start proves only 'no post-start modification observed', NOT source
+  identity with what PID 82246 loaded. Only the LIVE-OBSERVED values + the BARGE_CORR
+  fingerprint are proven for the running process. Do NOT assume disk == historical PID source.
+
+## Files captured (see SHA256SUMS.txt for hashes)
+  __init__.py
+  aec.py
+  barge_detector.py
+  config_coverage.py
+  control_panel.html
+  control_panel.py
+  control_state.py
+  day_opening_collectors.py
+  day_opening_models.py
+  day_opening_planner.py
+  day_opening_renderer.py
+  day_opening_runner.py
+  merlin_service.py
+  mic_channel.py
+  turn_guard.py
+  turn_state.py
+  vad_config.py
+  wake_gate.py
+  wake_trigger.py
