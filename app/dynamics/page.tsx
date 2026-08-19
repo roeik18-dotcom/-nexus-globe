@@ -69,6 +69,8 @@ import { resolveShellIdentityLink } from "@/app/lib/philos/community/resolveShel
 import { buildActionLifecycleSummary } from "@/app/lib/philos/canon/actionLifecycle";
 import { resolvePersonRef } from "@/app/lib/philos/person/personRef";
 import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
+import SystemTracePanel from "@/app/lib/philos/shell/SystemTracePanel";
+import { buildSystemTrace } from "@/app/lib/philos/systemTrace";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import { findDomainStatesForSubject } from "@/app/lib/philos/canon/domainStateStoreAccessor";
@@ -208,5 +210,41 @@ export default async function DynamicsPage({
   const dynamicsSubject = selected?.status === "found" && selected.system === "canon" && selected.subject ? selected.subject : personRef.person_id;
   const domainStates = await findDomainStatesForSubject(dynamicsSubject).catch(() => []);
 
-  return <DynamicsView personFrameSlot={personFrame ? <PersonFrameStrip frame={personFrame} compact /> : null} view={view} canon={canon} selected={selected} timeRange={timeRange} community={community} today={todayIn(systemClock)} identityLink={identityLink} personContext={personContext} defaultLifecycle={defaultLifecycle} domainStates={domainStates} />;
+  // SYSTEM TRACE — AUDIT tier, Dynamics only (never also on Hub). Built from
+  // the real stores so it can report where the chain genuinely breaks.
+  const traceEdges = await (async () => {
+    try {
+      const { canonEventStore } = await import("@/app/lib/philos/canon/canonEventStoreAccessor");
+      const { loadActions } = await import("@/app/lib/philos/canon/actionStoreAccessor");
+      const { loadEffects } = await import("@/app/lib/philos/canon/effectStoreAccessor");
+      const { findNeedsForSubject } = await import("@/app/lib/philos/canon/needStoreAccessor");
+      const subj = personRef.person_id;
+      const evs = (await canonEventStore().load()).filter(
+        (e) => e.canon_type === "observation" && e.payload.subject === subj);
+      const acts = (await loadActions()).filter((a) => a.action.owner === subj);
+      const effs = (await loadEffects()).filter((e) => e.effect.subject === subj);
+      const nds = await findNeedsForSubject(subj).catch(() => []);
+      return buildSystemTrace({
+        observationIds: evs.map((e) => e.canon_event_id),
+        observationTimes: evs.map((e) => e.payload.time),
+        needIds: nds.map((n) => n.need.need_id),
+        offerIds: [],
+        actionIds: acts.map((a) => a.action.action_id),
+        actionReferencesObservation: acts.some((a) =>
+          a.action.inputs.some((x) => evs.some((e) => e.canon_event_id === x))),
+        effectIds: effs.map((e) => e.effect.effect_id),
+        effectHasVerifiedOutcome: effs.some((e) => !!e.effect.verified_outcome),
+        effectHasObservedInRef: effs.some((e) => !!e.effect.observed_in_ref),
+        verifiedMemberships: identityLink.status === "VERIFIED_SAME_PERSON" ? 1 : 0,
+        learningCount: 0,
+      });
+    } catch { return null; }
+  })();
+
+  return <DynamicsView personFrameSlot={
+      <>
+        {personFrame ? <PersonFrameStrip frame={personFrame} compact /> : null}
+        {traceEdges ? <SystemTracePanel edges={traceEdges} /> : null}
+      </>
+    } view={view} canon={canon} selected={selected} timeRange={timeRange} community={community} today={todayIn(systemClock)} identityLink={identityLink} personContext={personContext} defaultLifecycle={defaultLifecycle} domainStates={domainStates} />;
 }

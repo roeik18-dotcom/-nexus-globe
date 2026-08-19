@@ -305,8 +305,28 @@ export function SystemShell({
             // Colour Role (Community GREEN · Globe GREEN+PURPLE · World
             // WHITE+PURPLE). Neutral on purpose, because tinting it green
             // would assert a family colour the Colour Master denies.
+            // The three read as ONE block: a shared tinted band with a
+            // continuous top+bottom rule, rounded only at the outer ends, so
+            // Community/Globe/World form a single visual unit rather than
+            // three separately underlined items.
+            //
+            // The tint is NEUTRAL (blue-grey border token), never green. The
+            // Colour Master gives World WHITE+PURPLE, so a green family band
+            // would assert a shared colour the source denies. The unity is
+            // structural; each item keeps its own accent when selected.
+            const famIdx = NAV.filter((x) => x.family === "social").findIndex((x) => x.key === item.key);
+            const famLast = NAV.filter((x) => x.family === "social").length - 1;
             const fam: React.CSSProperties = item.family === "social"
-              ? { borderBottom: `2px solid ${COLOR.borderStrong}`, borderRadius: "8px 8px 0 0" }
+              ? {
+                  background: here ? undefined : "rgba(120,150,220,0.07)",
+                  borderTop: `1px solid ${COLOR.borderStrong}`,
+                  borderBottom: `2px solid ${COLOR.borderStrong}`,
+                  borderInlineStart: famIdx === famLast ? `1px solid ${COLOR.borderStrong}` : "none",
+                  borderInlineEnd: famIdx === 0 ? `1px solid ${COLOR.borderStrong}` : "none",
+                  borderRadius:
+                    famIdx === 0 ? "0 8px 8px 0" : famIdx === famLast ? "8px 0 0 8px" : "0",
+                  marginInline: 0,
+                }
               : {};
             return here ? (
               <span
