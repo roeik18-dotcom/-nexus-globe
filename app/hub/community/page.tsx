@@ -32,6 +32,7 @@ import { findNeedsForSubject } from "@/app/lib/philos/canon/needStoreAccessor";
 import { findOffersForSource } from "@/app/lib/philos/canon/offerStoreAccessor";
 import { resolvePersonRef } from "@/app/lib/philos/person/personRef";
 import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
+import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePanel";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
@@ -421,6 +422,10 @@ export default async function CommunityPage({
           <PersonFrameStrip frame={personFrame} compact />
         </div>
       ) : null}
+
+      <div style={{ margin: "0 20px" }}>
+        <SocialSourceSpinePanel surface="community" />
+      </div>
 
       {entityContext.status === "found_entity" ? (
         <div dir="rtl" style={{ margin: "12px 20px 0" }}>

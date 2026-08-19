@@ -49,6 +49,7 @@ import { loadNeeds } from "@/app/lib/philos/canon/needStoreAccessor";
 import { loadOffers } from "@/app/lib/philos/canon/offerStoreAccessor";
 import { resolvePersonRef } from "@/app/lib/philos/person/personRef";
 import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
+import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePanel";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import CanonicalSlicePanel from "@/app/hub/CanonicalSlicePanel";
@@ -191,7 +192,15 @@ export default async function PlanetPage({
       canonEffects={canonEffects}
       canonNeeds={canonNeeds}
       canonOffers={canonOffers}
-      personFrameSlot={personFrame ? <PersonFrameStrip frame={personFrame} compact /> : null}
+      personFrameSlot={
+        <>
+          {personFrame ? <PersonFrameStrip frame={personFrame} compact /> : null}
+          {/* Globe is L4 of the shared social spine — same source model as
+              Community (L3) and World (L5). Server-rendered and passed as a
+              slot for the same client-boundary reason as the frame. */}
+          <SocialSourceSpinePanel surface="globe" limit={4} />
+        </>
+      }
       observationStrip={observationStrip}
       canonicalSlice={
         <>
