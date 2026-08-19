@@ -85,7 +85,22 @@ export default async function PlanetPage({
   // space `PERSON_MEMBER_OF_COMMUNITY` links use, so no id translation is
   // needed here. Passed to the inspector drawer only — the sphere's own
   // node population and layout (`nodes`/`arcs` above) are unchanged.
-  const registry = buildDefaultLinkRegistry(events, todayIn(systemClock));
+  const canonActions = await loadActions().catch(() => []);
+  const canonEffects = await loadEffects().catch(() => []);
+  const canonNeeds = await loadNeeds().catch(() => []);
+  const canonOffers = await loadOffers().catch(() => []);
+
+  // Effects are loaded BEFORE the registry so EFFECT_AFFECTS_COMMUNITY can be
+  // derived from (existing ACTION_AFFECTS_COMMUNITY link) + Effect.action_ref.
+  // Nothing else about the load order matters; `registry` is first read far
+  // below. The derivation composes existing links only — it cannot introduce
+  // a community, and it inherits the Action link's provenance rather than
+  // asserting REAL.
+  const registry = buildDefaultLinkRegistry(
+    events,
+    todayIn(systemClock),
+    canonEffects.map((e) => ({ effect_id: e.effect.effect_id, action_ref: e.effect.action_ref })),
+  );
 
   // Selected System Context (semantic-unity slice): resolved through the ONE
   // shared projection (`sharedContext.ts`) every surface now uses — no more
@@ -119,10 +134,6 @@ export default async function PlanetPage({
   // Globe activity summary. Never merged into `nodes`/`arcs` (the sphere's
   // own real entity population, unchanged above) and never given a
   // coordinate — see `WorldGlobe.tsx::CanonActivityPanel`.
-  const canonActions = await loadActions().catch(() => []);
-  const canonEffects = await loadEffects().catch(() => []);
-  const canonNeeds = await loadNeeds().catch(() => []);
-  const canonOffers = await loadOffers().catch(() => []);
 
   // 7-terminal propagation — compact HUD strip for the latest real
   // Observation, from the SAME shared derivation every terminal uses.
@@ -189,6 +200,15 @@ export default async function PlanetPage({
       arcs={arcs}
       selected={selected}
       registry={registry}
+      bridgeLinks={registry
+        .filter((l) => l.relation === "ACTION_AFFECTS_COMMUNITY" || l.relation === "EFFECT_AFFECTS_COMMUNITY" || l.relation === "COMMUNITY_HAS_NEED")
+        .map((l) => ({
+          relation: l.relation,
+          link_id: l.link_id,
+          provenance: l.provenance,
+          // Only EFFECT_AFFECTS_COMMUNITY is composed rather than recorded.
+          derived: l.relation === "EFFECT_AFFECTS_COMMUNITY",
+        }))}
       identityLink={identityLink}
       personContext={personContext}
       canonActions={canonActions}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { linksForEntity, linksByRelation } from "../entityLink";
-import { buildEntityLinkRegistry, buildDemoMarketplaceLinks, buildMembershipLinks } from "../linkRegistry";
+import { buildEntityLinkRegistry, buildDemoMarketplaceLinks, buildMembershipLinks, buildEffectCommunityLinks } from "../linkRegistry";
 import { projectValueGroup } from "../../projectValueGroup";
 import { GROUP_ID, VALUE_GROUP_EVENTS, SEED_TODAY } from "../../valueGroupLog";
 import { DEMO_GREEN_INNOVATION_EVENTS, DEMO_GREEN_INNOVATION_ID, DEMO_GREEN_INNOVATION_TODAY } from "../../demoCommunities";
@@ -75,5 +75,53 @@ describe("buildEntityLinkRegistry — combined, queryable registry", () => {
     expect(linksByRelation(registry, "VALUE_GROUP_PRESENT_IN_REGION")).toEqual([]);
     expect(linksByRelation(registry, "PERSON_ASSOCIATED_WITH_VALUE_GROUP")).toEqual([]);
     expect(linksByRelation(registry, "PROJECT_BELONGS_TO_COMMUNITY")).toEqual([]);
+  });
+});
+
+
+describe("EFFECT_AFFECTS_COMMUNITY — derived, never inferred", () => {
+  const actionLink = {
+    link_id: "link_a_c",
+    relation: "ACTION_AFFECTS_COMMUNITY" as const,
+    source: { type: "action" as const, canonical_id: "act_1", source_system: "s", source_local_id: "act_1" },
+    target: { type: "community" as const, canonical_id: "vg_1", source_system: "s", source_local_id: "vg_1" },
+    provenance: "DEMO" as const,
+    confidence: 1,
+  };
+
+  it("composes Effect->Community when Effect.action_ref matches a linked Action", () => {
+    const out = buildEffectCommunityLinks([actionLink], [{ effect_id: "eff_1", action_ref: "act_1" }]);
+    expect(out).toHaveLength(1);
+    expect(out[0].relation).toBe("EFFECT_AFFECTS_COMMUNITY");
+    expect(out[0].source.canonical_id).toBe("eff_1");
+    expect(out[0].target.canonical_id).toBe("vg_1");
+  });
+
+  it("INHERITS the action link's provenance — a derived link is never upgraded to REAL", () => {
+    const out = buildEffectCommunityLinks([actionLink], [{ effect_id: "eff_1", action_ref: "act_1" }]);
+    expect(out[0].provenance).toBe("DEMO");
+
+    const realAction = { ...actionLink, link_id: "link_real", provenance: "REAL" as const };
+    const fromReal = buildEffectCommunityLinks([realAction], [{ effect_id: "eff_1", action_ref: "act_1" }]);
+    expect(fromReal[0].provenance).toBe("REAL");
+  });
+
+  it("produces NOTHING when the Effect references an unlinked Action — absence, not placeholder", () => {
+    expect(buildEffectCommunityLinks([actionLink], [{ effect_id: "eff_2", action_ref: "act_other" }])).toEqual([]);
+  });
+
+  it("produces NOTHING when there is no ACTION_AFFECTS_COMMUNITY link at all", () => {
+    expect(buildEffectCommunityLinks([], [{ effect_id: "eff_1", action_ref: "act_1" }])).toEqual([]);
+  });
+
+  it("never links an Effect that carries no action_ref", () => {
+    expect(buildEffectCommunityLinks([actionLink], [{ effect_id: "eff_3", action_ref: "" }])).toEqual([]);
+  });
+
+  it("does not consult subject, membership, value or text — only action_ref", () => {
+    // Same effect id, same community present, but the ref points elsewhere.
+    // No amount of other shared context may produce a link.
+    const out = buildEffectCommunityLinks([actionLink], [{ effect_id: "eff_1", action_ref: "act_unrelated" }]);
+    expect(out).toEqual([]);
   });
 });

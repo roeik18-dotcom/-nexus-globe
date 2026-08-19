@@ -449,7 +449,7 @@ function starShadows(n: number, seed: number) {
   return out.join(",");
 }
 
-export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry, identityLink, personContext, canonActions, canonEffects, canonNeeds, canonOffers, canonicalSlice, observationStrip, personFrameSlot }: {
+export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry, identityLink, personContext, canonActions, canonEffects, canonNeeds, canonOffers, canonicalSlice, observationStrip, personFrameSlot, bridgeLinks }: {
   nodes: GlobeNode[]; arcs: GlobeArc[]; selected?: SelectedContext; registry?: EntityLink[]; identityLink?: ShellIdentityLink;
   /** STEP 2 — the frame this screen's readings are relative to (canon §19). */
   personContext?: PersonContext;
@@ -472,6 +472,8 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
    *  Component. The frame is REFERENCE and may contextualise what is shown;
    *  it never becomes a node or an arc, and never a coordinate. */
   personFrameSlot?: ReactNode;
+  /** EntityLink rows surfaced beside the drawn arcs — provenance preserved. */
+  bridgeLinks?: { relation: string; link_id: string; provenance: "REAL" | "DEMO"; derived?: boolean }[];
   canonicalSlice?: ReactNode;
   /** 7-terminal propagation — a compact, always-VISIBLE strip for the
    *  latest real Observation's value/group relation, server-rendered in
@@ -738,9 +740,9 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
               Collapsed by default so the sphere stays the primary content. */}
           <details>
             <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>
-              קשרים מאומתים · VERIFIED RELATIONS ({eventArcs.length})
+              קשרים מאומתים · VERIFIED RELATIONS ({eventArcs.length} + {(bridgeLinks ?? []).length} גשר)
             </summary>
-            <VerifiedRelationInventory arcs={eventArcs} />
+            <VerifiedRelationInventory arcs={eventArcs} bridgeLinks={bridgeLinks ?? []} />
           </details>
           <details>
             <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>

@@ -109,6 +109,71 @@ export function buildDemoMarketplaceLinks(): EntityLink[] {
 }
 
 /**
+ * EFFECT_AFFECTS_COMMUNITY — derived, never inferred.
+ *
+ * The relation type was declared in `entityLink.ts` from the start and was
+ * the one type never instantiated. It is derivable WITHOUT any schema change
+ * and without a single inference, from the conjunction of two records that
+ * already exist:
+ *
+ *   1. an ACTION_AFFECTS_COMMUNITY link that is already in this registry
+ *   2. `Effect.action_ref` — canon §17's own pointer from Effect to Action
+ *
+ * If Action A affects Community C, and Effect E records itself as the effect
+ * OF A, then E affects C. Both halves are recorded; the composition adds no
+ * claim beyond them.
+ *
+ * WHAT IS DELIBERATELY NOT DONE HERE. The community is never taken from
+ * `Effect.subject`, from the subject's memberships, from value similarity,
+ * from `context` text, from chronology, or from a shared need/resource. If
+ * no Action↔Community link exists for `action_ref`, NO link is produced —
+ * absence, not a placeholder.
+ *
+ * PROVENANCE IS INHERITED, NOT ASSERTED. The derived link carries exactly the
+ * provenance of the Action link it came from. Today every ACTION_AFFECTS_
+ * COMMUNITY link is DEMO, so every derived Effect link is DEMO too — it does
+ * not become REAL by being computed. If a REAL Action↔Community link is ever
+ * recorded, the derived Effect link becomes REAL automatically, by the same
+ * rule and with no code change.
+ *
+ * `confidence` is likewise inherited rather than invented, and the validity
+ * window is not synthesised: an Effect's own time is not the Action link's
+ * window, so no `valid_from`/`valid_to` is asserted.
+ */
+export function buildEffectCommunityLinks(
+  existing: EntityLink[],
+  effects: { effect_id: string; action_ref: string }[],
+): EntityLink[] {
+  const actionLinks = existing.filter((l) => l.relation === "ACTION_AFFECTS_COMMUNITY");
+  if (actionLinks.length === 0) return [];
+
+  const out: EntityLink[] = [];
+  for (const e of effects) {
+    if (!e.action_ref) continue;
+    for (const al of actionLinks) {
+      // The action end of the link — either side may hold it.
+      const actionEnd = al.source.type === "action" ? al.source : al.target.type === "action" ? al.target : undefined;
+      const communityEnd = al.source.type === "community" ? al.source : al.target.type === "community" ? al.target : undefined;
+      if (!actionEnd || !communityEnd) continue;
+      if (actionEnd.canonical_id !== e.action_ref) continue;
+
+      out.push({
+        link_id: `link_effect_community_${e.effect_id}_${communityEnd.canonical_id}`,
+        relation: "EFFECT_AFFECTS_COMMUNITY",
+        source: { type: "effect", canonical_id: e.effect_id, source_system: "canon_effect_store", source_local_id: e.effect_id },
+        target: communityEnd,
+        // Inherited from the Action link — a derived link is never more
+        // trustworthy than the link it was derived from.
+        provenance: al.provenance,
+        confidence: al.confidence,
+        note: `derived: Effect.action_ref = ${e.action_ref}, and ${al.link_id} records that action affecting this community. No inference from subject, membership, value or text.`,
+      });
+    }
+  }
+  return out;
+}
+
+/**
  * Full registry: real membership links for every supplied community view,
  * plus the DEMO marketplace scenario's own links. Callers pass in the
  * SAME `ValueGroupView`s they already computed (real + DEMO communities) —
@@ -137,7 +202,14 @@ export function buildEntityLinkRegistry(
  * reads elsewhere) — DEMO communities and the DEMO marketplace scenario are
  * fixed fixtures, not re-read from anywhere per call.
  */
-export function buildDefaultLinkRegistry(realEvents: PhilosEvent[], today: string): EntityLink[] {
+export function buildDefaultLinkRegistry(
+  realEvents: PhilosEvent[],
+  today: string,
+  /** Canon Effects to derive EFFECT_AFFECTS_COMMUNITY from. Optional so every
+   *  existing caller keeps working unchanged; omitting it simply produces no
+   *  derived Effect links, exactly as before. */
+  effects?: { effect_id: string; action_ref: string }[],
+): EntityLink[] {
   const realGroup = projectValueGroup(realEvents, GROUP_ID, today);
   const communities: { group: ValueGroupView; provenance: LinkProvenance }[] = [];
   if (realGroup) communities.push({ group: realGroup, provenance: "REAL" });
@@ -145,7 +217,12 @@ export function buildDefaultLinkRegistry(realEvents: PhilosEvent[], today: strin
     const demoGroup = projectValueGroup(c.events, c.group_id, c.today);
     if (demoGroup) communities.push({ group: demoGroup, provenance: "DEMO" });
   }
-  return buildEntityLinkRegistry(communities);
+  const base = buildEntityLinkRegistry(communities);
+  // Derived last, from the base registry — so it can only ever compose links
+  // that are already present, never introduce a community of its own.
+  return effects && effects.length > 0
+    ? [...base, ...buildEffectCommunityLinks(base, effects)]
+    : base;
 }
 
 /** A registry built purely from the real seed fixture — for tests and any

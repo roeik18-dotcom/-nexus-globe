@@ -29,7 +29,18 @@ export interface RelationArc {
   verification_status?: string;
 }
 
-export default function VerifiedRelationInventory({ arcs }: { arcs: RelationArc[] }) {
+/** A bridge link surfaced alongside the drawn arcs — same four questions,
+ *  different layer. `provenance` is the link's own REAL/DEMO, never upgraded. */
+export interface BridgeLinkRow {
+  relation: string;
+  link_id: string;
+  provenance: "REAL" | "DEMO";
+  derived?: boolean;
+}
+
+export default function VerifiedRelationInventory(
+  { arcs, bridgeLinks = [] }: { arcs: RelationArc[]; bridgeLinks?: BridgeLinkRow[] },
+) {
   const byType = new Map<string, RelationArc[]>();
   for (const a of arcs) {
     const list = byType.get(a.relation) ?? [];
@@ -62,6 +73,27 @@ export default function VerifiedRelationInventory({ arcs }: { arcs: RelationArc[
 
       {rows.length === 0 ? <div style={S.empty}>אין קשת מתועדת — לא מומצאת</div> : null}
 
+      {/* BRIDGE LAYER — relations that exist as EntityLink records rather than
+          as drawn arcs. Kept in a separate block, and each row states its own
+          provenance, so a DEMO link can never be mistaken for a REAL one.
+          A derived row names what it was composed from. */}
+      {bridgeLinks.length > 0 ? (
+        <>
+          <div style={S.sub}>שכבת גשר · BRIDGE LINKS ({bridgeLinks.length})</div>
+          {bridgeLinks.map((l) => (
+            <div key={l.link_id} style={S.row}>
+              <span style={S.type}>{l.relation}</span>
+              <span style={{
+                ...S.badge,
+                color: l.provenance === "REAL" ? COLOR_ROLE.green : "#fbbf24",
+              }}>{l.provenance}</span>
+              {l.derived ? <span style={S.derived}>DERIVED</span> : null}
+              <span style={S.ids}>{l.link_id}</span>
+            </div>
+          ))}
+        </>
+      ) : null}
+
       <div style={S.rule}>
         כל קשת נקראת מאירוע מתועד ונושאת event_id. אין קשת מדמיון ערכי, מניגוד משותף,
         מקרבה או מחפיפת טקסונומיה — <b>דמיון אינו קשר</b>. היעדר קו הוא אמירה, לא חוסר מידע.
@@ -83,6 +115,8 @@ const S: Record<string, React.CSSProperties> = {
   n: { fontSize: 11, fontWeight: 700, color: COLOR.text, minWidth: 18 },
   badge: { ...TYPE.micro, fontSize: 7.5, letterSpacing: 0.8 },
   ids: { fontSize: 8, fontFamily: "ui-monospace, monospace", color: COLOR.textFaint, marginInlineStart: "auto" },
+  sub: { ...TYPE.micro, fontSize: 8, color: COLOR.textFaint, margin: "6px 0 2px", borderTop: `1px solid ${COLOR.border}`, paddingTop: 4 },
+  derived: { ...TYPE.micro, fontSize: 7, letterSpacing: 0.6, color: COLOR.textFaint, border: `1px solid ${COLOR.border}`, borderRadius: 3, padding: "0 3px" },
   empty: { fontSize: 10, color: COLOR.textFaint, fontStyle: "italic", padding: "3px 0" },
   rule: { fontSize: 8.5, color: COLOR.textFaint, lineHeight: 1.55, marginTop: 5, borderTop: `1px solid ${COLOR.border}`, paddingTop: 4 },
 };
