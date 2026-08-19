@@ -1,0 +1,58 @@
+{
+  "version": 6,
+  "language": {
+    "default": "he",
+    "allowed_output_languages": [
+      "he"
+    ],
+    "switch_only_on_explicit_request": true,
+    "technical_terms_may_remain_english": true
+  },
+  "conversation": {
+    "response_style": "direct_natural",
+    "default_length": "short",
+    "answer_first": true,
+    "avoid_repetition": true,
+    "avoid_stock_phrases": true,
+    "ask_followup_only_when_blocked": true,
+    "offer_unrequested_followups": false
+  },
+  "turn_control": {
+    "listen_timeout_seconds": 8,
+    "interruptions_enabled": true,
+    "stop_command_enabled": true
+  },
+  "triggers": {
+    "morning_greeting": {
+      "enabled": true,
+      "phrases": [
+        "בוקר טוב"
+      ],
+      "action": "morning_brief"
+    },
+    "web_search": {
+      "enabled": true,
+      "phrases": [
+        "חפש ברשת",
+        "בדוק ברשת"
+      ],
+      "action": "web_search"
+    }
+  },
+  "tools": {
+    "web_search": {
+      "enabled": true,
+      "requires_confirmation": false
+    },
+    "terminal": {
+      "enabled": false,
+      "requires_confirmation": true
+    }
+  },
+  "persona": {
+    "profile": "merlin",
+    "natural_hebrew": true,
+    "direct_corrections": true,
+    "automatic_agreement": false
+  }
+}

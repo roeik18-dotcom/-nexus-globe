@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>Merlin Control Center</title>
+<style>
+  :root { color-scheme: dark light; }
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 900px; margin: 0 auto; padding: 24px; background: #0b0e14; color: #e6e6e6; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .05em; color: #9aa5b1; margin: 28px 0 10px; border-bottom: 1px solid #262b36; padding-bottom: 6px; }
+  .card { background: #141820; border: 1px solid #262b36; border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; }
+  .badge { font-size: 10px; padding: 2px 8px; border-radius: 999px; font-weight: 600; letter-spacing: .03em; }
+  .b-active { background: #14532d; color: #86efac; }
+  .b-restart { background: #713f12; color: #fde68a; }
+  .b-readonly { background: #1e293b; color: #93c5fd; }
+  .b-notimpl { background: #450a0a; color: #fca5a5; }
+  .status-pill { display: inline-block; padding: 4px 12px; border-radius: 999px; font-weight: 700; font-size: 13px; }
+  .st-OFFLINE, .st-ERROR { background: #450a0a; color: #fca5a5; }
+  .st-STANDBY { background: #1e293b; color: #93c5fd; }
+  .st-LISTENING, .st-TRANSCRIBING, .st-THINKING { background: #713f12; color: #fde68a; }
+  .st-SPEAKING { background: #14532d; color: #86efac; }
+  button { background: #1e293b; color: #e6e6e6; border: 1px solid #334155; border-radius: 6px; padding: 8px 14px; cursor: pointer; font-size: 13px; }
+  button:hover { background: #2a3a52; }
+  button.primary { background: #2563eb; border-color: #2563eb; }
+  button.danger { background: #7f1d1d; border-color: #7f1d1d; }
+  select, input[type=text], input[type=number] { background: #0b0e14; color: #e6e6e6; border: 1px solid #334155; border-radius: 6px; padding: 6px 8px; }
+  label { font-size: 13px; color: #cbd5e1; }
+  .switch { width: 36px; height: 20px; }
+  .muted { color: #64748b; font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  td, th { padding: 4px 6px; border-bottom: 1px solid #1e293b; text-align: right; }
+  .apply-state { font-weight: 700; }
+  #saveState.saved { color: #fde68a; }
+  #saveState.applied { color: #86efac; }
+  #saveState.restart { color: #fca5a5; }
+  code { background: #1e293b; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+<h1>🧙 Merlin Control Center</h1>
+<div class="muted">127.0.0.1 בלבד — לא dashboard לקריאה בלבד. כל שמירה מגיעה ל-runtime בפועל.</div>
+
+<h2>1. Live Status</h2>
+<div class="card">
+  <span id="statusPill" class="status-pill st-OFFLINE">OFFLINE</span>
+  <span class="muted" id="statusDetail"></span>
+</div>
+
+<h2>2. Language</h2>
+<div class="card" id="langCard"></div>
+
+<h2>3. Response Behaviour</h2>
+<div class="card" id="convCard"></div>
+
+<h2>4. Turn Control</h2>
+<div class="card" id="turnCard">
+  <button class="danger" onclick="stopSpeaking()">STOP SPEAKING</button>
+  <div id="turnInterruptNote" class="muted" style="margin-top:8px"></div>
+</div>
+
+<h2>5. Triggers</h2>
+<div class="card"><table id="triggersTable"><thead><tr><th>enabled</th><th>action</th><th>phrases</th><th>שם</th></tr></thead><tbody></tbody></table></div>
+
+<h2>6. Tools &amp; Permissions</h2>
+<div class="card"><table id="toolsTable"><thead><tr><th>enabled</th><th>אישור נדרש</th><th>זמינות</th><th>שם</th></tr></thead><tbody></tbody></table></div>
+
+<h2>7. Runtime</h2>
+<div class="card">
+  <div class="row"><span>Label</span><code>com.merlin.voice</code></div>
+  <div class="row"><span>PID</span><span id="rtPid">—</span></div>
+  <div class="row"><span>Loaded</span><span id="rtLoaded">—</span></div>
+  <div class="row"><span>Git revision</span><span id="rtGit">—</span></div>
+  <div class="row"><span>Config version</span><span id="rtConfigVersion">—</span></div>
+  <div style="margin-top:10px; display:flex; gap:8px;">
+    <button class="primary" onclick="runtimeAction('start')">Start Merlin</button> <span id="badgeStart"></span>
+    <button class="danger" onclick="runtimeAction('stop')">Stop Merlin</button> <span id="badgeStop"></span>
+    <button onclick="reloadConfig()">Reload configuration</button>
+  </div>
+</div>
+
+<h2>8. Apply</h2>
+<div class="card">
+  <div style="display:flex; gap:8px; align-items:center;">
+    <button class="primary" onclick="saveConfig()">Save</button>
+    <button onclick="loadConfig()">Revert unsaved changes</button>
+    <button class="danger" onclick="restoreLastKnownGood()">Restore last-known-good</button>
+    <span id="saveState" class="apply-state"></span>
+  </div>
+  <div id="errors" class="muted" style="color:#fca5a5; margin-top:8px;"></div>
+</div>
+
+<h2>Recent turns (last 20)</h2>
+<div class="card"><table id="eventsTable"><thead><tr><th>turn</th><th>time</th><th>lang ok</th><th>enforced</th><th>cfg v</th></tr></thead><tbody></tbody></table></div>
+
+<script>
+let currentConfig = null;
+let savedConfigVersion = null;
+
+async function loadConfig() {
+  const r = await fetch('/api/control');
+  const data = await r.json();
+  currentConfig = data.config;
+  renderCapabilities(data.capabilities);
+  renderConfig();
+  setSaveState('applied', 'LOADED');
+}
+
+function badge(status) {
+  const map = {ACTIVE:'b-active', RESTART_REQUIRED:'b-restart', READ_ONLY:'b-readonly', NOT_IMPLEMENTED:'b-notimpl'};
+  return `<span class="badge ${map[status]||'b-notimpl'}">${status}</span>`;
+}
+
+let CAPS = {};
+function renderCapabilities(caps) {
+  CAPS = caps;
+  document.getElementById('badgeStart').innerHTML = badge(cap('runtime.start').status);
+  document.getElementById('badgeStop').innerHTML = badge(cap('runtime.stop').status);
+}
+function cap(key) { return CAPS[key] || {status:'NOT_IMPLEMENTED'}; }
+
+function renderConfig() {
+  const c = currentConfig;
+  document.getElementById('langCard').innerHTML = `
+    <div class="row"><label>שפת ברירת מחדל</label>
+      <span><select id="lang_default" onchange="markDirty()">
+        <option value="he" ${c.language.default==='he'?'selected':''}>עברית</option>
+        <option value="en" ${c.language.default==='en'?'selected':''}>English</option>
+      </select> ${badge(cap('language.default').status)}</span></div>
+    <div class="row"><label>עברית בלבד (allowed_output_languages=["he"])</label>
+      <span><input type="checkbox" id="lang_he_only" ${JSON.stringify(c.language.allowed_output_languages)==='["he"]'?'checked':''} onchange="markDirty()"> ${badge(cap('language.allowed_output_languages').status)}</span></div>
+    <div class="row"><label>מעבר לאנגלית רק בבקשה מפורשת</label>
+      <span><input type="checkbox" id="lang_explicit" ${c.language.switch_only_on_explicit_request?'checked':''} onchange="markDirty()"> ${badge(cap('language.switch_only_on_explicit_request').status)}</span></div>
+    <div class="row"><label>מונחים טכניים נשארים באנגלית</label>
+      <span><input type="checkbox" id="lang_tech" ${c.language.technical_terms_may_remain_english?'checked':''} onchange="markDirty()"> ${badge(cap('language.technical_terms_may_remain_english').status)}</span></div>
+  `;
+
+  document.getElementById('convCard').innerHTML = `
+    <div class="row"><label>אורך תשובה</label>
+      <span><select id="conv_length" onchange="markDirty()">
+        <option value="short" ${c.conversation.default_length==='short'?'selected':''}>קצר</option>
+        <option value="normal" ${c.conversation.default_length==='normal'?'selected':''}>רגיל</option>
+        <option value="deep" ${c.conversation.default_length==='deep'?'selected':''}>מעמיק</option>
+      </select> ${badge(cap('conversation.default_length').status)}</span></div>
+    <div class="row"><label>לענות קודם</label><span><input type="checkbox" id="conv_answer_first" ${c.conversation.answer_first?'checked':''} onchange="markDirty()"> ${badge(cap('conversation.answer_first').status)}</span></div>
+    <div class="row"><label>בלי חזרות</label><span><input type="checkbox" id="conv_no_repeat" ${c.conversation.avoid_repetition?'checked':''} onchange="markDirty()"> ${badge(cap('conversation.avoid_repetition').status)}</span></div>
+    <div class="row"><label>בלי ניסוחים רובוטיים</label><span><input type="checkbox" id="conv_no_stock" ${c.conversation.avoid_stock_phrases?'checked':''} onchange="markDirty()"> ${badge(cap('conversation.avoid_stock_phrases').status)}</span></div>
+    <div class="row"><label>שאלת המשך רק כשחסום</label><span><input type="checkbox" id="conv_ask_only" ${c.conversation.ask_followup_only_when_blocked?'checked':''} onchange="markDirty()"> ${badge(cap('conversation.ask_followup_only_when_blocked').status)}</span></div>
+    <div class="row"><label>בלי הצעות בסוף שלא התבקשו</label><span><input type="checkbox" id="conv_no_offer" ${!c.conversation.offer_unrequested_followups?'checked':''} onchange="markDirty()"> ${badge(cap('conversation.offer_unrequested_followups').status)}</span></div>
+  `;
+
+  document.getElementById('turnCard').innerHTML += `
+    <div class="row"><label>זמן הקשבה (שניות)</label>
+      <span><input type="number" id="turn_timeout" value="${c.turn_control.listen_timeout_seconds}" min="1" max="120" onchange="markDirty()"> ${badge(cap('turn_control.listen_timeout_seconds').status)}</span></div>
+  `;
+  document.getElementById('turnInterruptNote').innerHTML =
+    `Interruption status: ${badge(cap('turn_control.interruptions_enabled').status)} — ` +
+    (cap('turn_control.interruptions_enabled').status === 'NOT_IMPLEMENTED'
+      ? 'barge-in אינו ממומש ב-runtime החי כרגע.'
+      : '');
+
+  const trg = document.querySelector('#triggersTable tbody');
+  trg.innerHTML = '';
+  for (const [name, t] of Object.entries(c.triggers || {})) {
+    trg.innerHTML += `<tr><td>${t.enabled ? '✅' : '—'}</td><td>${t.action}</td><td>${(t.phrases||[]).join(', ')}</td><td>${name} ${badge(cap('triggers').status)}</td></tr>`;
+  }
+
+  const tl = document.querySelector('#toolsTable tbody');
+  tl.innerHTML = '';
+  for (const [name, t] of Object.entries(c.tools || {})) {
+    tl.innerHTML += `<tr><td>${t.enabled ? '✅' : '—'}</td><td>${t.requires_confirmation ? 'כן' : 'לא'}</td><td>${badge(cap('tools').status)}</td><td>${name}</td></tr>`;
+  }
+}
+
+function collectConfig() {
+  const c = JSON.parse(JSON.stringify(currentConfig));
+  c.language.default = document.getElementById('lang_default').value;
+  c.language.allowed_output_languages = document.getElementById('lang_he_only').checked ? ['he'] : ['he','en'];
+  c.language.switch_only_on_explicit_request = document.getElementById('lang_explicit').checked;
+  c.language.technical_terms_may_remain_english = document.getElementById('lang_tech').checked;
+  c.conversation.default_length = document.getElementById('conv_length').value;
+  c.conversation.answer_first = document.getElementById('conv_answer_first').checked;
+  c.conversation.avoid_repetition = document.getElementById('conv_no_repeat').checked;
+  c.conversation.avoid_stock_phrases = document.getElementById('conv_no_stock').checked;
+  c.conversation.ask_followup_only_when_blocked = document.getElementById('conv_ask_only').checked;
+  c.conversation.offer_unrequested_followups = !document.getElementById('conv_no_offer').checked;
+  c.turn_control.listen_timeout_seconds = parseInt(document.getElementById('turn_timeout').value, 10);
+  return c;
+}
+
+function markDirty() { setSaveState('dirty', 'UNSAVED CHANGES'); }
+
+function setSaveState(cls, text) {
+  const el = document.getElementById('saveState');
+  el.className = 'apply-state ' + cls;
+  el.textContent = text;
+}
+
+async function saveConfig() {
+  document.getElementById('errors').textContent = '';
+  const body = { config: collectConfig() };
+  const r = await fetch('/api/control', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const data = await r.json();
+  if (!r.ok) {
+    document.getElementById('errors').textContent = 'REJECTED: ' + (data.detail && data.detail.errors || []).join(' · ');
+    return;
+  }
+  currentConfig = data.config;
+  savedConfigVersion = data.config.version;
+  setSaveState('saved', 'SAVED — waiting for a live turn to confirm APPLIED');
+  pollForApplied();
+}
+
+async function pollForApplied(tries = 10) {
+  if (tries <= 0) return;
+  const r = await fetch('/api/runtime/events');
+  const data = await r.json();
+  const applied = (data.events || []).some(e => e.config_version === savedConfigVersion);
+  if (applied) { setSaveState('applied', 'APPLIED (confirmed by a live turn)'); return; }
+  setTimeout(() => pollForApplied(tries - 1), 3000);
+}
+
+async function restoreLastKnownGood() {
+  await reloadConfig();
+}
+
+async function reloadConfig() {
+  const r = await fetch('/api/control/reload', {method:'POST'});
+  const data = await r.json();
+  await loadConfig();
+  setSaveState('saved', `RELOADED (source=${data.source})`);
+}
+
+async function stopSpeaking() {
+  const r = await fetch('/api/runtime/interrupt', {method:'POST'});
+  const data = await r.json();
+  alert(data.status === 'unsupported' ? ('UNSUPPORTED: ' + data.reason) : JSON.stringify(data));
+}
+
+async function runtimeAction(action) {
+  if (!confirm(`Really ${action} the Merlin service (com.merlin.voice)?`)) return;
+  const r = await fetch(`/api/runtime/${action}`, {method:'POST'});
+  const data = await r.json();
+  alert(JSON.stringify(data));
+  refreshStatus();
+}
+
+async function refreshStatus() {
+  const r = await fetch('/api/status');
+  const s = await r.json();
+  document.getElementById('rtPid').textContent = s.pid ?? '—';
+  document.getElementById('rtLoaded').textContent = s.loaded ? 'yes' : 'no';
+  document.getElementById('rtGit').textContent = s.git_revision ?? '—';
+  document.getElementById('rtConfigVersion').textContent = s.config_version;
+  const pill = document.getElementById('statusPill');
+  const st = s.loaded ? (s.pid ? 'STANDBY' : 'OFFLINE') : 'OFFLINE';
+  pill.className = 'status-pill st-' + st;
+  pill.textContent = st;
+  document.getElementById('statusDetail').textContent = s.loaded ? `pid=${s.pid}` : 'not loaded';
+}
+
+async function refreshEvents() {
+  const r = await fetch('/api/runtime/events');
+  const data = await r.json();
+  const tb = document.querySelector('#eventsTable tbody');
+  tb.innerHTML = '';
+  for (const e of (data.events || []).slice().reverse()) {
+    tb.innerHTML += `<tr><td>${e.turn_id||''}</td><td>${(e.timestamp||'').slice(11,19)}</td><td>${e.response_language_ok===true?'✅':e.response_language_ok===false?'❌':'—'}</td><td>${e.enforced_output_language||'—'}</td><td>${e.config_version??'—'}</td></tr>`;
+  }
+}
+
+loadConfig();
+refreshStatus();
+refreshEvents();
+setInterval(refreshStatus, 5000);
+setInterval(refreshEvents, 5000);
+</script>
+</body>
+</html>
