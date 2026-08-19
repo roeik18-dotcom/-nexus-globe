@@ -28,6 +28,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import VerifiedRelationInventory from "@/app/lib/philos/shell/VerifiedRelationInventory";
 import type { GlobeArc, GlobeNode } from "@/app/lib/philos/projectGlobeGraph";
 import { SystemShell, type ShellIdentityLink } from "@/app/lib/philos/shell/SystemShell";
 import { REAL_CURRENT_SUBJECT } from "@/app/lib/philos/subjectRegistry";
@@ -725,13 +726,22 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
       {/* BOTTOM-LEFT STACK — tier 4 of the Globe hierarchy: compact
             overlays / verified network info, below the sphere in priority.
             Both this stack and LEGEND are anchored bottom-left; the legend
-            reserves the space above (`styles.legend`, bottom 88) and this
+            reserves the space above (`styles.legend`, bottom 112) and this
             stack sits under it, collapsed. Expanding it deliberately
             overlays the legend (zIndex 14) — a user action, not a default
             state, and it can no longer occlude the sphere because it is
             height-capped and bottom-anchored. */}
       {!selected || selected.status === "none" ? (
         <div dir="rtl" style={{ position: "absolute", left: 12, bottom: 12, zIndex: 14, maxWidth: 420, maxHeight: "34vh", overflowY: "auto" }}>
+          {/* NETWORK LAYER, stated as records — relation type, source event id,
+              provenance and epistemic status for every arc actually drawn.
+              Collapsed by default so the sphere stays the primary content. */}
+          <details>
+            <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>
+              קשרים מאומתים · VERIFIED RELATIONS ({eventArcs.length})
+            </summary>
+            <VerifiedRelationInventory arcs={eventArcs} />
+          </details>
           <details>
             <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>
               תצפית אחרונה · LATEST OBSERVATION (CANON)
@@ -834,7 +844,7 @@ const S: Record<string, React.CSSProperties> = {
   topCenter: { position: "absolute", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 10, fontSize: 11, letterSpacing: "3px", color: "#c3d5f2", textAlign: "center" },
   purposeLine: { fontSize: 9, letterSpacing: "0.3px", color: "#6f89b6", marginTop: 5, maxWidth: 360, textTransform: "none" },
 
-  legend: { position: "absolute", left: 24, bottom: 88, zIndex: 10, display: "flex", flexDirection: "column", gap: 5, maxWidth: 250 },
+  legend: { position: "absolute", left: 24, bottom: 112, zIndex: 10, display: "flex", flexDirection: "column", gap: 5, maxWidth: 250 },
   legendRow: { display: "flex", alignItems: "center", gap: 9 },
   legendLine: { width: 26, height: 1.5, borderRadius: 2, flexShrink: 0 },
   legendDot: { width: 6, height: 6, borderRadius: "50%", flexShrink: 0, marginLeft: 10, marginRight: 10 },

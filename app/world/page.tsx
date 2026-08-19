@@ -122,7 +122,14 @@ export default async function WorldPage() {
         <SocialValueSpinePanel surface="world" />
         {/* No store records a verified EXTERNAL/system event, so both roles are
             honestly UNKNOWN rather than 0 — nothing was checked and found empty. */}
-        <SocialRoleStrip surface="world" counts={{ action: null, evidence: null }} />
+        {/* All four roles are UNKNOWN, not 0. No store records a verified
+            EXTERNAL/system event, a verified system-level social structure, or
+            a system-level value interpretation. Nothing was checked and found
+            empty — nothing was checkable. UNKNOWN != ZERO. */}
+        <SocialRoleStrip
+          surface="world"
+          counts={{ action: null, evidence: null, relations: null, meaning: null }}
+        />
         <SocialSourceSpinePanel surface="world" />
         <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 12, padding: "5px 12px", borderRadius: RADIUS.pill, background: STATUS.demo.bg, border: `1px solid ${STATUS.demo.border}` }}>
           <span style={{ ...TYPE.micro, color: STATUS.demo.text }}>REFERENCE ARCHITECTURE</span>

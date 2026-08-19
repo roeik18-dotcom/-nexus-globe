@@ -32,20 +32,40 @@ export interface SocialRoleCounts {
   action: number | null;
   /** WHITE — real evidence/provenance records at this scope. */
   evidence: number | null;
+  /**
+   * GREEN — real SOCIAL RELATIONS at this scope: recorded person↔group and
+   * group↔group edges (MEMBER_OF / CONTRIBUTES_TO / BENEFITS_FROM /
+   * AFFECTED_BY), never a relation inferred from shared value, shared
+   * contradiction or taxonomy overlap. Similarity is not a relation.
+   */
+  relations?: number | null;
+  /**
+   * PURPLE — MEANING / VALUE INTERPRETATION at this scope: value-family
+   * attributions and value-emergence readings. These are INTERPRETED, not
+   * measured, which is exactly why they carry their own role rather than
+   * being folded into WHITE (evidence) or GREEN (relations).
+   */
+  meaning?: number | null;
 }
 
-const MEANING: Record<"community" | "globe" | "world", { red: string; white: string }> = {
+const MEANING: Record<"community" | "globe" | "world", { red: string; white: string; green: string; purple: string }> = {
   community: {
     red: "Action/Effect אמיתיים המקושרים לקבוצה",
     white: "ראיה ופרובננס לחברות, ליחסי ערך-קבוצה ולהשפעות",
+    green: "קשרים חברתיים מתועדים — חברות ויחסי אדם↔קבוצה",
+    purple: "פרשנות ערך — משפחת ערך וצמיחת-ערך מניגוד",
   },
   globe: {
     red: "פעולות/זרימות אמיתיות הקשורות לישויות אמיתיות",
     white: "פרובננס לצמתים ולקשתות שמצוירים בפועל",
+    green: "קשתות מאומתות שמצוירות בפועל — לפי סוג יחס",
+    purple: "ערכי הקבוצות שהצמתים נושאים",
   },
   world: {
     red: "התערבויות עם רלוונטיות מערכתית מאומתת",
     white: "גבול הראיה לטענות חיצוניות/מערכתיות",
+    green: "מבנים חברתיים מאומתים ברמת המערכת",
+    purple: "פרשנות ערך ברמת המערכת",
   },
 };
 
@@ -61,10 +81,15 @@ export default function SocialRoleStrip({
             meaning={m.red} value={counts.action} hex={COLOR_ROLE.red} />
       <Role glyph="⚪" name="WHITE" canonical="Reference / Zero-energy"
             meaning={m.white} value={counts.evidence} hex={COLOR_ROLE.white} />
+      <Role glyph="🟢" name="GREEN" canonical="Human expression / Connection"
+            meaning={m.green} value={counts.relations ?? null} hex={COLOR_ROLE.green} />
+      <Role glyph="🟣" name="PURPLE" canonical="Meaning / Vision"
+            meaning={m.purple} value={counts.meaning ?? null} hex={COLOR_ROLE.purple} />
 
       <span style={S.note}>
         תפקידים בתוך המסוף — לא מסופים חדשים, ולא זרימה סיבתית בין צבעים.
         RED אינו Need ואינו תנופה (זה ORANGE). WHITE אינו ציון ביטחון.
+        GREEN הוא קשר מתועד בלבד — דמיון ערכי אינו קשר. PURPLE הוא פרשנות, לא מדידה.
       </span>
     </div>
   );

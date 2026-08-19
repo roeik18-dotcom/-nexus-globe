@@ -215,6 +215,13 @@ export default async function PlanetPage({
               action: canonActions.length,
               // WHITE — Effects carrying a verified outcome, i.e. provenance.
               evidence: canonEffects.filter((e) => !!e.effect.verified_outcome).length,
+              // GREEN — arcs actually drawn on the sphere. Every one comes from
+              // a recorded event (member.joined / leader.appointed /
+              // resource.transfer) and carries its own event_id. No arc is
+              // drawn from shared value, shared contradiction or similarity.
+              relations: arcs.length,
+              // PURPLE — value groups whose own central value the nodes carry.
+              meaning: nodes.filter((n) => n.type === "value").length,
             }}
           />
           <SocialSourceSpinePanel surface="globe" limit={4} />

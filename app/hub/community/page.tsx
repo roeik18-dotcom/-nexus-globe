@@ -474,6 +474,14 @@ export default async function CommunityPage({
             // WHITE — those of them that are actually VERIFIED, i.e. carry evidence.
             evidence: groupsWithProvenance.filter((g) => g.provenance === "REAL")
               .reduce((n, g) => n + g.view.impact.filter((i) => i.verified).length, 0),
+            // GREEN — recorded social relations only: real memberships plus any
+            // resolved person↔group relation carrying a real record. A value
+            // overlap is deliberately NOT counted; similarity is not a relation.
+            relations: groupCards.filter((g) => g.provenance === "REAL")
+              .reduce((n, g) => n + g.view.members.length + g.resolvedRelations.length, 0),
+            // PURPLE — value INTERPRETATION actually attributed: leading value
+            // families resolved for real groups. Absent stays absent.
+            meaning: groupCards.filter((g) => g.provenance === "REAL" && g.leadingFamily).length,
           }}
         />
         <SocialSourceSpinePanel surface="community" observationText={latestObservationText} />
