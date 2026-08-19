@@ -3,6 +3,13 @@
  * read LIVE from the real Dropbox master workbook, never copied into this
  * git repository.
  *
+ * AUTHORITY: this workbook is the SEMANTIC / SOURCE CORPUS authority
+ * (~1492 units). It does NOT govern runtime activation — that belongs to
+ * `HUMAN_CONFIG_MASTER_SOURCE_LOCK_v1.0` (189 rows) via
+ * `canonical/activeConfig.ts`. Ratified dual-authority model, locked:
+ * see `PHILOS-SOURCE-AUTHORITY-CONTRACT.md`. Nothing read here may become
+ * runtime-active on the strength of existing.
+ *
  * Explicitly authorized, read-only, this pass (see
  * PHILOS-PRODUCT-MASTER-LEDGER.md §23): reads
  * `קונפינג-אדם-MASTER-PRODUCTION-2.1-TAXONOMY-AUDITED-PROGRESS.xlsx` from

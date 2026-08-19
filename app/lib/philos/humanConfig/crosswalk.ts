@@ -15,6 +15,12 @@
  *     rhetorical form (אקסיומה/אפוריזם, טענה/עיקרון, מנגנון …) and carries
  *     the actual source text, hierarchy and provenance.
  *
+ * **RATIFIED 2026-08-19 as a dual-authority model** — see
+ * `PHILOS-SOURCE-AUTHORITY-CONTRACT.md` at the repo root. Neither
+ * supersedes the other; this crosswalk IS the permanent bridge, and the
+ * measured gaps (59 MISSING_IN_2_1, 543 SOURCE_ONLY, 2 runtime-active rows
+ * with no corpus counterpart) stay explicit rather than reconciled.
+ *
  * They measure ORTHOGONAL axes over largely the same underlying corpus.
  * "Which one is correct" is not a well-formed question, and picking a
  * winner would destroy real information either way: dropping the Source

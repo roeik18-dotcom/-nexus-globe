@@ -9,6 +9,13 @@
  * via `formatCanonicalRef`), so every instance-building call site can pass
  * the same activated set instead of `[]`.
  *
+ * AUTHORITY: this module is the RUNTIME GOVERNANCE authority for Human
+ * Config — the only place activation happens. The ~1492-unit Production
+ * corpus is a SEPARATE, co-equal SEMANTIC authority that cannot activate
+ * anything here. Ratified dual-authority model, locked: see
+ * `PHILOS-SOURCE-AUTHORITY-CONTRACT.md` and the bridge in
+ * `humanConfig/crosswalk.ts`.
+ *
  * WHAT "ACTIVE" MEANS — a MECHANICAL fold over the Source Locks' OWN two
  * classification fields (`TYPE`, `RUNTIME_STATUS`), never a hand-picked or
  * semantic selection invented here:
