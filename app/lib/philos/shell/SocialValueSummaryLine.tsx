@@ -35,7 +35,7 @@ export default function SocialValueSummaryLine({
         <span style={S.tag}>SOURCE</span>
       </span>
       <span style={S.seg}>
-        <b style={S.src}>{DIRECT_CONTRADICTION_VALUE_RELATIONS.length}</b> יחסי ניגוד–ערך
+        <b style={S.src}>{DIRECT_CONTRADICTION_VALUE_RELATIONS.length}</b> יחסי צמיחת-ערך
         <span style={S.tag}>SOURCE</span>
       </span>
 

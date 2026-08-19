@@ -17,7 +17,7 @@
 import {
   CONTRADICTION_MASTER, TAXONOMY_CONFLICTS, type TaxonomyKey,
 } from "../valueSystem/contradictionMaster";
-import { multiLayerContradictions } from "../valueSystem/socialValueSpine";
+import { multiLayerContradictions, DIRECT_CONTRADICTION_VALUE_RELATIONS } from "../valueSystem/socialValueSpine";
 import { COLOR, RADIUS, SPACE, TYPE } from "./designTokens";
 import { ProvenanceBadge } from "./provenance";
 
@@ -86,6 +86,30 @@ export default function ContradictionProvenancePanel() {
         </div>
       ))}
 
+      {/* SAFE LINK REPAIR (matrix gap B): Brain held only a COUNT of the four
+          value-emergence relations. Brain is the provenance authority, so it
+          must show each one with its source wording, its status and its
+          cardinality — including that the source never names the resulting
+          value. */}
+      <div style={S.subHead}>יחסי צמיחת-ערך · VALUE-EMERGENCE RELATIONS ({DIRECT_CONTRADICTION_VALUE_RELATIONS.length})</div>
+      {DIRECT_CONTRADICTION_VALUE_RELATIONS.map((r) => (
+        <div key={`${r.pole_a}|${r.pole_b}`} style={S.rel}>
+          <span style={{ fontSize: 11.5, color: COLOR.text, fontWeight: 700, minWidth: 150 }}>
+            {r.pole_a} ↔ {r.pole_b}
+          </span>
+          <span style={{ ...TYPE.micro, fontSize: 7.5, color: "#a78bfa" }}>{r.relation}</span>
+          <span style={{ fontSize: 9.5, color: COLOR.textFaint, flex: 1, minWidth: 170 }}>
+            «{r.source_rule}» · קובץ {r.source_file}
+          </span>
+          <span style={{ ...TYPE.micro, fontSize: 7.5, color: "#fbbf24" }}>
+            ערך שנוצר: NOT NAMED BY SOURCE
+          </span>
+          <span style={{ ...TYPE.micro, fontSize: 7.5, color: "#8798b8" }}>
+            cardinality {r.cardinality}
+          </span>
+        </div>
+      ))}
+
       <div style={S.rule}>
         {single} מתוך {total} הזהויות מופיעות ב<b>טקסונומיה אחת בלבד</b>. זו אינה מערכת אחת
         בשמות שונים — אלה החלטות סיווג נפרדות. לכן הזהות מופרדת מהחברות, ואף טקסונומיה אינה
@@ -115,6 +139,7 @@ const S: Record<string, React.CSSProperties> = {
   taxRow: { display: "flex", flexWrap: "wrap", gap: 5 },
   taxChip: { fontSize: 9.5, color: COLOR.textDim, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 9px" },
   conflict: { background: "rgba(242,99,92,0.05)", border: "1px solid rgba(242,99,92,0.18)", borderRadius: RADIUS.sm, padding: "6px 9px", marginBottom: 4 },
+  rel: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 7, background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.18)", borderRadius: RADIUS.sm, padding: "5px 9px", marginBottom: 3 },
   conflictBody: { fontSize: 9.5, color: COLOR.textDim, lineHeight: 1.55, marginTop: 2 },
   rule: { marginTop: SPACE.sm, fontSize: 9.5, color: COLOR.textDim, lineHeight: 1.6, background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: RADIUS.sm, padding: "6px 9px" },
 };

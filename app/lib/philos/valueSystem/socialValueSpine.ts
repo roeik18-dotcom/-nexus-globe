@@ -108,10 +108,13 @@ export function buildSocialValueSpine(params: {
       not_implied: "אף טקסונומיה אינה מחייבת; ניגוד אינו תא 3×3 ואינו מדידה",
     },
     {
-      key: "emergent_value", label: "EMERGENT VALUES", gloss: "ערכים שצומחים מהניגוד",
+      // The count is of RELATIONS, not of values. The source names the
+      // relation and never the resulting value, so labelling this
+      // "EMERGENT VALUES = 4" would assert four values that do not exist.
+      key: "emergent_value", label: "VALUE-EMERGENCE RELATIONS", gloss: "יחסי צמיחת-ערך מניגוד",
       status: "SOURCE_SUPPORTED_CONCEPTUAL", count: DIRECT_CONTRADICTION_VALUE_RELATIONS.length,
       basis: "4 יחסים ישירים בלבד, מצוטטים מהמקור: \"הערך המשותף שמתעורר דווקא מתוך הניגוד\"",
-      not_implied: "לא מוכלל ל-106 הניגודים האחרים. הקרדינליות אינה מוגדרת — לא 1:1 ולא 1:רבים",
+      not_implied: "אלה יחסים, לא ערכים. המקור נותן את היחס ואינו נוקב בערך שנוצר — הערך עצמו NOT NAMED BY SOURCE. לא מוכלל ל-106 האחרים; קרדינליות אינה מוגדרת",
     },
     {
       key: "personal_value", label: "PERSONAL VALUES", gloss: "ערכי הפרט",

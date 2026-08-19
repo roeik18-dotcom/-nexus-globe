@@ -66,6 +66,7 @@ import {
   EPISTEMIC_WEIGHT, OPEN_BOUNDARY_SURFACE, OpenBoundaryMark, weightOfProvenance,
 } from "@/app/lib/philos/shell/epistemics";
 import { LinkageConnector, LinkageLegend, type Linkage } from "@/app/lib/philos/shell/linkage";
+import { detectBaseOppositions } from "@/app/lib/philos/valueSystem/baseOppositionDetector";
 
 const DOMAIN_WORD: Record<"G" | "E" | "C", string> = { G: "גוף", E: "רגש", C: "שכל" };
 const DOMAINS: ("G" | "E" | "C")[] = ["G", "E", "C"];
@@ -356,6 +357,22 @@ export default function CausalChainFlow({
       {/* WHY THE COMPARISON IS BLOCKED — the temporal chain's own diagnosis,
           shown before the Learning/State' boundary because it blocks EARLIER
           than that boundary does. */}
+      {/* SAFE LINK REPAIR (matrix gap B): the comparison model already
+          computes source-opposition mentions per observation; Dynamics never
+          rendered them. A mention is not a measurement and not a runtime
+          class — stated inline. */}
+      {anchor ? (
+        <div style={{ marginTop: SPACE.sm, fontSize: 9.5, color: COLOR.textDim, lineHeight: 1.6 }}>
+          <span style={{ ...S.eyebrow, color: COLOR.textFaint }}>ניגודי מקור בתצפית · </span>
+          {(() => {
+            const m = detectBaseOppositions(anchor.mark.context ?? "");
+            return m.length === 0
+              ? "0 מתוך 110 ניגודי המקור מוזכרים בטקסט התצפית — אזכור אינו מדידה, ואינו קשור ל-5 מחלקות ה-runtime"
+              : `${m.length} מוזכרים: ${m.map((x) => x.mentioned_poles.map((p) => p.pole).join("+")).join(" · ")} — אזכור בלבד`;
+          })()}
+        </div>
+      ) : null}
+
       <TemporalBlockBand
         observationCount={marks.length}
         hasLinkedAction={!!latestAction}

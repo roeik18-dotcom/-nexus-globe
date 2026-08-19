@@ -51,6 +51,7 @@ import { resolvePersonRef } from "@/app/lib/philos/person/personRef";
 import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
 import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePanel";
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
+import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import CanonicalSlicePanel from "@/app/hub/CanonicalSlicePanel";
@@ -200,6 +201,15 @@ export default async function PlanetPage({
               Community (L3) and World (L5). Server-rendered and passed as a
               slot for the same client-boundary reason as the frame. */}
           <SocialValueSpinePanel surface="globe" />
+          <SocialRoleStrip
+            surface="globe"
+            counts={{
+              // RED — real canon Actions behind what the sphere can draw.
+              action: canonActions.length,
+              // WHITE — Effects carrying a verified outcome, i.e. provenance.
+              evidence: canonEffects.filter((e) => !!e.effect.verified_outcome).length,
+            }}
+          />
           <SocialSourceSpinePanel surface="globe" limit={4} />
         </>
       }

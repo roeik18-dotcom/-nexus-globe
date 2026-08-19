@@ -34,6 +34,7 @@ import { resolvePersonRef } from "@/app/lib/philos/person/personRef";
 import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
 import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePanel";
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
+import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
@@ -444,6 +445,17 @@ export default async function CommunityPage({
             ? groupsWithProvenance.filter((g) => g.provenance === "REAL"
                 && g.view.members.some((m) => m.person_id === identityLink.community_member_id)).length
             : 0}
+        />
+        <SocialRoleStrip
+          surface="community"
+          counts={{
+            // RED — real verified group IMPACT records (Action/Effect at group scope).
+            action: groupsWithProvenance.filter((g) => g.provenance === "REAL")
+              .reduce((n, g) => n + g.view.impact.length, 0),
+            // WHITE — those of them that are actually VERIFIED, i.e. carry evidence.
+            evidence: groupsWithProvenance.filter((g) => g.provenance === "REAL")
+              .reduce((n, g) => n + g.view.impact.filter((i) => i.verified).length, 0),
+          }}
         />
         <SocialSourceSpinePanel surface="community" observationText={latestObservationText} />
       </div>
