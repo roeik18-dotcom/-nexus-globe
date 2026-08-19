@@ -16,6 +16,7 @@ import { findKnownNeeds, buildActionSpaceSummary, needsRequiringAction, resolveS
 import { parseSystemContextRef } from "@/app/lib/systemContext";
 import HubNowPanel from "./HubNowPanel";
 import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
+import SystemRoleRail from "@/app/lib/philos/shell/SystemRoleRail";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import ConfigQuestionsPanel from "./ConfigQuestionsPanel";
 import { deriveObservationReading, type ObservationReading } from "@/app/lib/philos/canon/observationReading";
@@ -439,6 +440,30 @@ export default async function HubPage({
               when nothing has been measured yet, which is exactly when
               saying so matters most. */}
           {personFrame ? <PersonFrameStrip frame={personFrame} /> : null}
+          {/* SYSTEM ROLES — the 7 canonical colour roles from the Colour
+              Source Lock, each showing whether a REAL record currently
+              carries it. Counts only, no flow between colours (the lock
+              states none), no score. */}
+          {nowInputs ? (
+            <SystemRoleRail
+              evidence={{
+                // RED — recorded Actions.
+                red: nowInputs.brain.changes.length,
+                // ORANGE — no record type describes momentum: honestly unchecked.
+                orange: null,
+                // YELLOW — persisted State transitions. 0 by contract.
+                yellow: 0,
+                // GREEN — verified group relations.
+                green: myValueGroups.filter((g) => g.provenance === "REAL").length,
+                // BLUE — classification results over the observation text.
+                blue: nowInputs.contradictions.length,
+                // PURPLE — explicit value claim present.
+                purple: nowInputs.reading?.general_value ? 1 : 0,
+                // WHITE — evidence citations.
+                white: nowInputs.brain.evidence.length,
+              }}
+            />
+          ) : null}
           {nowInputs ? (
             <HubNowPanel
               subject={nowInputs.subject}
