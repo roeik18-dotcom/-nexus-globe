@@ -224,11 +224,13 @@ export default async function DynamicsPage({
       const acts = (await loadActions()).filter((a) => a.action.owner === subj);
       const effs = (await loadEffects()).filter((e) => e.effect.subject === subj);
       const nds = await findNeedsForSubject(subj).catch(() => []);
+      const { findOffersForSource } = await import("@/app/lib/philos/canon/offerStoreAccessor");
+      const ofs = await findOffersForSource(subj).catch(() => []);
       return buildSystemTrace({
         observationIds: evs.map((e) => e.canon_event_id),
         observationTimes: evs.map((e) => e.payload.time),
         needIds: nds.map((n) => n.need.need_id),
-        offerIds: [],
+        offerIds: ofs.map((o) => o.offer.offer_id),
         actionIds: acts.map((a) => a.action.action_id),
         actionReferencesObservation: acts.some((a) =>
           a.action.inputs.some((x) => evs.some((e) => e.canon_event_id === x))),

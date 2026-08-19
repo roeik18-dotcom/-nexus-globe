@@ -40,6 +40,11 @@ export default function SystemTracePanel({ edges }: { edges: TraceEdge[] }) {
           <span style={{ ...TYPE.micro, fontSize: 7.5, color: e.status === "IMPLEMENTED" ? "#6fe3b4" : e.status === "OPEN_BOUNDARY" ? "#a78bfa" : "#fbbf24" }}>
             {e.status}
           </span>
+          {/* The actual record ids. Without them this is a diagram, not a
+              trace — a reader cannot check any edge against the store. */}
+          <span dir="ltr" style={S.ids}>
+            {e.source_record ?? "—"} <span style={{ color: COLOR.textFaint }}>→</span> {e.target_record ?? "—"}
+          </span>
           <span style={S.basis}>{e.basis}</span>
         </div>
       ))}
@@ -60,6 +65,7 @@ const S: Record<string, React.CSSProperties> = {
   row: { display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 7, padding: "3px 8px", background: "rgba(90,120,180,0.04)", borderRadius: RADIUS.sm, marginBottom: 2 },
   glyph: { fontSize: 12, width: 12, textAlign: "center" },
   edge: { fontSize: 10.5, color: COLOR.text, minWidth: 230 },
+  ids: { fontSize: 8, color: COLOR.textDim, fontFamily: "ui-monospace, monospace", maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
   basis: { fontSize: 9, color: COLOR.textFaint, flex: 1, minWidth: 200, lineHeight: 1.45 },
   note: { marginTop: 5, fontSize: 9, color: COLOR.textFaint, lineHeight: 1.5 },
 };
