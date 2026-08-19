@@ -148,6 +148,10 @@ interface Props {
   vcRelations: ValueCapabilityRelation[];
   providers: Provider[];
   pcRelations: ProviderCapabilityRelation[];
+  /** Mission B, B10 — the SAME real Community Value-Group join
+   *  Marketplace's inspector (B6) already established, reused here
+   *  rather than re-derived. */
+  communityGroupsByValueId: Record<string, { group_name: string; status: "REAL" | "DEMO" }[]>;
 }
 
 export default function WorldView({
@@ -158,6 +162,7 @@ export default function WorldView({
   vcRelations,
   providers,
   pcRelations,
+  communityGroupsByValueId,
 }: Props) {
   const [selectedMissionId, setSelectedMissionId] = useState<string>(missions[0]?.id ?? "");
   const [cascadeStep, setCascadeStep] = useState<CascadeStep>(0);
@@ -604,6 +609,13 @@ export default function WorldView({
             {inlRow("required_for", `${rfCount} capabilities`, "#FFB84D")}
             {inlRow("can_address", `${caCount} capabilities`, "#22D3EE")}
             {inlRow("Evidence grade", v?.evidenceGrade ?? "—", "#A371F7")}
+            {inlRow(
+              "Real group needs it",
+              (communityGroupsByValueId[inspectedNode.id] ?? []).length === 0
+                ? "none yet — 0 real/DEMO Value Group"
+                : communityGroupsByValueId[inspectedNode.id].map((g) => `${g.group_name} (${g.status})`).join(", "),
+              "#34d399",
+            )}
           </div>
         </div>
       );
@@ -806,10 +818,10 @@ export default function WorldView({
               Cascade layer (solid) animates the full Value → Capability → Provider chain for a real mission.
             </p>
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <a href="/lab" style={{ fontSize: 11, color: "#1a3a5a", textDecoration: "none" }}>← Lab</a>
-            <a href="/" style={{ fontSize: 11, color: "#1a3a5a", textDecoration: "none" }}>← App</a>
-          </div>
+          {/* The "← Lab" / "← App" pair that sat here was this page's own
+              second navigation, pointing at routes that are NOT product
+              terminals. The shared shell at the top of the route is the
+              one place navigation lives now. */}
         </header>
 
         {/* Mission selector */}

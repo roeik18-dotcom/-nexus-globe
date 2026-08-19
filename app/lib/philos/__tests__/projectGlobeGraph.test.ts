@@ -99,8 +99,12 @@ describe("every arc exposes its provenance", () => {
     // Adding a relation here is a decision about what a line on the globe MEANS,
     // so the list is asserted explicitly rather than derived — a new arc type
     // must fail this test and be justified, never appear silently.
+    // Mission B, B9: `group.opened` was added, one real arc from the group to
+    // its own new `value` node (the group's own real central_value — see
+    // `projectGlobeGraph.ts`'s header on `GlobeNode["type"]`).
     const kinds = new Set(graph().arcs.map((a) => a.relation));
     expect([...kinds].sort()).toEqual([
+      "group.opened",
       "leader.appointed",
       "member.joined",
       "transfer.completed",

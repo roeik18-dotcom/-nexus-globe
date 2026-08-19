@@ -20,7 +20,7 @@ proposal, not a description of the system.*
 
 ---
 
-## 0. Build status (authoritative — 2026-08-01)
+## 0. Build status (authoritative — 2026-08-03)
 
 **Status vocabulary.** Five values, and no others:
 
@@ -33,29 +33,54 @@ proposal, not a description of the system.*
 | **missing** | Required by this blueprint, not designed anywhere yet. |
 
 **What "reference vertical slice" excludes — read this before any status below.**
-There is **one** Value Group, from **one hand-written seed event log** (42 events in
-`valueGroupLog.ts`), read by **one local projection**. There is **no persistent
-backend, no writer, no multi-group runtime, and no live production data.** Every
-"implemented" below is bounded by that sentence.
+There is **one** Value Group, whose history begins in **one hand-written seed event
+log** (38 events in `valueGroupLog.ts` — this note said 42 until the figure was read
+off `event_count` at runtime on 2026-08-03) and continues in a **durable append-only
+log on disk**. There is **no multi-group runtime, no identity or authentication, and
+no live production data.** Every "implemented" below is bounded by that sentence.
+
+**The log now has a writer (2026-08-03).** Until this date every Philos screen was a
+pure fold of a `const`, and the product's only action — the Join button — appended to
+React state and vanished on refresh. `app/lib/philos/eventStore.ts` (the append rules),
+`app/lib/philos/commands/joinGroup.ts` (the first command) and
+`app/lib/philos-event-store.ts` (the durable JSONL store) close that loop: a person
+joins, the event is written, and all four screens re-project it. One command exists,
+not four; §5's loop is still mostly unwritable.
+
+**The viewer is resolved, not assumed (2026-08-03).** `p_you` used to be a string a
+component passed to itself — "you" existed in the UI whether or not the log had heard
+of you. `app/lib/philos-viewer.ts` is now the single seam every render and the join
+action resolve identity through, and `app/lib/philos/viewerIdentity.ts` projects what
+the log can actually account for: registered or not, which groups and on what basis,
+which events are yours, with provenance. A name that has not been written to the log
+is labelled **local**, never shown as recorded. `/hub` opens with that personal answer
+(§14's *why me*) before the system totals. `/dynamics` now passes the viewer, so §5's
+gate operates server-side — it hides nothing today, because every event is public,
+which is the point of turning it on before there is anything to hide.
+
+**Still not built, and deliberately:** there is no session, no sign-in, and no second
+participant. `resolveViewer()` returns one local viewer and is `async` so a real
+session lands in that file alone. Minting a per-browser identity would create the
+second participant §16 says must not exist before the privacy rules do.
 
 | § | Subject | Status |
 |---|---------|--------|
 | 1 | Executive definition | **planned** — the definition, not the build |
 | 2 | System hierarchy | **partially implemented** — one Value Group; ecosystem/global layers do not exist |
 | 3 | Three complexity levels | **planned** |
-| 4 | Six terminals | **partially implemented** — all six render for the one seeded group; WORLD is a stub |
+| 4 | Six Value-Group aspects | **partially implemented** — all six render as Community subviews for the one seeded group; the ecosystem overview is a stub |
 | 5 | Core user loop | **planned** |
-| 6 | Person schema (12 layers) | **missing** — no Person entity, no design beyond a field list |
+| 6 | Person schema (12 layers) | **missing** — no Person entity. A *viewer identity* now exists (`viewerIdentity.ts`): registration, memberships and authored events, projected from the log. That is 3 of the 12 layers' worth of fact, not the schema |
 | 7 | Value Group schema | **implemented — reference vertical slice** ¹ |
 | 8 | Action lifecycle | **partially implemented** — allocation states only, one group |
 | 9 | Resource-transfer lifecycle | **partially implemented** — approve/complete + tiers, one transfer, group→project only |
 | 10 | Impact verification | **implemented — reference vertical slice** ¹ · **trust: missing** |
 | 11 | Canonical Event Log | **implemented — reference vertical slice** ¹ |
 | 12 | Hidden engines | **planned** |
-| 13 | Globe legend & semantics | **partially implemented** ² — the traceability rule is now **satisfied**: every node, line and HUD figure on the globe traces to an event. Still absent: per-terminal projections, and 12 of 16 event types draw nothing |
+| 13 | Globe legend & semantics | **partially implemented** ² — the traceability rule is now **satisfied**: every node, line and HUD figure on the globe traces to an event. Still absent: per-aspect projections, and 12 of 16 event types draw nothing |
 | 14 | Four journeys | **planned** |
 | 15 | Daily-life taxonomy | **planned** |
-| 16 | Privacy & exposure | **missing** — required before any second participant |
+| 16 | Privacy & exposure | **missing** — required before any second participant. The viewer gate (§5 of the UI contract) is now *wired* on `/dynamics`, so the mechanism exists ahead of the rules |
 | 17 | Gap analysis | reference |
 | 18 | Phased plan | reference |
 | 19 | Next milestone | reference |
@@ -68,20 +93,28 @@ backend, no writer, no multi-group runtime, and no live production data.** Every
 ¹ **Scope note.** Validated for one seeded Value Group only; not yet generalized to
 multi-group production runtime.
 
-² **Globe scope note (verified 2026-08-02).** Arc coverage and node coverage are
-different counts, so they are stated separately. **Arcs:** `projectGlobeGraph` draws
-a line for `member.joined`, `leader.appointed` and `transfer.completed` — **3 of the
-16** event types the log defines. **Nodes:** `group.opened` renders the `value_group`
-anchor without producing any arc; the person and recipient nodes are endpoints of the
-three arc types above. So **4 of 16 event types are represented on the globe** in
-total, and **12 of 16 are not represented at all** — neither node nor line.
-(`person.registered` and `transfer.approved` are read as well, for node labels and
-for the recipient's identity, but draw nothing of their own.) **8 arcs and 10 nodes**
-render for the seeded group (5 joins, 2 appointments, 1 transfer), a figure now
+² **Globe scope note (verified 2026-08-16, Mission B/B9 update).** Arc coverage and
+node coverage are different counts, so they are stated separately. **Arcs:**
+`projectGlobeGraph` draws a line for `member.joined`, `leader.appointed`,
+`transfer.completed`, and (as of this pass) `group.opened` — its own real
+`central_value` fact, drawn once as an arc from the group to its own new `value`
+node — **4 of the 16** event types the log defines. **Nodes:** the group's own
+`group.opened` event now renders TWO nodes — the `value_group` anchor and a
+visually distinct `value` node for its real `central_value` — connected by the arc
+above; the person and recipient nodes are endpoints of the three pre-existing arc
+types. So **4 of 16 event types are represented on the globe** in total, and **12 of
+16 are not represented at all** — neither node nor line. (`person.registered` and
+`transfer.approved` are read as well, for node labels and for the recipient's
+identity, but draw nothing of their own.) **9 arcs and 11 nodes** render for the
+seeded group (5 joins, 2 appointments, 1 transfer, 1 central_value), a figure now
 pinned by test rather than observed by eye. The completed transfer carries amount,
 currency, resource type and value tags read straight off the event, and a transfer
 with no `resource_delta` yields an arc with no amount rather than a fabricated one.
-A legend names every line type **and every node type**.
+A legend names every line type **and every node type**. `NEED`/`RESOURCE`/`ACTION`/
+`EFFECT` are deliberately NOT node types on this graph: it is built entirely from
+the legacy Value-Group event log, and canon's own Action/Effect/Need carry no
+`group_id` (the same gap documented across Community/Dynamics/Brain) — there is no
+real edge to place them on.
 
 **Nothing mocked remains on this screen.** The elements this note used to list —
 ~61 ontology nodes from `data/*.json` positioned by hashing an id, the 720-point
@@ -100,13 +133,32 @@ coordinates and inventing one per node would be inventing data.
 ### What exists today
 
 ```
-app/lib/philos/valueGroupLog.ts      canonical event log — ONE Value Group
+app/lib/philos-viewer.ts             resolveViewer() — the one seam that answers "who is looking"
+        ↓
+app/hub/actions.ts                   server action — the network edge of the write path
+        ↓
+app/lib/philos/commands/joinGroup.ts is this act admissible? → the events that record it
+        ↓
+app/lib/philos/eventStore.ts         append rules: unique ids, orderable time, valid causality
+        ↓
+app/lib/philos-event-store.ts        the durable log:  seed  ++  <dataDir>/philos-events.jsonl
         ↓
 app/lib/philos/projectValueGroup.ts  pure projection, provenance on every figure
+app/lib/philos/viewerIdentity.ts     what the log knows about the viewer — same discipline
         ↓
 app/hub/community  (Value Group screen)   every number traces to an event
-app/hub            (entry screen)          derived counts only
+app/hub            (entry screen)          the personal answer, then derived counts
+app/planet         (globe)                 nodes and arcs from the same log
+app/dynamics       (causal graph)          viewer-scoped; explicit vs inferred kept apart
 ```
+
+Read and write are separate directions over one log, and the split is enforced: the
+command owns **meaning** ("may this person join?"), the store owns **integrity** ("does
+the log stay sound?"), and neither answers the other's question. The command decides
+membership by asking `projectValueGroup` rather than re-scanning for `member.joined`,
+because the projection counts the founder and appointed leaders as members without
+either emitting one — a writer with its own definition would record a join the screen
+could never show.
 
 `app/lib/philos/projectGlobeGraph.ts` extends the same chain to the globe: it
 projects nodes and arcs from the event log so each point and line names the event
@@ -119,17 +171,18 @@ outside `app/lib/philos`. Every population on the globe is event-backed, so the
 traceability rule holds across all three Philos screens. What the globe still lacks
 is reach, not provenance: 12 of the 16 event types draw nothing — only
 `group.opened` (the anchor node), `member.joined`, `leader.appointed` and
-`transfer.completed` reach the screen — and §13's per-terminal projections
-(WORLD=activity, PEOPLE=relationships, …) are unbuilt.
+`transfer.completed` reach the screen — and §13's per-aspect projections
+(OVERVIEW=activity, PEOPLE=relationships, …) are unbuilt.
 
 ### Naming (canonical — use these, and only these)
 
 | Use | Not | Why |
 |---|---|---|
 | **Value Group** | Value Hub, Group Hub | the code uses `value_group`; one name only |
-| **Terminals**: WORLD · PEOPLE · VALUES · ACTIVITY · RESOURCES · IMPACT | "dimensions", "aspects" | the six are terminals; their internal order is the shared structure |
+| **Aspects**: OVERVIEW · PEOPLE · VALUES · ACTIVITY · RESOURCES · IMPACT | "terminals" | the six are Value-Group **aspects** (sections/subviews), not routes — see §4a; their internal order is the shared structure |
+| **Surface** | "terminal" | a product route. There are seven: Hub · Brain · Dynamics · Community · Marketplace · Globe · World (§4a) |
 | **Globe** | Planet, World-globe, Living Planet | the 3D visualization layer |
-| **World terminal** | — | the ① WORLD terminal, which is *not* the globe |
+| **Overview aspect** | "World terminal" | the ① OVERVIEW / ecosystem-view aspect, which is *not* the globe and *not* the `/world` surface |
 
 `/planet` remains the route name; "Planet" is a path, not a concept.
 
@@ -183,21 +236,60 @@ Snapshot shows **5–7 numbers only**; everything else opens on demand. Never du
 
 ---
 
-## 4. The six user-facing terminals (B) + shared internal structure (C)
-Every terminal answers exactly one question, and every terminal has the **same internal order** so the user learns the language once:
+## 4. The six Value-Group aspects (B) + shared internal structure (C)
+Every aspect answers exactly one question, and every screen presents them in the **same internal order** so the user learns the language once:
 
 ```
 Overview → People → Activity → Resources → Values → Impact
 ```
 
-| Terminal | The one question | Shows |
+> **Nomenclature correction.** These six were called "six terminals" in earlier drafts of this
+> section. They are **aspects** — the six sections of a Value Group (§2 already states this:
+> "built from six aspects"), rendered as subviews inside a product surface. They are not routes.
+> The rename to "terminals" was introduced during a document merge; see §4a for the vocabulary
+> now in force. `PHILOS-PRODUCT-ARCHITECTURE.md` records the original rename and is marked
+> "do not edit" — the correction lives here only.
+
+| Aspect | The one question | Shows |
 |----------|------------------|-------|
-| **① WORLD** | What's happening now in the world? | global state, regions, continents, trends, events, needs, resource flow, values rising/falling |
+| **① OVERVIEW / ecosystem view** — *not the `/world` product route* | What's happening now across the ecosystem? | global state, regions, continents, trends, events, needs, resource flow, values rising/falling |
 | **② PEOPLE** | Who participates and what do they bring? | users, new users, value-leaders, founders, roles, matches, relationship network, contribution history, trust |
 | **③ VALUES** | What do people believe and what drives them? | all values, popular/sought/growing, resourced, in-tension, complementary, value-forges, regional distribution, trends |
 | **④ ACTIVITY** | What is actually being done now? | today, open actions, tasks, projects, requests, votes, events, field reels, before/after, stalled vs progressing |
 | **⑤ RESOURCES** | Where is power, and how is it distributed? | money in/out, budget available/allocated, pending allocations, transfers, time, knowledge, equipment, grants, references, approval status |
 | **⑥ IMPACT** | What actually changed in the world? | people affected, communities changed, projects completed, problems solved, resources/time/money saved, trust built, cost-to-result, impact by value/region/time |
+
+---
+
+## 4a. Product surfaces vs Value-Group aspects (vocabulary, in force)
+
+Two different things had the same name. They no longer do.
+
+**7 PRODUCT SURFACES** — the product's routes:
+
+| Surface | Route |
+|---|---|
+| **Hub** | `/hub` |
+| **Brain** | `/brain` |
+| **Dynamics** | `/dynamics` |
+| **Community** | `/hub/community` |
+| **Marketplace** | `/marketplace` |
+| **Globe** | `/planet` |
+| **World** | `/world` |
+
+**6 VALUE-GROUP ASPECTS** — Overview · People · Activity · Resources · Values · Impact (§4).
+They are **sections / subviews rendered inside a surface**, not routes. Today they are
+implemented as the Community surface's own `?mode=` subviews.
+
+**Vocabulary, binding:**
+
+- **surface** = a product route (there are seven).
+- **aspect** = a Value-Group section / subview (there are six).
+- **"terminal"** is **retired** for the six-set. Do not reintroduce it for either set.
+
+`WORLD` the aspect (§4 ①, now **OVERVIEW / ecosystem view**) and `/world` the surface are
+different things: the aspect is the zoomed-out view of the Value-Group ecosystem; the surface
+is the PUDM reference-architecture route.
 
 ---
 
@@ -235,8 +327,9 @@ Product verbs: **Discover → Orient → Join → Act → Measure → Reflect �
 ## 7. Value Group schema (E) — the central unit
 
 > **Status: implemented — reference vertical slice.** Validated for one seeded
-> Value Group only; not yet generalized to multi-group production runtime. No
-> persistent backend, no writer, no live data.
+> Value Group only; not yet generalized to multi-group production runtime. The log
+> is now durable and has a writer (§0); what is still absent is multi-group runtime,
+> identity/authentication, and live data.
 ```json
 {
   "group_id": "", "name": "", "central_value": "", "secondary_values": [],
@@ -298,8 +391,9 @@ claim  →  self-report  →  evidence  →  community verification  →  extern
 ## 11. Canonical Event Log (M) — the single source of truth
 
 > **Status: implemented — reference vertical slice.** Validated for one seeded
-> Value Group only; not yet generalized to multi-group production runtime. No
-> persistent backend, no writer, no live data.
+> Value Group only; not yet generalized to multi-group production runtime. The log
+> is now durable and has a writer (§0); what is still absent is multi-group runtime,
+> identity/authentication, and live data.
 **All feeds, statistics, timelines, budgets, profiles, impact, replay, and globe visuals derive from ONE event log.** No screen is built on separately-fabricated telemetry.
 ```json
 {
@@ -311,8 +405,12 @@ claim  →  self-report  →  evidence  →  community verification  →  extern
 ```
 `caused_by` (event_ids that produced this event) is declared here to match
 `events.ts`; it is consumed by the **Dynamics Layer**
-([`PHILOS-DYNAMICS-LAYER.md`](PHILOS-DYNAMICS-LAYER.md)) and not yet populated by any
-seed event — declared-but-unused, like `resource_delta`'s non-money kinds (§22).
+([`PHILOS-DYNAMICS-LAYER.md`](PHILOS-DYNAMICS-LAYER.md)). This paragraph said it was
+"not yet populated by any seed event — declared-but-unused"; that is **out of date**.
+Four seed events declare it (`valueGroupLog.ts` — the parents `e010`, `e040`, `e047`,
+`e050`), and the `joinGroup` command writes one on every membership, so the field is
+in live use on both the seeded and the recorded side. `resource_delta`'s non-money
+kinds (§22) remain genuinely declared-but-unused.
 **Known drift, not resolved here:** this JSON lists `location:{}`, but the
 `PhilosEvent` interface in `events.ts` has **no** `location` field. Flagged for
 reconciliation; deliberately left unchanged, as it is outside the `caused_by`
@@ -334,7 +432,7 @@ The Matching Engine runs continuously: *Who am I? → What do I believe? → Whe
 ---
 
 ## 13. Globe legend & interaction semantics (J)
-The globe is the top visualization layer, revealed last. Per terminal it shows a different projection (WORLD=activity, PEOPLE=relationships, VALUES=value clusters, ACTIVITY=action flows, RESOURCES=resource flows, IMPACT=outcomes). **Every node/line/color declares:**
+The globe is the top visualization layer, revealed last. Per aspect it shows a different projection (OVERVIEW=activity, PEOPLE=relationships, VALUES=value clusters, ACTIVITY=action flows, RESOURCES=resource flows, IMPACT=outcomes). **Every node/line/color declares:**
 `entity · relation type · value · action/event source · resource flow · time · confidence · strength · plain-language explanation` — and whether the link is **support, tension, need, or influence.** A permanent legend is always on screen. It is a map of meaning, never a control panel — and **no line exists until it represents a real event.**
 
 ---
@@ -378,7 +476,7 @@ Snapshot surfaces 5–7 of these; the rest live in Exploration/Research:
 | `providers.json` + schema | 15 | *partial* People/orgs |
 | relations (value↔capability 75, provider↔capability 20) | 95 | edges |
 | `personChain.ts` / `personStore.ts` | — | *partial* person model |
-| UI: `/hub` (Today), `/hub/community` (Value Hub), globe, terminals | — | Snapshot + one Value Hub shell |
+| UI: `/hub` (Today), `/hub/community` (Value Group), globe, surfaces | — | Snapshot + one Value Group shell |
 
 **Missing — the core of this blueprint (must be authored):**
 - **Event Log** (single source of truth) — today's screens use *fabricated* example numbers, not events. ⚠️ highest-priority gap.
@@ -393,7 +491,7 @@ Snapshot surfaces 5–7 of these; the rest live in Exploration/Research:
 ---
 
 ## 18. Phased implementation plan (22 / deliverable 20)
-1. **Product Architecture** — definitions, terminals, models, user path, meaning of every element. *(this document)*
+1. **Product Architecture** — definitions, aspects, models, user path, meaning of every element. *(this document)*
 2. **Information Architecture** — navigation, hierarchy, what's primary/secondary/on-click.
 3. **Data Architecture** — Event Log · Person · Value Group · Action · Resource Transfer · Impact.
 4. **Beginner Journey** — enter → understand → profile → values → join group → first action → first result.
@@ -508,7 +606,7 @@ Discover → Orient → Join → Act → Reflect → Learn → Grow → Influenc
 
 ## 24. Design guardrails — **planned as a standard, partly violated today**
 1. **Human on the surface, model-driven underneath** — never expose the ontology; express it in plain words.
-2. **One skeleton everywhere** — six terminals, identical meaning at every scale.
+2. **One skeleton everywhere** — six aspects, identical meaning at every scale.
 3. **The system orients the user** — users don't navigate the architecture; it guides them.
 4. **Progressive disclosure** — Value Group first, globe last.
 5. **Everything is explained** — legend + on-demand meaning on every visual.
@@ -522,5 +620,5 @@ nodes, the decorative swarm, the invented HUD strings, the static live dot and t
 fixed time scrub are all removed, and the debt this note used to record is closed.
 One piece of decoration is left by choice — a CSS starfield behind the globe, which
 asserts nothing and is guarded by test to stay that way. Guardrails 1, 2, 3 and 6
-remain **planned**: the six terminals exist as a shared nav but not as a shared
+remain **planned**: the six aspects exist as a shared nav but not as a shared
 projection, and no engine orients the user.*

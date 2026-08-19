@@ -13,17 +13,17 @@
  */
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 
 import type { PhilosEvent } from "@/app/lib/philos/events";
 import {
-  joinEvent,
   projectValueGroup,
   type AllocationView,
   type ImpactView,
   type TransferView,
   type VerificationLevel,
 } from "@/app/lib/philos/projectValueGroup";
+import type { CommandActionResult } from "./actions";
 
 const TERMINALS = [
   ["WORLD", "עולם"], ["PEOPLE", "אנשים"], ["VALUES", "ערכים"],
@@ -90,29 +90,130 @@ function Provenance({ events, extra }: { events: number; extra?: string }) {
 }
 
 export default function ValueHub({
-  seedEvents,
+  events,
   groupId,
   today,
+  viewerId,
+  joinAction,
+  postAction,
+  proposeAction,
+  impactAction,
 }: {
-  seedEvents: PhilosEvent[];
+  /** The whole log, as the store returned it. The only source this screen has. */
+  events: PhilosEvent[];
   groupId: string;
   today: string;
+  viewerId: string;
+  joinAction: (groupId: string) => Promise<CommandActionResult>;
+  postAction: (groupId: string, text: string) => Promise<CommandActionResult>;
+  proposeAction: (
+    groupId: string,
+    title: string,
+    amount: number,
+    peopleAffectedEstimate: number,
+  ) => Promise<CommandActionResult>;
+  impactAction: (
+    groupId: string,
+    statement: string,
+    peopleAffected: number,
+    resourcesInvested: number,
+    evidence?: string[] | null,
+  ) => Promise<CommandActionResult>;
 }) {
   const [tab, setTab] = useState<string>("ACTIVITY");
-  const [extra, setExtra] = useState<PhilosEvent[]>([]);
-  const [joined, setJoined] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [rejection, setRejection] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [postPending, startPost] = useTransition();
+  const [postRejection, setPostRejection] = useState<string | null>(null);
+  const [allocTitle, setAllocTitle] = useState("");
+  const [allocAmount, setAllocAmount] = useState("");
+  const [allocPeople, setAllocPeople] = useState("");
+  const [allocPending, startAlloc] = useTransition();
+  const [allocRejection, setAllocRejection] = useState<string | null>(null);
+  const [impactStatement, setImpactStatement] = useState("");
+  const [impactPeople, setImpactPeople] = useState("");
+  const [impactSpent, setImpactSpent] = useState("");
+  const [impactEvidence, setImpactEvidence] = useState("");
+  const [impactPending, startImpact] = useTransition();
+  const [impactRejection, setImpactRejection] = useState<string | null>(null);
 
   const view = useMemo(
-    () => projectValueGroup([...seedEvents, ...extra], groupId, today),
-    [seedEvents, extra, groupId, today],
+    () => projectValueGroup(events, groupId, today),
+    [events, groupId, today],
   );
 
   if (!view) return <div style={S.root}><main style={S.page}>קבוצה לא נמצאה.</main></div>;
 
+  // Membership is read from the projection, never from local state. This used
+  // to be a `joined` boolean set beside a `useState` append, so the button
+  // reported a membership that existed only in the browser tab and disappeared
+  // on refresh. Now the button reflects the log: after the action writes, the
+  // server re-renders and this recomputes from the events it returns.
+  const joined = view.members.some((m) => m.person_id === viewerId);
+
   const join = () => {
-    setExtra(joinEvent(groupId, "p_you", "את/ה", `${today}T20:00:00+03:00`));
-    setJoined(true);
-    setTab("ACTIVITY");
+    setRejection(null);
+    startTransition(async () => {
+      const result = await joinAction(groupId);
+      // A refusal is a fact about the world ("you are already a member"), so it
+      // is shown as written rather than swallowed into a silent no-op.
+      if (!result.ok) setRejection(result.message);
+      else setTab("ACTIVITY");
+    });
+  };
+
+  const submitUpdate = () => {
+    setPostRejection(null);
+    startPost(async () => {
+      const result = await postAction(groupId, draft);
+      // The draft is cleared only once the log has it. Clearing on submit would
+      // lose the member's text on any refusal — and a refusal is exactly when
+      // they still need it.
+      if (!result.ok) setPostRejection(result.message);
+      else setDraft("");
+    });
+  };
+
+  const submitAllocation = () => {
+    setAllocRejection(null);
+    // The raw strings go to the command as numbers; an unparseable field becomes
+    // NaN, which the command refuses by name rather than this component guessing
+    // a value or silently substituting zero.
+    const amount = Number(allocAmount.trim());
+    const people = Number(allocPeople.trim());
+    startAlloc(async () => {
+      const result = await proposeAction(groupId, allocTitle, amount, people);
+      if (!result.ok) setAllocRejection(result.message);
+      else {
+        setAllocTitle("");
+        setAllocAmount("");
+        setAllocPeople("");
+      }
+    });
+  };
+
+  const submitImpact = () => {
+    setImpactRejection(null);
+    const people = Number(impactPeople.trim());
+    const spent = Number(impactSpent.trim());
+    // One free-text evidence reference, split on commas. Empty means no
+    // evidence, which the command turns into the `claim` rung rather than
+    // pretending something backs the report.
+    const evidence = impactEvidence
+      .split(",")
+      .map((s2) => s2.trim())
+      .filter(Boolean);
+    startImpact(async () => {
+      const result = await impactAction(groupId, impactStatement, people, spent, evidence);
+      if (!result.ok) setImpactRejection(result.message);
+      else {
+        setImpactStatement("");
+        setImpactPeople("");
+        setImpactSpent("");
+        setImpactEvidence("");
+      }
+    });
   };
 
   return (
@@ -158,10 +259,15 @@ export default function ValueHub({
               <div style={S.idStatN}>{nis(view.budget.available)}</div>
               <div style={S.idStatL}>זמין להקצאה</div>
             </div>
-            <button onClick={join} disabled={joined} style={{ ...S.join, ...(joined ? S.joined : {}) }}>
-              {joined ? "✓ הצטרפת לקבוצה" : "הצטרף/י לקבוצה"}
+            <button
+              onClick={join}
+              disabled={joined || pending}
+              style={{ ...S.join, ...(joined ? S.joined : {}) }}
+            >
+              {joined ? "✓ הצטרפת לקבוצה" : pending ? "רושם…" : "הצטרף/י לקבוצה"}
             </button>
-            {joined && <div style={S.joinNote}>ההצטרפות נרשמה כאירוע ומופיעה בפעילות היום.</div>}
+            {joined && <div style={S.joinNote}>ההצטרפות נרשמה כאירוע ביומן והיא נשמרת.</div>}
+            {rejection && <div style={S.joinError}>ההצטרפות לא נרשמה: {rejection}</div>}
           </div>
         </section>
 
@@ -171,6 +277,35 @@ export default function ValueHub({
               <h2 style={S.cardTitle}>פעילות היום</h2>
               <Provenance events={view.today.length} extra={today} />
             </div>
+            {/* Posting is the second thing a member can do. Shown only to
+                members, because the command refuses a non-member — offering a
+                control that is guaranteed to fail is a false affordance. */}
+            {joined ? (
+              <div style={S.compose}>
+                <textarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder="מה קרה? העדכון יירשם כאירוע ביומן."
+                  rows={2}
+                  style={S.composeBox}
+                  aria-label="עדכון חדש"
+                />
+                <button
+                  onClick={submitUpdate}
+                  disabled={postPending || draft.trim().length === 0}
+                  style={{
+                    ...S.composeBtn,
+                    ...(postPending || draft.trim().length === 0 ? S.composeBtnOff : {}),
+                  }}
+                >
+                  {postPending ? "רושם…" : "פרסם עדכון"}
+                </button>
+              </div>
+            ) : (
+              <div style={S.composeNote}>הצטרף/י לקבוצה כדי לפרסם עדכון.</div>
+            )}
+            {postRejection && <div style={S.joinError}>העדכון לא נרשם: {postRejection}</div>}
+
             {view.today.length === 0 ? (
               <div style={S.empty}>לא נרשמו אירועים בתאריך הזה.</div>
             ) : (
@@ -269,6 +404,55 @@ export default function ValueHub({
                   </div>
                 </div>
               ))}
+
+              {/* Proposing is asking, not spending: an approved allocation is
+                  what commits money, so this form moves no figure above until a
+                  vote and an approval — events that do not exist yet. */}
+              {joined ? (
+                <div style={S.propose}>
+                  <h3 style={S.sub}>הצע/י הקצאה</h3>
+                  <input
+                    value={allocTitle}
+                    onChange={(e) => setAllocTitle(e.target.value)}
+                    placeholder="למה מיועד הכסף?"
+                    style={S.composeBox}
+                    aria-label="מטרת ההקצאה"
+                  />
+                  <div style={S.proposeRow}>
+                    <input
+                      value={allocAmount}
+                      onChange={(e) => setAllocAmount(e.target.value)}
+                      inputMode="numeric"
+                      placeholder="סכום ₪"
+                      style={{ ...S.composeBox, width: 110 }}
+                      aria-label="סכום"
+                    />
+                    <input
+                      value={allocPeople}
+                      onChange={(e) => setAllocPeople(e.target.value)}
+                      inputMode="numeric"
+                      placeholder="כמה אנשים (הערכה)"
+                      style={{ ...S.composeBox, width: 150 }}
+                      aria-label="הערכת אנשים"
+                    />
+                    <button
+                      onClick={submitAllocation}
+                      disabled={allocPending}
+                      style={{ ...S.composeBtn, ...(allocPending ? S.composeBtnOff : {}) }}
+                    >
+                      {allocPending ? "רושם…" : "הצע/י"}
+                    </button>
+                  </div>
+                  <div style={S.cardHint}>
+                    מספר הקולות הנדרש נגזר מההצעה האחרונה בקבוצה, ולא נקבע כאן.
+                  </div>
+                  {allocRejection && (
+                    <div style={S.joinError}>ההצעה לא נרשמה: {allocRejection}</div>
+                  )}
+                </div>
+              ) : (
+                <div style={S.composeNote}>הצטרף/י לקבוצה כדי להציע הקצאה.</div>
+              )}
             </section>
           </div>
         )}
@@ -314,6 +498,65 @@ export default function ValueHub({
                 <div style={S.evidence}>ראיות: {i.evidence.join(" · ")}</div>
               </div>
             ))}
+
+            {/* Reporting an outcome is not verifying it. There is deliberately
+                no control here to set a verification level: the command refuses
+                any verified rung, and only an impact.verified event — written by
+                someone else — can lift a claim. §10. */}
+            {joined ? (
+              <div style={S.propose}>
+                <h3 style={S.sub}>דווח/י על תוצאה</h3>
+                <textarea
+                  value={impactStatement}
+                  onChange={(e) => setImpactStatement(e.target.value)}
+                  placeholder="מה השתנה בפועל?"
+                  rows={2}
+                  style={S.composeBox}
+                  aria-label="תיאור התוצאה"
+                />
+                <div style={S.proposeRow}>
+                  <input
+                    value={impactPeople}
+                    onChange={(e) => setImpactPeople(e.target.value)}
+                    inputMode="numeric"
+                    placeholder="כמה אנשים"
+                    style={{ ...S.composeBox, width: 120 }}
+                    aria-label="כמה אנשים הושפעו"
+                  />
+                  <input
+                    value={impactSpent}
+                    onChange={(e) => setImpactSpent(e.target.value)}
+                    inputMode="numeric"
+                    placeholder="כמה הושקע ₪"
+                    style={{ ...S.composeBox, width: 130 }}
+                    aria-label="כמה הושקע"
+                  />
+                  <input
+                    value={impactEvidence}
+                    onChange={(e) => setImpactEvidence(e.target.value)}
+                    placeholder="ראיה (לא חובה)"
+                    style={{ ...S.composeBox, width: 160 }}
+                    aria-label="ראיה"
+                  />
+                  <button
+                    onClick={submitImpact}
+                    disabled={impactPending}
+                    style={{ ...S.composeBtn, ...(impactPending ? S.composeBtnOff : {}) }}
+                  >
+                    {impactPending ? "רושם…" : "דווח/י"}
+                  </button>
+                </div>
+                <div style={S.cardHint}>
+                  הדיווח נרשם כטענה שלך. ללא ראיה — “טענה בלבד”; עם ראיה — “דיווח
+                  עצמי”. אימות נעשה על ידי אדם אחר, לא כאן.
+                </div>
+                {impactRejection && (
+                  <div style={S.joinError}>הדיווח לא נרשם: {impactRejection}</div>
+                )}
+              </div>
+            ) : (
+              <div style={S.composeNote}>הצטרף/י לקבוצה כדי לדווח על תוצאה.</div>
+            )}
           </section>
         )}
 
@@ -377,6 +620,15 @@ const S: Record<string, React.CSSProperties> = {
   join: { padding: "11px 14px", borderRadius: 12, border: "1px solid rgba(110,160,240,0.3)", background: "rgba(70,120,200,0.2)", color: "#eaf1ff", fontSize: 14, fontWeight: 600, cursor: "pointer", font: "inherit" },
   joined: { background: "rgba(52,211,153,0.14)", borderColor: "rgba(52,211,153,0.35)", color: "#6ee7b7", cursor: "default" },
   joinNote: { fontSize: 10.5, color: "#6a83ad", lineHeight: 1.4 },
+  joinError: { fontSize: 10.5, color: "#fca5a5", lineHeight: 1.4 },
+
+  compose: { display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 14 },
+  composeBox: { flex: 1, resize: "vertical", padding: "9px 11px", borderRadius: 10, border: "1px solid rgba(110,160,240,0.22)", background: "rgba(12,20,36,0.6)", color: "#eaf1ff", fontSize: 12.5, lineHeight: 1.6, font: "inherit", fontFamily: "inherit" },
+  composeBtn: { padding: "9px 14px", borderRadius: 10, border: "1px solid rgba(110,160,240,0.3)", background: "rgba(70,120,200,0.2)", color: "#eaf1ff", fontSize: 12.5, fontWeight: 600, cursor: "pointer", font: "inherit", whiteSpace: "nowrap" },
+  composeBtnOff: { opacity: 0.45, cursor: "default" },
+  composeNote: { fontSize: 11, color: "#6a83ad", marginBottom: 12 },
+  propose: { marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(110,160,240,0.14)", display: "flex", flexDirection: "column", gap: 8 },
+  proposeRow: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" },
 
   grid2: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 },
   card,

@@ -28,6 +28,13 @@ export interface MarketplaceViewProps {
   providers:    Provider[];
   vcRelations:  ValueCapabilityRelation[];
   pcRelations:  ProviderCapabilityRelation[];
+  /** Mission B, B6 — real Community Value-Group(s) whose `central_value`
+   *  name-matches this PUDM Value's label (computed server-side in
+   *  `page.tsx`, the SAME join Brain's L6 uses). Honestly empty for
+   *  every PUDM value today — 0 real name matches exist yet (PUDM
+   *  labels are English, real central_values are Hebrew) — shown as a
+   *  real "no group needs this yet" fact, never fabricated. */
+  communityGroupsByValueId: Record<string, { group_name: string; status: "REAL" | "DEMO" }[]>;
 }
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
@@ -103,7 +110,7 @@ function EvidenceBlock({ signal, note, source, accentColor }: {
 const INSPECTOR_W = 360;
 
 export default function MarketplaceView({
-  missions, gaps, values, capabilities, providers, vcRelations, pcRelations,
+  missions, gaps, values, capabilities, providers, vcRelations, pcRelations, communityGroupsByValueId,
 }: MarketplaceViewProps) {
   const [selectedMissionId, setSelectedMissionId] = useState<string>(missions[0]?.id ?? "");
   const [viewMode,        setViewMode]        = useState<"contextual" | "taxonomic">("contextual");
@@ -428,6 +435,18 @@ export default function MarketplaceView({
               }
             </IRow>
             <IRow label="vcr count">{connVcrs.length}</IRow>
+          </ISection>
+          <ISection title="Community — which group needs it?">
+            <IRow label="value groups">
+              {(communityGroupsByValueId[v.id] ?? []).length === 0
+                ? <span style={{ color: "var(--muted)", fontStyle: "italic" }}>none yet — 0 real/DEMO Value Group centered on this value's name</span>
+                : <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    {(communityGroupsByValueId[v.id] ?? []).map(g => (
+                      <span key={g.group_name} style={{ fontSize: 10, color: g.status === "REAL" ? "#3FB950" : "#D29922" }}>{g.group_name} · {g.status}</span>
+                    ))}
+                  </div>
+              }
+            </IRow>
           </ISection>
           {connVcrs.length > 0 && (
             <ISection title="Relations">
@@ -875,18 +894,14 @@ export default function MarketplaceView({
               <span style={{ fontSize: 11, fontFamily: "monospace", color: "var(--muted)" }}>
                 read-only · no write-path
               </span>
-              <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-                <a href="/world" style={{
-                  fontSize: 10, fontFamily: "monospace", color: "#58A6FF",
-                  textDecoration: "none", padding: "2px 8px", borderRadius: 3,
-                  background: "#58A6FF12", border: "1px solid #58A6FF28",
-                }}>→ world</a>
-                <a href="/pudm" style={{
-                  fontSize: 10, fontFamily: "monospace", color: "#9E6EE6",
-                  textDecoration: "none", padding: "2px 8px", borderRadius: 3,
-                  background: "#9E6EE612", border: "1px solid #9E6EE628",
-                }}>→ pudm</a>
-              </div>
+              <span dir="rtl" style={{ fontSize: 11, color: "var(--muted)" }}>
+                — מה חסר, מי יכול לעזור, ואיך זה הופך לפעולה
+              </span>
+              {/* The "→ world" / "→ pudm" chips that sat here were a
+                  second, route-named navigation on a page that already
+                  mounts the shared shell (and `pudm` is not a product
+                  terminal at all). Removed — navigation lives in the
+                  shell only. */}
             </div>
             <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>
               What the PUDM knows about provider coverage for each Gap. No provider has been selected, contacted, or engaged.
@@ -977,7 +992,7 @@ export default function MarketplaceView({
           </div>
 
           {/* ── Chain header ── */}
-          <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontFamily: "monospace" }}>
+          <div style={{ marginBottom: 4, display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontFamily: "monospace" }}>
             {["Mission", "Gap", "Value", "Capability", "Provider"].map((node, i, arr) => (
               <span key={node} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ color: "var(--text)" }}>{node}</span>
@@ -987,6 +1002,16 @@ export default function MarketplaceView({
             <span style={{ marginLeft: "auto", fontSize: 10, color: "#3FB950", padding: "1px 6px", borderRadius: 3, background: "#3FB95012", border: "1px solid #3FB95025" }}>
               live
             </span>
+          </div>
+          {/* PHILOS-native reading (marketplace language pass): this specific
+              pipeline is Mission/Gap/Value/Capability/Provider — a real, own
+              schema (`app/lib/{mission,gap,value,capability,provider}/schema.ts`),
+              distinct from canon's Need/Offer (see `resolveActionSpace.ts`'s own
+              header on why the id spaces categorically don't bridge today). The
+              conceptual parallel is stated here, not a renamed label pretending
+              they're the same data. */}
+          <div dir="rtl" style={{ marginBottom: 16, fontSize: 10.5, color: "var(--muted)" }}>
+            במונחי PHILOS: Gap ≈ Need (מה חסר) · Capability/Provider ≈ Resource/Offer (מי יכול לעזור) → Match → Action → Effect.
           </div>
 
           {/* ── Filter bar (collapsed by default) ── */}

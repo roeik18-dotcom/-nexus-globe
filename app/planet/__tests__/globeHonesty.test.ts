@@ -68,8 +68,9 @@ describe("no fabricated presentation remains", () => {
 
   it("shows no static live indicator", () => {
     // A pulsing green dot beside the title asserted that something was
-    // streaming. Nothing was: the log is a fixed seed with no writer, so the
-    // dot was a status with no source — the header rule's own example.
+    // streaming. Nothing is: the log gained a writer, but a write is a request
+    // the globe does not observe — there is no stream, so a "live" indicator
+    // would still be a status with no source, the header rule's own example.
     expect(GLOBE_CODE).not.toMatch(/liveDot/i);
     expect(GLOBE_CODE).not.toMatch(/\bLIVE\b/);
   });
@@ -184,12 +185,14 @@ describe("every point the globe can draw is a projection node", () => {
     expect(graph.arcs.length).toBeGreaterThan(0);
   });
 
-  it("draws the reference slice the blueprint quotes — 10 nodes, 8 arcs", () => {
+  it("draws the reference slice the blueprint quotes — 11 nodes, 9 arcs", () => {
     // Pinned deliberately. §0 of PHILOS-SYSTEM-BLUEPRINT states these figures as
     // the verified runtime, so a change to the seed log that moves them should
-    // fail here and force the document to be updated with it.
-    expect(graph.nodes).toHaveLength(10);
-    expect(graph.arcs).toHaveLength(8);
+    // fail here and force the document to be updated with it. Mission B/B9 added
+    // one real `value` node (the group's own central_value) and its one real
+    // `group.opened` arc — bumped from the prior 10/8 pin.
+    expect(graph.nodes).toHaveLength(11);
+    expect(graph.arcs).toHaveLength(9);
     const byRelation = graph.arcs.reduce<Record<string, number>>(
       (acc, a) => ({ ...acc, [a.relation]: (acc[a.relation] ?? 0) + 1 }),
       {},
@@ -198,6 +201,7 @@ describe("every point the globe can draw is a projection node", () => {
       "member.joined": 5,
       "leader.appointed": 2,
       "transfer.completed": 1,
+      "group.opened": 1,
     });
   });
 

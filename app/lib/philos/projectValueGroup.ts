@@ -146,6 +146,11 @@ export interface ImpactView {
   impact_id: string;
   /** event_id of the impact.recorded event — what verifications point at. */
   impact_event_id: string;
+  /** Real, verbatim from `impact.recorded`'s own `payload.allocation_id` —
+   *  the same field `transfer.completed` already carries, surfaced here so
+   *  a caller can trace Allocation → Effect without re-deriving it.
+   *  `undefined` when the reporting event genuinely didn't name one. */
+  allocation_id?: string;
   statement: string;
   people_affected: number;
   resources_invested: number;
@@ -481,9 +486,12 @@ export function projectValueGroup(
       const confidence = latest?.confidence ?? e.confidence;
       const sourceEvents = [e.event_id, ...mine.map((v) => v.event_id)];
 
+      const allocationId = str(e.payload?.allocation_id, "");
+
       return {
         impact_id: e.entity_id,
         impact_event_id: e.event_id,
+        allocation_id: allocationId || undefined,
         statement: e.impact_claim?.statement ?? "",
         people_affected: e.impact_claim?.people_affected ?? 0,
         resources_invested: e.impact_claim?.resources_invested ?? 0,
@@ -588,35 +596,149 @@ export function projectValueGroup(
   };
 }
 
-/** A membership event a caller can append to the log (the beginner journey's "join"). */
-export function joinEvent(
-  groupId: string,
-  personId: string,
-  displayName: string,
-  timestamp: string,
-): PhilosEvent[] {
-  return [
-    {
-      event_id: `e_join_${personId}`,
-      actor_id: personId,
-      entity_type: "person",
-      entity_id: personId,
-      event_type: "person.registered",
-      value_tags: [],
-      timestamp,
-      visibility: "public",
-      payload: { display_name: displayName },
-    },
-    {
-      event_id: `e_member_${personId}`,
-      actor_id: personId,
-      entity_type: "value_group",
-      entity_id: groupId,
-      event_type: "member.joined",
-      value_tags: ["אחריות"],
-      timestamp,
-      visibility: "public",
-      payload: { person_id: personId },
-    },
-  ];
+// ── capital over time (Community Command Terminal) ─────────────────────────
+
+export interface CapitalTimelinePoint {
+  event_id: string;
+  date: string;
+  /** This single event's real, signed delta — never estimated. */
+  delta: number;
+  /** Real running balance after this event, chronological fold — the same
+   *  `received - spent` arithmetic `budget.available` already uses (minus
+   *  `committed`, which this point-in-time ledger balance does not subtract,
+   *  matching what "money actually in the account" means). */
+  balance: number;
+  currency: string;
 }
+
+/**
+ * The real chronological capital history for one group — every real money
+ * event in the group's own event log, folded into a running balance.
+ * Mirrors `projectValueGroup`'s own `moneyEvents` derivation EXACTLY (same
+ * filter, no `entity_id` check — `transfer.completed`'s money-out event
+ * carries the transfer's own `entity_id`, not the group's; the caller is
+ * trusted to pass one group's own event array, same scoping contract
+ * `projectValueGroup(events, groupId, today)` itself already relies on for
+ * its internal `moneyEvents`) — a sibling projection over the same log, not
+ * a second money model. Pure, no I/O, no clock.
+ */
+export function buildCapitalTimeline(events: readonly PhilosEvent[]): CapitalTimelinePoint[] {
+  const log = inOrder(events).filter(
+    (e) => e.resource_delta?.kind === "money" && e.resource_delta.amount !== 0,
+  );
+  let balance = 0;
+  return log.map((e) => {
+    const delta = e.resource_delta!.amount;
+    balance += delta;
+    return { event_id: e.event_id, date: datePart(e.timestamp), delta, balance, currency: e.resource_delta!.currency ?? "ILS" };
+  });
+}
+
+export interface MembershipTimelinePoint {
+  event_id: string;
+  date: string;
+  person_id: string;
+  /** Cumulative real member count after this join event — chronological
+   *  fold over real `member.joined` events only, mirroring
+   *  `buildCapitalTimeline`'s pattern. No leave/removal event type
+   *  exists in this codebase today, so `count` is monotonic — real, not
+   *  an assumption that members never leave. */
+  count: number;
+}
+
+/**
+ * Mission B, B7 — real membership growth over time, the same "No fake
+ * history" discipline `buildCapitalTimeline` already established: only
+ * real, timestamped `member.joined` events are folded, never a synthetic
+ * curve fit to the final `members.length`.
+ */
+export function buildMembershipTimeline(events: readonly PhilosEvent[]): MembershipTimelinePoint[] {
+  const log = inOrder(events).filter((e) => e.event_type === "member.joined");
+  let count = 0;
+  return log.map((e) => {
+    count += 1;
+    return { event_id: e.event_id, date: datePart(e.timestamp), person_id: e.actor_id, count };
+  });
+}
+
+export interface ContributorRankingEntry {
+  person_id: string;
+  display_name: string;
+  event_count: number;
+}
+
+/**
+ * A real, checked "leading contributors" ranking — every real event's
+ * `actor_id` in the group's own log, counted and sorted descending. Not a
+ * value/reputation score (canon §21's anti-ranking rule is about VALUE
+ * judgments, not "who authored the most events" — a plain activity count,
+ * shown as exactly that, never dressed up as merit or trust). `person.
+ * registered` events are excluded (registering yourself is not a
+ * contribution); every other event type counts once per actor.
+ */
+export function buildContributorRanking(events: readonly PhilosEvent[]): ContributorRankingEntry[] {
+  const log = inOrder(events);
+  const names = new Map<string, string>();
+  for (const e of log) {
+    if (e.event_type === "person.registered") names.set(e.entity_id, str(e.payload?.display_name, e.entity_id));
+  }
+  const counts = new Map<string, number>();
+  for (const e of log) {
+    if (e.event_type === "person.registered") continue;
+    counts.set(e.actor_id, (counts.get(e.actor_id) ?? 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .map(([person_id, event_count]) => ({ person_id, display_name: names.get(person_id) ?? person_id, event_count }))
+    .sort((a, b) => b.event_count - a.event_count || a.person_id.localeCompare(b.person_id));
+}
+
+/** `ActivityItem` plus the date part — `today`'s single-day feed never
+ *  needed a date (it's implied); a whole-log feed spans many days. */
+export interface ActivityFeedItem extends ActivityItem {
+  date: string;
+}
+
+/**
+ * The real chronological activity feed for one group — every real event
+ * `ACTIVITY_KINDS` already recognizes, across the WHOLE log (not just
+ * `today`). Same filter/mapping `projectValueGroup`'s own `todayItems`
+ * uses internally, minus the `datePart(e.timestamp) === today` clause —
+ * a sibling projection over the same log and the same kind vocabulary,
+ * not a second activity model. Most-recent-first (screen order for a
+ * live feed), optionally capped by `limit`.
+ */
+export function buildActivityFeed(events: readonly PhilosEvent[], groupId: string, limit?: number): ActivityFeedItem[] {
+  const log = inOrder(events);
+  const names = new Map<string, string>();
+  for (const e of log) {
+    if (e.event_type === "person.registered") names.set(e.entity_id, str(e.payload?.display_name, e.entity_id));
+  }
+  const nameOf = (id: string) => names.get(id) ?? id;
+
+  const matching = log.filter(
+    (e) => (e.entity_id === groupId || e.value_tags.length > 0) && e.event_type in ACTIVITY_KINDS,
+  );
+  const items: ActivityFeedItem[] = matching.map((e) => ({
+    event_id: e.event_id,
+    date: datePart(e.timestamp),
+    time: hhmm(e.timestamp),
+    kind: ACTIVITY_KINDS[e.event_type] ?? "post",
+    text: str(e.payload?.text, e.impact_claim?.statement ?? e.event_type),
+    actor_name: nameOf(e.actor_id),
+  }));
+  const reversed = [...items].reverse();
+  return limit !== undefined ? reversed.slice(0, limit) : reversed;
+}
+
+/*
+ * `joinEvent` used to live here — a helper that minted a registration and a
+ * membership for a caller to append. It has moved to
+ * `commands/joinGroup.ts`, and not merely for tidiness: a projection that also
+ * manufactures events is a module with two directions, and the one it exported
+ * could not check anything. It hardcoded the seed group's value tag, invented
+ * fixed event ids that a second call would duplicate, and had no way to know
+ * whether the person was already a member — so the only caller wrote it into
+ * React state, where none of that could hurt anything, and where the join
+ * vanished on refresh. The command answers those questions against the log; this
+ * file goes back to being a fold.
+ */

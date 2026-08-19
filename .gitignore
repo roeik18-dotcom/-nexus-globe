@@ -70,8 +70,118 @@ voice-gateway/profiles/*.yaml
 docs/knowledge-inventory/raw/*
 !docs/knowledge-inventory/raw/.gitkeep
 
+# ── Knowledge System: its own PRIVATE repo, nested here ──────────────────────
+# knowledge-system/ is a separate git repository with a private remote. It is
+# excluded here in full, not partially: `entries/` and `candidates/` are the
+# source documents from which person.yaml and music.yaml are derived, so they
+# are strictly MORE sensitive than the profile data line 57 already withholds —
+# and THIS repo is public (github.com/roeik18-dotcom/-nexus-globe).
+#
+# Excluding it is what gives the corpus real version control: history, review
+# and recovery all live in the private repo, where entries/ IS tracked. The
+# alternative was tracking it here, which publishes it.
+#
+# This line must exist BEFORE `git init` runs inside the directory — otherwise
+# one `git add -A` adds the files or a gitlink before the guard is in place.
+knowledge-system/
+
+# ── Philos event log: runtime state, not repo content ────────────────────────
+# `.philos-data/philos-events.jsonl` holds what users have actually done on THIS
+# machine. The seeded history is code (`valueGroupLog.ts`) and stays reviewable;
+# what a run records is not a source artefact, and committing it would make one
+# laptop's session everybody's starting state.
+.philos-data/
+
 # ── Merlin storage roots: machine-local paths, never tracked ─────────────────
 # storage_root -> absolute base is a fact about ONE laptop. The example is
 # committed so the shape is discoverable; the real map is not.
 voice-gateway/config/storage_roots.yaml
 voice-gateway/config/storage_roots.json
+
+# PHILOS/HUMAN source corpus manifest — contains real absolute local paths
+# and filenames (some personal/sensitive), same discipline as
+# docs/knowledge-inventory/raw/. See source-corpus/README.md.
+source-corpus/MANIFEST.json
+source-corpus/philos/**
+source-corpus/human/**
+source-corpus/archive/**
+!source-corpus/philos/.gitkeep
+!source-corpus/human/.gitkeep
+!source-corpus/archive/.gitkeep
+
+# ── PHILOS canon runtime records: real personal data, never tracked ──────────
+# The same class as `.philos-data/` above, and simply missed when that rule was
+# written. These files hold person_roei's REAL Observations, Needs, Offers,
+# Actions, Effects and identity links — verbatim Hebrew self-reports about his
+# own emotional state and community commitments. THIS REPO IS PUBLIC
+# (github.com/roeik18-dotcom/-nexus-globe), and history is permanent: a single
+# `git add -A` would publish them irreversibly.
+#
+# Directory-scoped deliberately: everything under here is written by a run, and
+# no source artefact lives in it.
+.philos-canon-data/
+
+# ── Merlin runtime state and voice transcripts: personal, never tracked ──────
+# `dashboard/events.jsonl` carries a `transcript_excerpt` field — literal
+# transcripts of what was said out loud to the assistant. `state/*.json` holds
+# the real generated day-opening briefing and an 836 KB bookmark snapshot.
+#
+# FILE-scoped, not directory-scoped, and that distinction is load-bearing:
+# `voice-gateway/state/` also contains `.py` modules. Ignoring the directory
+# would silently exclude source code, which is exactly the mistake this pass
+# was asked to avoid.
+voice-gateway/dashboard/events.jsonl
+voice-gateway/state/*.json
+
+# ── project_knowledge: the CODE stays trackable, the generated index does not ─
+# This directory is 12 real Python modules (api, chunker, indexer, retrieval,
+# store, discovery, …) plus three generated artefacts. Only the artefacts are
+# excluded — `index.db` is a 17.8 MB search index built over local content, and
+# both `knowledge_query.log` and `stats.json` record real user queries verbatim,
+# together with absolute local home-directory paths. (Those queries are
+# deliberately NOT quoted as examples here — this file is bound for a public
+# repo, and an illustration of the leak would be the leak.)
+#
+# Again file-scoped on purpose: `voice-gateway/project_knowledge/` must NOT be
+# ignored as a directory.
+voice-gateway/project_knowledge/index.db
+voice-gateway/project_knowledge/knowledge_query.log
+voice-gateway/project_knowledge/stats.json
+
+# ── corpus/: the scaffolding READMEs are tracked, future contents are not ─────
+# The four README.md files are category definitions and contain no personal
+# data, so they stay trackable. Everything else is excluded IN ADVANCE, because
+# the directory's own stated purpose is "כל מידע שהוא ייחודי לרועי" (all
+# information unique to Roei) — a `.gitignore` written after the first commit
+# does not undo it.
+#
+# `corpus/*/*` (not `corpus/**`) so the subdirectories themselves stay
+# un-excluded and the README negation below can actually take effect — git
+# cannot re-include a file whose parent directory is excluded.
+corpus/*/*
+!corpus/*/README.md
+
+# ── Editor/script .bak snapshots: redundant copies, not history ──────────────
+# 22 of these accumulated during the Merlin work. 15 are backups of files that
+# ARE tracked in git, so real history already covers them and a second copy on
+# disk is noise. Ignored here rather than deleted — the files stay on disk.
+#
+# BOTH separators are covered on purpose: 9 use `.bak-<label>` and 6 use
+# `.bak.<label>`. A `*.bak-*`-only rule would have missed the six dot-form
+# backups of merlin_service.py and wake_trigger.py.
+*.bak-*
+*.bak.*
+
+# The seven exceptions below are NOT redundant: their live counterpart is
+# itself untracked, or (for the launchd plist) no longer exists at all — this
+# .bak is the ONLY surviving copy. They are negated back in so COMMIT_2 can
+# preserve them. Full paths, because the suffixes collide with the redundant
+# set (`.bak-master-20260808-215137` is redundant for context_builder.py but
+# unique for domain_router.py).
+!voice-gateway/launch/com.merlin.voice.plist.bak-preapp-20260814
+!voice-gateway/app/domain_router.py.bak-master-20260808-215137
+!voice-gateway/orientation/domains.py.bak-20260808-213651
+!voice-gateway/service/barge_detector.py.bak-bargetiming-20260808-165144
+!voice-gateway/service/control_panel.html.bak-console-20260810-230950
+!voice-gateway/service/control_panel.html.bak-precolor
+!voice-gateway/service/control_panel.py.bak-console-20260810-230950

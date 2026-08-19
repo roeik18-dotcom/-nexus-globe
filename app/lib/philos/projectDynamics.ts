@@ -53,6 +53,12 @@ const DOMAIN_OF: Record<EventType, Domain> = {
 
 export interface DynamicsNode {
   event_id: string;
+  /**
+   * Who authored this event — and, for an effect, who DECLARED its `caused_by`.
+   * Event-traceable (copied verbatim from the event), so the UI's explicit-edge
+   * "declared by {actor}" popover names a real actor instead of an invented one.
+   */
+  actor_id: string;
   domain: Domain;
   entity_type: EntityType;
   entity_id: string;
@@ -394,6 +400,7 @@ export function projectDynamics(query: DynamicsQuery): DynamicsGraph {
     keptIds.add(e.event_id);
     nodes.push({
       event_id: e.event_id,
+      actor_id: e.actor_id,
       domain: DOMAIN_OF[e.event_type],
       entity_type: e.entity_type,
       entity_id: e.entity_id,

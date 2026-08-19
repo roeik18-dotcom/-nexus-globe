@@ -27,7 +27,15 @@ import { inOrder, type PhilosEvent, type VerificationStatus } from "./events";
  */
 export interface GlobeNode {
   id: string;
-  type: "person" | "value_group" | "recipient";
+  /** Mission B, B9 — `"value"` is the group's own real `central_value`
+   *  (from `group.opened`'s own payload — a real, declared fact, not a
+   *  synthesized position), visually distinct from the group itself.
+   *  NEED/RESOURCE/ACTION/EFFECT are NOT node types here: this graph is
+   *  built entirely from the legacy Value-Group event log, and canon's
+   *  own Action/Effect/Need carry no group_id (the same honest gap
+   *  documented throughout Community/Dynamics/Brain) — no real edge
+   *  exists to place them on, so they are not added. */
+  type: "person" | "value_group" | "value" | "recipient";
   label: string;
   /** ms epoch of the event that introduced it — the globe's time axis reads this. */
   born: number;
@@ -116,15 +124,36 @@ export function projectGlobeGraph(
     }
   }
 
-  const nodes: GlobeNode[] = [{
-    id: groupId,
-    type: "value_group",
-    label: groupName,
-    born: ms(opened.timestamp),
-    community,
+  const valueNodeId = `value:${community}`;
+  const nodes: GlobeNode[] = [
+    {
+      id: groupId,
+      type: "value_group",
+      label: groupName,
+      born: ms(opened.timestamp),
+      community,
+    },
+    // Mission B, B9 — the group's own real central_value, its own node —
+    // same real `group.opened` event, not a second fact.
+    {
+      id: valueNodeId,
+      type: "value",
+      label: community,
+      born: ms(opened.timestamp),
+      community,
+    },
+  ];
+
+  const arcs0: GlobeArc[] = [{
+    source_id: groupId,
+    target_id: valueNodeId,
+    relation: "group.opened",
+    event_id: opened.event_id,
+    timestamp: opened.timestamp,
+    label: `${groupName} — central_value → ${community}`,
   }];
 
-  const seen = new Set<string>([groupId]);
+  const seen = new Set<string>([groupId, valueNodeId]);
   const addPerson = (id: string, born: number) => {
     if (!id || seen.has(id)) return;
     seen.add(id);
@@ -152,7 +181,7 @@ export function projectGlobeGraph(
     nodes.push({ id, type: "recipient", label, born, community });
   };
 
-  const arcs: GlobeArc[] = [];
+  const arcs: GlobeArc[] = [...arcs0];
   for (const e of log) {
     if (!ARC_RELATIONS.has(e.event_type)) continue;
 

@@ -10,12 +10,26 @@
 import { describe, expect, it } from "vitest";
 
 import { isVerified, VERIFICATION_LEVELS } from "../events";
-import {
-  joinEvent,
-  projectValueGroup,
-  type ValueGroupView,
-} from "../projectValueGroup";
+import { joinGroup } from "../commands/joinGroup";
+import { fixedClock, fixedIdGenerator } from "../eventStore";
+import { buildActivityFeed, projectValueGroup, type ValueGroupView } from "../projectValueGroup";
 import { GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../valueGroupLog";
+
+/**
+ * The events a guest's join produces, via the command that now owns them.
+ * `joinEvent` used to be exported from the projection module; these tests read
+ * through the real write path instead, so what they assert about membership is
+ * what the product actually records.
+ */
+function guestJoin(at = `${SEED_TODAY}T20:00:00+03:00`) {
+  const result = joinGroup(
+    VALUE_GROUP_EVENTS,
+    { group_id: GROUP_ID, person_id: "p_guest", display_name: "אורח/ת" },
+    { clock: fixedClock(at), ids: fixedIdGenerator() },
+  );
+  if (!result.ok) throw new Error(`join rejected: ${result.message}`);
+  return result.events;
+}
 
 function view(today = SEED_TODAY): ValueGroupView {
   const v = projectValueGroup(VALUE_GROUP_EVENTS, GROUP_ID, today);
@@ -152,7 +166,7 @@ describe("join", () => {
     const before = view().members.length;
     const extended = [
       ...VALUE_GROUP_EVENTS,
-      ...joinEvent(GROUP_ID, "p_guest", "אורח/ת", "2026-08-01T20:00:00+03:00"),
+      ...guestJoin(),
     ];
     const after = projectValueGroup(extended, GROUP_ID, SEED_TODAY);
     expect(after?.members).toHaveLength(before + 1);
@@ -162,7 +176,7 @@ describe("join", () => {
   it("a join today appears in today's activity", () => {
     const extended = [
       ...VALUE_GROUP_EVENTS,
-      ...joinEvent(GROUP_ID, "p_guest", "אורח/ת", "2026-08-01T20:00:00+03:00"),
+      ...guestJoin(),
     ];
     const after = projectValueGroup(extended, GROUP_ID, SEED_TODAY);
     expect(after?.today.some((t) => t.kind === "join")).toBe(true);
@@ -171,7 +185,7 @@ describe("join", () => {
   it("joining does not move any money", () => {
     const extended = [
       ...VALUE_GROUP_EVENTS,
-      ...joinEvent(GROUP_ID, "p_guest", "אורח/ת", "2026-08-01T20:00:00+03:00"),
+      ...guestJoin(),
     ];
     expect(projectValueGroup(extended, GROUP_ID, SEED_TODAY)?.budget).toEqual(view().budget);
   });
@@ -191,5 +205,27 @@ describe("verification levels", () => {
   it("never counts system inference as verified fact", () => {
     // blueprint §10: "Never present inferred impact as verified fact."
     expect(isVerified("system_inference")).toBe(false);
+  });
+});
+
+describe("buildActivityFeed — whole-log activity, not just today's", () => {
+  const feed = buildActivityFeed(VALUE_GROUP_EVENTS, GROUP_ID);
+
+  it("includes events from before SEED_TODAY, not only today's activity", () => {
+    expect(feed.some((i) => i.date !== SEED_TODAY)).toBe(true);
+  });
+
+  it("is ordered most-recent-first", () => {
+    for (let i = 1; i < feed.length; i++) {
+      const prev = `${feed[i - 1].date}T${feed[i - 1].time}`;
+      const cur = `${feed[i].date}T${feed[i].time}`;
+      expect(prev >= cur).toBe(true);
+    }
+  });
+
+  it("respects an explicit limit", () => {
+    const limited = buildActivityFeed(VALUE_GROUP_EVENTS, GROUP_ID, 3);
+    expect(limited).toHaveLength(3);
+    expect(limited).toEqual(feed.slice(0, 3));
   });
 });

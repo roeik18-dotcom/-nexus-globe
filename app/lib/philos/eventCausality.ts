@@ -87,8 +87,18 @@ export function causalParents(e: PhilosEvent): string[] {
  * only after this gate passes.
  */
 const TZ_SUFFIX = /(?:Z|[+-]\d{2}:\d{2})$/;
-const isValidTimestamp = (ts: unknown): ts is string =>
+
+/**
+ * Exported because the append boundary (`eventStore.ts`) must apply the SAME
+ * gate before a new event enters the log. Two readings of "is this timestamp
+ * usable" would be one reading too many: an event admitted by a laxer writer
+ * check would later be un-orderable here, and the diagnostic would surface at
+ * read time, on data nobody can fix without a correcting event.
+ */
+export const hasUnambiguousTimestamp = (ts: unknown): ts is string =>
   typeof ts === "string" && TZ_SUFFIX.test(ts) && !Number.isNaN(Date.parse(ts));
+
+const isValidTimestamp = hasUnambiguousTimestamp;
 
 /** Absolute instant of a validated ISO-8601 timestamp; offset-aware. */
 const instant = (ts: string): number => Date.parse(ts);

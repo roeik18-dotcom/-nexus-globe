@@ -18,11 +18,6 @@
 
 import Link from "next/link";
 
-const TERMINALS = [
-  ["WORLD", "עולם"], ["PEOPLE", "אנשים"], ["VALUES", "ערכים"],
-  ["ACTIVITY", "פעילות"], ["RESOURCES", "משאבים"], ["IMPACT", "השפעה"],
-] as const;
-
 const nis = (n: number) => "₪" + n.toLocaleString("he-IL");
 
 export interface TodayFigures {
@@ -37,7 +32,40 @@ export interface TodayFigures {
   transfer?: { amount: number; from_value: string; to: string };
 }
 
-export default function PhilosToday({ figures }: { figures: TodayFigures }) {
+/**
+ * What the log knows about the person reading the screen — projected by
+ * `projectViewerIdentity`, never assumed here. `name_is_recorded` is the field
+ * that keeps this honest: a name the log has not registered is shown as not yet
+ * recorded rather than printed as though an event carried it.
+ */
+export interface TodayViewer {
+  display_name: string;
+  name_is_recorded: boolean;
+  registered: boolean;
+  memberships: { group_name: string; basis: "joined" | "founded" | "appointed"; since: string }[];
+  recorded_events: number;
+  source_events: number;
+}
+
+const BASIS_LABEL: Record<TodayViewer["memberships"][number]["basis"], string> = {
+  joined: "הצטרפת",
+  founded: "פתחת",
+  appointed: "מונית",
+};
+
+export default function PhilosToday({
+  figures,
+  you,
+  canonSection,
+}: {
+  figures: TodayFigures;
+  you: TodayViewer;
+  /** Optional slot for the canon-aware section (Observation → CellState →
+   *  Need lookup). Kept as an injected slot, not imported here, so this
+   *  file's own scope stays exactly the Value Group projection it already
+   *  was — the canon section owns its own data fetching independently. */
+  canonSection?: React.ReactNode;
+}) {
   const stats: [string, string][] = [
     [String(figures.groups), "קבוצות ערך"],
     [String(figures.members), "חברים"],
@@ -49,17 +77,13 @@ export default function PhilosToday({ figures }: { figures: TodayFigures }) {
 
   return (
     <div dir="rtl" style={S.root}>
-      <header style={S.nav}>
-        <div style={S.brand}><span style={S.mark} /> PHILOS</div>
-        <nav style={S.terminals}>
-          {TERMINALS.map(([en, he]) => (
-            <Link key={en} href="/hub/community" style={S.term}>
-              <span style={S.termHe}>{he}</span><span style={S.termEn}>{en}</span>
-            </Link>
-          ))}
-        </nav>
-      </header>
-
+      {/* The shared shell used to mount HERE. It now mounts once, at the
+          top of `app/hub/page.tsx`, because this component became the
+          collapsed FULL LEGACY DASHBOARD at the bottom of that page —
+          leaving Hub with no visible navigation, and (when expanded) a
+          SECOND primary nav on the same screen. Same shell, same props,
+          one mount — so the `subject`/`identityLink` props that existed
+          only to feed it are gone from here too. */}
       <main style={S.page}>
         <div style={S.heroHead}>
           היום ב-Philos <span style={S.heroSub}>— מה נרשם ביומן האירועים</span>
@@ -68,6 +92,54 @@ export default function PhilosToday({ figures }: { figures: TodayFigures }) {
           כל מספר בעמוד הזה נגזר מיומן האירועים. המערכת מכילה כרגע קבוצת ערך אחת,
           ולכן המספרים קטנים — זה המצב האמיתי, לא דוגמה.
         </div>
+
+        {/* §14 — the journey starts with *why me*, so the personal answer comes
+            before the system totals. Everything in it is projected from events
+            attributed to this viewer; when the log knows nothing, it says so. */}
+        <section style={S.you}>
+          <div style={S.youHead}>
+            <h2 style={S.youTitle}>אתה ב-Philos</h2>
+            <span style={S.hint}>
+              {you.source_events > 0
+                ? `מקור: ${you.source_events} אירועים`
+                : "אין אירועים שמתעדים אותך"}
+            </span>
+          </div>
+
+          {you.registered ? (
+            <div style={S.youBody}>
+              <div style={S.youLine}>
+                נרשמת ביומן בשם <b style={S.youStrong}>{you.display_name}</b>
+                {" · "}
+                <span style={S.youMuted}>{you.recorded_events} אירועים שביצעת</span>
+              </div>
+              {you.memberships.length > 0 ? (
+                <ul style={S.youList}>
+                  {you.memberships.map((m) => (
+                    <li key={`${m.group_name}-${m.since}`} style={S.youItem}>
+                      {BASIS_LABEL[m.basis]} <b style={S.youStrong}>{m.group_name}</b>
+                      {" · "}
+                      <span style={S.youMuted}>{m.since}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div style={S.placeholder}>אינך חבר באף קבוצת ערך עדיין.</div>
+              )}
+            </div>
+          ) : (
+            <div style={S.youBody}>
+              <div style={S.placeholder}>
+                היומן עדיין לא מתעד אותך. השם{" "}
+                <b style={S.youStrong}>{you.display_name}</b> מוגדר מקומית ולא נרשם
+                כאירוע — הוא ייכתב ליומן בפעולה הראשונה שלך.
+              </div>
+            </div>
+          )}
+          {you.registered && !you.name_is_recorded && (
+            <div style={S.placeholder}>השם מוגדר מקומית ולא נגזר מאירוע רישום.</div>
+          )}
+        </section>
 
         <section style={S.stats}>
           {stats.map(([n, label]) => (
@@ -122,6 +194,15 @@ export default function PhilosToday({ figures }: { figures: TodayFigures }) {
           </section>
         </div>
 
+        {canonSection ? (
+          <details style={{ margin: "12px 0" }}>
+            <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>
+              DETAILS / AUDIT — Canon field-level lookup (Observation → CellState → Need)
+            </summary>
+            <div style={{ marginTop: 8 }}>{canonSection}</div>
+          </details>
+        ) : null}
+
         <Link href="/hub/community" style={S.cta}>
           היכנס לקבוצה: <b>{figures.group_name}</b> · {figures.members} חברים · {figures.events_total} אירועים ←
         </Link>
@@ -139,17 +220,21 @@ export default function PhilosToday({ figures }: { figures: TodayFigures }) {
 const card: React.CSSProperties = { background: "rgba(18,24,38,0.7)", border: "1px solid rgba(90,120,180,0.14)", borderRadius: 16, padding: "16px 18px" };
 const S: Record<string, React.CSSProperties> = {
   root: { minHeight: "100vh", background: "radial-gradient(120% 80% at 50% -10%, #0e1626 0%, #070b14 60%, #04060c 100%)", color: "#e8edf6", fontFamily: "system-ui, -apple-system, sans-serif" },
-  nav: { display: "flex", alignItems: "center", gap: 24, padding: "14px 30px", borderBottom: "1px solid rgba(90,120,180,0.12)", position: "sticky", top: 0, background: "rgba(7,11,20,0.85)", backdropFilter: "blur(10px)", zIndex: 20 },
-  brand: { display: "flex", alignItems: "center", gap: 9, fontSize: 15, fontWeight: 700, letterSpacing: "3px", color: "#eaf1ff" },
-  mark: { width: 20, height: 20, borderRadius: "50%", background: "radial-gradient(circle at 50% 40%, #ffd477, #e08a2b 55%, transparent 75%)", boxShadow: "0 0 14px 2px rgba(255,180,80,0.5)" },
-  terminals: { display: "flex", gap: 4, flex: 1 },
-  term: { display: "flex", flexDirection: "column", alignItems: "center", padding: "6px 14px", borderRadius: 10, color: "#7f93b5", textDecoration: "none" },
-  termHe: { fontSize: 13, fontWeight: 600 }, termEn: { fontSize: 7.5, letterSpacing: "1.5px", opacity: 0.6 },
 
   page: { maxWidth: 1180, margin: "0 auto", padding: "26px 30px 46px" },
   heroHead: { fontSize: 22, fontWeight: 800, color: "#f4f8ff", marginBottom: 12 },
   heroSub: { fontSize: 14, fontWeight: 400, color: "#7f93b5" },
   notice: { fontSize: 11.5, lineHeight: 1.6, color: "#8aa0c8", padding: "9px 13px", borderRadius: 10, background: "rgba(90,120,180,0.08)", border: "1px solid rgba(90,120,180,0.16)", marginBottom: 16 },
+
+  you: { ...card, marginBottom: 16, padding: "16px 18px" },
+  youHead: { display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, marginBottom: 10 },
+  youTitle: { fontSize: 14, fontWeight: 700, margin: 0, color: "#f0f4fc" },
+  youBody: { display: "flex", flexDirection: "column", gap: 8 },
+  youLine: { fontSize: 12.5, lineHeight: 1.7, color: "#a9bcdc" },
+  youStrong: { color: "#e8edf6" },
+  youMuted: { color: "#7f93b5" },
+  youList: { listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 5 },
+  youItem: { fontSize: 12.5, lineHeight: 1.6, color: "#a9bcdc" },
 
   stats: { display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 14, marginBottom: 20 },
   stat: { ...card, textAlign: "center", padding: "18px 10px" },
