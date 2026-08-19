@@ -36,12 +36,27 @@ import { SOURCE_CONCEPTS } from "../community/sourceValueModel";
  *  silently dropping them. */
 const POLE_SEPARATOR = /↔|½/;
 
+/**
+ * The epistemic ladder for a source opposition. The distinction between the
+ * middle two rungs is the whole point:
+ *
+ *   SOURCE_CONTRADICTION_REFERENCE  the taxonomy entry exists. Says nothing
+ *                                   about any observation.
+ *   SOURCE_POLE_MENTION             the text names ONE pole of the pair.
+ *   SOURCE_PAIR_MENTION             the text names BOTH poles.
+ *
+ * **`SOURCE_CONTRADICTION_DETECTED` is deliberately absent from this
+ * union.** Naming a pole — even naming both — does not establish that the
+ * CONTRADICTION holds. "פחד" appearing in a sentence is a word; it is not
+ * evidence that the person is in a רצון↔פחד contradiction. Even both poles
+ * co-occurring may be narration, quotation, or negation. The source
+ * supplies no rule licensing that inference, so the type system refuses to
+ * express it: there is no value a caller could assign to claim it.
+ */
 export type OppositionEpistemicStatus =
-  | "MEASURED_CONTRADICTION"
-  | "DERIVED_CONTRADICTION"
-  | "INTERPRETED_CONTRADICTION"
-  | "SOURCE_REFERENCE"
-  | "UNRESOLVED_CONTRADICTION";
+  | "SOURCE_CONTRADICTION_REFERENCE"
+  | "SOURCE_POLE_MENTION"
+  | "SOURCE_PAIR_MENTION";
 
 export interface BaseOpposition {
   contradiction_id: string;
@@ -59,18 +74,20 @@ export interface BaseOppositionDetection {
   contradiction_id: string;
   normalized_label: string;
   source_wording: string;
-  /** Which pole the text actually named, and the literal token matched. */
-  matched_pole: string;
-  matched_token: string;
-  /** 0 = first pole, 1 = second. Direction ONLY in the sense of which pole
-   *  was named — never a magnitude and never a movement. */
-  pole_index: 0 | 1;
+  /** Every pole the text named — one entry for POLE_MENTION, two for
+   *  PAIR_MENTION. "Direction" here means only WHICH pole was named; it is
+   *  never a magnitude and never a movement between poles. */
+  mentioned_poles: { pole: string; matched_token: string; pole_index: 0 | 1 }[];
   contradiction_family?: string;
   epistemic_status: OppositionEpistemicStatus;
   /** Always NO_MAPPING — see the module header. */
   mapping_status: "NO_MAPPING_TO_RUNTIME_CLASSES";
   /** The source states no magnitude for any opposition. */
   magnitude: "UNRESOLVED";
+  /** Stated on every result so a consumer cannot quietly upgrade a mention
+   *  into a contradiction. */
+  contradiction_established: false;
+  not_implied: string;
 }
 
 /** The 24 oppositions as SOURCE_REFERENCE — every one, detected or not. */
@@ -107,34 +124,38 @@ function textContainsPole(text: string, pole: string): string | null {
 }
 
 /**
- * Detect which of the 24 the text names. Pure — no I/O, no clock.
+ * Report which source poles the text MENTIONS. Pure — no I/O, no clock.
  *
- * An opposition is reported ONCE, for the first pole found. If the text
- * names both poles the first is reported; the source gives no rule for
- * ranking poles, so choosing one over the other would be invention.
+ * Both poles are always checked (an early break would make POLE and PAIR
+ * indistinguishable). The result says exactly what was found and nothing
+ * more: one pole named -> SOURCE_POLE_MENTION, both named ->
+ * SOURCE_PAIR_MENTION. Neither is a contradiction.
  */
 export function detectBaseOppositions(text: string): BaseOppositionDetection[] {
   const src = String(text ?? "");
   if (!src.trim()) return [];
   const out: BaseOppositionDetection[] = [];
   for (const o of listBaseOppositions()) {
-    for (let i = 0 as 0 | 1; i <= 1; i = (i + 1) as 0 | 1) {
+    const mentioned: BaseOppositionDetection["mentioned_poles"] = [];
+    for (const i of [0, 1] as const) {
       const hit = textContainsPole(src, o.poles[i]);
-      if (!hit) continue;
-      out.push({
-        contradiction_id: o.contradiction_id,
-        normalized_label: o.normalized_label,
-        source_wording: o.source_wording,
-        matched_pole: o.poles[i],
-        matched_token: hit,
-        pole_index: i,
-        contradiction_family: o.contradiction_family,
-        epistemic_status: "INTERPRETED_CONTRADICTION",
-        mapping_status: "NO_MAPPING_TO_RUNTIME_CLASSES",
-        magnitude: "UNRESOLVED",
-      });
-      break;
+      if (hit) mentioned.push({ pole: o.poles[i], matched_token: hit, pole_index: i });
     }
+    if (mentioned.length === 0) continue;
+    out.push({
+      contradiction_id: o.contradiction_id,
+      normalized_label: o.normalized_label,
+      source_wording: o.source_wording,
+      mentioned_poles: mentioned,
+      contradiction_family: o.contradiction_family,
+      epistemic_status: mentioned.length === 2 ? "SOURCE_PAIR_MENTION" : "SOURCE_POLE_MENTION",
+      mapping_status: "NO_MAPPING_TO_RUNTIME_CLASSES",
+      magnitude: "UNRESOLVED",
+      contradiction_established: false,
+      not_implied: mentioned.length === 2
+        ? "שני הקטבים מוזכרים בטקסט — אין בכך כדי לקבוע שהניגוד מתקיים. ייתכן ציטוט, תיאור או שלילה."
+        : "אזכור קוטב אחד אינו קובע שהניגוד מתקיים, ואינו מדידה של תא.",
+    });
   }
   return out;
 }

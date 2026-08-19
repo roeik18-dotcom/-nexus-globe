@@ -84,11 +84,11 @@ export default function SocialSourceSpinePanel({
       {/* the 24 base oppositions */}
       <div style={S.subHead}>
         ניגודי בסיס · BASE OPPOSITIONS ({oppositions.length} מתוך 30 שחולצו)
-        {observationText ? ` · ${detected.length} מוזכרים בטקסט התצפית` : " · לא נבדק מול טקסט"}
+        {observationText ? ` · ${detected.length} אזכורים בטקסט התצפית (אזכור ≠ ניגוד שהתקיים)` : " · לא נבדק מול טקסט"}
       </div>
       {orderedOppositions.slice(0, limit).map((c) => (
         <Row key={c.canonical_id} c={c} named={detectedIds.has(c.canonical_id)}
-             pole={detected.find((d) => d.contradiction_id === c.canonical_id)?.matched_pole} />
+             mention={detected.find((d) => d.contradiction_id === c.canonical_id)} />
       ))}
       {oppositions.length > limit ? (
         <div style={S.more}>ועוד {oppositions.length - limit} — ראה AUDIT</div>
@@ -122,13 +122,17 @@ export default function SocialSourceSpinePanel({
   );
 }
 
-function Row({ c, mono = false, named = false, pole }: { c: SourceConcept; mono?: boolean; named?: boolean; pole?: string }) {
+function Row({ c, mono = false, named = false, mention }: {
+  c: SourceConcept; mono?: boolean; named?: boolean;
+  mention?: { epistemic_status: string; mentioned_poles: { pole: string }[] };
+}) {
+  const kind = mention?.epistemic_status === "SOURCE_PAIR_MENTION" ? "שני קטבים" : "קוטב";
   return (
     <div style={{ ...S.row, ...(named ? { background: "rgba(251,191,36,0.10)", border: "1px solid rgba(251,191,36,0.3)" } : null) }}>
       {named ? (
-        <span title="הטקסט מזכיר את הקוטב הזה. אזכור — לא מדידה, ולא מקושר ל-5 מחלקות ה-runtime."
+        <span title="אזכור בלבד. אזכור קוטב — ואף אזכור של שני הקטבים — אינו קובע שהניגוד מתקיים. לא מדידה, ולא מקושר ל-5 מחלקות ה-runtime."
               style={{ ...TYPE.micro, fontSize: 7.5, color: "#fbbf24", whiteSpace: "nowrap" }}>
-          מוזכר{pole ? ` · ${pole}` : ""}
+          אזכור {kind}{mention ? ` · ${mention.mentioned_poles.map((m) => m.pole).join(" + ")}` : ""}
         </span>
       ) : null}
       <span style={{ ...S.rowLabel, fontFamily: mono ? "ui-monospace, monospace" : undefined, fontSize: mono ? 10 : 11 }}>

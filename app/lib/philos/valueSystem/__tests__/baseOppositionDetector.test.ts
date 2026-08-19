@@ -22,8 +22,10 @@ describe("base oppositions — the source's own 24, never a mapping", () => {
     const d = detectBaseOppositions("יש כאן הרבה פחד ולא ברור מה עושים");
     const willFear = d.find((x) => x.contradiction_id === "cn_will_fear");
     expect(willFear).toBeDefined();
-    expect(willFear!.matched_pole).toBe("פחד");
-    expect(willFear!.pole_index).toBe(1);
+    expect(willFear!.mentioned_poles).toHaveLength(1);
+    expect(willFear!.mentioned_poles[0].pole).toBe("פחד");
+    expect(willFear!.mentioned_poles[0].pole_index).toBe(1);
+    expect(willFear!.epistemic_status).toBe("SOURCE_POLE_MENTION");
   });
 
   it("tolerates a Hebrew prefix but does not stem or fuzzy-match", () => {
@@ -32,11 +34,31 @@ describe("base oppositions — the source's own 24, never a mapping", () => {
     expect(detectBaseOppositions("הליכה בפארק").some((x) => x.contradiction_id === "cn_will_fear")).toBe(false);
   });
 
-  it("reports every detection as INTERPRETED, never measured", () => {
+  it("never claims a contradiction was established — only a mention", () => {
     for (const d of detectBaseOppositions("לחץ ותקווה וגם ספק")) {
-      expect(d.epistemic_status).toBe("INTERPRETED_CONTRADICTION");
+      expect(["SOURCE_POLE_MENTION", "SOURCE_PAIR_MENTION"]).toContain(d.epistemic_status);
       expect(d.magnitude).toBe("UNRESOLVED");
+      expect(d.contradiction_established).toBe(false);
+      expect(d.not_implied).toContain("אינו קובע");
     }
+  });
+
+  it("distinguishes ONE pole (POLE_MENTION) from BOTH poles (PAIR_MENTION)", () => {
+    const one = detectBaseOppositions("יש פחד")!.find((x) => x.contradiction_id === "cn_will_fear")!;
+    expect(one.epistemic_status).toBe("SOURCE_POLE_MENTION");
+    expect(one.mentioned_poles).toHaveLength(1);
+
+    const both = detectBaseOppositions("בין רצון לפחד")!.find((x) => x.contradiction_id === "cn_will_fear")!;
+    expect(both.epistemic_status).toBe("SOURCE_PAIR_MENTION");
+    expect(both.mentioned_poles).toHaveLength(2);
+    // even BOTH poles does not establish the contradiction
+    expect(both.contradiction_established).toBe(false);
+  });
+
+  it("cannot express a DETECTED contradiction — the status is absent from the type", () => {
+    const s = JSON.stringify(detectBaseOppositions("בין רצון לפחד"));
+    expect(s.includes("SOURCE_CONTRADICTION_DETECTED")).toBe(false);
+    expect(s.includes("INTERPRETED_CONTRADICTION")).toBe(false);
   });
 
   it("marks NO_MAPPING on every result — the 5 runtime classes stay separate", () => {
@@ -51,7 +73,7 @@ describe("base oppositions — the source's own 24, never a mapping", () => {
     }
   });
 
-  it("reports an opposition once even when both poles appear", () => {
+  it("reports an opposition as ONE entry carrying both poles, not two entries", () => {
     const d = detectBaseOppositions("בין רצון לפחד");
     expect(d.filter((x) => x.contradiction_id === "cn_will_fear")).toHaveLength(1);
   });

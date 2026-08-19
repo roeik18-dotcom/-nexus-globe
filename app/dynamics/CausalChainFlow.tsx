@@ -353,6 +353,17 @@ export default function CausalChainFlow({
       </div>
       <LinkageLegend kinds={stages.slice(1).map((st) => st.linkFromPrevious)} />
 
+      {/* WHY THE COMPARISON IS BLOCKED — the temporal chain's own diagnosis,
+          shown before the Learning/State' boundary because it blocks EARLIER
+          than that boundary does. */}
+      <TemporalBlockBand
+        observationCount={marks.length}
+        hasLinkedAction={!!latestAction}
+        hasAnyAction={sortedActions.length > 0}
+        hasEffect={!!latestEffect}
+        hasVerifiedEvidence={!!verifiedOutcome}
+      />
+
       <OpenBoundaryBand
         hasVerifiedEvidence={!!verifiedOutcome}
         learningRecorded={!!latestLearning}
@@ -388,6 +399,69 @@ export default function CausalChainFlow({
         </div>
       ) : null}
     </section>
+  );
+}
+
+/**
+ * TEMPORAL COMPARISON — why a before/after cannot be computed yet.
+ *
+ * The Learning/State' boundary is not the FIRST thing blocking a change
+ * claim here; it is the last. Before it, the comparison itself is blocked,
+ * and for a different and more mundane reason: there is only one real
+ * Observation, so there is no t1 to compare against.
+ *
+ * Each step is checked against real records and reported separately, so the
+ * reader can see exactly which link is missing rather than being told "no
+ * data". The three refusals are the ones `observationComparison.ts`
+ * enforces: OPEN_LOOP (no t1), NO_ATTRIBUTION_TO_ACTION (no verified Effect
+ * linking two observations), NOT_COMPARABLE (feature absent on one side).
+ */
+function TemporalBlockBand({
+  observationCount, hasLinkedAction, hasAnyAction, hasEffect, hasVerifiedEvidence,
+}: {
+  observationCount: number; hasLinkedAction: boolean; hasAnyAction: boolean;
+  hasEffect: boolean; hasVerifiedEvidence: boolean;
+}) {
+  const steps: { label: string; ok: boolean; note: string }[] = [
+    { label: "תצפית t0", ok: observationCount > 0,
+      note: observationCount > 0 ? `${observationCount} תצפית אמיתית` : "אין תצפית" },
+    { label: "תצפית t1 בת-השוואה", ok: observationCount > 1,
+      note: observationCount > 1 ? `${observationCount} תצפיות` : "אין תצפית שנייה — OPEN LOOP" },
+    { label: "Action", ok: hasAnyAction,
+      note: hasAnyAction ? (hasLinkedAction ? "קיימת ומקושרת לתצפית" : "קיימת, אך ללא קישור מפורש לתצפית") : "אין Action" },
+    { label: "Effect", ok: hasEffect, note: hasEffect ? "קיים" : "אין Effect מקושר" },
+    { label: "עדות מאומתת", ok: hasVerifiedEvidence, note: hasVerifiedEvidence ? "קיימת" : "אין אימות מקושר" },
+    { label: "קישור Effect ↔ Observation(t1)", ok: false,
+      note: "אין שדה בסכימה שמבטא זאת — ראה BLOCKER" },
+  ];
+  const firstBlock = steps.find((s) => !s.ok);
+
+  return (
+    <div style={{ marginTop: SPACE.md, paddingTop: SPACE.md, borderTop: `1px solid ${COLOR.border}` }}>
+      <div style={{ ...S.eyebrow, color: "#fbbf24" }}>
+        השוואה לאורך זמן · TEMPORAL COMPARISON — חסום ב:{" "}{firstBlock ? firstBlock.label : "—"}
+      </div>
+      <div dir="ltr" style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
+        {steps.map((st, i) => (
+          <div key={st.label} title={st.note}
+               style={{
+                 display: "flex", alignItems: "center", gap: 4,
+                 border: `1px solid ${st.ok ? "rgba(52,211,153,0.4)" : "rgba(251,191,36,0.35)"}`,
+                 background: st.ok ? "rgba(52,211,153,0.08)" : "rgba(251,191,36,0.05)",
+                 borderRadius: RADIUS.sm, padding: "3px 8px",
+               }}>
+            <span style={{ ...TYPE.micro, fontSize: 7.5, color: COLOR.textFaint }}>{i + 1}</span>
+            <span dir="rtl" style={{ fontSize: 10, color: st.ok ? "#6fe3b4" : "#fbbf24" }}>{st.label}</span>
+            <span dir="rtl" style={{ fontSize: 8.5, color: COLOR.textFaint }}>{st.note}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize: 9.5, color: COLOR.textDim, lineHeight: 1.6, marginTop: 5 }}>
+        המצב האמיתי כרגע: <b>תצפית אחת</b> → אין t1 בת-השוואה → Action קיים → Effect קיים →
+        אך <b>אין קישור מאומת ל-Observation(t1)</b> → <b>שינוי = UNKNOWN</b>.
+        זו לולאה פתוחה כנה, לא כשל. לא נבנתה תצפית שנייה כדי לגרום למסך להיראות שלם.
+      </div>
+    </div>
   );
 }
 
