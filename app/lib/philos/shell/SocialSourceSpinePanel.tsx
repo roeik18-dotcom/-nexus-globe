@@ -64,7 +64,7 @@ export default function SocialSourceSpinePanel({
   return (
     <section dir="rtl" style={S.band}>
       <div style={S.head}>
-        <span style={S.eyebrow}>עמוד שדרה חברתי · SOCIAL SOURCE SPINE — משותף ל-Community · Globe · World</span>
+        <span style={S.eyebrow}>עמוד שדרה חברתי · SOCIAL SOURCE SPINE — משותף למשפחת SOCIAL</span>
         <ProvenanceBadge p="STATIC" />
       </div>
 

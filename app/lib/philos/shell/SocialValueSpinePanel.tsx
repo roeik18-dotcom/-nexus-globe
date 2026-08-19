@@ -32,7 +32,7 @@ export default function SocialValueSpinePanel({
     <section dir="rtl" style={S.band}>
       <div style={S.head}>
         <span style={S.eyebrow}>
-          עמוד שדרה ערכי-חברתי · SOCIAL-VALUE SPINE — משותף ל-Community · Globe · World
+          עמוד שדרה ערכי-חברתי · SOCIAL-VALUE SPINE — משותף למשפחת SOCIAL
         </span>
         <span style={S.note}>{where}</span>
       </div>

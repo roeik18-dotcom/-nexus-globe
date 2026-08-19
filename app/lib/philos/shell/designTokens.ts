@@ -122,6 +122,49 @@ export const COLOR_ROLE = {
   red:    "#f2635c", // 6 · ACTION / EXECUTION
 } as const;
 
+/**
+ * PRODUCT_FAMILY_CUE — NOT a Colour Source Lock role.
+ * ---------------------------------------------------------------------------
+ * `PRODUCT_FAMILY_CUE ≠ CANONICAL_COLOR_ROLE`.
+ *
+ * This is a NAVIGATION AFFORDANCE ONLY: the tint used to draw the container
+ * around the social/product family (Community · Globe · World) so the three
+ * read as one grouped product rather than three sibling destinations.
+ *
+ * It is derived from GREEN because two of the three members genuinely carry
+ * GREEN in the Colour Source Lock (Community = GREEN, Globe = GREEN + PURPLE),
+ * which makes green the recognisable cue for this family in the product.
+ *
+ * It asserts NOTHING about any member's canonical role. In particular it does
+ * NOT make World green. The Colour Source Lock is unchanged and remains the
+ * only authority on roles:
+ *
+ *   Community = GREEN
+ *   Globe     = GREEN + PURPLE
+ *   World     = WHITE + PURPLE
+ *
+ * Enforcement: this token is used ONLY for the family container's own
+ * background/border/label. Each member's own accent still comes from
+ * `TERMINAL[surface].accent`, so an active sub-tab always paints its
+ * canonical role — World's active tab is WHITE-family, never green, even
+ * while sitting inside a green-cued capsule.
+ *
+ * Never read this token as a state, a value, or a cell (`Cell_ID ≠ Color_ID`).
+ */
+export const PRODUCT_FAMILY_CUE = {
+  /** Container fill when the family is not the current surface. */
+  bgIdle: "rgba(52,211,153,0.055)",
+  /** Container fill when one of the family members is the current surface. */
+  bgActive: "rgba(52,211,153,0.12)",
+  /** Container hairline when idle. */
+  borderIdle: "rgba(52,211,153,0.22)",
+  /** Container hairline when the family is current. */
+  borderActive: "rgba(52,211,153,0.42)",
+  /** The family label / internal divider. */
+  label: "rgba(52,211,153,0.62)",
+  labelActive: "#34d399",
+} as const;
+
 export interface TerminalIdentity {
   /** Hebrew-first label — `PHILOS-SYSTEM-LANGUAGE.md` §9 "Hebrew-first". */
   label_he: string;

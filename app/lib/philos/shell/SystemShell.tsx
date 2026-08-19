@@ -25,7 +25,7 @@
  * literal UNKNOWN.
  */
 import { encodeSystemContextRef, type ContextSurface, type SelectedContext } from "@/app/lib/systemContext";
-import { COLOR, RADIUS, SPACE, STATUS, TERMINAL, TYPE } from "./designTokens";
+import { COLOR, PRODUCT_FAMILY_CUE, RADIUS, SPACE, STATUS, TERMINAL, TYPE } from "./designTokens";
 import type { PersonContext } from "../person/personContext";
 
 export interface ShellCommunity {
@@ -96,6 +96,32 @@ const NAV: { label: string; href: string; key: ShellSurfaceKey; carriesCtx?: boo
   { label: "Globe", href: "/planet", key: "globe", carriesCtx: true, family: "social" },
   { label: "World", href: "/world", key: "world", family: "social" },
 ];
+
+type NavItem = (typeof NAV)[number];
+
+/**
+ * NAVIGATION GROUPING — the nav is a list of GROUPS, not a flat list of
+ * destinations. Consecutive members sharing a `family` collapse into ONE
+ * group so the shell can render them as a single category container with
+ * internal sub-tabs. Non-family items stay standalone.
+ *
+ * This is computed once, at module level, so the grouping is defined in
+ * exactly one place (LOCK: the family treatment lives only in SystemShell).
+ * Marketplace deliberately carries no family and therefore stays outside
+ * the capsule, ordered before it.
+ */
+export const NAV_GROUPS: { kind: "item" | "family"; items: NavItem[] }[] = NAV.reduce(
+  (acc, item) => {
+    const prev = acc[acc.length - 1];
+    if (item.family && prev && prev.kind === "family" && prev.items[0].family === item.family) {
+      prev.items.push(item);
+      return acc;
+    }
+    acc.push({ kind: item.family ? "family" : "item", items: [item] });
+    return acc;
+  },
+  [] as { kind: "item" | "family"; items: NavItem[] }[],
+);
 
 function StatusPill({ label, value, kind }: { label: string; value: string; kind: "real" | "demo" | "unknown" | "blocked" | "verified" | "claimed" | "needs_attention" | "active" | "completed" }) {
   const s = STATUS[kind];
@@ -261,6 +287,16 @@ export function SystemShell({
   // a state, never a value, never a cell (`Cell_ID ≠ Color_ID`).
   const terminal = TERMINAL[surface];
 
+  // Query-parameter carry rules per nav item — shared by standalone items and
+  // by the social-family sub-tabs so both preserve context identically.
+  const hrefFor = (item: NavItem) => {
+    const parts: string[] = [];
+    if (item.carriesCtx && ctxValue) parts.push(`ctx=${encodeURIComponent(ctxValue)}`);
+    if (item.carriesSubject && subjectValue) parts.push(`subject=${encodeURIComponent(subjectValue)}`);
+    if (item.carriesCommunity && communityValue) parts.push(`community=${encodeURIComponent(communityValue)}`);
+    return parts.length > 0 ? `${item.href}?${parts.join("&")}` : item.href;
+  };
+
   return (
     <div style={{ fontFamily: "system-ui" }}>
       {/* Accent rail — the one visual cue that tells you which terminal you
@@ -291,58 +327,99 @@ export function SystemShell({
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap" }}>
-          {NAV.map((item) => {
-            const here = item.key === surface;
-            const parts: string[] = [];
-            if (item.carriesCtx && ctxValue) parts.push(`ctx=${encodeURIComponent(ctxValue)}`);
-            if (item.carriesSubject && subjectValue) parts.push(`subject=${encodeURIComponent(subjectValue)}`);
-            if (item.carriesCommunity && communityValue) parts.push(`community=${encodeURIComponent(communityValue)}`);
-            const href = parts.length > 0 ? `${item.href}?${parts.join("&")}` : item.href;
-            // SOCIAL-VALUE FAMILY cue: one continuous hairline under the three
-            // adjacent members. Deliberately the faintest thing that reads as
-            // grouping — it must not compete with a terminal's own accent, and
-            // it carries NO colour claim: each member keeps its source-defined
-            // Colour Role (Community GREEN · Globe GREEN+PURPLE · World
-            // WHITE+PURPLE). Neutral on purpose, because tinting it green
-            // would assert a family colour the Colour Master denies.
-            // The three read as ONE block: a shared tinted band with a
-            // continuous top+bottom rule, rounded only at the outer ends, so
-            // Community/Globe/World form a single visual unit rather than
-            // three separately underlined items.
+          {NAV_GROUPS.map((group) => {
+            if (group.kind === "item") {
+              const item = group.items[0];
+              const here = item.key === surface;
+              return here ? (
+                <span
+                  key={item.label}
+                  style={{ fontSize: 11.5, fontWeight: 700, padding: "6px 14px", borderRadius: 8, color: "#02101f", background: terminal.accent }}
+                >
+                  {item.label}
+                </span>
+              ) : (
+                <a
+                  key={item.label}
+                  href={hrefFor(item)}
+                  style={{ fontSize: 11.5, fontWeight: 500, padding: "6px 14px", borderRadius: 8, color: COLOR.textDim, textDecoration: "none" }}
+                >
+                  {item.label}
+                </a>
+              );
+            }
+
+            // SOCIAL-VALUE FAMILY: Community · Globe · World are ONE navigation
+            // category, not three sibling destinations. They are rendered inside
+            // a single capsule with an explicit family label and internal
+            // sub-tabs, so the grouping is a container — not a hairline hint.
             //
-            // The tint is NEUTRAL (blue-grey border token), never green. The
-            // Colour Master gives World WHITE+PURPLE, so a green family band
-            // would assert a shared colour the source denies. The unity is
-            // structural; each item keeps its own accent when selected.
-            const famIdx = NAV.filter((x) => x.family === "social").findIndex((x) => x.key === item.key);
-            const famLast = NAV.filter((x) => x.family === "social").length - 1;
-            const fam: React.CSSProperties = item.family === "social"
-              ? {
-                  background: here ? undefined : "rgba(120,150,220,0.07)",
-                  borderTop: `1px solid ${COLOR.borderStrong}`,
-                  borderBottom: `2px solid ${COLOR.borderStrong}`,
-                  borderInlineStart: famIdx === famLast ? `1px solid ${COLOR.borderStrong}` : "none",
-                  borderInlineEnd: famIdx === 0 ? `1px solid ${COLOR.borderStrong}` : "none",
-                  borderRadius:
-                    famIdx === 0 ? "0 8px 8px 0" : famIdx === famLast ? "8px 0 0 8px" : "0",
-                  marginInline: 0,
-                }
-              : {};
-            return here ? (
-              <span
-                key={item.label}
-                style={{ fontSize: 11.5, fontWeight: 700, padding: "6px 14px", borderRadius: 8, color: "#02101f", background: terminal.accent, ...fam }}
+            // PRODUCT_FAMILY_CUE ≠ CANONICAL_COLOR_ROLE.
+            //
+            // The capsule is tinted GREEN as a PRODUCT-GROUPING cue only: two of
+            // the three members carry GREEN canonically (Community = GREEN,
+            // Globe = GREEN + PURPLE), which makes green the recognisable cue
+            // for this family in the product. The tint belongs to the CONTAINER,
+            // never to a member.
+            //
+            // World's canonical role is NOT green and is never drawn as green.
+            // The Colour Source Lock is untouched:
+            //   Community = GREEN · Globe = GREEN + PURPLE · World = WHITE + PURPLE
+            //
+            // The separation is enforced structurally: the cue paints only the
+            // capsule's own background/border/label, while every sub-tab still
+            // resolves its accent from `TERMINAL[surface]`. On /world the active
+            // sub-tab therefore paints World's WHITE+PURPLE accent inside a
+            // green-cued capsule — family cue and canonical role, side by side,
+            // never conflated.
+            const familyActive = group.items.some((x) => x.key === surface);
+            return (
+              <div
+                key="social-family"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "3px 7px 3px 8px",
+                  borderRadius: 11,
+                  border: `1px solid ${familyActive ? PRODUCT_FAMILY_CUE.borderActive : PRODUCT_FAMILY_CUE.borderIdle}`,
+                  background: familyActive ? PRODUCT_FAMILY_CUE.bgActive : PRODUCT_FAMILY_CUE.bgIdle,
+                }}
               >
-                {item.label}
-              </span>
-            ) : (
-              <a
-                key={item.label}
-                href={href}
-                style={{ fontSize: 11.5, fontWeight: 500, padding: "6px 14px", borderRadius: 8, color: COLOR.textDim, textDecoration: "none", ...fam }}
-              >
-                {item.label}
-              </a>
+                <span
+                  style={{
+                    ...TYPE.micro,
+                    letterSpacing: 1.4,
+                    color: familyActive ? PRODUCT_FAMILY_CUE.labelActive : PRODUCT_FAMILY_CUE.label,
+                    whiteSpace: "nowrap",
+                  }}
+                  title="קטגוריה אחת: קהילה · גלובוס · עולם"
+                >
+                  SOCIAL
+                </span>
+                <span style={{ width: 1, alignSelf: "stretch", background: PRODUCT_FAMILY_CUE.borderIdle }} />
+                <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  {group.items.map((item) => {
+                    const here = item.key === surface;
+                    return here ? (
+                      <span
+                        key={item.label}
+                        style={{ fontSize: 11.5, fontWeight: 700, padding: "5px 11px", borderRadius: 7, color: "#02101f", background: terminal.accent }}
+                      >
+                        {item.label}
+                      </span>
+                    ) : (
+                      <a
+                        key={item.label}
+                        href={hrefFor(item)}
+                        style={{ fontSize: 11.5, fontWeight: 500, padding: "5px 11px", borderRadius: 7, color: familyActive ? COLOR.text : COLOR.textDim, textDecoration: "none" }}
+                      >
+                        {item.label}
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </div>

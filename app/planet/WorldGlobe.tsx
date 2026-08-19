@@ -137,7 +137,7 @@ function ContextInspector({ selected, registry }: { selected: SelectedContext; r
   // this inspector uses; the canon-Observation/legacy-event code below
   // stays completely unreached for `found_entity`.
   if (selected.status === "found_entity") {
-    return <EntityContextPanel selected={selected} here="globe" style={{ position: "absolute", right: 24, top: 64, zIndex: 12, width: 320 }} />;
+    return <EntityContextPanel selected={selected} here="globe" style={{ position: "absolute", right: 24, top: 64, zIndex: 12, width: 320, maxHeight: 530, overflowY: "auto" }} />;
   }
 
   const persistedColor = persistedDerivedColor(selected.persisted_or_derived);
@@ -295,6 +295,9 @@ function BridgeSection({ subject, registry }: { subject: string; registry: Entit
 function CanonActivityPanel({ canonActions, canonEffects, canonNeeds, canonOffers }: { canonActions: ActionRecord[]; canonEffects: EffectRecord[]; canonNeeds: NeedRecord[]; canonOffers: OfferRecord[] }) {
   const box = {
     position: "absolute", right: 24, top: 168, zIndex: 12, width: 300,
+    /* Height-capped so this panel cannot grow down the right column and bury
+       the EVENTS-ON-SCREEN rail beneath it (`styles.rightRail`, top 620). */
+    maxHeight: 430, overflowY: "auto",
     background: "rgba(4,10,22,0.94)", backdropFilter: "blur(10px)",
     border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.md, padding: "14px 16px",
     fontSize: 11, color: COLOR.textDim,
@@ -662,8 +665,20 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
           background: "linear-gradient(180deg, rgba(4,10,22,0.92) 0%, rgba(4,10,22,0.78) 70%, rgba(4,10,22,0) 100%)",
           backdropFilter: "blur(6px)",
           padding: "10px 20px 12px",
+          /* HARD CAP — REGRESSION GUARD.
+             This band is absolutely positioned at zIndex 20 over the globe
+             canvas. Anything rendered inside it therefore OCCLUDES the sphere
+             rather than pushing it down. A previous change put the full
+             person/value frame in here; the band grew to 1113px over a 900px
+             viewport and hid the globe completely. The cap plus its own scroll
+             container means the band can never again cover the primary
+             content, whatever is placed inside it. */
+          maxHeight: "34vh",
+          overflowY: "auto",
+          pointerEvents: "none",
         }}
       >
+        <div style={{ pointerEvents: "auto" }}>
         <SystemShell
           surface="globe"
           purpose="Where this exists in the system, and what flows between whom — layout, not geography, until location is real."
@@ -672,13 +687,33 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
           subject={selected?.status === "found" && selected.subject ? selected.subject : REAL_CURRENT_SUBJECT}
           identityLink={identityLink}
         />
-        {/* The shared frame sits in the header band, in normal flow, so
-            Globe's top-of-page hierarchy matches every other surface:
-            IDENTITY/CONTEXT -> HUMAN BASE/VALUE/DOMAIN -> live content.
-            Deliberately NOT in the bottom-left overlay: that panel is a
-            floating, height-capped stack and the frame collided with the
-            observation strip there. */}
-        {personFrameSlot ? <div style={{ marginTop: 8 }}>{personFrameSlot}</div> : null}
+        {/* The shared frame is REFERENCE / AUDIT content, not the primary
+            content of this surface. On Globe the primary content is the
+            sphere itself, so the frame ships COLLAPSED: the band keeps one
+            summary row, and the panels open into their own capped, scrolling
+            container instead of growing the band over the canvas.
+            Nothing is removed — PersonFrame, Social-Value Spine, internal
+            RED/WHITE roles and the source spine are all still here, one
+            click away. */}
+        {personFrameSlot ? (
+          <details style={{ marginTop: 8 }}>
+            <summary
+              style={{
+                cursor: "pointer",
+                fontSize: 10.5,
+                letterSpacing: 1.2,
+                color: "#5a76a3",
+                padding: "3px 0",
+              }}
+            >
+              מסגרת אדם · ערך · תפקידים · מקורות (reference frame)
+            </summary>
+            <div dir="rtl" style={{ maxHeight: "26vh", overflowY: "auto", marginTop: 6 }}>
+              {personFrameSlot}
+            </div>
+          </details>
+        ) : null}
+        </div>
       </div>
 
       {selected && selected.status !== "none" ? (
@@ -687,9 +722,22 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
         <CanonActivityPanel canonActions={canonActions ?? []} canonEffects={canonEffects ?? []} canonNeeds={canonNeeds ?? []} canonOffers={canonOffers ?? []} />
       )}
       <RegionLayerPanel registry={registry ?? []} />
+      {/* BOTTOM-LEFT STACK — tier 4 of the Globe hierarchy: compact
+            overlays / verified network info, below the sphere in priority.
+            Both this stack and LEGEND are anchored bottom-left; the legend
+            reserves the space above (`styles.legend`, bottom 88) and this
+            stack sits under it, collapsed. Expanding it deliberately
+            overlays the legend (zIndex 14) — a user action, not a default
+            state, and it can no longer occlude the sphere because it is
+            height-capped and bottom-anchored. */}
       {!selected || selected.status === "none" ? (
-        <div dir="rtl" style={{ position: "absolute", left: 12, bottom: 12, maxWidth: 420, maxHeight: "60vh", overflowY: "auto" }}>
-          {observationStrip}
+        <div dir="rtl" style={{ position: "absolute", left: 12, bottom: 12, zIndex: 14, maxWidth: 420, maxHeight: "34vh", overflowY: "auto" }}>
+          <details>
+            <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>
+              תצפית אחרונה · LATEST OBSERVATION (CANON)
+            </summary>
+            {observationStrip}
+          </details>
           <details>
             <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>
               Person / Value State (Phase 4, זהה ל-Hub/Dynamics/Brain) · CANON + קריאת התצפית האחרונה
@@ -752,7 +800,7 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
       {/* SCALE — real semantic zoom: what's real at each level on THIS
           globe, stated honestly rather than fabricating Community/System/
           World entities that don't exist as real data here. */}
-      <div dir="rtl" style={{ position: "absolute", bottom: 96, right: 16, zIndex: 10, background: "rgba(4,10,22,0.7)", backdropFilter: "blur(6px)", borderRadius: 8, padding: "8px 10px", fontSize: 10, color: "#7f97c2", maxWidth: 180 }}>
+      <div dir="rtl" style={{ position: "absolute", bottom: 46, right: 16, zIndex: 10, background: "rgba(4,10,22,0.7)", backdropFilter: "blur(6px)", borderRadius: 8, padding: "8px 10px", fontSize: 10, color: "#7f97c2", maxWidth: 180 }}>
         <div style={{ letterSpacing: 1, color: "#5aa6ff", marginBottom: 4 }}>קנה מידה מערכתי</div>
         <div>אדם — נקודות person</div>
         <div>יחסים — קווי transfer/membership</div>
@@ -786,13 +834,16 @@ const S: Record<string, React.CSSProperties> = {
   topCenter: { position: "absolute", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 10, fontSize: 11, letterSpacing: "3px", color: "#c3d5f2", textAlign: "center" },
   purposeLine: { fontSize: 9, letterSpacing: "0.3px", color: "#6f89b6", marginTop: 5, maxWidth: 360, textTransform: "none" },
 
-  legend: { position: "absolute", left: 24, bottom: 26, zIndex: 10, display: "flex", flexDirection: "column", gap: 5, maxWidth: 250 },
+  legend: { position: "absolute", left: 24, bottom: 88, zIndex: 10, display: "flex", flexDirection: "column", gap: 5, maxWidth: 250 },
   legendRow: { display: "flex", alignItems: "center", gap: 9 },
   legendLine: { width: 26, height: 1.5, borderRadius: 2, flexShrink: 0 },
   legendDot: { width: 6, height: 6, borderRadius: "50%", flexShrink: 0, marginLeft: 10, marginRight: 10 },
   legendText: { fontSize: 9.5, color: "#6f89b6", lineHeight: 1.4 },
   legendNote: { fontSize: 8.5, color: "#3e587f", lineHeight: 1.5, marginTop: 4 },
-  rightRail: { position: "absolute", right: 24, top: "50%", transform: "translateY(-50%)", zIndex: 10, width: 190, display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" },
+  /* Pinned BELOW the right-hand context panel rather than vertically centred:
+     centred, it sat at 394-506 and was completely covered by CANON ACTIVITY
+     (168-630, zIndex 12) — the rail rendered but was never visible. */
+  rightRail: { position: "absolute", right: 24, top: 620, zIndex: 10, width: 190, display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" },
   railHead: { fontSize: 8.5, letterSpacing: "2.5px", color: "#3e587f", marginBottom: 8 },
   streamRow: { fontSize: 10, lineHeight: 1.5, color: "#7f97c2", textAlign: "right" },
   streamId: { color: "#3e587f" },
