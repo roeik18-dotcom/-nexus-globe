@@ -20,6 +20,7 @@ import StateDiffPanel from "@/app/lib/philos/shell/StateDiffPanel";
 import BrainV2, { type ValueContext } from "./BrainV2";
 import CanonicalBrainPanel from "./CanonicalBrainPanel";
 import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
+import ContradictionProvenancePanel from "@/app/lib/philos/shell/ContradictionProvenancePanel";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import ObservationReadingPanel from "@/app/lib/philos/shell/ObservationReadingPanel";
 import GroupOpsPanel from "@/app/lib/philos/shell/GroupOpsPanel";
@@ -182,6 +183,7 @@ export default async function BrainPage({
             unmodified), plus Brain's own derived WHAT_CHANGED/WHY_IT_CHANGED/
             EVIDENCE/UNKNOWN/HYPOTHESES/NEXT_ACTION narrative. */}
         {personFrame ? <PersonFrameStrip frame={personFrame} compact /> : null}
+        <ContradictionProvenancePanel />
         <CanonicalBrainPanel
             subject={subject ?? personRef.person_id} asOf={systemClock.now()} lifecycle={lifecycle}
             pendingNeedsForBrain={needsRequiringAction(knownNeeds, lifecycle).map((n) => ({ need_id: n.need.need_id, desired_change: n.need.desired_change }))}
