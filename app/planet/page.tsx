@@ -62,7 +62,7 @@ import VerifiedRelationInventory from "@/app/lib/philos/shell/VerifiedRelationIn
 import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
 import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import SocialChronologyPanel from "@/app/lib/philos/shell/SocialChronologyPanel";
-import { runNetworkTruthGate, type EdgeCandidate } from "@/app/lib/philos/social/networkTruthGate";
+import { buildNetworkAccounting, RELATION_CLASS } from "@/app/lib/philos/social/networkAccounting";
 import { buildSocialChronology } from "@/app/lib/philos/social/socialChronology";
 import { isEffectVerified } from "@/app/lib/philos/canon/effect";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
@@ -235,63 +235,35 @@ export default async function PlanetPage({
   // Hoisted out of the JSX so the SHARED audit lane and the globe props read
   // the same objects. Computed inline they were two evaluations of the same
   // thing, which is exactly the pattern that produced the stale counters.
+  // Presentation filter, applied AFTER gating: the SOCIAL class is what this
+  // surface is about. Spatial/context and marketplace links were gated and
+  // counted; they are simply not listed here.
   const bridgeRows = registry
-        .filter((l) => l.relation === "ACTION_AFFECTS_COMMUNITY" || l.relation === "EFFECT_AFFECTS_COMMUNITY" || l.relation === "COMMUNITY_HAS_NEED")
-        .map((l) => ({
-          relation: l.relation,
-          link_id: l.link_id,
-          provenance: l.provenance,
-          // Only EFFECT_AFFECTS_COMMUNITY is composed rather than recorded.
-          derived: l.relation === "EFFECT_AFFECTS_COMMUNITY",
-        }));
+    .filter((l) => RELATION_CLASS[l.relation] === "SOCIAL")
+    .map((l) => ({
+      relation: l.relation,
+      link_id: l.link_id,
+      provenance: l.provenance,
+      derived: l.relation === "EFFECT_AFFECTS_COMMUNITY",
+    }));
 
-  const gateReport = (() => {
-        // EVERY candidate edge — drawn arcs and bridge links alike — is run
-        // through the gate. Nothing reaches the sphere on the strength of
-        // "it was already there".
-        const candidates: EdgeCandidate[] = [
-          ...arcs.map((a) => ({
-            from_entity_id: a.source_id,
-            to_entity_id: a.target_id,
-            relation_type: a.relation,
-            source_record_id: a.event_id,
-            provenance: "REAL" as const,
-            // Status is read from the record, never assumed. VERIFIED_STATUSES
-            // is the codebase's own definition of verified.
-            epistemic_status: (a.verification_status && VERIFIED_STATUSES.includes(a.verification_status)
-              ? "VERIFIED" : a.verification_status ? "CLAIMED" : "UNKNOWN") as "VERIFIED" | "CLAIMED" | "UNKNOWN",
-            // A membership arc is backed by exactly one thing: the membership.
-            backed_only_by_membership: a.relation === "member.joined",
-          })),
-          ...registry
-            .filter((l) => l.relation === "ACTION_AFFECTS_COMMUNITY" || l.relation === "EFFECT_AFFECTS_COMMUNITY" || l.relation === "COMMUNITY_HAS_NEED")
-            .map((l) => ({
-              from_entity_id: l.source.canonical_id,
-              to_entity_id: l.target.canonical_id,
-              relation_type: l.relation,
-              source_record_id: l.link_id,
-              provenance: (l.relation === "EFFECT_AFFECTS_COMMUNITY" ? "DERIVED_REAL" : l.provenance) as EdgeCandidate["provenance"],
-              epistemic_status: "CLAIMED" as const,
-              derivation_steps: l.relation === "EFFECT_AFFECTS_COMMUNITY"
-                ? [{ rule: "Effect.action_ref", backed_by: l.link_id },
-                   { rule: "ACTION_AFFECTS_COMMUNITY", backed_by: l.link_id }]
-                : undefined,
-            })),
-        ];
-        const rep = runNetworkTruthGate(candidates);
-        return {
-          candidates: rep.candidates,
-          passed: rep.passed.length,
-          rejected: rep.rejected.length,
-          real: rep.byProvenance.REAL,
-          derived: rep.byProvenance.DERIVED_REAL,
-          demo: rep.byProvenance.DEMO,
-          verified: rep.byStatus.VERIFIED,
-          claimed: rep.byStatus.CLAIMED,
-          unknown: rep.byStatus.UNKNOWN,
-          reasons: Object.entries(rep.byReason).map(([reason, count]) => ({ reason, count })),
-        };
-      })();
+  // ALL EntityLink types go through the gate. The previous code filtered to
+  // three relation types BEFORE gating, so 7 real links were never evaluated
+  // and the inventory claimed a completeness it did not have. Presentation may
+  // filter; truth accounting may not.
+  const accounting = buildNetworkAccounting(registry, arcs);
+  const gateReport = {
+    candidates: accounting.gate.candidates,
+    passed: accounting.gate.passed.length,
+    rejected: accounting.gate.rejected.length,
+    real: accounting.totals.real_relations,
+    derived: accounting.totals.derived_relations,
+    demo: accounting.totals.demo_relations,
+    verified: accounting.gate.byStatus.VERIFIED,
+    claimed: accounting.gate.byStatus.CLAIMED,
+    unknown: accounting.gate.byStatus.UNKNOWN,
+    reasons: Object.entries(accounting.gate.byReason).map(([reason, count]) => ({ reason, count })),
+  };
 
   return (
     <WorldGlobe

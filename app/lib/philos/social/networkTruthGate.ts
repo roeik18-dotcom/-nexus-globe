@@ -46,6 +46,17 @@ export const SUPPORTED_RELATIONS = [
   "PERSON_MEMBER_OF_COMMUNITY", "COMMUNITY_HAS_NEED",
   "ACTION_AFFECTS_COMMUNITY", "EFFECT_AFFECTS_COMMUNITY",
   "NEED_MATCHED_TO_OFFER", "PROVIDER_OFFERS_RESOURCE", "EFFECT_AFFECTS_PERSON",
+  "PERSON_ASSOCIATED_WITH_VALUE_GROUP", "PROJECT_BELONGS_TO_COMMUNITY", "COMMUNITY_USES_RESOURCE",
+  // Spatial/context relations. Added because the gate was REJECTING them as
+  // UNSUPPORTED_RELATION_TYPE, which reads as "someone forgot this type" when
+  // the truth is "this type is real and belongs to a different class". They
+  // are evaluated like any other link and separated by RELATION_CLASS at
+  // presentation, so the inventory can claim completeness honestly instead of
+  // dropping seven real links before the gate ever saw them.
+  "COMMUNITY_LOCATED_IN_REGION", "VALUE_GROUP_PRESENT_IN_REGION",
+  "ENTITY_LOCATED_IN", "ENTITY_ACTIVE_IN", "ENTITY_AFFECTS_REGION",
+  "ACTION_OCCURRED_IN", "EFFECT_OBSERVED_IN", "RESOURCE_AVAILABLE_IN",
+  "NEED_EXISTS_IN", "COMMUNITY_ACTIVE_IN",
 ] as const;
 
 export type SupportedRelation = (typeof SUPPORTED_RELATIONS)[number];
