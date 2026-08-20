@@ -79,7 +79,7 @@ function Row({ k, v }: { k: string; v: string }) {
   return (
     <div style={S.row}>
       <span style={{ ...TYPE.micro, color: "#8fa3c9", minWidth: 130, flexShrink: 0 }}>{k}</span>
-      <span style={{ flex: 1, fontSize: 11.5, color: COLOR.text, lineHeight: 1.5 }}>{v}</span>
+      <span style={{ flex: 1, fontSize: 13, color: COLOR.text, lineHeight: 1.5 }}>{v}</span>
     </div>
   );
 }
@@ -95,5 +95,5 @@ const S: Record<string, React.CSSProperties> = {
   head: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 },
   eyebrow: { ...TYPE.micro, color: "#34d399" },
   row: { display: "flex", gap: 8, padding: "4px 8px", borderRadius: RADIUS.sm, background: "rgba(90,120,180,0.05)", marginBottom: 3, alignItems: "baseline" },
-  empty: { fontSize: 11.5, fontStyle: "italic", color: "#8798b8" },
+  empty: { fontSize: 13, fontStyle: "italic", color: "#8798b8" },
 };

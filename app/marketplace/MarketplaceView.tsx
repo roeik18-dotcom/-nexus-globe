@@ -62,13 +62,13 @@ function IRow({ label, children }: { label: string; children: React.ReactNode })
   return (
     <div style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start" }}>
       <span style={{
-        fontSize: 10, fontFamily: "monospace", color: "var(--muted)",
+        fontSize: 12, fontFamily: "monospace", color: "var(--muted)",
         textTransform: "uppercase" as const, letterSpacing: "0.05em",
         minWidth: 106, paddingTop: 1, flexShrink: 0,
       }}>
         {label}
       </span>
-      <span style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5, wordBreak: "break-word" as const, flex: 1 }}>
+      <span style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.5, wordBreak: "break-word" as const, flex: 1 }}>
         {children}
       </span>
     </div>
@@ -79,7 +79,7 @@ function ISection({ title, children }: { title: string; children: React.ReactNod
   return (
     <div style={{ marginBottom: 16 }}>
       <div style={{
-        fontSize: 9, fontFamily: "monospace", color: "var(--muted)",
+        fontSize: 12, fontFamily: "monospace", color: "var(--muted)",
         textTransform: "uppercase" as const, letterSpacing: "0.08em",
         marginBottom: 8, paddingBottom: 4, borderBottom: "1px solid var(--border)",
       }}>
@@ -98,9 +98,9 @@ function EvidenceBlock({ signal, note, source, accentColor }: {
       marginBottom: 8, padding: "6px 10px", borderRadius: 4,
       background: "var(--surface-2)", border: "1px solid var(--border)",
     }}>
-      <div style={{ fontSize: 10, color: accentColor, marginBottom: 3 }}>{signal}</div>
-      <div style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.55 }}>{note}</div>
-      {source && <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 3, fontStyle: "italic" }}>src: {source}</div>}
+      <div style={{ fontSize: 12, color: accentColor, marginBottom: 3 }}>{signal}</div>
+      <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.55 }}>{note}</div>
+      {source && <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3, fontStyle: "italic" }}>src: {source}</div>}
     </div>
   );
 }
@@ -304,7 +304,7 @@ export default function MarketplaceView({
     const on = active({ kind: "value", id: v.id });
     return (
       <button key={v.id} onClick={() => inspect({ kind: "value", id: v.id })} style={{
-        fontSize: 10, padding: "2px 7px", borderRadius: 3, cursor: "pointer",
+        fontSize: 12, padding: "2px 7px", borderRadius: 3, cursor: "pointer",
         background: on ? "#3FB950"  : "#3FB95015",
         color:      on ? "#0D1117"  : "#3FB950",
         border:    `1px solid ${on ? "#3FB950" : "#3FB95028"}`,
@@ -319,7 +319,7 @@ export default function MarketplaceView({
     const on = active({ kind: "capability", id: cap.id });
     return (
       <button key={cap.id} onClick={() => inspect({ kind: "capability", id: cap.id })} style={{
-        display: "inline-block", fontSize: 11, padding: "3px 9px", borderRadius: 4,
+        display: "inline-block", fontSize: 13, padding: "3px 9px", borderRadius: 4,
         cursor: "pointer", fontWeight: on ? 700 : 500,
         background: on ? "#F472B6"  : "#F472B615",
         color:      on ? "#0D1117"  : "#F472B6",
@@ -335,7 +335,7 @@ export default function MarketplaceView({
     const on = active({ kind: "provider", id: prov.id });
     return (
       <button key={prov.id} onClick={() => inspect({ kind: "provider", id: prov.id })} style={{
-        fontSize: 11, padding: "3px 9px", borderRadius: 4, cursor: "pointer",
+        fontSize: 13, padding: "3px 9px", borderRadius: 4, cursor: "pointer",
         fontWeight: on ? 700 : 500,
         background: on ? "#FB923C"  : "#FB923C15",
         color:      on ? "#0D1117"  : "#FB923C",
@@ -352,7 +352,7 @@ export default function MarketplaceView({
     return (
       <button key={vcrId} onClick={() => inspect({ kind: "vcr", id: vcrId })} title="Inspect relation"
         style={{
-          fontSize: 8, padding: "1px 4px", borderRadius: 2, cursor: "pointer",
+          fontSize: 12, padding: "1px 4px", borderRadius: 2, cursor: "pointer",
           background: on ? "#58A6FF"  : "#58A6FF12",
           color:      on ? "#0D1117"  : "#58A6FF",
           border:    `1px solid ${on ? "#58A6FF" : "#58A6FF28"}`,
@@ -368,7 +368,7 @@ export default function MarketplaceView({
     return (
       <button key={pcrId} onClick={() => inspect({ kind: "pcr", id: pcrId })} title="Inspect relation"
         style={{
-          fontSize: 8, padding: "1px 4px", borderRadius: 2, cursor: "pointer",
+          fontSize: 12, padding: "1px 4px", borderRadius: 2, cursor: "pointer",
           background: on ? "#9E6EE6"  : "#9E6EE612",
           color:      on ? "#0D1117"  : "#9E6EE6",
           border:    `1px solid ${on ? "#9E6EE6" : "#9E6EE628"}`,
@@ -383,7 +383,7 @@ export default function MarketplaceView({
   function navBtn(label: string, item: InspectedItem, color: string) {
     return (
       <button onClick={() => inspect(item)} style={{
-        display: "inline-block", marginTop: 3, fontSize: 10, padding: "2px 6px",
+        display: "inline-block", marginTop: 3, fontSize: 12, padding: "2px 6px",
         borderRadius: 3, cursor: "pointer",
         background: `${color}12`, color, border: `1px solid ${color}25`,
         fontFamily: "inherit",
@@ -399,15 +399,15 @@ export default function MarketplaceView({
 
     if (inspected.kind === "value") {
       const v = valueById.get(inspected.id);
-      if (!v) return <div style={{ color: "var(--muted)", padding: 4, fontSize: 12 }}>Not found.</div>;
+      if (!v) return <div style={{ color: "var(--muted)", padding: 4, fontSize: 13 }}>Not found.</div>;
       const connGaps = gapsByValueId.get(v.id) ?? [];
       const connVcrs = vcrsByValueId.get(v.id) ?? [];
       const connCapIds = [...new Set(connVcrs.map(r => r.capabilityId))];
       return (
         <>
           <ISection title="Identity">
-            <IRow label="id"><code style={{ fontSize: 10, color: "var(--muted)", wordBreak: "break-all" }}>{v.id}</code></IRow>
-            <IRow label="type"><code style={{ fontSize: 10 }}>Value</code></IRow>
+            <IRow label="id"><code style={{ fontSize: 12, color: "var(--muted)", wordBreak: "break-all" }}>{v.id}</code></IRow>
+            <IRow label="type"><code style={{ fontSize: 12 }}>Value</code></IRow>
             <IRow label="grade"><span style={{ color: GRADE_COLOR[v.evidenceGrade] ?? "#6E7681" }}>{v.evidenceGrade}</span></IRow>
           </ISection>
           <ISection title="Context">
@@ -419,7 +419,7 @@ export default function MarketplaceView({
               {connGaps.length === 0
                 ? <span style={{ color: "var(--muted)", fontStyle: "italic" }}>none</span>
                 : <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    {connGaps.map(g => <code key={g.id} style={{ fontSize: 10, color: "#D29922" }}>{g.id}</code>)}
+                    {connGaps.map(g => <code key={g.id} style={{ fontSize: 12, color: "#D29922" }}>{g.id}</code>)}
                   </div>
               }
             </IRow>
@@ -442,7 +442,7 @@ export default function MarketplaceView({
                 ? <span style={{ color: "var(--muted)", fontStyle: "italic" }}>none yet — 0 real/DEMO Value Group centered on this value's name</span>
                 : <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     {(communityGroupsByValueId[v.id] ?? []).map(g => (
-                      <span key={g.group_name} style={{ fontSize: 10, color: g.status === "REAL" ? "#3FB950" : "#D29922" }}>{g.group_name} · {g.status}</span>
+                      <span key={g.group_name} style={{ fontSize: 12, color: g.status === "REAL" ? "#3FB950" : "#D29922" }}>{g.group_name} · {g.status}</span>
                     ))}
                   </div>
               }
@@ -457,8 +457,8 @@ export default function MarketplaceView({
                   background: "#58A6FF0A", border: "1px solid #58A6FF20",
                   fontFamily: "inherit", textAlign: "left",
                 }}>
-                  <code style={{ fontSize: 9, color: "#58A6FF" }}>{vcr.id.slice(-24)}</code>
-                  <span style={{ fontSize: 9, color: "var(--muted)" }}>{vcr.relationType}</span>
+                  <code style={{ fontSize: 12, color: "#58A6FF" }}>{vcr.id.slice(-24)}</code>
+                  <span style={{ fontSize: 12, color: "var(--muted)" }}>{vcr.relationType}</span>
                 </button>
               ))}
             </ISection>
@@ -469,7 +469,7 @@ export default function MarketplaceView({
 
     if (inspected.kind === "capability") {
       const cap = capabilityById.get(inspected.id);
-      if (!cap) return <div style={{ color: "var(--muted)", padding: 4, fontSize: 12 }}>Not found.</div>;
+      if (!cap) return <div style={{ color: "var(--muted)", padding: 4, fontSize: 13 }}>Not found.</div>;
       const connVcrs = vcrsByCapId.get(cap.id) ?? [];
       const connPcrs = pcrsByCapId.get(cap.id) ?? [];
       const connValueIds = [...new Set(connVcrs.map(r => r.valueId))];
@@ -481,8 +481,8 @@ export default function MarketplaceView({
       return (
         <>
           <ISection title="Identity">
-            <IRow label="id"><code style={{ fontSize: 10, color: "var(--muted)", wordBreak: "break-all" }}>{cap.id}</code></IRow>
-            <IRow label="type"><code style={{ fontSize: 10 }}>Capability</code></IRow>
+            <IRow label="id"><code style={{ fontSize: 12, color: "var(--muted)", wordBreak: "break-all" }}>{cap.id}</code></IRow>
+            <IRow label="type"><code style={{ fontSize: 12 }}>Capability</code></IRow>
             <IRow label="grade"><span style={{ color: GRADE_COLOR[cap.evidenceGrade] ?? "#6E7681" }}>{cap.evidenceGrade}</span></IRow>
           </ISection>
           <ISection title="Context">
@@ -525,8 +525,8 @@ export default function MarketplaceView({
                   background: "#58A6FF0A", border: "1px solid #58A6FF20",
                   fontFamily: "inherit", textAlign: "left",
                 }}>
-                  <code style={{ fontSize: 9, color: "#58A6FF" }}>{vcr.id.slice(-24)}</code>
-                  <span style={{ fontSize: 9, color: "var(--muted)" }}>{vcr.relationType}</span>
+                  <code style={{ fontSize: 12, color: "#58A6FF" }}>{vcr.id.slice(-24)}</code>
+                  <span style={{ fontSize: 12, color: "var(--muted)" }}>{vcr.relationType}</span>
                 </button>
               ))}
             </ISection>
@@ -540,18 +540,18 @@ export default function MarketplaceView({
                   background: "#9E6EE60A", border: "1px solid #9E6EE620",
                   fontFamily: "inherit", textAlign: "left",
                 }}>
-                  <code style={{ fontSize: 9, color: "#9E6EE6" }}>{pcr.id.slice(-24)}</code>
-                  <span style={{ fontSize: 9, color: "var(--muted)" }}>{pcr.relationType}</span>
+                  <code style={{ fontSize: 12, color: "#9E6EE6" }}>{pcr.id.slice(-24)}</code>
+                  <span style={{ fontSize: 12, color: "var(--muted)" }}>{pcr.relationType}</span>
                 </button>
               ))}
             </ISection>
           )}
           <ISection title="Provenance Paths">
-            <div style={{ marginBottom: 6, fontSize: 10, color: "var(--muted)", fontStyle: "italic", lineHeight: 1.5 }}>
+            <div style={{ marginBottom: 6, fontSize: 12, color: "var(--muted)", fontStyle: "italic", lineHeight: 1.5 }}>
               These paths explain why this capability appears. They do not rank, recommend, or evaluate.
             </div>
             {capExplainPaths.length === 0 ? (
-              <div style={{ fontSize: 11, color: "var(--muted)", fontStyle: "italic" }}>
+              <div style={{ fontSize: 13, color: "var(--muted)", fontStyle: "italic" }}>
                 No chains from the selected mission.
               </div>
             ) : capExplainPaths.map((path, pi) => {
@@ -563,13 +563,13 @@ export default function MarketplaceView({
                 <details key={pi} style={{ marginBottom: 6 }}>
                   <summary style={{
                     cursor: "pointer", listStyle: "none", display: "flex",
-                    flexWrap: "wrap", alignItems: "center", gap: 4, fontSize: 10,
+                    flexWrap: "wrap", alignItems: "center", gap: 4, fontSize: 12,
                     padding: "4px 6px", borderRadius: 4,
                     background: "var(--surface-2)", border: "1px solid var(--border)",
                   }}>
-                    <code style={{ fontSize: 9, color: "#D29922" }}>{gapLabel}</code>
-                    <span style={{ color: "var(--muted)", fontSize: 9 }}>→</span>
-                    <code style={{ fontSize: 9, color: "#3FB950" }}>{gv.value.context.label}</code>
+                    <code style={{ fontSize: 12, color: "#D29922" }}>{gapLabel}</code>
+                    <span style={{ color: "var(--muted)", fontSize: 12 }}>→</span>
+                    <code style={{ fontSize: 12, color: "#3FB950" }}>{gv.value.context.label}</code>
                     {badgeVcr(vc.vcr.id)}
                   </summary>
                   <div style={{ paddingLeft: 8, marginTop: 4, borderLeft: "2px solid #58A6FF30" }}>
@@ -587,7 +587,7 @@ export default function MarketplaceView({
 
     if (inspected.kind === "provider") {
       const prov = providerById.get(inspected.id);
-      if (!prov) return <div style={{ color: "var(--muted)", padding: 4, fontSize: 12 }}>Not found.</div>;
+      if (!prov) return <div style={{ color: "var(--muted)", padding: 4, fontSize: 13 }}>Not found.</div>;
       const connPcrs    = pcrsByProviderId.get(prov.id) ?? [];
       const connCapIds  = [...new Set(connPcrs.map(r => r.capabilityId))];
       const provExplainPaths = mission ? computeExplainPaths(
@@ -597,8 +597,8 @@ export default function MarketplaceView({
       return (
         <>
           <ISection title="Identity">
-            <IRow label="id"><code style={{ fontSize: 10, color: "var(--muted)", wordBreak: "break-all" }}>{prov.id}</code></IRow>
-            <IRow label="type"><code style={{ fontSize: 10 }}>Provider</code></IRow>
+            <IRow label="id"><code style={{ fontSize: 12, color: "var(--muted)", wordBreak: "break-all" }}>{prov.id}</code></IRow>
+            <IRow label="type"><code style={{ fontSize: 12 }}>Provider</code></IRow>
             <IRow label="grade"><span style={{ color: GRADE_COLOR[prov.evidenceGrade] ?? "#6E7681" }}>{prov.evidenceGrade}</span></IRow>
             <IRow label="provider type">{prov.context.providerType}</IRow>
           </ISection>
@@ -610,11 +610,11 @@ export default function MarketplaceView({
             <div style={{
               padding: "6px 10px", borderRadius: 4,
               background: "#FB923C08", border: "1px solid #FB923C20",
-              fontSize: 10, color: "var(--muted)", fontStyle: "italic", lineHeight: 1.6,
+              fontSize: 12, color: "var(--muted)", fontStyle: "italic", lineHeight: 1.6,
             }}>
               No selection made · not engaged · not evaluated
             </div>
-            <div style={{ marginTop: 6, fontSize: 9, color: "var(--muted)", fontStyle: "italic" }}>
+            <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}>
               Example provider — no affiliation, availability, recommendation, selection, or delivery implied.
             </div>
           </ISection>
@@ -641,18 +641,18 @@ export default function MarketplaceView({
                   background: "#9E6EE60A", border: "1px solid #9E6EE620",
                   fontFamily: "inherit", textAlign: "left",
                 }}>
-                  <code style={{ fontSize: 9, color: "#9E6EE6" }}>{pcr.id.slice(-24)}</code>
-                  <span style={{ fontSize: 9, color: "var(--muted)" }}>{pcr.relationType}</span>
+                  <code style={{ fontSize: 12, color: "#9E6EE6" }}>{pcr.id.slice(-24)}</code>
+                  <span style={{ fontSize: 12, color: "var(--muted)" }}>{pcr.relationType}</span>
                 </button>
               ))}
             </ISection>
           )}
           <ISection title="Provenance Paths">
-            <div style={{ marginBottom: 6, fontSize: 10, color: "var(--muted)", fontStyle: "italic", lineHeight: 1.5 }}>
+            <div style={{ marginBottom: 6, fontSize: 12, color: "var(--muted)", fontStyle: "italic", lineHeight: 1.5 }}>
               These paths explain why this provider appears. They do not rank, recommend, or evaluate.
             </div>
             {provExplainPaths.length === 0 ? (
-              <div style={{ fontSize: 11, color: "var(--muted)", fontStyle: "italic" }}>
+              <div style={{ fontSize: 13, color: "var(--muted)", fontStyle: "italic" }}>
                 No chains from the selected mission.
               </div>
             ) : provExplainPaths.map((path, pi) => {
@@ -665,16 +665,16 @@ export default function MarketplaceView({
                 <details key={pi} style={{ marginBottom: 6 }}>
                   <summary style={{
                     cursor: "pointer", listStyle: "none", display: "flex",
-                    flexWrap: "wrap", alignItems: "center", gap: 4, fontSize: 10,
+                    flexWrap: "wrap", alignItems: "center", gap: 4, fontSize: 12,
                     padding: "4px 6px", borderRadius: 4,
                     background: "var(--surface-2)", border: "1px solid var(--border)",
                   }}>
-                    <code style={{ fontSize: 9, color: "#D29922" }}>{gapLabel}</code>
-                    <span style={{ color: "var(--muted)", fontSize: 9 }}>→</span>
-                    <code style={{ fontSize: 9, color: "#3FB950" }}>{gv.value.context.label}</code>
+                    <code style={{ fontSize: 12, color: "#D29922" }}>{gapLabel}</code>
+                    <span style={{ color: "var(--muted)", fontSize: 12 }}>→</span>
+                    <code style={{ fontSize: 12, color: "#3FB950" }}>{gv.value.context.label}</code>
                     {badgeVcr(vc.vcr.id)}
-                    <span style={{ color: "var(--muted)", fontSize: 9 }}>→</span>
-                    <code style={{ fontSize: 9, color: "#F472B6" }}>{vc.capability.context.label}</code>
+                    <span style={{ color: "var(--muted)", fontSize: 12 }}>→</span>
+                    <code style={{ fontSize: 12, color: "#F472B6" }}>{vc.capability.context.label}</code>
                     {badgePcr(cp.pcr.id)}
                   </summary>
                   <div style={{ paddingLeft: 8, marginTop: 4, borderLeft: "2px solid #9E6EE630" }}>
@@ -695,15 +695,15 @@ export default function MarketplaceView({
 
     if (inspected.kind === "vcr") {
       const vcr = vcrById.get(inspected.id);
-      if (!vcr) return <div style={{ color: "var(--muted)", padding: 4, fontSize: 12 }}>Not found.</div>;
+      if (!vcr) return <div style={{ color: "var(--muted)", padding: 4, fontSize: 13 }}>Not found.</div>;
       const val = valueById.get(vcr.valueId);
       const cap = capabilityById.get(vcr.capabilityId);
       return (
         <>
           <ISection title="Identity">
-            <IRow label="id"><code style={{ fontSize: 10, color: "var(--muted)", wordBreak: "break-all" }}>{vcr.id}</code></IRow>
-            <IRow label="type"><code style={{ fontSize: 10 }}>ValueCapabilityRelation</code></IRow>
-            <IRow label="relationType"><code style={{ fontSize: 11, color: "#58A6FF" }}>{vcr.relationType}</code></IRow>
+            <IRow label="id"><code style={{ fontSize: 12, color: "var(--muted)", wordBreak: "break-all" }}>{vcr.id}</code></IRow>
+            <IRow label="type"><code style={{ fontSize: 12 }}>ValueCapabilityRelation</code></IRow>
+            <IRow label="relationType"><code style={{ fontSize: 13, color: "#58A6FF" }}>{vcr.relationType}</code></IRow>
             <IRow label="status">{vcr.status}</IRow>
             <IRow label="grade"><span style={{ color: GRADE_COLOR[vcr.evidenceGrade] ?? "#6E7681" }}>{vcr.evidenceGrade}</span></IRow>
             <IRow label="scope">
@@ -715,18 +715,18 @@ export default function MarketplaceView({
           <ISection title="Endpoints">
             <IRow label="valueId">
               <div>
-                <code style={{ fontSize: 10, color: "var(--muted)" }}>{vcr.valueId}</code>
+                <code style={{ fontSize: 12, color: "var(--muted)" }}>{vcr.valueId}</code>
                 {val && navBtn(val.context.label, { kind: "value", id: vcr.valueId }, "#3FB950")}
               </div>
             </IRow>
             <IRow label="capabilityId">
               <div>
-                <code style={{ fontSize: 10, color: "var(--muted)" }}>{vcr.capabilityId}</code>
+                <code style={{ fontSize: 12, color: "var(--muted)" }}>{vcr.capabilityId}</code>
                 {cap && navBtn(cap.context.label, { kind: "capability", id: vcr.capabilityId }, "#F472B6")}
               </div>
             </IRow>
-            {vcr.missionId && <IRow label="missionId"><code style={{ fontSize: 10, color: "var(--muted)" }}>{vcr.missionId}</code></IRow>}
-            {vcr.gapId     && <IRow label="gapId">    <code style={{ fontSize: 10, color: "var(--muted)" }}>{vcr.gapId}</code></IRow>}
+            {vcr.missionId && <IRow label="missionId"><code style={{ fontSize: 12, color: "var(--muted)" }}>{vcr.missionId}</code></IRow>}
+            {vcr.gapId     && <IRow label="gapId">    <code style={{ fontSize: 12, color: "var(--muted)" }}>{vcr.gapId}</code></IRow>}
           </ISection>
           {vcr.evidence.length > 0 && (
             <ISection title="Evidence">
@@ -741,15 +741,15 @@ export default function MarketplaceView({
 
     if (inspected.kind === "pcr") {
       const pcr = pcrById.get(inspected.id);
-      if (!pcr) return <div style={{ color: "var(--muted)", padding: 4, fontSize: 12 }}>Not found.</div>;
+      if (!pcr) return <div style={{ color: "var(--muted)", padding: 4, fontSize: 13 }}>Not found.</div>;
       const prov = providerById.get(pcr.providerId);
       const cap  = capabilityById.get(pcr.capabilityId);
       return (
         <>
           <ISection title="Identity">
-            <IRow label="id"><code style={{ fontSize: 10, color: "var(--muted)", wordBreak: "break-all" }}>{pcr.id}</code></IRow>
-            <IRow label="type"><code style={{ fontSize: 10 }}>ProviderCapabilityRelation</code></IRow>
-            <IRow label="relationType"><code style={{ fontSize: 11, color: "#9E6EE6" }}>{pcr.relationType}</code></IRow>
+            <IRow label="id"><code style={{ fontSize: 12, color: "var(--muted)", wordBreak: "break-all" }}>{pcr.id}</code></IRow>
+            <IRow label="type"><code style={{ fontSize: 12 }}>ProviderCapabilityRelation</code></IRow>
+            <IRow label="relationType"><code style={{ fontSize: 13, color: "#9E6EE6" }}>{pcr.relationType}</code></IRow>
             <IRow label="status">{pcr.status}</IRow>
             <IRow label="grade"><span style={{ color: GRADE_COLOR[pcr.evidenceGrade] ?? "#6E7681" }}>{pcr.evidenceGrade}</span></IRow>
             <IRow label="scope">
@@ -761,18 +761,18 @@ export default function MarketplaceView({
           <ISection title="Endpoints">
             <IRow label="providerId">
               <div>
-                <code style={{ fontSize: 10, color: "var(--muted)" }}>{pcr.providerId}</code>
+                <code style={{ fontSize: 12, color: "var(--muted)" }}>{pcr.providerId}</code>
                 {prov && navBtn(prov.context.label, { kind: "provider", id: pcr.providerId }, "#FB923C")}
               </div>
             </IRow>
             <IRow label="capabilityId">
               <div>
-                <code style={{ fontSize: 10, color: "var(--muted)" }}>{pcr.capabilityId}</code>
+                <code style={{ fontSize: 12, color: "var(--muted)" }}>{pcr.capabilityId}</code>
                 {cap && navBtn(cap.context.label, { kind: "capability", id: pcr.capabilityId }, "#F472B6")}
               </div>
             </IRow>
-            {pcr.missionId && <IRow label="missionId"><code style={{ fontSize: 10, color: "var(--muted)" }}>{pcr.missionId}</code></IRow>}
-            {pcr.gapId     && <IRow label="gapId">    <code style={{ fontSize: 10, color: "var(--muted)" }}>{pcr.gapId}</code></IRow>}
+            {pcr.missionId && <IRow label="missionId"><code style={{ fontSize: 12, color: "var(--muted)" }}>{pcr.missionId}</code></IRow>}
+            {pcr.gapId     && <IRow label="gapId">    <code style={{ fontSize: 12, color: "var(--muted)" }}>{pcr.gapId}</code></IRow>}
           </ISection>
           {pcr.evidence.length > 0 && (
             <ISection title="Evidence">
@@ -785,7 +785,7 @@ export default function MarketplaceView({
             <div style={{
               marginTop: 4, padding: "6px 10px", borderRadius: 4,
               background: "#FB923C08", border: "1px solid #FB923C20",
-              fontSize: 9, color: "var(--muted)", fontStyle: "italic", lineHeight: 1.6,
+              fontSize: 12, color: "var(--muted)", fontStyle: "italic", lineHeight: 1.6,
             }}>
               No selection made · not engaged · not evaluated
             </div>
@@ -879,7 +879,7 @@ export default function MarketplaceView({
           <div style={{
             marginBottom: 20, padding: "8px 14px",
             background: "#FB923C0A", border: "1px solid #FB923C25",
-            borderRadius: 5, fontSize: 11, color: "#FB923C",
+            borderRadius: 5, fontSize: 13, color: "#FB923C",
             fontFamily: "monospace", lineHeight: 1.6,
           }}>
             Example providers only — no affiliation, availability, recommendation, selection, or delivery implied.
@@ -891,10 +891,10 @@ export default function MarketplaceView({
           <header style={{ marginBottom: 24 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6, flexWrap: "wrap" }}>
               <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.4px", margin: 0 }}>Marketplace</h1>
-              <span style={{ fontSize: 11, fontFamily: "monospace", color: "var(--muted)" }}>
+              <span style={{ fontSize: 13, fontFamily: "monospace", color: "var(--muted)" }}>
                 read-only · no write-path
               </span>
-              <span dir="rtl" style={{ fontSize: 11, color: "var(--muted)" }}>
+              <span dir="rtl" style={{ fontSize: 13, color: "var(--muted)" }}>
                 — מה חסר, מי יכול לעזור, ואיך זה הופך לפעולה
               </span>
               {/* The "→ world" / "→ pudm" chips that sat here were a
@@ -903,7 +903,7 @@ export default function MarketplaceView({
                   terminal at all). Removed — navigation lives in the
                   shell only. */}
             </div>
-            <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>
+            <p style={{ fontSize: 13, color: "var(--muted)", margin: 0 }}>
               What the PUDM knows about provider coverage for each Gap. No provider has been selected, contacted, or engaged.
             </p>
           </header>
@@ -914,7 +914,7 @@ export default function MarketplaceView({
               const on = m.id === (mission?.id ?? "");
               return (
                 <button key={m.id} onClick={() => selectMission(m.id)} style={{
-                  fontSize: 11, padding: "5px 12px", borderRadius: 4, cursor: "pointer",
+                  fontSize: 13, padding: "5px 12px", borderRadius: 4, cursor: "pointer",
                   fontWeight: on ? 700 : 400,
                   background: on ? "#F472B6" : "var(--surface)",
                   color: on ? "#0D1117" : "var(--muted)",
@@ -929,7 +929,7 @@ export default function MarketplaceView({
 
           {/* ── Mode toggle ── */}
           <div style={{ marginBottom: 16, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-            <span style={{ fontSize: 10, color: "var(--muted)", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.06em" }}>View</span>
+            <span style={{ fontSize: 12, color: "var(--muted)", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.06em" }}>View</span>
             {(["contextual", "taxonomic"] as const).map(mode => {
               const on     = viewMode === mode;
               const accent = mode === "contextual" ? "#A371F7" : "#FFB84D";
@@ -938,7 +938,7 @@ export default function MarketplaceView({
                   key={mode}
                   onClick={() => setViewMode(mode)}
                   style={{
-                    fontSize: 11, padding: "4px 12px", borderRadius: 4, cursor: "pointer",
+                    fontSize: 13, padding: "4px 12px", borderRadius: 4, cursor: "pointer",
                     fontWeight: on ? 700 : 400,
                     background: on ? `${accent}18` : "var(--surface)",
                     color: on ? accent : "var(--muted)",
@@ -951,7 +951,7 @@ export default function MarketplaceView({
                 </button>
               );
             })}
-            <span style={{ fontSize: 10, color: "var(--muted)", fontFamily: "monospace" }}>
+            <span style={{ fontSize: 12, color: "var(--muted)", fontFamily: "monospace" }}>
               {viewMode === "contextual"
                 ? "required_for · mission-scoped"
                 : "can_address · general"}
@@ -964,13 +964,13 @@ export default function MarketplaceView({
             background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8,
           }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Mission</span>
-              <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, background: "#3FB95015", color: "#3FB950", border: "1px solid #3FB95028" }}>
+              <span style={{ fontSize: 12, fontFamily: "monospace", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Mission</span>
+              <span style={{ fontSize: 12, padding: "1px 6px", borderRadius: 3, background: "#3FB95015", color: "#3FB950", border: "1px solid #3FB95028" }}>
                 {mission.state.status}
               </span>
-              <span style={{ fontSize: 10, color: "var(--muted)" }}>{mission.context.domain}</span>
+              <span style={{ fontSize: 12, color: "var(--muted)" }}>{mission.context.domain}</span>
             </div>
-            <p style={{ fontSize: 13, fontWeight: 500, margin: "0 0 14px", lineHeight: 1.6, maxWidth: 720 }}>
+            <p style={{ fontSize: 15, fontWeight: 500, margin: "0 0 14px", lineHeight: 1.6, maxWidth: 720 }}>
               {mission.context.statement}
             </p>
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "center" }}>
@@ -982,24 +982,24 @@ export default function MarketplaceView({
               ].map(s => (
                 <div key={s.label} style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
                   <span style={{ fontSize: 20, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.n}</span>
-                  <span style={{ fontSize: 11, color: "var(--muted)" }}>{s.label}</span>
+                  <span style={{ fontSize: 13, color: "var(--muted)" }}>{s.label}</span>
                 </div>
               ))}
-              <span style={{ fontSize: 10, color: "var(--muted)", fontFamily: "monospace", marginLeft: "auto" }}>
+              <span style={{ fontSize: 12, color: "var(--muted)", fontFamily: "monospace", marginLeft: "auto" }}>
                 selected_for: 0
               </span>
             </div>
           </div>
 
           {/* ── Chain header ── */}
-          <div style={{ marginBottom: 4, display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontFamily: "monospace" }}>
+          <div style={{ marginBottom: 4, display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontFamily: "monospace" }}>
             {["Mission", "Gap", "Value", "Capability", "Provider"].map((node, i, arr) => (
               <span key={node} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ color: "var(--text)" }}>{node}</span>
                 {i < arr.length - 1 && <span style={{ color: "var(--muted)" }}>→</span>}
               </span>
             ))}
-            <span style={{ marginLeft: "auto", fontSize: 10, color: "#3FB950", padding: "1px 6px", borderRadius: 3, background: "#3FB95012", border: "1px solid #3FB95025" }}>
+            <span style={{ marginLeft: "auto", fontSize: 12, color: "#3FB950", padding: "1px 6px", borderRadius: 3, background: "#3FB95012", border: "1px solid #3FB95025" }}>
               live
             </span>
           </div>
@@ -1010,7 +1010,7 @@ export default function MarketplaceView({
               header on why the id spaces categorically don't bridge today). The
               conceptual parallel is stated here, not a renamed label pretending
               they're the same data. */}
-          <div dir="rtl" style={{ marginBottom: 16, fontSize: 10.5, color: "var(--muted)" }}>
+          <div dir="rtl" style={{ marginBottom: 16, fontSize: 13, color: "var(--muted)" }}>
             במונחי PHILOS: Gap ≈ Need (מה חסר) · Capability/Provider ≈ Resource/Offer (מי יכול לעזור) → Match → Action → Effect.
           </div>
 
@@ -1019,7 +1019,7 @@ export default function MarketplaceView({
             <button
               onClick={() => setFiltersOpen(o => !o)}
               style={{
-                fontSize: 11, padding: "4px 10px", borderRadius: 4, cursor: "pointer",
+                fontSize: 13, padding: "4px 10px", borderRadius: 4, cursor: "pointer",
                 background: anyFilterActive ? "#388BFD18" : "var(--surface)",
                 color: anyFilterActive ? "#58A6FF" : "var(--muted)",
                 border: `1px solid ${anyFilterActive ? "#388BFD40" : "var(--border)"}`,
@@ -1069,7 +1069,7 @@ export default function MarketplaceView({
                 </select>
                 {anyFilterActive && (
                   <button onClick={clearFilters} style={{
-                    fontSize: 9, padding: "2px 8px", borderRadius: 3, cursor: "pointer",
+                    fontSize: 12, padding: "2px 8px", borderRadius: 3, cursor: "pointer",
                     background: "#DA363318", color: "#F85149", border: "1px solid #DA363330",
                     fontFamily: "monospace", marginLeft: "auto",
                   }}>clear ✕</button>
@@ -1077,7 +1077,7 @@ export default function MarketplaceView({
               </div>
             )}
             {anyFilterActive && (
-              <div style={{ marginTop: 6, fontSize: 11, color: "var(--muted)", fontFamily: "monospace" }}>
+              <div style={{ marginTop: 6, fontSize: 13, color: "var(--muted)", fontFamily: "monospace" }}>
                 {visibleGaps.length} / {missionGaps.length} gaps · {
                   visibleGaps.reduce((n, g) => n + filteredItems(g).length, 0)
                 } capability rows
@@ -1105,18 +1105,18 @@ export default function MarketplaceView({
                     borderBottom: (items.length > 0 || (viewMode === "contextual" && !hasCtx)) ? "1px solid var(--border)" : "none",
                     display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
                   }}>
-                    <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, fontFamily: "monospace", background: sevCfg.bg, color: sevCfg.text, border: `1px solid ${sevCfg.border}`, flexShrink: 0 }}>
+                    <span style={{ fontSize: 12, padding: "1px 6px", borderRadius: 3, fontFamily: "monospace", background: sevCfg.bg, color: sevCfg.text, border: `1px solid ${sevCfg.border}`, flexShrink: 0 }}>
                       {sevCfg.label}
                     </span>
-                    <span style={{ fontSize: 12, fontWeight: 600 }}>{gapName}</span>
-                    <span style={{ fontSize: 11, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>{gapName}</span>
+                    <span style={{ fontSize: 13, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
                       {gap.context.description}
                     </span>
                   </div>
 
                   {/* Capability rows — compact horizontal */}
                   {viewMode === "contextual" && !hasCtx ? (
-                    <div style={{ padding: "8px 16px", fontSize: 11, color: "var(--muted)", fontStyle: "italic" }}>
+                    <div style={{ padding: "8px 16px", fontSize: 13, color: "var(--muted)", fontStyle: "italic" }}>
                       — no contextual qualification for this mission
                     </div>
                   ) : items.length === 0 ? null : (
@@ -1129,24 +1129,24 @@ export default function MarketplaceView({
                         }}>
                           {/* Values */}
                           <div style={{ display: "flex", flexDirection: "column" as const, gap: 3, minWidth: 80 }}>
-                            <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase" as const, color: "var(--muted)", opacity: 0.55 }}>Value</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase" as const, color: "var(--muted)", opacity: 0.55 }}>Value</span>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
                               {item.coveredByValues.map(v => chipValue(v))}
                             </div>
                           </div>
-                          <span style={{ color: "var(--muted)", fontSize: 11, flexShrink: 0, paddingBottom: 3 }}>→</span>
+                          <span style={{ color: "var(--muted)", fontSize: 13, flexShrink: 0, paddingBottom: 3 }}>→</span>
                           {/* Capability */}
                           <div style={{ flexShrink: 0, display: "flex", flexDirection: "column" as const, gap: 3 }}>
-                            <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase" as const, color: "var(--muted)", opacity: 0.55 }}>Capability</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase" as const, color: "var(--muted)", opacity: 0.55 }}>Capability</span>
                             {chipCap(item.capability)}
                           </div>
-                          <span style={{ color: "var(--muted)", fontSize: 11, flexShrink: 0, paddingBottom: 3 }}>→</span>
+                          <span style={{ color: "var(--muted)", fontSize: 13, flexShrink: 0, paddingBottom: 3 }}>→</span>
                           {/* Providers */}
                           <div style={{ display: "flex", flexDirection: "column" as const, gap: 3, flex: 1 }}>
-                            <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase" as const, color: "var(--muted)", opacity: 0.55 }}>Provider</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase" as const, color: "var(--muted)", opacity: 0.55 }}>Provider</span>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                               {item.providers.length === 0
-                                ? <span style={{ fontSize: 11, color: "var(--muted)" }}>—</span>
+                                ? <span style={{ fontSize: 13, color: "var(--muted)" }}>—</span>
                                 : item.providers.map(p => chipProv(p))
                               }
                             </div>
@@ -1161,7 +1161,7 @@ export default function MarketplaceView({
           </div>
 
           {/* ── Footer ── */}
-          <div style={{ marginTop: 36, padding: "10px 16px", background: "var(--surface-2)", borderRadius: 6, fontSize: 11, color: "var(--muted)", fontFamily: "monospace", lineHeight: 1.6 }}>
+          <div style={{ marginTop: 36, padding: "10px 16px", background: "var(--surface-2)", borderRadius: 6, fontSize: 13, color: "var(--muted)", fontFamily: "monospace", lineHeight: 1.6 }}>
             Live · data/missions.json · data/gaps.json · data/values.json · data/capabilities.json
             &nbsp;· data/value-capability-relations.json · data/providers.json · data/provider-capability-relations.json
             <br />
@@ -1186,7 +1186,7 @@ export default function MarketplaceView({
             background: "var(--surface-2)",
           }}>
             <div>
-              <div style={{ fontSize: 9, fontFamily: "monospace", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
+              <div style={{ fontSize: 12, fontFamily: "monospace", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
                 {kindLabel} · Inspector
               </div>
               <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", lineHeight: 1.3 }}>{title}</div>

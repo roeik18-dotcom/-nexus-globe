@@ -80,7 +80,7 @@ export default function UserIntake({ onDone }: { onDone: (p: IntakeProfile) => v
           <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i <= step ? C.cyan : C.muted, transition: "background .3s" }} />
         ))}
       </div>
-      <div style={{ fontSize: 10, color: C.borderSoft, letterSpacing: 1, marginBottom: 6 }}>שאלה {step + 1} מתוך 3 · פחות מדקה</div>
+      <div style={{ fontSize: 12, color: C.borderSoft, letterSpacing: 1, marginBottom: 6 }}>שאלה {step + 1} מתוך 3 · פחות מדקה</div>
 
       {step === 0 && (
         <>
@@ -103,7 +103,7 @@ export default function UserIntake({ onDone }: { onDone: (p: IntakeProfile) => v
       {step === 2 && (
         <>
           <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>מה חשוב לך?</div>
-          <div style={{ fontSize: 11, color: C.borderSoft, marginBottom: 14 }}>אפשר לבחור כמה</div>
+          <div style={{ fontSize: 13, color: C.borderSoft, marginBottom: 14 }}>אפשר לבחור כמה</div>
           <div style={{ display: "grid", gap: 8 }}>
             {VALUE_OPTIONS.map(o => opt(o.label, values.includes(o.value), () => toggleValue(o.value), C.green))}
           </div>
@@ -117,7 +117,7 @@ export default function UserIntake({ onDone }: { onDone: (p: IntakeProfile) => v
 
       {step > 0 && (
         <button onClick={() => setStep(s => Math.max(0, s - 1))} style={{
-          marginTop: "auto", alignSelf: "flex-start", padding: "6px 12px", borderRadius: 6, fontSize: 11,
+          marginTop: "auto", alignSelf: "flex-start", padding: "6px 12px", borderRadius: 6, fontSize: 13,
           cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.borderSoft,
         }}>→ חזרה</button>
       )}

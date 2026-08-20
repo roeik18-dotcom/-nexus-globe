@@ -329,7 +329,7 @@ export default async function MarketplacePage({
       {/* DEMO — the existing, already-labeled compost lifecycle. Explicit
           secondary section, never primary. */}
       <div dir="rtl" style={{ margin: "8px 20px 0" }}>
-        <div style={{ fontSize: 9.5, letterSpacing: 1, color: "#5a76a3", marginBottom: 5 }}>דוגמה · DEMO FLOW</div>
+        <div style={{ fontSize: 12, letterSpacing: 1, color: "#6c86b5", marginBottom: 5 }}>דוגמה · DEMO FLOW</div>
       </div>
       <DemoMarketplaceFlow />
 
@@ -338,10 +338,10 @@ export default async function MarketplacePage({
           note above. */}
       <div dir="rtl" style={{ padding: "0 20px 24px" }}>
         {missions.length === 0 ? (
-          <div style={{ fontSize: 11, color: "#5a76a3" }}>No PUDM/legacy mission data on disk.</div>
+          <div style={{ fontSize: 13, color: "#6c86b5" }}>No PUDM/legacy mission data on disk.</div>
         ) : (
           <details>
-            <summary style={{ cursor: "pointer", fontSize: 10, letterSpacing: 1.5, color: "#5a76a3" }}>
+            <summary style={{ cursor: "pointer", fontSize: 12, letterSpacing: 1.5, color: "#6c86b5" }}>
               LEGACY / AUDIT — קטלוג PUDM (משימות / פערים / יכולות / ספקים, ראה סיווג מלא בקוד הדף)
             </summary>
             <div style={{ marginTop: 10 }}>

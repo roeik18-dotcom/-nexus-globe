@@ -30,7 +30,8 @@ import Link from "next/link";
 import SocialScaleNav from "./SocialScaleNav";
 
 import type { ReactNode } from "react";
-import type { ContextField, ResolvedViewerContext } from "../context/resolvedViewerContext";
+import type { ResolvedViewerContext } from "../context/resolvedViewerContext";
+import OrientationBand, { type ViewScale } from "./OrientationBand";
 import { COLOR, FS, PRODUCT_FAMILY_CUE, RADIUS, SPACE, STATUS, TERMINAL, TYPE } from "./designTokens";
 
 export interface ShellCommunity {
@@ -102,6 +103,21 @@ export type ShellSurfaceKey = "hub" | "brain" | "dynamics" | "globe" | "communit
  * Globe GREEN+PURPLE, World WHITE+PURPLE). The relationship is structural,
  * not chromatic — World is not green and must never be shown as green.
  */
+/**
+ * WHICH LAYER EACH TERMINAL READS.
+ *
+ * This is NAVIGATION state — where the user is standing — and it is kept
+ * deliberately separate from `active_domain`, which is a claim about the
+ * user's model and comes only from a recorded DomainState. Standing on
+ * /hub/community makes the SCALE "GROUP"; it does not make Community the
+ * active domain. Conflating those two is the defect the canonical resolver
+ * was built to remove, so the two never share a value or a type.
+ */
+const SURFACE_SCALE: Record<ShellSurfaceKey, ViewScale> = {
+  hub: "PERSON", brain: "PERSON", dynamics: "PERSON", marketplace: "PERSON",
+  community: "GROUP", globe: "NETWORK", world: "SYSTEM",
+};
+
 const NAV: { label: string; href: string; key: ShellSurfaceKey; carriesCtx?: boolean; carriesSubject?: boolean; carriesCommunity?: boolean; family?: "social" }[] = [
   { label: "Hub", href: "/hub", key: "hub", carriesSubject: true },
   { label: "Brain", href: "/brain", key: "brain", carriesSubject: true },
@@ -180,81 +196,12 @@ function StatusPill({ label, value, kind }: { label: string; value: string; kind
  *                     a current project, and inferring one is explicitly
  *                     out of bounds.
  */
-function ContextStrip({ ctx, accent, observedCount }: {
-  ctx: ResolvedViewerContext; accent: string; observedCount?: number;
-}) {
-  /* Every slot is a ContextField carrying its own epistemic state. The strip
-     performs no reads and makes no decisions — it renders what the one
-     resolver returned, including its reason, which lands in `title` so an
-     UNKNOWN can always explain itself. */
-  const slots: { label: string; field: ContextField }[] = [
-    { label: "ACTIVE DOMAIN", field: ctx.active_domain },
-    { label: "VALUE", field: ctx.personal_value },
-    { label: "PROJECT", field: ctx.project },
-  ];
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: SPACE.sm }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>PERSON</span>
-          <span style={{ fontSize: FS.meta, fontWeight: 600, color: COLOR.text }}>{ctx.subject_id}</span>
-        </span>
-        {slots.map((s) => (
-          <span key={s.label} style={{ display: "inline-flex", alignItems: "center", gap: 6 }} title={s.field.because}>
-            <span style={{ color: COLOR.textFaint, marginInlineEnd: 4 }}>·</span>
-            <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>{s.label}</span>
-            <span style={{
-              fontSize: FS.meta, fontWeight: 600,
-              color: s.field.value ? COLOR.text : STATUS.unknown.text,
-            }}>{s.field.value ?? s.field.status}</span>
-          </span>
-        ))}
-        {observedCount !== undefined ? (
-          <span
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 6, marginInlineStart: 4,
-              padding: "2px 8px", borderRadius: RADIUS.pill,
-              background: `${accent}14`, border: `1px solid ${accent}44`,
-            }}
-            title="כמה מתוך 9 תאי המדידה (Domain × Frame) נושאים תצפית אמיתית"
-          >
-            <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>כיסוי</span>
-            <span style={{ fontSize: FS.meta, fontWeight: 800, color: accent, fontFamily: "ui-monospace, monospace", direction: "ltr", unicodeBidi: "isolate" }}>
-              {observedCount}/9
-            </span>
-            <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>תאים נמדדו</span>
-          </span>
-        ) : null}
-      </div>
+/* `ContextStrip` stood here. It rendered PERSON · ACTIVE DOMAIN · VALUE ·
+   PROJECT · REFERENCE · REFERENCE GROUP as six equally weighted 10px slots,
+   which is how a screen ends up with five UNKNOWNs shouting as loudly as the
+   one resolved fact. `OrientationBand` replaces it with a real hierarchy and
+   is DELETED rather than kept as a second way to render the same context. */
 
-      {/* FRAME (canon §19). Same resolver, same epistemic state. */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>מסגרת היחוס</span>
-        {([["REFERENCE", ctx.reference], ["REFERENCE GROUP", ctx.reference_group]] as const).map(([label, field], i) => (
-          <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 5 }} title={field.because}>
-            {i > 0 ? <span style={{ color: COLOR.textFaint }}>·</span> : null}
-            <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>{label}</span>
-            <span style={{
-              fontSize: FS.meta, fontWeight: 600,
-              color: field.value ? COLOR.textDim : STATUS.unknown.text,
-            }}>{field.value ?? field.status}</span>
-          </span>
-        ))}
-        {/* A value held by a group the viewer belongs to. Rendered BESIDE the
-            person's own value and never inside it — the whole point of the
-            split. */}
-        {ctx.group_values.map((g) => (
-          <span key={g.group_id} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
-                title={`ערך שהקבוצה מחזיקה · הוצהר על ידי ${g.declared_by} · ${g.declaration_status}`}>
-            <span style={{ color: COLOR.textFaint }}>·</span>
-            <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>GROUP VALUE</span>
-            <span style={{ fontSize: FS.meta, fontWeight: 600, color: COLOR.textDim }}>{g.label}</span>
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function SystemShell({
   viewerContext,
@@ -421,17 +368,18 @@ export function SystemShell({
 
       <p style={{ ...TYPE.body, color: COLOR.textDim, margin: `0 0 ${SPACE.sm}px`, maxWidth: 640 }}>{purpose}</p>
 
-      {/* ONE CANONICAL CONTEXT. The strip used to be handed four separately
-          decided props — `valueLabel` from whatever the page had lying
-          around, `domain` from `selected.domain` (a property of a CLICKED
-          RECORD, i.e. navigation state), and `personContext` from a resolver
-          six of seven pages passed nothing to. Three different answers for
-          one session followed directly from that.
-
-          It now receives the resolver's single result. There is no
-          `valueLabel` prop any more, and no `selected.domain` read, because a
-          prop a page can fill is a decision a page can make. */}
-      <ContextStrip ctx={viewerContext} accent={terminal.accent} observedCount={observedCount} />
+      {/* THE SHARED ORIENTATION BAND. One implementation, seven terminals.
+          It takes the canonical context and the scale this screen reads —
+          and no other prop, so a terminal has no channel through which to
+          pass a semantic override. `ContextStrip` is gone: six equal 10px
+          metadata slots, mostly UNKNOWN, competing with the one or two facts
+          that were real. */}
+      <OrientationBand
+        ctx={viewerContext}
+        scale={SURFACE_SCALE[surface]}
+        surfaceTitle={terminal.label_he}
+        accent={terminal.accent}
+      />
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: SPACE.sm }}>
         {selected?.status === "found" ? (

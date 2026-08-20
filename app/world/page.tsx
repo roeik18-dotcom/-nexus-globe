@@ -336,8 +336,8 @@ export default async function WorldPage({ searchParams }: {
               tensions/competing → verified external relevance ONLY. */}
           {worldGroupProfile ? (
             <div style={{ border: "1px solid rgba(52,211,153,0.3)", borderRadius: 16, padding: "12px 18px", margin: "12px 0", background: "rgba(11,15,26,0.7)" }}>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: "#34d399", marginBottom: 6 }}>רלוונטיות קבוצתית · WORLD GROUP RELEVANCE</div>
-              <div style={{ fontSize: 11.5, color: "#dbe6f6", lineHeight: 1.8 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: 1, color: "#34d399", marginBottom: 6 }}>רלוונטיות קבוצתית · WORLD GROUP RELEVANCE</div>
+              <div style={{ fontSize: 13, color: "#dbe6f6", lineHeight: 1.8 }}>
                 <div>ערך כללי מהתצפית: ראה OBSERVATION READING למעלה — join קבוצתי: UNRESOLVED אלא אם קיים.</div>
                 <div>קבוצה תפעולית: {worldGroupProfile.name} — {worldGroupProfile.leading_family ? `${worldGroupProfile.leading_family.family_ref} ${worldGroupProfile.leading_family.label}` : "משפחה UNKNOWN"} · {worldGroupProfile.verified_effects} effects מאומתים</div>
                 <div>מתחים / ערכים מתחרים: {worldGroupProfile.tensions.length > 0 ? worldGroupProfile.tensions.map((t) => t.label).join(" · ") : "אין Tension רשום — אין ערך מתחרה מתועד"}</div>
@@ -376,7 +376,7 @@ const S: Record<string, React.CSSProperties> = {
   exCell: { padding: "4px 10px", fontSize: FS.meta, textAlign: "center", borderBottom: `1px solid ${COLOR.border}` },
   exHead: { ...TYPE.micro, fontSize: FS.tag, letterSpacing: 1.2, color: COLOR.textFaint, fontWeight: 700 },
   exDetails: { marginTop: 10, borderTop: `1px solid ${COLOR.border}`, paddingTop: 8 },
-  exSummary: { cursor: "pointer", fontSize: FS.tag, letterSpacing: 1, color: "#5a76a3", padding: "2px 0" },
+  exSummary: { cursor: "pointer", fontSize: FS.tag, letterSpacing: 1, color: "#6c86b5", padding: "2px 0" },
 
   reference: {
     border: `1px dashed ${STATUS.demo.border}`,

@@ -208,10 +208,10 @@ function ResearchCard({ item }: { item: ResearchItem }) {
       <div style={{ fontSize: 13.5, fontWeight: 600, color: "#cfe6f5", marginBottom: 6, lineHeight: 1.3 }}>
         {item.title}
       </div>
-      <div style={{ fontSize: 12, color: "#4a6a88", lineHeight: 1.6, flexGrow: 1, marginBottom: 12 }}>
+      <div style={{ fontSize: 13, color: "#4a6a88", lineHeight: 1.6, flexGrow: 1, marginBottom: 12 }}>
         {item.description}
       </div>
-      <div style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace", fontSize: 10.5, color: "#1e3a52" }}>
+      <div style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace", fontSize: 13, color: "#1e3a52" }}>
         {item.sourcePath}
       </div>
     </a>
@@ -235,10 +235,10 @@ function SimCard({ s }: { s: SimulationEntry }) {
       <div style={{ fontSize: 13.5, fontWeight: 600, color: "#cfe6f5", marginBottom: 4 }}>
         {s.label}
       </div>
-      <div style={{ fontSize: 12, color: "#4a6a88", marginBottom: 12, flexGrow: 1 }}>
+      <div style={{ fontSize: 13, color: "#4a6a88", marginBottom: 12, flexGrow: 1 }}>
         {s.stage} — {s.result}
       </div>
-      <div style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace", fontSize: 10.5, color: "#1e3a52" }}>
+      <div style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace", fontSize: 13, color: "#1e3a52" }}>
         research/simulation/output/{s.filename}
       </div>
     </a>
@@ -254,10 +254,10 @@ function VisualCard({ item }: { item: VisualItem }) {
       <div style={{ fontSize: 13.5, fontWeight: 600, color: "#cfe6f5", marginBottom: 6, lineHeight: 1.3 }}>
         {item.title}
       </div>
-      <div style={{ fontSize: 12, color: "#4a6a88", lineHeight: 1.6, flexGrow: 1, marginBottom: 12 }}>
+      <div style={{ fontSize: 13, color: "#4a6a88", lineHeight: 1.6, flexGrow: 1, marginBottom: 12 }}>
         {item.description}
       </div>
-      <div style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace", fontSize: 10.5, color: "#1e3a52" }}>
+      <div style={{ fontFamily: "var(--font-geist-mono), 'Courier New', monospace", fontSize: 13, color: "#1e3a52" }}>
         {item.sourcePath}
       </div>
     </a>
@@ -267,10 +267,10 @@ function VisualCard({ item }: { item: VisualItem }) {
 function SectionHead({ label, step }: { label: string; step: string }) {
   return (
     <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 14 }}>
-      <span style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: 10, color: "#0d2540", fontWeight: 700 }}>
+      <span style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: 12, color: "#0d2540", fontWeight: 700 }}>
         {step}
       </span>
-      <h2 style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase" as const, color: "#1a3550" }}>
+      <h2 style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase" as const, color: "#1a3550" }}>
         {label}
       </h2>
     </div>
@@ -339,7 +339,7 @@ export default function LabPage() {
             <div style={{ fontSize: 22, fontWeight: 700, color: "#6aaef5", fontVariantNumeric: "tabular-nums", lineHeight: 1, marginBottom: 4 }}>
               {FROZEN_COUNT}
             </div>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const, color: "#1a3a5a" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const, color: "#1a3a5a" }}>
               Frozen
             </div>
           </div>
@@ -348,7 +348,7 @@ export default function LabPage() {
             <div style={{ fontSize: 22, fontWeight: 700, color: "#f0c060", fontVariantNumeric: "tabular-nums", lineHeight: 1, marginBottom: 4 }}>
               {CANDIDATE_COUNT}
             </div>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const, color: "#1a3a5a" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const, color: "#1a3a5a" }}>
               Candidate
             </div>
           </div>
@@ -357,10 +357,10 @@ export default function LabPage() {
             <div style={{ fontSize: 22, fontWeight: 700, color: "#4bb87a", fontVariantNumeric: "tabular-nums", lineHeight: 1, marginBottom: 4 }}>
               {PASS_COUNT} / {SIMULATIONS.length}
             </div>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const, color: "#1a3a5a" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const, color: "#1a3a5a" }}>
               Simulation PASS
             </div>
-            <div style={{ fontSize: 9, color: "#2a4a64", marginTop: 4, fontStyle: "italic" as const }}>
+            <div style={{ fontSize: 12, color: "#2a4a64", marginTop: 4, fontStyle: "italic" as const }}>
               Model validation pending
             </div>
           </div>
@@ -369,7 +369,7 @@ export default function LabPage() {
             <div style={{ fontSize: 22, fontWeight: 700, color: "#4a6a88", fontVariantNumeric: "tabular-nums", lineHeight: 1, marginBottom: 4 }}>
               {EMPIRICAL_VALIDATION}
             </div>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const, color: "#1a3a5a" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const, color: "#1a3a5a" }}>
               Empirical validation
             </div>
           </div>
@@ -439,10 +439,10 @@ export default function LabPage() {
                 flexWrap:     "wrap" as const,
               }}
             >
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#cfe6f5" }}>
+              <span style={{ fontSize: 15, fontWeight: 600, color: "#cfe6f5" }}>
                 {PASS_COUNT} / {SIMULATIONS.length} simulations — stable outcome
               </span>
-              <span style={{ fontSize: 11, color: "#4a6a88" }}>
+              <span style={{ fontSize: 13, color: "#4a6a88" }}>
                 Simulation only. These are computational runs, not empirical validation.
               </span>
             </div>
@@ -457,10 +457,10 @@ export default function LabPage() {
                 padding:      "14px 17px",
               }}
             >
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#cfe6f5", marginBottom: 4 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "#cfe6f5", marginBottom: 4 }}>
                 Empirical validation: {EMPIRICAL_VALIDATION}
               </div>
-              <div style={{ fontSize: 11, color: "#4a6a88", lineHeight: 1.6 }}>
+              <div style={{ fontSize: 13, color: "#4a6a88", lineHeight: 1.6 }}>
                 No Behavior or Outcomes signals recorded in any entity or relation file.
                 All evidence signals are Intent only.
               </div>
@@ -487,7 +487,7 @@ export default function LabPage() {
         {/* ── Projections (secondary) ── */}
         <div style={{ borderTop: "1px solid #0a1e30", paddingTop: 32, marginBottom: 44 }}>
           <SectionHead label="Projections" step="—" />
-          <p style={{ fontSize: 11, color: "#1a3550", marginBottom: 14 }}>
+          <p style={{ fontSize: 13, color: "#1a3550", marginBottom: 14 }}>
             Visual representations derived from the model. Not primary documents.
           </p>
           <div style={GRID}>
@@ -507,10 +507,10 @@ export default function LabPage() {
             gap:             8,
           }}
         >
-          <span style={{ fontSize: 11, color: "#102030", fontFamily: "var(--font-geist-mono), monospace" }}>
+          <span style={{ fontSize: 13, color: "#102030", fontFamily: "var(--font-geist-mono), monospace" }}>
             /lab · Philos research index
           </span>
-          <a href="/" style={{ fontSize: 11, color: "#1a3a5a", textDecoration: "none" }}>
+          <a href="/" style={{ fontSize: 13, color: "#1a3a5a", textDecoration: "none" }}>
             ← back to app
           </a>
         </footer>

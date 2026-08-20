@@ -27,8 +27,8 @@ type FoundEntityContext = Extract<SelectedContext, { status: "found_entity" }>;
 function Chip({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 100 }}>
-      <span style={{ fontSize: 9, letterSpacing: 1, color: "#5a76a3", textTransform: "uppercase" }}>{label}</span>
-      <span style={{ fontSize: 12, fontWeight: 600, color: color ?? "#dbe6f6", display: "inline-flex", alignItems: "center", gap: 5 }}>
+      <span style={{ fontSize: 12, letterSpacing: 1, color: "#6c86b5", textTransform: "uppercase" }}>{label}</span>
+      <span style={{ fontSize: 13, fontWeight: 600, color: color ?? "#dbe6f6", display: "inline-flex", alignItems: "center", gap: 5 }}>
         {color ? <span style={{ width: 7, height: 7, borderRadius: 4, background: color, display: "inline-block" }} /> : null}
         {value}
       </span>
@@ -37,7 +37,7 @@ function Chip({ label, value, color }: { label: string; value: string; color?: s
 }
 
 function ActionPill({ action }: { action: ContextAction }) {
-  const base = { fontSize: 11, padding: "6px 12px", borderRadius: 20, border: "1px solid", display: "inline-block" };
+  const base = { fontSize: 13, padding: "6px 12px", borderRadius: 20, border: "1px solid", display: "inline-block" };
   if (action.state === "live" && action.href) {
     return (
       <a href={action.href} style={{ ...base, color: "#02101f", background: "#38bdf8", borderColor: "#38bdf8", fontWeight: 600, textDecoration: "none" }}>
@@ -76,15 +76,15 @@ export default function EntityContextPanel({
         borderLeft: `3px solid ${claimedColor}`,
         borderRadius: 8,
         padding: "14px 16px",
-        fontSize: 11,
+        fontSize: 13,
         color: "#cfe0f5",
         fontFamily: "system-ui",
         ...style,
       }}
     >
-      <div style={{ fontSize: 10, letterSpacing: 2, color: "#5aa6ff", marginBottom: 8 }}>ENTITY CONTEXT · CANON {kindLabel}</div>
+      <div style={{ fontSize: 12, letterSpacing: 2, color: "#5aa6ff", marginBottom: 8 }}>ENTITY CONTEXT · CANON {kindLabel}</div>
       <div style={{ fontSize: 15, fontWeight: 700, color: "#f2f6fc" }}>{selected.label}</div>
-      <div style={{ fontSize: 10.5, color: "#7f97c2", marginTop: 2 }}>
+      <div style={{ fontSize: 13, color: "#7f97c2", marginTop: 2 }}>
         canon {selected.entity_kind} · {selected.matched_id}
       </div>
 
@@ -104,15 +104,15 @@ export default function EntityContextPanel({
           exists anywhere in this file. */}
       {selected.entity_kind === "effect" && selected.claimed_or_verified === "verified" ? (
         <div style={{ marginTop: 10, padding: "8px 10px", borderRadius: 6, background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.2)" }}>
-          <div style={{ fontSize: 8.5, letterSpacing: 0.5, color: "#34d399" }}>CONTEXTUAL TRUST SIGNAL — לא ציון גלובלי, אות אחד בהקשר אחד</div>
-          <div style={{ fontSize: 10.5, marginTop: 4, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 12, letterSpacing: 0.5, color: "#34d399" }}>CONTEXTUAL TRUST SIGNAL — לא ציון גלובלי, אות אחד בהקשר אחד</div>
+          <div style={{ fontSize: 13, marginTop: 4, lineHeight: 1.6 }}>
             WHO: {selected.owner_or_subject} · FOR WHAT: {selected.label} · BASED ON: {selected.relationships.find((r) => r.direction === "incoming")?.other_label ?? "לא ידוע"} ·
             EVIDENCE: {selected.provenance} · WHEN: {selected.timestamp.slice(0, 10)}
           </div>
         </div>
       ) : null}
 
-      <div style={{ fontSize: 8.5, letterSpacing: 0.5, color: "#5a76a3", marginTop: 10 }}>WHAT IS CONNECTED?</div>
+      <div style={{ fontSize: 12, letterSpacing: 0.5, color: "#6c86b5", marginTop: 10 }}>WHAT IS CONNECTED?</div>
       <div style={{ marginTop: 4 }}>
         {selected.relationships.length === 0 ? (
           "No verified relationship edge exists yet."
@@ -126,19 +126,19 @@ export default function EntityContextPanel({
       </div>
 
       {selected.actionSpace ? (
-        <div style={{ fontSize: 10, color: "#5a76a3", marginTop: 10 }}>
+        <div style={{ fontSize: 12, color: "#6c86b5", marginTop: 10 }}>
           Action space: {selected.actionSpace.admissible ? "admissible" : `blocked — ${selected.actionSpace.blockers.join(", ")}`}
         </div>
       ) : null}
 
-      <div style={{ fontSize: 8.5, letterSpacing: 0.5, color: "#5a76a3", marginTop: 10 }}>NEXT ACTION</div>
+      <div style={{ fontSize: 12, letterSpacing: 0.5, color: "#6c86b5", marginTop: 10 }}>NEXT ACTION</div>
       <div style={{ marginTop: 4 }}>
         {selected.nextAction ? (
-          <a href={selected.nextAction.href} style={{ display: "inline-block", fontSize: 11.5, fontWeight: 600, color: "#02101f", background: "#5b9cf6", textDecoration: "none", borderRadius: 8, padding: "6px 12px" }}>
+          <a href={selected.nextAction.href} style={{ display: "inline-block", fontSize: 13, fontWeight: 600, color: "#02101f", background: "#5b9cf6", textDecoration: "none", borderRadius: 8, padding: "6px 12px" }}>
             {selected.nextAction.label} →
           </a>
         ) : (
-          <span style={{ fontSize: 11, color: "#7b8ca6", fontStyle: "italic" }}>אין פעולה הבאה מוצדקת — הכל נבדק ותקין.</span>
+          <span style={{ fontSize: 13, color: "#7b8ca6", fontStyle: "italic" }}>אין פעולה הבאה מוצדקת — הכל נבדק ותקין.</span>
         )}
       </div>
 

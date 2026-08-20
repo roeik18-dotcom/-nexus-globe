@@ -33,7 +33,7 @@ import {
 import DayClosingFusion from "./DayClosingFusion";
 
 const DOMAIN_WORD: Record<"G" | "E" | "C", string> = { G: "גוף", E: "רגש", C: "שכל" };
-const SEVERITY_COLOR: Record<TensionItem["severity"], string> = { high: "#f2635c", medium: "#fbbf24", low: "#8aa0c8", unknown: "#5a76a3" };
+const SEVERITY_COLOR: Record<TensionItem["severity"], string> = { high: "#f2635c", medium: "#fbbf24", low: "#8aa0c8", unknown: "#6c86b5" };
 const RECON_LABEL: Record<string, string> = {
   not_executed: "לא בוצע",
   executed: "בוצע — Effect ממתין",
@@ -223,23 +223,23 @@ const S: Record<string, React.CSSProperties> = {
   card: { background: "rgba(18,24,38,0.7)", border: "1px solid rgba(90,120,180,0.14)", borderRadius: 16, padding: "16px 18px", marginTop: 16 },
   head: { display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginBottom: 12 },
   title: { fontSize: 15, fontWeight: 700, margin: 0, color: "#f0f4fc" },
-  sub: { fontSize: 10.5, color: "#5f7aa6" },
+  sub: { fontSize: 13, color: "#5f7aa6" },
 
   split: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 },
   col: { display: "flex", flexDirection: "column", gap: 4 },
-  colHead: { fontSize: 12, fontWeight: 700, color: "#5aa6ff" },
-  note: { fontSize: 10, color: "#5a76a3", lineHeight: 1.6, marginBottom: 6 },
-  subHead: { fontSize: 10.5, fontWeight: 700, color: "#8fa3c9", marginTop: 8, marginBottom: 4 },
+  colHead: { fontSize: 13, fontWeight: 700, color: "#5aa6ff" },
+  note: { fontSize: 12, color: "#6c86b5", lineHeight: 1.6, marginBottom: 6 },
+  subHead: { fontSize: 13, fontWeight: 700, color: "#8fa3c9", marginTop: 8, marginBottom: 4 },
 
   rowWrap: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 4 },
-  stateChip: { display: "flex", flexDirection: "column", gap: 2, padding: "4px 10px", borderRadius: 8, background: "rgba(90,120,180,0.08)", fontSize: 11 },
+  stateChip: { display: "flex", flexDirection: "column", gap: 2, padding: "4px 10px", borderRadius: 8, background: "rgba(90,120,180,0.08)", fontSize: 13 },
 
-  tensionRow: { display: "flex", justifyContent: "space-between", gap: 8, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 11.5, marginBottom: 3 },
-  severity: { fontSize: 9.5, fontWeight: 800, textTransform: "uppercase", fontFamily: "ui-monospace, monospace" },
+  tensionRow: { display: "flex", justifyContent: "space-between", gap: 8, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 13, marginBottom: 3 },
+  severity: { fontSize: 12, fontWeight: 800, textTransform: "uppercase", fontFamily: "ui-monospace, monospace" },
   meta: { color: "#8aa0c8" },
-  empty: { fontSize: 11, color: "#7b8ca6", fontStyle: "italic", padding: "3px 2px" },
+  empty: { fontSize: 13, color: "#7b8ca6", fontStyle: "italic", padding: "3px 2px" },
 
   openingRow: { display: "flex", flexDirection: "column", gap: 1, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", marginBottom: 3 },
-  openingQ: { fontSize: 9.5, fontWeight: 700, color: "#5aa6ff" },
-  openingA: { fontSize: 11.5, color: "#dbe6f6" },
+  openingQ: { fontSize: 12, fontWeight: 700, color: "#5aa6ff" },
+  openingA: { fontSize: 13, color: "#dbe6f6" },
 };

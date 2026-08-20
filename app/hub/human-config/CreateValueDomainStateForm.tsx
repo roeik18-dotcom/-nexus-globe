@@ -33,7 +33,7 @@ export default function CreateValueDomainStateForm() {
         });
       }}
     >
-      <div style={{ fontSize: 11, letterSpacing: 0.5, color: "#8fa3c9" }}>
+      <div style={{ fontSize: 13, letterSpacing: 0.5, color: "#8fa3c9" }}>
         מצב תחום-ערך חדש · NEW VALUE-DOMAIN STATE (person_roei) — לא Music דמו; תחום אמיתי משלך
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -48,7 +48,7 @@ export default function CreateValueDomainStateForm() {
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <button type="submit" disabled={pending} style={btnStyle}>{pending ? "רושם…" : "רשום מצב תחום-ערך · RECORD"}</button>
         {result ? (
-          <span style={{ fontSize: 11, color: result.ok ? "#34d399" : "#f2635c" }}>
+          <span style={{ fontSize: 13, color: result.ok ? "#34d399" : "#f2635c" }}>
             {result.ok ? `נרשם · state_id: ${result.state_id.slice(0, 12)}… · ${result.domain_id}/${result.parameter_id} · level ${result.level}` : result.message}
           </span>
         ) : null}
@@ -57,5 +57,5 @@ export default function CreateValueDomainStateForm() {
   );
 }
 
-const inputStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 12, flex: 1, minWidth: 140 };
-const btnStyle: React.CSSProperties = { background: "#5b9cf6", color: "#0b0f1a", fontWeight: 600, fontSize: 12, border: "none", borderRadius: 6, padding: "7px 14px", cursor: "pointer" };
+const inputStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 13, flex: 1, minWidth: 140 };
+const btnStyle: React.CSSProperties = { background: "#5b9cf6", color: "#0b0f1a", fontWeight: 600, fontSize: 13, border: "none", borderRadius: 6, padding: "7px 14px", cursor: "pointer" };

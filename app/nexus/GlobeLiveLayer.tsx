@@ -123,10 +123,10 @@ export default function GlobeLiveLayer({ proofTrustMap }: Props) {
             animation: `fadeIn .4s ease`,
           }}>
             <div style={{ width: 6, height: 6, borderRadius: "50%", background: FORCE_COLOR[a.node.dominantForce], flexShrink: 0 }} />
-            <div style={{ flex: 1, fontSize: 10, color: "#caf0f8", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+            <div style={{ flex: 1, fontSize: 12, color: "#caf0f8", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
               <b>{a.node.name.split(" ")[0]}</b> {a.action}
             </div>
-            <div style={{ fontSize: 8, color: "#1e4060", flexShrink: 0 }}>{a.ago}</div>
+            <div style={{ fontSize: 12, color: "#1e4060", flexShrink: 0 }}>{a.ago}</div>
           </div>
         ))}
       </div>
@@ -146,16 +146,16 @@ export default function GlobeLiveLayer({ proofTrustMap }: Props) {
           border: "1px solid #0a2a4a",
           borderRadius: 20,
         }}>
-          <span style={{ fontSize: 9, color: "#fbbf24" }}>⚡ {pulse.energy}</span>
-          <span style={{ fontSize: 9, color: "#34d399" }}>⬡ {pulse.trust}</span>
-          <span style={{ fontSize: 9, color: "#38bdf8" }}>
+          <span style={{ fontSize: 12, color: "#fbbf24" }}>⚡ {pulse.energy}</span>
+          <span style={{ fontSize: 12, color: "#34d399" }}>⬡ {pulse.trust}</span>
+          <span style={{ fontSize: 12, color: "#38bdf8" }}>
             {FREQ_LABELS[freqIdx]}hz · {FREQ_NAMES[freqIdx]}
           </span>
         </div>
         {/* Dominant forces */}
         <div style={{ display: "flex", gap: 6 }}>
           {forceDist.map(([f, c]) => (
-            <div key={f} style={{ fontSize: 8, padding: "2px 7px", borderRadius: 10, background: FORCE_COLOR[f as keyof typeof FORCE_COLOR] + "22", color: FORCE_COLOR[f as keyof typeof FORCE_COLOR], border: `1px solid ${FORCE_COLOR[f as keyof typeof FORCE_COLOR]}44` }}>
+            <div key={f} style={{ fontSize: 12, padding: "2px 7px", borderRadius: 10, background: FORCE_COLOR[f as keyof typeof FORCE_COLOR] + "22", color: FORCE_COLOR[f as keyof typeof FORCE_COLOR], border: `1px solid ${FORCE_COLOR[f as keyof typeof FORCE_COLOR]}44` }}>
               {FORCE_LABEL[f as keyof typeof FORCE_LABEL]} {Math.round((c / nodes.length) * 100)}%
             </div>
           ))}
@@ -174,18 +174,18 @@ export default function GlobeLiveLayer({ proofTrustMap }: Props) {
           padding: "10px 12px",
           pointerEvents: "none",
         }}>
-          <div style={{ fontSize: 8, color: OPPORTUNITY_TYPE_COLOR[topOpp.type], letterSpacing: 2, textTransform: "uppercase", marginBottom: 5 }}>
+          <div style={{ fontSize: 12, color: OPPORTUNITY_TYPE_COLOR[topOpp.type], letterSpacing: 2, textTransform: "uppercase", marginBottom: 5 }}>
             ↝ מה ישנה את המסלול
           </div>
-          <div style={{ fontSize: 10, color: "#caf0f8", fontWeight: 600, marginBottom: 4 }}>
+          <div style={{ fontSize: 12, color: "#caf0f8", fontWeight: 600, marginBottom: 4 }}>
             {topOpp.provider.name}
           </div>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 5 }}>
             {topOpp.matchedNeeds.map(n => (
-              <span key={n} style={{ fontSize: 8, padding: "1px 5px", borderRadius: 8, background: "#34d39922", color: "#34d399" }}>{NEED_LABEL[n]}</span>
+              <span key={n} style={{ fontSize: 12, padding: "1px 5px", borderRadius: 8, background: "#34d39922", color: "#34d399" }}>{NEED_LABEL[n]}</span>
             ))}
           </div>
-          <div style={{ fontSize: 8, color: "#1e4060" }}>
+          <div style={{ fontSize: 12, color: "#1e4060" }}>
             {OPPORTUNITY_TYPE_LABEL[topOpp.type]} · {topOpp.score}% התאמה
           </div>
         </div>
@@ -200,7 +200,7 @@ export default function GlobeLiveLayer({ proofTrustMap }: Props) {
           pointerEvents: "none",
           maxWidth: 190,
         }}>
-          <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 2 }}>הזדמנויות מקבילות</div>
+          <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 2 }}>הזדמנויות מקבילות</div>
           {opps.slice(1, 4).map((o, i) => {
             const col = OPPORTUNITY_TYPE_COLOR[o.type];
             return (
@@ -212,9 +212,9 @@ export default function GlobeLiveLayer({ proofTrustMap }: Props) {
                 border: `1px solid ${col}44`,
                 borderRadius: 16,
               }}>
-                <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: col + "22", color: col }}>{OPPORTUNITY_TYPE_LABEL[o.type]}</span>
-                <span style={{ fontSize: 9, color: "#caf0f8", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.provider.name}</span>
-                <span style={{ fontSize: 9, color: col, fontWeight: 700 }}>{o.score}%</span>
+                <span style={{ fontSize: 12, padding: "1px 5px", borderRadius: 3, background: col + "22", color: col }}>{OPPORTUNITY_TYPE_LABEL[o.type]}</span>
+                <span style={{ fontSize: 12, color: "#caf0f8", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.provider.name}</span>
+                <span style={{ fontSize: 12, color: col, fontWeight: 700 }}>{o.score}%</span>
               </div>
             );
           })}
@@ -226,7 +226,7 @@ export default function GlobeLiveLayer({ proofTrustMap }: Props) {
         position: "absolute", bottom: 72, left: "50%",
         transform: "translateX(-50%)",
         zIndex: 6, pointerEvents: "none",
-        fontSize: 8, color: "#1e4060", letterSpacing: 2,
+        fontSize: 12, color: "#1e4060", letterSpacing: 2,
       }}>
         {nodes.length} nodes · {FREQ_LABELS[freqIdx]}hz · רוטציה מערכתית
       </div>

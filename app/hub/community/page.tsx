@@ -566,7 +566,7 @@ export default async function CommunityPage({
           <EntityContextPanel selected={entityContext} here="community" />
         </div>
       ) : entityContext.status === "unknown" || entityContext.status === "not_found" ? (
-        <div dir="rtl" style={{ margin: "12px 20px 0", padding: "10px 14px", borderRadius: 8, border: "1px solid #5a4a2a", fontSize: 11, color: "#cfe0f5" }}>
+        <div dir="rtl" style={{ margin: "12px 20px 0", padding: "10px 14px", borderRadius: 8, border: "1px solid #5a4a2a", fontSize: 13, color: "#cfe0f5" }}>
           {entityContext.status === "unknown" ? entityContext.raw : ctxRaw} — {entityContext.status === "unknown" ? "לא זוהה כמזהה תקין. לא ידוע." : "לא נמצאה רשומה תואמת (Action/Effect קנוני בלבד נתמכים כרגע ב-Community). לא ידוע."}
         </div>
       ) : null}
@@ -608,7 +608,7 @@ export default async function CommunityPage({
           explicitly navigated into one of its modes via `?mode=`. */}
       {!showingGroupDetail ? (
         <details open={mode !== "overview"} style={{ margin: "0 20px 12px" }}>
-          <summary style={{ cursor: "pointer", fontSize: 11, fontWeight: 700, letterSpacing: 1, color: "#5a76a3", padding: "10px 0", borderTop: "1px solid rgba(90,120,180,0.15)" }} dir="rtl">
+          <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: 1, color: "#6c86b5", padding: "10px 0", borderTop: "1px solid rgba(90,120,180,0.15)" }} dir="rtl">
             UNIVERSE / AUDIT — חקר עולם הערכים המלא ({valueRegistry.length} ערכים · {groupRegistry.length} קבוצות · {SUBVALUES.length} תתי-ערכים)
           </summary>
         <CommunityUniverse
@@ -646,7 +646,7 @@ export default async function CommunityPage({
           DEMO group reuses the existing `CommunityCommandTerminal`. */}
       {showingGroupDetail && !demoMatch && group ? (
         <>
-          <a href="?mode=groups" style={{ display: "block", margin: "8px 20px 0", fontSize: 11, color: "#5b9cf6", textDecoration: "none" }} dir="rtl">← נוף הקבוצות</a>
+          <a href="?mode=groups" style={{ display: "block", margin: "8px 20px 0", fontSize: 13, color: "#5b9cf6", textDecoration: "none" }} dir="rtl">← נוף הקבוצות</a>
           {/* Operational-groups pass — the 13-section detail + acceptance
               trace, from the ONE shared profile assembler. */}
           {operationalProfile ? <OperationalGroupDetail profile={operationalProfile} /> : null}
@@ -661,7 +661,7 @@ export default async function CommunityPage({
             valueFamilyLabel={valueFamilyForCentralValue(group.central_value)}
           />
           <details dir="rtl" style={{ margin: "0 20px 16px" }}>
-            <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>DETAILS / AUDIT</summary>
+            <summary style={{ cursor: "pointer", fontSize: 13, letterSpacing: 1, color: "#6c86b5", padding: "4px 0" }}>DETAILS / AUDIT</summary>
             <div style={{ marginTop: 8 }}>
               <PersonCommunityLinkPanel
                 personId={identityLink.person_id}
@@ -700,7 +700,7 @@ export default async function CommunityPage({
 
       {showingGroupDetail && demoMatch && terminalGroup ? (
         <>
-          <a href="?mode=groups" style={{ display: "block", margin: "8px 20px 0", fontSize: 11, color: "#5b9cf6", textDecoration: "none" }} dir="rtl">← נוף הקבוצות</a>
+          <a href="?mode=groups" style={{ display: "block", margin: "8px 20px 0", fontSize: 13, color: "#5b9cf6", textDecoration: "none" }} dir="rtl">← נוף הקבוצות</a>
           <CommunityCommandTerminal
             group={terminalGroup}
             capital={buildCapitalTimeline(terminalEvents)}
@@ -713,7 +713,7 @@ export default async function CommunityPage({
           {otherGroup && otherEntry ? (
             <CommunityComparison current={terminalGroup} currentProvenance={terminalProvenance} other={otherGroup} otherProvenance={otherEntry.provenance} />
           ) : null}
-          <div dir="rtl" style={{ margin: "16px 20px", padding: "14px 18px", borderRadius: 12, border: "1px solid rgba(251,191,36,0.3)", background: "rgba(251,191,36,0.06)", fontSize: 12, color: "#8fa3c9", lineHeight: 1.7 }}>
+          <div dir="rtl" style={{ margin: "16px 20px", padding: "14px 18px", borderRadius: 12, border: "1px solid rgba(251,191,36,0.3)", background: "rgba(251,191,36,0.06)", fontSize: 13, color: "#8fa3c9", lineHeight: 1.7 }}>
             <b style={{ color: "#fbbf24" }}>DEMO</b> — קהילת הדגמה זו לקריאה בלבד. פעולות כתיבה פועלות רק על הקבוצה האמיתית.{" "}
             <a href="?mode=groups" style={{ color: "#5b9cf6" }}>חזרה לנוף הקבוצות →</a>
           </div>

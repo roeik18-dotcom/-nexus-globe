@@ -78,15 +78,15 @@ export const metadata = { title: "Philos — היום" };
  * or availability changed with this pass, only whether it starts open.
  */
 const SUMMARY_ACTION: React.CSSProperties = {
-  cursor: "pointer", display: "inline-block", fontSize: 12, fontWeight: 700,
+  cursor: "pointer", display: "inline-block", fontSize: 13, fontWeight: 700,
   letterSpacing: 0.4, color: "#cfe0f5", padding: "8px 16px", borderRadius: 8,
   background: "rgba(91,156,246,0.12)", border: "1px solid rgba(91,156,246,0.4)",
 };
 const SUMMARY_AUDIT: React.CSSProperties = {
-  cursor: "pointer", fontSize: 11, letterSpacing: 0.6, color: "#7d90b4", padding: "7px 0",
+  cursor: "pointer", fontSize: 13, letterSpacing: 0.6, color: "#7d90b4", padding: "7px 0",
 };
 const AUDIT_HEAD: React.CSSProperties = {
-  fontSize: 9.5, fontWeight: 700, letterSpacing: 1.4, color: "#4a5f85",
+  fontSize: 12, fontWeight: 700, letterSpacing: 1.4, color: "#6c86b5",
   textTransform: "uppercase", margin: "18px 0 2px",
   borderTop: "1px solid rgba(120,150,220,0.16)", paddingTop: 12,
 };
@@ -438,7 +438,7 @@ export default async function HubPage({
           ) : entityContext.status === "found" ? (
             <StateDiffPanel selected={entityContext} />
           ) : entityContext.status === "unknown" || entityContext.status === "not_found" ? (
-            <div dir="rtl" style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 8, border: "1px solid #5a4a2a", fontSize: 11, color: "#cfe0f5" }}>
+            <div dir="rtl" style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 8, border: "1px solid #5a4a2a", fontSize: 13, color: "#cfe0f5" }}>
               {entityContext.status === "unknown" ? entityContext.raw : ctxRaw} — {entityContext.status === "unknown" ? "לא זוהה כמזהה תקין. לא ידוע." : "לא נמצאה רשומה תואמת. לא ידוע."}
             </div>
           ) : null}
@@ -598,7 +598,7 @@ export default async function HubPage({
                   ValueDomainInstance state. */}
               <CanonicalSlicePanel subject={resolvedSubject ?? personRef.person_id} asOf={systemClock.now()} />
               <details style={{ margin: "12px 0" }}>
-                <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>
+                <summary style={{ cursor: "pointer", fontSize: 13, letterSpacing: 1, color: "#6c86b5", padding: "4px 0" }}>
                   EXAMPLES / DEMO — Value Domain (Music, hypothesis-only) — לא משפיע על REAL
                 </summary>
                 <div style={{ marginTop: 8 }}>

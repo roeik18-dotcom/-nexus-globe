@@ -362,7 +362,7 @@ export function AuditSection({ title, note, children, open }: {
     <details open={open} style={{ margin: 0, borderBottom: "1px solid rgba(120,150,220,0.10)" }}>
       <summary style={{ cursor: "pointer", fontSize: FS.meta, letterSpacing: 0.6, color: "#7d90b4", padding: "7px 0" }}>
         {title}
-        {note ? <span style={{ color: "#4a5f85" }}> — {note}</span> : null}
+        {note ? <span style={{ color: "#6c86b5" }}> — {note}</span> : null}
       </summary>
       <div style={{ marginTop: 10, marginBottom: 12 }}>{children}</div>
     </details>
@@ -375,7 +375,7 @@ export function AuditHeading({ accent }: { accent?: string }) {
     <div
       style={{
         fontSize: FS.base, fontWeight: 700, letterSpacing: 1.4, textTransform: "uppercase",
-        color: accent ?? "#4a5f85", margin: "18px 0 2px",
+        color: accent ?? "#6c86b5", margin: "18px 0 2px",
         borderTop: "1px solid rgba(120,150,220,0.16)", paddingTop: 12,
       }}
     >

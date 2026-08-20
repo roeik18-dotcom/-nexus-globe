@@ -190,7 +190,7 @@ function SectionCard({
       marginBottom: 8,
     }}>
       <div style={{
-        fontSize: 10, color: C.borderSoft, letterSpacing: 1.5,
+        fontSize: 12, color: C.borderSoft, letterSpacing: 1.5,
         textTransform: "uppercase", marginBottom: 8, fontWeight: 600,
       }}>
         {label}
@@ -212,7 +212,7 @@ function FirstMoveCard({ label, children }: { label: string; children: React.Rea
       marginBottom: 10,
     }}>
       <div style={{
-        fontSize: 10, color: C.cyan, letterSpacing: 2,
+        fontSize: 12, color: C.cyan, letterSpacing: 2,
         textTransform: "uppercase", marginBottom: 12, fontWeight: 700,
       }}>
         {label}
@@ -291,7 +291,7 @@ export default function ThirtySecond({ onContinue }: { onContinue: () => void })
         <button
           onClick={() => setLang(l => l === "en" ? "he" : "en")}
           style={{
-            fontSize: 11, color: C.textMuted, background: "none",
+            fontSize: 13, color: C.textMuted, background: "none",
             border: `1px solid ${C.border}`, borderRadius: 4,
             padding: "3px 10px", cursor: "pointer", fontFamily: "inherit",
           }}
@@ -305,7 +305,7 @@ export default function ThirtySecond({ onContinue }: { onContinue: () => void })
         <div style={{ ...pad, flex: 1, overflowY: "auto" }}>
 
           <div style={{
-            fontSize: 10, color: C.cyan, letterSpacing: 2,
+            fontSize: 12, color: C.cyan, letterSpacing: 2,
             textTransform: "uppercase", fontWeight: 700, marginBottom: 16,
           }}>
             {t.promise}
@@ -340,7 +340,7 @@ export default function ThirtySecond({ onContinue }: { onContinue: () => void })
           />
 
           {empty && (
-            <p style={{ fontSize: 13, color: C.orange, margin: "6px 0 0" }}>
+            <p style={{ fontSize: 15, color: C.orange, margin: "6px 0 0" }}>
               {t.emptyHint}
             </p>
           )}
@@ -352,7 +352,7 @@ export default function ThirtySecond({ onContinue }: { onContinue: () => void })
                 key={ex}
                 onClick={() => { setText(ex); setEmpty(false); }}
                 style={{
-                  fontSize: 11, color: C.textMuted, background: "none",
+                  fontSize: 13, color: C.textMuted, background: "none",
                   border: `1px solid ${C.border}`, borderRadius: 12,
                   padding: "4px 10px", cursor: "pointer",
                   fontFamily: "inherit", textAlign: "start",

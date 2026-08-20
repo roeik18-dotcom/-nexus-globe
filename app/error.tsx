@@ -50,6 +50,6 @@ const S: Record<string, React.CSSProperties> = {
   card: { width: "100%", maxWidth: 460, display: "flex", flexDirection: "column", gap: 12, border: "1px solid rgba(120,150,220,0.16)", borderRadius: 16, padding: "26px 24px", background: "#0e1422" },
   brand: { fontSize: 18, fontWeight: 800, letterSpacing: 3, color: "#e6edf7" },
   title: { fontSize: 15, fontWeight: 700, color: "#e6edf7" },
-  body: { fontSize: 12, color: "#8fa3c9", lineHeight: 1.8 },
-  action: { alignSelf: "flex-start", cursor: "pointer", font: "inherit", fontSize: 12, fontWeight: 700, color: "#02101f", background: "#34d399", border: "none", borderRadius: 999, padding: "7px 16px", textDecoration: "none" },
+  body: { fontSize: 13, color: "#8fa3c9", lineHeight: 1.8 },
+  action: { alignSelf: "flex-start", cursor: "pointer", font: "inherit", fontSize: 13, fontWeight: 700, color: "#02101f", background: "#34d399", border: "none", borderRadius: 999, padding: "7px 16px", textDecoration: "none" },
 };

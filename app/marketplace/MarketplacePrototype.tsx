@@ -175,7 +175,7 @@ export default function MarketplacePrototype({
 
         <div style={S.connector}>
           <PhilosEdge label="MATCH CANDIDATE" />
-          <div style={{ ...S.connectorStatus, color: hasCandidate ? "#fbbf24" : "#5a76a3" }}>
+          <div style={{ ...S.connectorStatus, color: hasCandidate ? "#fbbf24" : "#6c86b5" }}>
             {hasCandidate ? "AWAITING HUMAN DECISION" : "0 — no candidate pair yet"}
           </div>
           {hasCandidate && actionsCount === 0 ? (
@@ -272,56 +272,56 @@ export default function MarketplacePrototype({
 
 const S: Record<string, React.CSSProperties> = {
   wrap: { fontFamily: "system-ui", color: "#e6ebf5", background: "#0b0f1a", minHeight: "100vh", paddingBottom: 60 },
-  protoBadge: { textAlign: "center", fontSize: 10.5, fontWeight: 700, color: "#0b0f1a", background: "#fbbf24", padding: "4px 0" },
+  protoBadge: { textAlign: "center", fontSize: 13, fontWeight: 700, color: "#0b0f1a", background: "#fbbf24", padding: "4px 0" },
   header: { display: "flex", alignItems: "center", justifyContent: "center", gap: 16, padding: "22px 20px 4px", position: "relative" },
   title: { fontSize: 28, fontWeight: 800, letterSpacing: 2, color: "#f2f6fc" },
-  auditLink: { position: "absolute", insetInlineEnd: 20, fontSize: 10.5, color: "#5a76a3", textDecoration: "none" },
+  auditLink: { position: "absolute", insetInlineEnd: 20, fontSize: 13, color: "#6c86b5", textDecoration: "none" },
 
   lifecycleStrip: { display: "flex", justifyContent: "center", alignItems: "center", maxWidth: 760, margin: "18px auto 0" },
 
   contextStrip: { display: "flex", flexDirection: "column", alignItems: "center", gap: 4, maxWidth: 700, margin: "16px auto 0", textAlign: "center" },
-  contextChip: { fontSize: 11.5, fontWeight: 700, color: "#34d399" },
-  contextGap: { fontSize: 10, color: "#5a76a3", lineHeight: 1.5 },
+  contextChip: { fontSize: 13, fontWeight: 700, color: "#34d399" },
+  contextGap: { fontSize: 12, color: "#6c86b5", lineHeight: 1.5 },
 
   cardsRow: { display: "flex", alignItems: "stretch", justifyContent: "center", gap: 0, maxWidth: 1200, margin: "22px auto 0", flexWrap: "wrap" },
   nodeSlot: { flex: "1 1 360px", maxWidth: 420, margin: "0 14px", display: "flex", alignItems: "stretch" },
-  cardEmpty: { fontSize: 12, color: "#7b8ca6", fontStyle: "italic" },
+  cardEmpty: { fontSize: 13, color: "#7b8ca6", fontStyle: "italic" },
 
   connector: { flex: "0 1 220px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 12px", minWidth: 180, gap: 6 },
-  connectorStatus: { fontSize: 10.5, fontWeight: 700, textAlign: "center" },
+  connectorStatus: { fontSize: 13, fontWeight: 700, textAlign: "center" },
 
-  ctaBtn: { marginTop: 10, fontSize: 13, fontWeight: 700, color: "#0b0f1a", background: "#5b9cf6", padding: "10px 20px", borderRadius: 10, border: "none", cursor: "pointer" },
-  nextStepBelow: { textAlign: "center", fontSize: 11.5, color: "#9fb0d0", marginTop: 20 },
-  stateLabel: { fontSize: 10.5, fontWeight: 700, letterSpacing: 1, color: "#5b9cf6" },
+  ctaBtn: { marginTop: 10, fontSize: 15, fontWeight: 700, color: "#0b0f1a", background: "#5b9cf6", padding: "10px 20px", borderRadius: 10, border: "none", cursor: "pointer" },
+  nextStepBelow: { textAlign: "center", fontSize: 13, color: "#9fb0d0", marginTop: 20 },
+  stateLabel: { fontSize: 13, fontWeight: 700, letterSpacing: 1, color: "#5b9cf6" },
 
   scrim: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 40 },
   drawer: { position: "fixed", top: 0, bottom: 0, insetInlineEnd: 0, width: "min(460px, 94vw)", background: "#0f1522", borderInlineStart: "1px solid rgba(90,120,180,0.25)", zIndex: 41, overflowY: "auto", padding: 22 },
-  drawerClose: { fontSize: 11, color: "#8fa3c9", background: "transparent", border: "none", cursor: "pointer", padding: 0, marginBottom: 12 },
+  drawerClose: { fontSize: 13, color: "#8fa3c9", background: "transparent", border: "none", cursor: "pointer", padding: 0, marginBottom: 12 },
   drawerTitle: { fontSize: 17, fontWeight: 800, color: "#f2f6fc" },
-  drawerSub: { fontSize: 11.5, color: "#9fb0d0", marginTop: 4, marginBottom: 16 },
+  drawerSub: { fontSize: 13, color: "#9fb0d0", marginTop: 4, marginBottom: 16 },
   drawerSection: { marginBottom: 16, display: "flex", flexDirection: "column", gap: 10 },
-  fieldLabel: { fontSize: 12, fontWeight: 700, color: "#dbe6f6", display: "block" },
-  fieldSubLabel: { fontSize: 10.5, color: "#8fa3c9", marginBottom: 5 },
-  fieldInput: { fontSize: 12.5, padding: "9px 11px", borderRadius: 8, border: "1px solid rgba(90,120,180,0.3)", background: "rgba(11,15,26,0.6)", color: "#e6ebf5", width: "100%" },
+  fieldLabel: { fontSize: 13, fontWeight: 700, color: "#dbe6f6", display: "block" },
+  fieldSubLabel: { fontSize: 13, color: "#8fa3c9", marginBottom: 5 },
+  fieldInput: { fontSize: 13, padding: "9px 11px", borderRadius: 8, border: "1px solid rgba(90,120,180,0.3)", background: "rgba(11,15,26,0.6)", color: "#e6ebf5", width: "100%" },
 
   gateCard: { background: "rgba(90,120,180,0.06)", borderRadius: 10, padding: "10px 12px" },
   gateHeadRow: { display: "flex", justifyContent: "space-between", alignItems: "baseline" },
-  gateTitle: { fontSize: 13, fontWeight: 700, color: "#f2f6fc" },
-  gateInternal: { fontSize: 8.5, color: "#5a76a3", fontFamily: "ui-monospace, monospace" },
-  gateQuestion: { fontSize: 11, color: "#9fb0d0", marginTop: 3, marginBottom: 8 },
+  gateTitle: { fontSize: 15, fontWeight: 700, color: "#f2f6fc" },
+  gateInternal: { fontSize: 12, color: "#6c86b5", fontFamily: "ui-monospace, monospace" },
+  gateQuestion: { fontSize: 13, color: "#9fb0d0", marginTop: 3, marginBottom: 8 },
   gateButtons: { display: "flex", gap: 6 },
-  gateBtn: { flex: 1, fontSize: 11.5, fontWeight: 600, padding: "6px 0", borderRadius: 6, border: "1px solid rgba(90,120,180,0.3)", background: "transparent", color: "#8fa3c9", cursor: "pointer" },
+  gateBtn: { flex: 1, fontSize: 13, fontWeight: 600, padding: "6px 0", borderRadius: 6, border: "1px solid rgba(90,120,180,0.3)", background: "transparent", color: "#8fa3c9", cursor: "pointer" },
   gateBtnYesActive: { background: "#34d399", color: "#0b0f1a", borderColor: "#34d399" },
   gateBtnNoActive: { background: "#f2635c", color: "#0b0f1a", borderColor: "#f2635c" },
 
   resultBox: { marginTop: 4, padding: "12px 14px", borderRadius: 10, background: "rgba(90,120,180,0.08)" },
-  resultPending: { fontSize: 12, color: "#8fa3c9" },
-  resultProgress: { fontSize: 11, color: "#5a76a3", marginTop: 4 },
-  resultBlocked: { fontSize: 12, color: "#f2635c" },
+  resultPending: { fontSize: 13, color: "#8fa3c9" },
+  resultProgress: { fontSize: 13, color: "#6c86b5", marginTop: 4 },
+  resultBlocked: { fontSize: 13, color: "#f2635c" },
   resultPermitted: { fontSize: 14, fontWeight: 800, color: "#34d399" },
   resultBlockedTitle: { fontSize: 14, fontWeight: 800, color: "#f2635c" },
   failedGates: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 },
-  failedGateChip: { fontSize: 10.5, padding: "4px 9px", borderRadius: 8, background: "rgba(242,99,92,0.15)", color: "#f2635c", border: "1px solid rgba(242,99,92,0.4)" },
-  nextValidStep: { fontSize: 11.5, color: "#dbe6f6", marginTop: 8 },
-  architectureGapNote: { fontSize: 10, color: "#fbbf24", marginTop: 10, lineHeight: 1.6 },
+  failedGateChip: { fontSize: 13, padding: "4px 9px", borderRadius: 8, background: "rgba(242,99,92,0.15)", color: "#f2635c", border: "1px solid rgba(242,99,92,0.4)" },
+  nextValidStep: { fontSize: 13, color: "#dbe6f6", marginTop: 8 },
+  architectureGapNote: { fontSize: 12, color: "#fbbf24", marginTop: 10, lineHeight: 1.6 },
 };

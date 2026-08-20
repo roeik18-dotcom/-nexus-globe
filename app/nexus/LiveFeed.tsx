@@ -171,24 +171,24 @@ export default function LiveFeed() {
 
   // ── Styles ────────────────────────────────────────────────────────
 
-  const sHead: React.CSSProperties = { fontSize: 9, letterSpacing: 2, color: "#1e4060", textTransform: "uppercase", marginBottom: 7 };
+  const sHead: React.CSSProperties = { fontSize: 12, letterSpacing: 2, color: "#1e4060", textTransform: "uppercase", marginBottom: 7 };
   const sItem: React.CSSProperties = { padding: "7px 0", borderBottom: "1px solid #0a2a4a" };
-  const PTAG  = (color: string): React.CSSProperties => ({ fontSize: 9, padding: "1px 6px", borderRadius: 3, fontWeight: 600, background: color + "22", color });
+  const PTAG  = (color: string): React.CSSProperties => ({ fontSize: 12, padding: "1px 6px", borderRadius: 3, fontWeight: 600, background: color + "22", color });
 
   return (
     <div style={{ overflowY: "auto", height: "100%", padding: "10px 14px" }}>
 
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isDemo ? 5 : 12 }}>
-        <div style={{ fontSize: 10, letterSpacing: 3, color: "#38bdf8", fontWeight: 700 }}>LIVE FEED</div>
-        <div style={{ fontSize: 9, color: "#1e4060" }}>30ש' ↺</div>
+        <div style={{ fontSize: 12, letterSpacing: 3, color: "#38bdf8", fontWeight: 700 }}>LIVE FEED</div>
+        <div style={{ fontSize: 12, color: "#1e4060" }}>30ש' ↺</div>
       </div>
 
       {/* Demo banner */}
       {isDemo && (
         <div style={{ padding: "7px 10px", borderRadius: 5, border: "1px solid #fbbf2444", background: "#fbbf2406", marginBottom: 10 }}>
-          <div style={{ fontSize: 9, color: "#fbbf24", marginBottom: 4 }}>⚠ מצב הדגמה — אין נתונים אמיתיים עדיין</div>
-          <button onClick={seedAndLoad} style={{ fontSize: 9, padding: "3px 10px", borderRadius: 4, border: "1px solid #fbbf2466", background: "transparent", color: "#fbbf24", cursor: "pointer" }}>
+          <div style={{ fontSize: 12, color: "#fbbf24", marginBottom: 4 }}>⚠ מצב הדגמה — אין נתונים אמיתיים עדיין</div>
+          <button onClick={seedAndLoad} style={{ fontSize: 12, padding: "3px 10px", borderRadius: 4, border: "1px solid #fbbf2466", background: "transparent", color: "#fbbf24", cursor: "pointer" }}>
             ← טען 10 משתמשי demo לגלובוס
           </button>
         </div>
@@ -202,14 +202,14 @@ export default function LiveFeed() {
             const col = e.toForce ? (FORCE_COLOR[e.toForce] ?? "#38bdf8") : "#38bdf8";
             return (
               <div key={e.id} style={{ ...sItem, display: "flex", gap: 6, alignItems: "flex-start" }}>
-                <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: col + "22", color: col, flexShrink: 0, fontWeight: 700 }}>
+                <span style={{ fontSize: 12, padding: "1px 6px", borderRadius: 3, background: col + "22", color: col, flexShrink: 0, fontWeight: 700 }}>
                   ↳
                 </span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 10, color: "#caf0f8" }}>{e.message}</div>
-                  <div style={{ fontSize: 8, color: "#1e4060" }}>{timeAgo(e.ts)} · DYNAMICS_TRANSITION</div>
+                  <div style={{ fontSize: 12, color: "#caf0f8" }}>{e.message}</div>
+                  <div style={{ fontSize: 12, color: "#1e4060" }}>{timeAgo(e.ts)} · DYNAMICS_TRANSITION</div>
                 </div>
-                <span style={{ fontSize: 10, color: "#34d399", fontWeight: 700, flexShrink: 0 }}>+{e.trustDelta}</span>
+                <span style={{ fontSize: 12, color: "#34d399", fontWeight: 700, flexShrink: 0 }}>+{e.trustDelta}</span>
               </div>
             );
           })}
@@ -219,7 +219,7 @@ export default function LiveFeed() {
       {/* ── 0. PULSE ── */}
       {pulse && (
         <div style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #0ea5e933", background: "#0ea5e908", marginBottom: 14 }}>
-          <div style={{ fontSize: 9, letterSpacing: 2.5, color: "#38bdf8", textTransform: "uppercase", marginBottom: 9 }}>⚡ Pulse</div>
+          <div style={{ fontSize: 12, letterSpacing: 2.5, color: "#38bdf8", textTransform: "uppercase", marginBottom: 9 }}>⚡ Pulse</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6, marginBottom: 10 }}>
             {[
               { label: "אנרגיה", val: pulse.energy, color: "#fbbf24" },
@@ -229,12 +229,12 @@ export default function LiveFeed() {
             ].map(m => (
               <div key={m.label} style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 16, fontWeight: 700, color: m.color }}>{m.val}</div>
-                <div style={{ fontSize: 8, color: "#1e4060" }}>{m.label}</div>
+                <div style={{ fontSize: 12, color: "#1e4060" }}>{m.label}</div>
               </div>
             ))}
           </div>
           {/* Force distribution */}
-          <div style={{ fontSize: 8, color: "#1e4060", marginBottom: 5 }}>
+          <div style={{ fontSize: 12, color: "#1e4060", marginBottom: 5 }}>
             כוח דומיננטי: <b style={{ color: FORCE_COLOR[pulse.dominant as keyof typeof FORCE_COLOR] ?? "#38bdf8" }}>
               {FORCE_LABEL[pulse.dominant as keyof typeof FORCE_LABEL] ?? pulse.dominant}
             </b>
@@ -247,13 +247,13 @@ export default function LiveFeed() {
                 const col = FORCE_COLOR[f as keyof typeof FORCE_COLOR] ?? "#38bdf8";
                 return (
                   <div key={f} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                    <div style={{ fontSize: 9, color: col, width: 50, textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ fontSize: 12, color: col, width: 50, textAlign: "right", flexShrink: 0 }}>
                       {FORCE_LABEL[f as keyof typeof FORCE_LABEL] ?? f}
                     </div>
                     <div style={{ flex: 1, height: 4, borderRadius: 2, background: "#0a2a4a", overflow: "hidden" }}>
                       <div style={{ width: `${pct}%`, height: "100%", background: col, borderRadius: 2 }} />
                     </div>
-                    <div style={{ fontSize: 9, color: col, width: 24, flexShrink: 0 }}>{pct}%</div>
+                    <div style={{ fontSize: 12, color: col, width: 24, flexShrink: 0 }}>{pct}%</div>
                   </div>
                 );
               })
@@ -269,10 +269,10 @@ export default function LiveFeed() {
           <div key={n.id} style={sItem}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: FORCE_COLOR[n.dominantForce], flexShrink: 0 }} />
-              <div style={{ flex: 1, fontSize: 11, color: "#caf0f8", fontWeight: 600 }}>{n.name}</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: pt > 60 ? "#34d399" : pt > 20 ? "#fbbf24" : "#8bb8cc" }}>{pt}</div>
+              <div style={{ flex: 1, fontSize: 13, color: "#caf0f8", fontWeight: 600 }}>{n.name}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: pt > 60 ? "#34d399" : pt > 20 ? "#fbbf24" : "#8bb8cc" }}>{pt}</div>
             </div>
-            <div style={{ display: "flex", gap: 8, fontSize: 9, color: "#8bb8cc", paddingRight: 12 }}>
+            <div style={{ display: "flex", gap: 8, fontSize: 12, color: "#8bb8cc", paddingRight: 12 }}>
               {verified.length > 0 && <span style={{ color: "#34d399" }}>✓ {verified.length} מאומת</span>}
               {conns > 0 && <span>⟶ {conns} קשרים</span>}
               <span style={{ color: DIR_COL[n.direction] }}>{DIR_ARROW[n.direction]} {n.direction === "forward" ? "קדימה" : n.direction === "stuck" ? "תקוע" : "אחורה"}</span>
@@ -286,17 +286,17 @@ export default function LiveFeed() {
       <div style={{ marginBottom: 14 }}>
         <div style={sHead}>✓ הוכחות חדשות</div>
         {newProofs.length === 0
-          ? <div style={{ fontSize: 10, color: "#1e4060" }}>לא הוגשו הוכחות ב-24 שעות האחרונות</div>
+          ? <div style={{ fontSize: 12, color: "#1e4060" }}>לא הוגשו הוכחות ב-24 שעות האחרונות</div>
           : newProofs.map(p => {
             const col = p.status === "verified" ? "#34d399" : p.status === "claimed" ? "#fbbf24" : "#f87171";
             return (
               <div key={p.id} style={{ ...sItem, display: "flex", alignItems: "flex-start", gap: 7 }}>
                 <span style={PTAG(col)}>{p.status === "verified" ? "מאומת" : "טענה"}</span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 10, color: "#caf0f8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.claim}</div>
-                  <div style={{ fontSize: 9, color: "#1e4060" }}>{p.userId} · +{p.weight}</div>
+                  <div style={{ fontSize: 12, color: "#caf0f8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.claim}</div>
+                  <div style={{ fontSize: 12, color: "#1e4060" }}>{p.userId} · +{p.weight}</div>
                 </div>
-                <div style={{ fontSize: 9, color: "#1e4060", flexShrink: 0 }}>{timeAgo(p.createdAt)}</div>
+                <div style={{ fontSize: 12, color: "#1e4060", flexShrink: 0 }}>{timeAgo(p.createdAt)}</div>
               </div>
             );
           })
@@ -310,12 +310,12 @@ export default function LiveFeed() {
           {trustGains.map(({ n, pt }) => (
             <div key={n.id} style={{ ...sItem, display: "flex", alignItems: "center", gap: 7 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: FORCE_COLOR[n.dominantForce], flexShrink: 0 }} />
-              <div style={{ flex: 1, fontSize: 11, color: "#caf0f8" }}>{n.name}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11 }}>
+              <div style={{ flex: 1, fontSize: 13, color: "#caf0f8" }}>{n.name}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13 }}>
                 <span style={{ color: "#8bb8cc" }}>{n.trustScore}</span>
                 <span style={{ color: "#1e4060" }}>→</span>
                 <span style={{ color: "#34d399", fontWeight: 700 }}>{pt}</span>
-                <span style={{ fontSize: 9, color: "#34d399" }}>+{pt - n.trustScore}</span>
+                <span style={{ fontSize: 12, color: "#34d399" }}>+{pt - n.trustScore}</span>
               </div>
             </div>
           ))}
@@ -326,20 +326,20 @@ export default function LiveFeed() {
       <div style={{ marginBottom: 14 }}>
         <div style={sHead}>★ הזדמנויות</div>
         {opportunities.length === 0
-          ? <div style={{ fontSize: 10, color: "#1e4060" }}>—</div>
+          ? <div style={{ fontSize: 12, color: "#1e4060" }}>—</div>
           : opportunities.map((o, i) => (
             <div key={i} style={{ ...sItem, padding: "8px 0" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                 <span style={PTAG(o.unlocked ? "#34d399" : "#fbbf24")}>{o.unlocked ? "פתוח" : "קרוב"}</span>
-                <div style={{ flex: 1, fontSize: 11, color: "#caf0f8", fontWeight: 600 }}>{o.oppName}</div>
+                <div style={{ flex: 1, fontSize: 13, color: "#caf0f8", fontWeight: 600 }}>{o.oppName}</div>
               </div>
-              <div style={{ display: "flex", gap: 10, fontSize: 9, color: "#8bb8cc", paddingRight: 4 }}>
+              <div style={{ display: "flex", gap: 10, fontSize: 12, color: "#8bb8cc", paddingRight: 4 }}>
                 <span>Trust: <b style={{ color: o.trust > 60 ? "#34d399" : "#fbbf24" }}>{o.trust}</b></span>
                 <span>Rep: <b style={{ color: REPUTATION_LEVEL_COLOR[o.rep.level as keyof typeof REPUTATION_LEVEL_COLOR] }}>{REPUTATION_LEVEL_LABEL[o.rep.level as keyof typeof REPUTATION_LEVEL_LABEL]}</b></span>
                 <span style={{ color: FORCE_COLOR[o.n.dominantForce] }}>{FORCE_LABEL[o.n.dominantForce]}</span>
                 {!o.unlocked && <span style={{ color: "#1e4060" }}>עוד {o.threshold - o.trust}</span>}
               </div>
-              <div style={{ fontSize: 9, color: "#1e4060", paddingRight: 4, marginTop: 2 }}>{o.n.name}</div>
+              <div style={{ fontSize: 12, color: "#1e4060", paddingRight: 4, marginTop: 2 }}>{o.n.name}</div>
             </div>
           ))
         }
@@ -352,15 +352,15 @@ export default function LiveFeed() {
           <div key={d.ctx} style={{ ...sItem, padding: "6px 0" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontSize: 13, color: d.trendColor, fontWeight: 700 }}>{d.trend}</span>
-                <span style={{ fontSize: 11, color: "#caf0f8" }}>{CONTEXT_LABEL[d.ctx]}</span>
+                <span style={{ fontSize: 15, color: d.trendColor, fontWeight: 700 }}>{d.trend}</span>
+                <span style={{ fontSize: 13, color: "#caf0f8" }}>{CONTEXT_LABEL[d.ctx]}</span>
               </div>
-              <span style={{ fontSize: 9, color: "#8bb8cc" }}>{d.count} nodes · avg {d.avg.toFixed(1)}</span>
+              <span style={{ fontSize: 12, color: "#8bb8cc" }}>{d.count} nodes · avg {d.avg.toFixed(1)}</span>
             </div>
             <div style={{ height: 4, borderRadius: 2, background: "#0a2a4a", overflow: "hidden" }}>
               <div style={{ width: `${d.fwdPct}%`, height: "100%", background: d.trendColor, borderRadius: 2 }} />
             </div>
-            <div style={{ fontSize: 8, color: "#1e4060", marginTop: 2 }}>{d.fwdPct}% קדימה</div>
+            <div style={{ fontSize: 12, color: "#1e4060", marginTop: 2 }}>{d.fwdPct}% קדימה</div>
           </div>
         ))}
       </div>
@@ -369,23 +369,23 @@ export default function LiveFeed() {
       <div style={{ marginBottom: 14 }}>
         <div style={sHead}>◉ בשבילך</div>
         {!profile
-          ? <div style={{ fontSize: 10, color: "#1e4060" }}><a href="/profile" style={{ color: "#fbbf24" }}>צור פרופיל</a> לקבל המלצות</div>
+          ? <div style={{ fontSize: 12, color: "#1e4060" }}><a href="/profile" style={{ color: "#fbbf24" }}>צור פרופיל</a> לקבל המלצות</div>
           : forYou.length === 0
-            ? <div style={{ fontSize: 10, color: "#1e4060" }}>הוסף נקודות לגלובוס</div>
+            ? <div style={{ fontSize: 12, color: "#1e4060" }}>הוסף נקודות לגלובוס</div>
             : forYou.map(e => (
               <div key={e.n.id} style={{ ...sItem, display: "flex", alignItems: "flex-start", gap: 7 }}>
                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: FORCE_COLOR[e.n.dominantForce], flexShrink: 0, marginTop: 4 }} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11, color: "#caf0f8", marginBottom: 3 }}>{e.n.name}</div>
+                  <div style={{ fontSize: 13, color: "#caf0f8", marginBottom: 3 }}>{e.n.name}</div>
                   <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
                     {e.match.map(need => (
-                      <span key={need} style={{ fontSize: 8, padding: "1px 5px", borderRadius: 8, background: "#34d39922", color: "#34d399" }}>
+                      <span key={need} style={{ fontSize: 12, padding: "1px 5px", borderRadius: 8, background: "#34d39922", color: "#34d399" }}>
                         {NEED_LABEL[need]}
                       </span>
                     ))}
                   </div>
                 </div>
-                <div style={{ fontSize: 8, color: "#34d399" }}>מציע {e.match.length}</div>
+                <div style={{ fontSize: 12, color: "#34d399" }}>מציע {e.match.length}</div>
               </div>
             ))
         }

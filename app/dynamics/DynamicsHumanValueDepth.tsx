@@ -195,7 +195,7 @@ export default function DynamicsHumanValueDepth({
 
   return (
     <div style={{ maxWidth: 1100, marginBottom: 16 }}>
-      <div dir="rtl" style={{ fontSize: 10, letterSpacing: 1, color: "#5aa6ff", marginBottom: 8 }}>
+      <div dir="rtl" style={{ fontSize: 12, letterSpacing: 1, color: "#5aa6ff", marginBottom: 8 }}>
         DYNAMICS — Human / Value / Mission — אותם Parameter IDs מ-Hub / Human Config
       </div>
       <MissionTrajectory mission={mission} />
@@ -211,7 +211,7 @@ export default function DynamicsHumanValueDepth({
       <DomainStateTimelinePanel rows={projectionRows} />
 
       <details dir="rtl" style={{ margin: "0 0 12px" }}>
-        <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>
+        <summary style={{ cursor: "pointer", fontSize: 13, letterSpacing: 1, color: "#6c86b5", padding: "4px 0" }}>
           DETAILS / AUDIT — Human Dimension Matrix (EXAMPLES/DEMO Value Matrix)
         </summary>
         <div style={{ marginTop: 8 }}>
@@ -225,25 +225,25 @@ export default function DynamicsHumanValueDepth({
 
 const S: Record<string, React.CSSProperties> = {
   block: { marginBottom: 16, background: "rgba(18,24,38,0.6)", border: "1px solid rgba(90,120,180,0.14)", borderRadius: 12, padding: "12px 14px" },
-  head: { fontSize: 11.5, fontWeight: 700, color: "#5aa6ff", marginBottom: 8 },
-  note: { fontSize: 9.5, color: "#5a76a3", marginTop: 6, lineHeight: 1.6 },
+  head: { fontSize: 13, fontWeight: 700, color: "#5aa6ff", marginBottom: 8 },
+  note: { fontSize: 12, color: "#6c86b5", marginTop: 6, lineHeight: 1.6 },
 
   stateRow: { padding: "8px 10px", borderRadius: 8, background: "rgba(90,120,180,0.05)" },
   stateRowHead: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 },
-  stateRowLabel: { fontSize: 11.5, fontWeight: 700, color: "#dbe6f6" },
-  stateRowValue: { fontSize: 12, fontWeight: 700, color: "#f0f4fc", marginBottom: 2 },
+  stateRowLabel: { fontSize: 13, fontWeight: 700, color: "#dbe6f6" },
+  stateRowValue: { fontSize: 13, fontWeight: 700, color: "#f0f4fc", marginBottom: 2 },
 
   lanes: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 6 },
   lane: { display: "flex", flexDirection: "column", gap: 2, padding: "6px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)" },
-  laneLabel: { fontSize: 8.5, color: "#5a76a3", letterSpacing: 0.5 },
-  laneValue: { fontSize: 11.5, color: "#dbe6f6", fontWeight: 600 },
+  laneLabel: { fontSize: 12, color: "#6c86b5", letterSpacing: 0.5 },
+  laneValue: { fontSize: 13, color: "#dbe6f6", fontWeight: 600 },
 
-  tensionRow: { display: "flex", flexWrap: "wrap", gap: 8, padding: "5px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 11, marginBottom: 3 },
+  tensionRow: { display: "flex", flexWrap: "wrap", gap: 8, padding: "5px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 13, marginBottom: 3 },
   meta: { color: "#8aa0c8" },
 
   trajectoryRow: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 4 },
   trajStage: { display: "flex", alignItems: "center", gap: 4 },
-  trajLabel: { fontSize: 9, color: "#5a76a3" },
-  trajValue: { fontSize: 11, color: "#dbe6f6", fontWeight: 600, marginRight: 4 },
-  trajArrow: { color: "#5a76a3", margin: "0 4px" },
+  trajLabel: { fontSize: 12, color: "#6c86b5" },
+  trajValue: { fontSize: 13, color: "#dbe6f6", fontWeight: 600, marginRight: 4 },
+  trajArrow: { color: "#6c86b5", margin: "0 4px" },
 };

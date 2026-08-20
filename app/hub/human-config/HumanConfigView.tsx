@@ -14,7 +14,7 @@ import { buildUnknownTemperamentReadings } from "@/app/lib/philos/humanConfig/te
 import DimensionExplorer from "./DimensionExplorer";
 
 const STATUS_LABEL: Record<MappingStatus, string> = { mapped: "MAPPED", unmapped: "UNMAPPED", review_required: "REVIEW_REQUIRED" };
-const STATUS_COLOR: Record<MappingStatus, string> = { mapped: "#34d399", unmapped: "#5a76a3", review_required: "#fbbf24" };
+const STATUS_COLOR: Record<MappingStatus, string> = { mapped: "#34d399", unmapped: "#6c86b5", review_required: "#fbbf24" };
 const FILTER_LABEL: Record<ParameterFilterKey, string> = {
   known: "KNOWN", unknown: "UNKNOWN", conflict: "CONFLICT", review_required: "REVIEW_REQUIRED",
   has_evidence: "HAS_EVIDENCE", no_evidence: "NO_EVIDENCE", changed: "CHANGED", stable: "STABLE",
@@ -27,7 +27,7 @@ const SEMANTIC_TYPE_LABEL: Record<SemanticConceptType, string> = {
 };
 const SEMANTIC_TYPE_COLOR: Record<SemanticConceptType, string> = {
   MEASURABLE_PARAMETER: "#34d399", MECHANISM: "#5b9cf6", PROCESS: "#5b9cf6",
-  THEORY: "#8fa3c9", SUBJECT_DECLARATION: "#fbbf24", REFERENCE: "#5a76a3", OTHER: "#5a76a3",
+  THEORY: "#8fa3c9", SUBJECT_DECLARATION: "#fbbf24", REFERENCE: "#6c86b5", OTHER: "#6c86b5",
 };
 const SECTION_COLORS = ["#5b9cf6", "#34d399", "#fbbf24", "#f2635c", "#a78bfa", "#f472b6", "#22d3ee", "#94a3b8", "#fb923c", "#84cc16"];
 
@@ -115,8 +115,8 @@ function StatStrip({ known, unknown, evidence, dimensions, sections, concepts }:
   return (
     <div style={S.statStrip}>
       <StatCell label="WHAT WE KNOW" value={`${known} evidence-backed`} color="#34d399" />
-      <StatCell label="WHAT WE DON'T KNOW" value={`${unknown} measurable unresolved`} color="#5a76a3" />
-      <StatCell label="EVIDENCE" value={String(evidence)} color="#5a76a3" />
+      <StatCell label="WHAT WE DON'T KNOW" value={`${unknown} measurable unresolved`} color="#6c86b5" />
+      <StatCell label="EVIDENCE" value={String(evidence)} color="#6c86b5" />
       <StatCell label="MODEL" value={`${sections} Sections · ${dimensions} Dimensions · ${concepts} concepts`} color="#5aa6ff" />
     </div>
   );
@@ -333,7 +333,7 @@ function StateCell({ label, d }: { label: string; d: { value: string | null; sta
   return (
     <div style={S.stateCell}>
       <div style={S.stateLabel}>{label}</div>
-      <div style={{ ...S.stateValue, color: d.status === "unknown" ? "#5a76a3" : "#dbe6f6" }}>{d.value ?? "לא ידוע"}</div>
+      <div style={{ ...S.stateValue, color: d.status === "unknown" ? "#6c86b5" : "#dbe6f6" }}>{d.value ?? "לא ידוע"}</div>
     </div>
   );
 }
@@ -429,7 +429,7 @@ function SourceAndAudit({
         <div style={S.note}>
           <b>MODEL COVERAGE לעומת SUBJECT COVERAGE — שתי מדידות נפרדות.</b> MODEL COVERAGE = גודל הטקסונומיה עצמה
           ({summary.canonicalConceptCount} Canonical concepts תחת {summary.navigableDimensionCount} Dimension, {summary.sectionCount} Section) — קיים תמיד, בלי תלות ב-subject.
-          SUBJECT COVERAGE = כמה מהם ידועים ל-subject נוכחי ספציפי — <span style={{ color: "#5a76a3" }}>0 כרגע</span>, לכל subject אמיתי, כי אין עדיין Observation
+          SUBJECT COVERAGE = כמה מהם ידועים ל-subject נוכחי ספציפי — <span style={{ color: "#6c86b5" }}>0 כרגע</span>, לכל subject אמיתי, כי אין עדיין Observation
           קנוני המקושר לאף Canonical_ID. מודל גדול + subject לא ידוע הם שני דברים אמיתיים ושונים — לא סתירה, ולא מודל "ריק".
         </div>
 
@@ -455,7 +455,7 @@ function SourceAndAudit({
 
         <div style={S.note}>
           <b>מבנה מקור ≠ תשובה ≠ תצפית ≠ מצב חי.</b> אף Canonical_ID כאן אינו מקושר לתצפית canon אמיתית לשום subject —
-          המצב החי של כל פרמטר הוא <span style={{ color: "#5a76a3" }}>לא ידוע</span>, במפורש, לא מוסתר.
+          המצב החי של כל פרמטר הוא <span style={{ color: "#6c86b5" }}>לא ידוע</span>, במפורש, לא מוסתר.
         </div>
 
         <div style={S.coverageGrid}>
@@ -528,83 +528,83 @@ function Metric({ label, value, color }: { label: string; value: number; color?:
 
 const S: Record<string, React.CSSProperties> = {
   hero: { marginBottom: 10 },
-  heroKicker: { fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: "#8fa3c9" },
+  heroKicker: { fontSize: 13, fontWeight: 700, letterSpacing: 0.5, color: "#8fa3c9" },
   heroTitle: { fontSize: 22, fontWeight: 800, margin: "2px 0 0" },
 
   statStrip: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8, margin: "12px 0 16px" },
   statCell: { background: "rgba(18,24,38,0.7)", border: "1px solid rgba(90,120,180,0.16)", borderRadius: 10, padding: "9px 12px" },
   statValue: { fontSize: 14, fontWeight: 800 },
-  statLabel: { fontSize: 9, color: "#8fa3c9", marginTop: 3, letterSpacing: 0.4 },
+  statLabel: { fontSize: 12, color: "#8fa3c9", marginTop: 3, letterSpacing: 0.4 },
 
   graphWrap: { marginBottom: 16 },
-  graphHead: { fontSize: 11, fontWeight: 700, color: "#8fa3c9", marginBottom: 5 },
+  graphHead: { fontSize: 13, fontWeight: 700, color: "#8fa3c9", marginBottom: 5 },
   graphBar: { display: "flex", height: 16, borderRadius: 5, overflow: "hidden", background: "rgba(90,120,180,0.1)" },
-  graphLegend: { display: "flex", flexWrap: "wrap", gap: 12, fontSize: 10, marginTop: 6 },
+  graphLegend: { display: "flex", flexWrap: "wrap", gap: 12, fontSize: 12, marginTop: 6 },
   graphLegendItem: { textDecoration: "none" },
 
   personWrap: { marginBottom: 16 },
   personGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 8, marginTop: 6 },
   personRow: { display: "block", border: "1px solid rgba(90,120,180,0.2)", borderRadius: 10, padding: "9px 12px", textDecoration: "none", color: "inherit", background: "rgba(18,24,38,0.5)" },
-  personLabel: { fontSize: 11.5, fontWeight: 700, color: "#dbe6f6" },
+  personLabel: { fontSize: 13, fontWeight: 700, color: "#dbe6f6" },
   personRange: { display: "flex", alignItems: "center", gap: 6, marginTop: 6 },
-  personEnd: { fontSize: 9, color: "#5a76a3", fontWeight: 700, whiteSpace: "nowrap" },
+  personEnd: { fontSize: 12, color: "#6c86b5", fontWeight: 700, whiteSpace: "nowrap" },
   personTrack: { flex: 1, height: 3, background: "rgba(90,120,180,0.25)", borderRadius: 2, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" },
-  personUnknownDot: { fontSize: 9, color: "#5a76a3", background: "#0b0f1a", padding: "0 4px" },
-  personMeta: { fontSize: 9, color: "#5a76a3", marginTop: 5 },
+  personUnknownDot: { fontSize: 12, color: "#6c86b5", background: "#0b0f1a", padding: "0 4px" },
+  personMeta: { fontSize: 12, color: "#6c86b5", marginTop: 5 },
 
-  reviewCompact: { display: "block", fontSize: 11, color: "#fbbf24", textDecoration: "none", marginBottom: 16, padding: "8px 12px", background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 8 },
+  reviewCompact: { display: "block", fontSize: 13, color: "#fbbf24", textDecoration: "none", marginBottom: 16, padding: "8px 12px", background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 8 },
   reviewCompactCount: { fontWeight: 800 },
 
-  sectionDivider: { fontSize: 11, fontWeight: 700, color: "#5aa6ff", margin: "18px 0 8px", paddingTop: 10, borderTop: "1px solid rgba(90,120,180,0.15)" },
+  sectionDivider: { fontSize: 13, fontWeight: 700, color: "#5aa6ff", margin: "18px 0 8px", paddingTop: 10, borderTop: "1px solid rgba(90,120,180,0.15)" },
 
   mapGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10 },
   mapCard: { display: "block", border: "1px solid rgba(90,120,180,0.25)", borderRadius: 12, padding: "14px 16px", textDecoration: "none", color: "inherit", background: "rgba(18,24,38,0.6)", overflow: "hidden", position: "relative" },
   mapCardBar: { height: 3, borderRadius: 2, marginBottom: 10 },
   mapCardTitle: { fontSize: 14.5, fontWeight: 800, color: "#f0f4fc" },
-  mapCardMeta: { fontSize: 10.5, color: "#8aa0c8", marginTop: 5 },
+  mapCardMeta: { fontSize: 13, color: "#8aa0c8", marginTop: 5 },
 
-  sourceLine: { fontSize: 10.5, color: "#5a76a3", marginBottom: 14 },
+  sourceLine: { fontSize: 13, color: "#6c86b5", marginBottom: 14 },
   summaryGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginBottom: 14 },
   metric: { background: "rgba(18,24,38,0.7)", border: "1px solid rgba(90,120,180,0.14)", borderRadius: 10, padding: "8px 10px" },
   metricValue: { fontSize: 18, fontWeight: 800 },
-  metricLabel: { fontSize: 9.5, color: "#8fa3c9", marginTop: 2 },
+  metricLabel: { fontSize: 12, color: "#8fa3c9", marginTop: 2 },
 
   auditDetails: { marginTop: 20, borderTop: "1px solid rgba(90,120,180,0.15)", paddingTop: 12 },
-  auditSummary: { cursor: "pointer", fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: "#5a76a3" },
+  auditSummary: { cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: 0.5, color: "#6c86b5" },
 
   coverageGrid: { display: "flex", flexDirection: "column", gap: 3, marginTop: 8, marginBottom: 14, maxWidth: 500 },
-  coverageRow: { display: "flex", justifyContent: "space-between", fontSize: 11, padding: "3px 8px", background: "rgba(90,120,180,0.05)", borderRadius: 5 },
+  coverageRow: { display: "flex", justifyContent: "space-between", fontSize: 13, padding: "3px 8px", background: "rgba(90,120,180,0.05)", borderRadius: 5 },
 
-  note: { fontSize: 11, color: "#8fa3c9", lineHeight: 1.8, marginBottom: 10, maxWidth: 900, padding: "8px 10px", background: "rgba(90,120,180,0.05)", borderRadius: 8 },
+  note: { fontSize: 13, color: "#8fa3c9", lineHeight: 1.8, marginBottom: 10, maxWidth: 900, padding: "8px 10px", background: "rgba(90,120,180,0.05)", borderRadius: 8 },
 
-  subHead: { fontSize: 12, fontWeight: 700, color: "#5aa6ff", marginTop: 10, marginBottom: 8 },
-  back: { display: "inline-block", fontSize: 11, color: "#5b9cf6", textDecoration: "none", marginBottom: 10 },
+  subHead: { fontSize: 13, fontWeight: 700, color: "#5aa6ff", marginTop: 10, marginBottom: 8 },
+  back: { display: "inline-block", fontSize: 13, color: "#5b9cf6", textDecoration: "none", marginBottom: 10 },
 
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 8 },
   card: { display: "block", border: "1px solid rgba(90,120,180,0.2)", borderRadius: 10, padding: "10px 12px", textDecoration: "none", color: "inherit", background: "rgba(18,24,38,0.5)" },
-  cardTitle: { fontSize: 12.5, fontWeight: 700, color: "#dbe6f6" },
-  cardMeta: { fontSize: 10, color: "#8aa0c8", marginTop: 3 },
+  cardTitle: { fontSize: 13, fontWeight: 700, color: "#dbe6f6" },
+  cardMeta: { fontSize: 12, color: "#8aa0c8", marginTop: 3 },
 
   conceptCard: { border: "1px solid rgba(90,120,180,0.2)", borderRadius: 10, padding: "10px 12px", marginBottom: 10 },
-  conceptTitleLink: { fontSize: 13, fontWeight: 700, color: "#5b9cf6", textDecoration: "none" },
-  conceptMeta: { fontSize: 10, color: "#5a76a3", marginBottom: 6 },
+  conceptTitleLink: { fontSize: 15, fontWeight: 700, color: "#5b9cf6", textDecoration: "none" },
+  conceptMeta: { fontSize: 12, color: "#6c86b5", marginBottom: 6 },
   list: { display: "flex", flexDirection: "column", gap: 6 },
   sourceRow: { borderTop: "1px solid rgba(90,120,180,0.1)", paddingTop: 6, marginBottom: 6 },
-  statusTag: { fontSize: 9, fontWeight: 800, letterSpacing: 0.5 },
-  semanticTag: { display: "inline-block", fontSize: 9, fontWeight: 800, letterSpacing: 0.3, marginTop: 3, marginBottom: 3 },
-  originalText: { fontSize: 12, color: "#e6ebf5", marginTop: 3, lineHeight: 1.6 },
-  reviewReason: { fontSize: 10, color: "#fbbf24", marginTop: 2 },
-  meta: { fontSize: 10, color: "#8aa0c8" },
-  row: { display: "flex", justifyContent: "space-between", gap: 8, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 11, marginBottom: 3 },
+  statusTag: { fontSize: 12, fontWeight: 800, letterSpacing: 0.5 },
+  semanticTag: { display: "inline-block", fontSize: 12, fontWeight: 800, letterSpacing: 0.3, marginTop: 3, marginBottom: 3 },
+  originalText: { fontSize: 13, color: "#e6ebf5", marginTop: 3, lineHeight: 1.6 },
+  reviewReason: { fontSize: 12, color: "#fbbf24", marginTop: 2 },
+  meta: { fontSize: 12, color: "#8aa0c8" },
+  row: { display: "flex", justifyContent: "space-between", gap: 8, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 13, marginBottom: 3 },
 
   filterBar: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, margin: "4px 0 14px" },
-  filterBarLabel: { fontSize: 10, color: "#5a76a3", marginLeft: 4 },
-  filterChip: { fontSize: 10, padding: "3px 9px", borderRadius: 12, border: "1px solid rgba(90,120,180,0.3)", color: "#8fa3c9", textDecoration: "none" },
+  filterBarLabel: { fontSize: 12, color: "#6c86b5", marginLeft: 4 },
+  filterChip: { fontSize: 12, padding: "3px 9px", borderRadius: 12, border: "1px solid rgba(90,120,180,0.3)", color: "#8fa3c9", textDecoration: "none" },
   filterChipActive: { color: "#0b0f1a", background: "#5b9cf6", borderColor: "#5b9cf6", fontWeight: 700 },
-  filterClear: { fontSize: 10, color: "#f2635c", textDecoration: "none" },
+  filterClear: { fontSize: 12, color: "#f2635c", textDecoration: "none" },
 
   scroll: { overflowX: "auto", border: "1px solid rgba(90,120,180,0.2)", borderRadius: 8, marginTop: 8 },
-  table: { borderCollapse: "collapse", width: "100%", fontSize: 10.5 },
+  table: { borderCollapse: "collapse", width: "100%", fontSize: 13 },
   th: { padding: "6px 8px", color: "#8fa3c9", fontWeight: 700, textAlign: "center", borderBottom: "1px solid rgba(90,120,180,0.2)" },
   thLabel: { padding: "6px 8px", color: "#8fa3c9", fontWeight: 700, textAlign: "right", borderBottom: "1px solid rgba(90,120,180,0.2)" },
   td: { padding: "5px 8px", textAlign: "center", borderBottom: "1px solid rgba(90,120,180,0.08)" },
@@ -613,9 +613,9 @@ const S: Record<string, React.CSSProperties> = {
 
   inspector: { border: "1px solid rgba(91,156,246,0.3)", borderRadius: 12, padding: "14px 16px", marginTop: 8 },
   inspectorTitle: { fontSize: 15, fontWeight: 800, color: "#f0f4fc" },
-  inspectorMeta: { fontSize: 10.5, color: "#5a76a3", marginBottom: 10 },
+  inspectorMeta: { fontSize: 13, color: "#6c86b5", marginBottom: 10 },
   stateGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 6, marginBottom: 8 },
   stateCell: { padding: "6px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)" },
-  stateLabel: { fontSize: 8.5, color: "#5a76a3" },
-  stateValue: { fontSize: 11.5, fontWeight: 600, marginTop: 2 },
+  stateLabel: { fontSize: 12, color: "#6c86b5" },
+  stateValue: { fontSize: 13, fontWeight: 600, marginTop: 2 },
 };

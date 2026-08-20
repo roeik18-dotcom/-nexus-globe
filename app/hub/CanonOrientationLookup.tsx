@@ -203,31 +203,31 @@ const S: Record<string, React.CSSProperties> = {
   card: { background: "rgba(18,24,38,0.7)", border: "1px solid rgba(90,120,180,0.14)", borderRadius: 16, padding: "16px 18px", marginTop: 16 },
   cardHead: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 },
   cardTitle: { fontSize: 15, fontWeight: 700, margin: 0, color: "#f0f4fc" },
-  hint: { fontSize: 10, color: "#5f7aa6" },
+  hint: { fontSize: 12, color: "#5f7aa6" },
 
   legend: { listStyle: "none", margin: "0 0 14px", padding: "10px 12px", display: "flex", flexDirection: "column", gap: 4, borderRadius: 10, background: "rgba(90,120,180,0.06)", border: "1px solid rgba(90,120,180,0.14)" },
-  legendItem: { fontSize: 11.5, color: "#8aa0c8", lineHeight: 1.6 },
+  legendItem: { fontSize: 13, color: "#8aa0c8", lineHeight: 1.6 },
 
   form: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 },
-  input: { flex: "1 1 220px", background: "rgba(7,11,20,0.6)", border: "1px solid rgba(90,120,180,0.25)", borderRadius: 8, padding: "8px 10px", color: "#e8edf6", fontSize: 12.5, fontFamily: "ui-monospace, monospace" },
-  button: { padding: "8px 18px", borderRadius: 8, border: "1px solid rgba(110,160,240,0.3)", background: "linear-gradient(90deg, rgba(70,120,200,0.25), rgba(52,211,153,0.16))", color: "#eaf1ff", fontSize: 12.5, fontWeight: 600, cursor: "pointer" },
+  input: { flex: "1 1 220px", background: "rgba(7,11,20,0.6)", border: "1px solid rgba(90,120,180,0.25)", borderRadius: 8, padding: "8px 10px", color: "#e8edf6", fontSize: 13, fontFamily: "ui-monospace, monospace" },
+  button: { padding: "8px 18px", borderRadius: 8, border: "1px solid rgba(110,160,240,0.3)", background: "linear-gradient(90deg, rgba(70,120,200,0.25), rgba(52,211,153,0.16))", color: "#eaf1ff", fontSize: 13, fontWeight: 600, cursor: "pointer" },
 
-  placeholder: { fontSize: 12.5, lineHeight: 1.7, color: "#7f93b5", minHeight: 44 },
+  placeholder: { fontSize: 13, lineHeight: 1.7, color: "#7f93b5", minHeight: 44 },
 
   body: { display: "flex", flexDirection: "column", gap: 10 },
   headline: { display: "flex", flexDirection: "column", gap: 4, padding: "10px 12px", borderRadius: 10, background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)" },
-  headlineLabel: { fontSize: 10.5, color: "#34D399", fontWeight: 700, letterSpacing: "0.5px" },
-  headlineValue: { fontSize: 13, color: "#e8edf6", fontFamily: "ui-monospace, monospace" },
+  headlineLabel: { fontSize: 13, color: "#34D399", fontWeight: 700, letterSpacing: "0.5px" },
+  headlineValue: { fontSize: 15, color: "#e8edf6", fontFamily: "ui-monospace, monospace" },
 
   row: { display: "flex", flexDirection: "column", gap: 4 },
-  rowLabel: { fontSize: 10.5, color: "#5f7aa6", fontFamily: "ui-monospace, monospace" },
-  rowValue: { fontSize: 12.5, color: "#a9bcdc", lineHeight: 1.6 },
-  badge: { alignSelf: "flex-start", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: "rgba(90,120,180,0.15)", color: "#cdd8ec", fontFamily: "ui-monospace, monospace" },
+  rowLabel: { fontSize: 13, color: "#5f7aa6", fontFamily: "ui-monospace, monospace" },
+  rowValue: { fontSize: 13, color: "#a9bcdc", lineHeight: 1.6 },
+  badge: { alignSelf: "flex-start", fontSize: 13, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: "rgba(90,120,180,0.15)", color: "#cdd8ec", fontFamily: "ui-monospace, monospace" },
 
   provList: { listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 3 },
-  provItem: { fontSize: 11.5, color: "#8aa0c8", fontFamily: "ui-monospace, monospace" },
+  provItem: { fontSize: 13, color: "#8aa0c8", fontFamily: "ui-monospace, monospace" },
 
   table: { width: "100%", borderCollapse: "collapse", marginTop: 6 },
-  th: { textAlign: "left", fontSize: 10, color: "#5f7aa6", fontWeight: 600, padding: "6px 8px", borderBottom: "1px solid rgba(90,120,180,0.18)" },
-  td: { fontSize: 11.5, color: "#cdd8ec", padding: "6px 8px", borderBottom: "1px solid rgba(90,120,180,0.08)", fontFamily: "ui-monospace, monospace" },
+  th: { textAlign: "left", fontSize: 12, color: "#5f7aa6", fontWeight: 600, padding: "6px 8px", borderBottom: "1px solid rgba(90,120,180,0.18)" },
+  td: { fontSize: 13, color: "#cdd8ec", padding: "6px 8px", borderBottom: "1px solid rgba(90,120,180,0.08)", fontFamily: "ui-monospace, monospace" },
 };

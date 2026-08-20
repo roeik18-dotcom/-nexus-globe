@@ -80,7 +80,7 @@ export const LINKAGE_STYLE: Record<Linkage, LinkageStyle> = {
     title: "קיימות רשומות שיכלו להיות מקושרות, ואף אחת אינה מפנה לשנייה. ממצא אמיתי — לא נתון חסר.",
   },
   UNKNOWN: {
-    glyph: "·", color: "#5a6f96", label: "NO LINK POSSIBLE", stroke: "none",
+    glyph: "·", color: "#6c86b5", label: "NO LINK POSSIBLE", stroke: "none",
     title: "לצד אחד אין רשומה כלל, ולכן אין קישור לסווג.",
   },
 };
@@ -131,7 +131,7 @@ export function LinkageLegend({ kinds }: { kinds: readonly Linkage[] }) {
         const s = LINKAGE_STYLE[k];
         return (
           <span key={k} title={s.title} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-            <span style={{ color: s.color, fontSize: 12 }}>{s.glyph}</span>
+            <span style={{ color: s.color, fontSize: 13 }}>{s.glyph}</span>
             <span style={{ ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint, letterSpacing: 0.4 }}>{s.label}</span>
           </span>
         );

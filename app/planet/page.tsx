@@ -34,6 +34,8 @@
  */
 
 import { connection } from "next/server";
+import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
+import SignOutButton from "@/app/signin/SignOutButton";
 import { resolveViewerContextSemantics } from "@/app/lib/philos/context/resolveViewerContextSemantics";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 
@@ -62,7 +64,7 @@ import { ABSENCE_TEXT } from "@/app/lib/philos/social/socialSystemProjection";
 import { roleTouchOf } from "@/app/lib/philos/social/roleTouch";
 import { buildSocialFlow } from "@/app/lib/philos/social/socialFlowStages";
 import VerifiedRelationInventory from "@/app/lib/philos/shell/VerifiedRelationInventory";
-import { FS } from "@/app/lib/philos/shell/designTokens";
+import { COLOR, FS, RADIUS, TYPE } from "@/app/lib/philos/shell/designTokens";
 import { buildSocialPrimaryContext } from "@/app/lib/philos/social/socialPrimaryContext";
 import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
 import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
@@ -175,9 +177,37 @@ export default async function PlanetPage({
   // honest state: the previous fallback ("No world data.") described the
   // ontology files, which this route no longer reads.
   if (nodes.length === 0) {
-  return (
-      <div style={{ padding: 40, fontFamily: "system-ui" }}>
-        No event-backed entities to draw.
+    /* AN EMPTY GLOBE IS STILL A TERMINAL.
+       This returned a bare sentence on a blank page — no shell, no nav, no
+       orientation. A viewer with no recorded relations therefore landed on a
+       screen that could not tell them where they were or let them navigate
+       away, which is precisely the state every NEW user arrives in. The band
+       renders here for the same reason it renders everywhere: "nothing to
+       draw" is an answer, not an absence of a screen. */
+    return (
+      <div style={{ background: COLOR.bg, minHeight: "100vh" }}>
+        <div style={{ padding: "12px 20px 0" }}>
+          <SystemShell
+            signOut={<SignOutButton />}
+            viewerContext={semanticContext}
+            surface="globe"
+            purpose="Where this exists in the system, and what flows between whom — layout, not geography, until location is real."
+          />
+        </div>
+        <div dir="rtl" style={{ padding: "24px 20px" }}>
+          <div style={{
+            border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.md,
+            padding: "20px 22px", background: COLOR.bgRaised, maxWidth: 560,
+          }}>
+            <div style={{ ...TYPE.title, color: COLOR.text, marginBottom: 6 }}>
+              אין ישויות לצייר
+            </div>
+            <div style={{ fontSize: FS.read, color: COLOR.textDim, lineHeight: 1.7 }}>
+              אין ברשומות אף קשר שניתן להציב על הכדור. זו תשובה — לא מסך שבור:
+              קשר נוצר מאירוע מתועד, ולא מדמיון או מהשתייכות משוערת.
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -233,7 +263,7 @@ export default async function PlanetPage({
       // sibling elements as an array, so React demands keys — the exact
       // `app/planet/page.tsx (158:9)` warning this route carried.
       observationStrip = (
-        <div key="observation-strip" style={{ marginBottom: 6, padding: "7px 10px", borderRadius: 10, border: "1px solid rgba(167,139,250,0.35)", background: "rgba(11,15,26,0.85)", fontSize: 10.5, color: "#cfe0f5", lineHeight: 1.6 }}>
+        <div key="observation-strip" style={{ marginBottom: 6, padding: "7px 10px", borderRadius: 10, border: "1px solid rgba(167,139,250,0.35)", background: "rgba(11,15,26,0.85)", fontSize: 13, color: "#cfe0f5", lineHeight: 1.6 }}>
           <div key="obs1" style={{ fontWeight: 800, color: "#a78bfa", fontSize: FS.tag, letterSpacing: 0.8 }}>תצפית אחרונה · LATEST OBSERVATION (CANON)</div>
           <div key="obs2" style={{ direction: "ltr", textAlign: "right", fontFamily: "ui-monospace, monospace", fontSize: FS.tag }}>{latest.canon_event_id.slice(0, 14)}… · {latest.domain}/{latest.frame} · {latest.observed_at.slice(0, 10)}</div>
           <div key="obs3">{valueLabel}</div>

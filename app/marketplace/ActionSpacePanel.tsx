@@ -28,8 +28,8 @@ import {
 function Chip({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 100 }}>
-      <span style={{ fontSize: 9, letterSpacing: 1, color: "#5a76a3", textTransform: "uppercase" }}>{label}</span>
-      <span style={{ fontSize: 12, fontWeight: 600, color: color ?? "#dbe6f6", display: "inline-flex", alignItems: "center", gap: 5 }}>
+      <span style={{ fontSize: 12, letterSpacing: 1, color: "#6c86b5", textTransform: "uppercase" }}>{label}</span>
+      <span style={{ fontSize: 13, fontWeight: 600, color: color ?? "#dbe6f6", display: "inline-flex", alignItems: "center", gap: 5 }}>
         {color ? <span style={{ width: 7, height: 7, borderRadius: 4, background: color, display: "inline-block" }} /> : null}
         {value}
       </span>
@@ -38,7 +38,7 @@ function Chip({ label, value, color }: { label: string; value: string; color?: s
 }
 
 function ActionPill({ action }: { action: ContextAction }) {
-  const base = { fontSize: 11, padding: "6px 12px", borderRadius: 20, border: "1px solid", display: "inline-block" };
+  const base = { fontSize: 13, padding: "6px 12px", borderRadius: 20, border: "1px solid", display: "inline-block" };
   if (action.state === "live" && action.href) {
     return (
       <a href={action.href} style={{ ...base, color: "#0b0f1a", background: "#38bdf8", borderColor: "#38bdf8", fontWeight: 600, textDecoration: "none" }}>
@@ -52,7 +52,7 @@ function ActionPill({ action }: { action: ContextAction }) {
   return <span style={{ ...base, color: "#4a5a78", borderColor: "#1e2740", background: "transparent" }}>{action.label} · not connected yet</span>;
 }
 
-const sectionHead = { fontSize: 10, letterSpacing: 1.5, color: "#5aa6ff", marginTop: 18, marginBottom: 8 } as const;
+const sectionHead = { fontSize: 12, letterSpacing: 1.5, color: "#5aa6ff", marginTop: 18, marginBottom: 8 } as const;
 
 const EMPTY_KNOWN_NEEDS: KnownNeedResult = { needs: [], checked: false, reason: "not computed" };
 const EMPTY_ACTION_SPACE: ActionSpaceSummary = { admissible: false, blockers: [] };
@@ -77,7 +77,7 @@ export default function ActionSpacePanel({
     fontFamily: "system-ui",
     color: "#e6ebf5",
   } as const;
-  const kicker = { fontSize: 10, letterSpacing: 2, color: "#5aa6ff", marginBottom: 8 } as const;
+  const kicker = { fontSize: 12, letterSpacing: 2, color: "#5aa6ff", marginBottom: 8 } as const;
 
   if (selected.status === "unknown" || selected.status === "not_found") {
     const src =
@@ -95,7 +95,7 @@ export default function ActionSpacePanel({
     return (
       <div style={{ ...shell, borderColor: "#5a4a2a" }} dir="rtl">
         <div style={kicker}>מה אני מסתכל עליו?</div>
-        <div style={{ fontSize: 13 }}>
+        <div style={{ fontSize: 15 }}>
           {src} — {selected.status === "unknown" ? "לא זוהה כמזהה תקין. לא ידוע." : "לא נמצאה רשומה תואמת. לא ידוע."}
         </div>
       </div>
@@ -118,9 +118,9 @@ export default function ActionSpacePanel({
   return (
     <div style={{ ...shell, borderLeft: `3px solid ${claimedColor}` }}>
       <div dir="rtl" style={{ textAlign: "right" }}>
-        <div style={{ fontSize: 10, letterSpacing: 1, color: "#5aa6ff" }}>הקשר נבחר — מרחב פעולה</div>
+        <div style={{ fontSize: 12, letterSpacing: 1, color: "#5aa6ff" }}>הקשר נבחר — מרחב פעולה</div>
         <div style={{ fontSize: 16, fontWeight: 700, color: "#f2f6fc", marginTop: 4 }}>{selected.label}</div>
-        {selected.subject ? <div style={{ fontSize: 11, color: "#7f97c2", marginTop: 2 }}>נושא: {selected.subject}</div> : null}
+        {selected.subject ? <div style={{ fontSize: 13, color: "#7f97c2", marginTop: 2 }}>נושא: {selected.subject}</div> : null}
       </div>
 
       {/* PHILOS-native language pass (marketplace semantics): lead with the
@@ -128,7 +128,7 @@ export default function ActionSpacePanel({
           why, who can help" — not PUDM/ontology vocabulary. The technical
           Mission/Gap/Capability/Provider terms stay in the diagnostic
           <details> block below, never the primary read. */}
-      <div dir="rtl" style={{ textAlign: "right", fontSize: 11, color: "#8fa3c9", marginTop: 4, lineHeight: 1.7 }}>
+      <div dir="rtl" style={{ textAlign: "right", fontSize: 13, color: "#8fa3c9", marginTop: 4, lineHeight: 1.7 }}>
         מה אני צריך? · למה זה חשוב? · מי/מה יכול לעזור? · אפשר לפעול כרגע?
       </div>
 
@@ -152,7 +152,7 @@ export default function ActionSpacePanel({
             key={d.label}
             title={d.note}
             style={{
-              fontSize: 11,
+              fontSize: 13,
               padding: "6px 10px",
               borderRadius: 6,
               background: "#111726",
@@ -161,18 +161,18 @@ export default function ActionSpacePanel({
             }}
           >
             <div style={{ fontWeight: 600 }}>{d.label}</div>
-            <div style={{ color: d.status === "not_computed" ? PHILOS_STATE_COLOR.unknown : PHILOS_STATE_COLOR.claimed, fontSize: 9, letterSpacing: 0.5, marginTop: 2 }}>
+            <div style={{ color: d.status === "not_computed" ? PHILOS_STATE_COLOR.unknown : PHILOS_STATE_COLOR.claimed, fontSize: 12, letterSpacing: 0.5, marginTop: 2 }}>
               {d.status === "not_computed" ? "לא ידוע — אין עדיין נתון" : "חלקי — יש נתון עקיף"}
             </div>
           </div>
         ))}
       </div>
-      <div dir="rtl" style={{ textAlign: "right", fontSize: 10, color: "#5a76a3", marginTop: 6 }}>
+      <div dir="rtl" style={{ textAlign: "right", fontSize: 12, color: "#6c86b5", marginTop: 6 }}>
         לעולם לא מקובצים לציון משוקלל אחד — §21 אוסר ערך גלובלי מאוחד (NO_GLOBAL_PERSON_SCORE, NO_GLOBAL_HUMAN_OPTIMIZER).
       </div>
 
       <details style={{ marginTop: 14 }}>
-        <summary style={{ cursor: "pointer", fontSize: 10, letterSpacing: 1.5, color: "#5a76a3" }}>
+        <summary style={{ cursor: "pointer", fontSize: 12, letterSpacing: 1.5, color: "#6c86b5" }}>
           אבחון טכני (diagnostic detail)
         </summary>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 20, marginTop: 10 }}>
@@ -207,23 +207,23 @@ function MarketplaceActionOutcome({ lifecycle }: { lifecycle: ActionLifecycleSum
     <div dir="rtl" style={{ textAlign: "right" }}>
       <div style={sectionHead}>Action → Effect → State Update</div>
       {!lifecycle ? (
-        <div style={{ fontSize: 12, color: "#7b8ca6", fontStyle: "italic" }}>לא חושב — אין מסלול Action/Effect זמין להקשר זה.</div>
+        <div style={{ fontSize: 13, color: "#7b8ca6", fontStyle: "italic" }}>לא חושב — אין מסלול Action/Effect זמין להקשר זה.</div>
       ) : lifecycle.actions.length === 0 ? (
-        <div style={{ fontSize: 12, color: "#7b8ca6", fontStyle: "italic" }}>נבדק — אין Action רשום לנושא זה.</div>
+        <div style={{ fontSize: 13, color: "#7b8ca6", fontStyle: "italic" }}>נבדק — אין Action רשום לנושא זה.</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {lifecycle.actions.map((entry) => {
             const color = entry.verification_state === "effect_verified" ? "#34d399" : entry.verification_state === "effect_claimed_only" ? "#fbbf24" : "#7b8ca6";
             const label = entry.verification_state === "effect_verified" ? "אומת" : entry.verification_state === "effect_claimed_only" ? "נטען — לא אומת" : "לא ידוע — אין Effect רשום";
             return (
-              <div key={entry.action.action.action_id} style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>
+              <div key={entry.action.action.action_id} style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ color: "#dbe6f6" }}>{entry.action.action.type}</span>
-                <span style={{ color: "#5a76a3" }}>→</span>
+                <span style={{ color: "#6c86b5" }}>→</span>
                 <span style={{ color }}>{label}</span>
               </div>
             );
           })}
-          <div style={{ fontSize: 10, color: "#5a76a3", marginTop: 4 }}>
+          <div style={{ fontSize: 12, color: "#6c86b5", marginTop: 4 }}>
             {lifecycle.counts.actions_total} Actions · {lifecycle.counts.effect_verified} Effect מאומתים · {lifecycle.counts.learnings_with_state_prime} מועמדי state_prime (לא עדכוני מצב)
           </div>
         </div>

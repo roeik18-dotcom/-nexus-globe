@@ -53,7 +53,7 @@ function StabilityBadge({ stability }: { stability: string }) {
   const color = STABILITY_COLOR[stability] ?? "#cfe6f5";
   return (
     <span style={{
-      fontSize: 8.5, fontWeight: 700, letterSpacing: "1.5px",
+      fontSize: 12, fontWeight: 700, letterSpacing: "1.5px",
       textTransform: "uppercase" as const,
       color,
       background: color + "14",
@@ -75,29 +75,29 @@ function NodeCard({ node }: { node: EssenceNode }) {
       padding: "16px 18px",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: layerAccent }}>
+        <span style={{ fontSize: 15, fontWeight: 700, color: layerAccent }}>
           {node.name}
         </span>
         <StabilityBadge stability={node.stabilityClass} />
       </div>
 
-      <p style={{ fontSize: 11.5, color: "#2a6a8a", lineHeight: 1.65, marginBottom: 10 }}>
+      <p style={{ fontSize: 13, color: "#2a6a8a", lineHeight: 1.65, marginBottom: 10 }}>
         {node.definition}
       </p>
 
-      <div style={{ fontSize: 10, color: "#0d2030", fontFamily: "var(--font-geist-mono), monospace", marginBottom: 6 }}>
+      <div style={{ fontSize: 12, color: "#0d2030", fontFamily: "var(--font-geist-mono), monospace", marginBottom: 6 }}>
         <span style={{ color: "#1a4060" }}>ownership: </span>
         {node.ownershipQuestion}
       </div>
 
       {node.examples.length > 0 && (
         <div style={{ marginTop: 8 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const, color: "#0f2a3e", marginBottom: 4 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const, color: "#0f2a3e", marginBottom: 4 }}>
             Examples
           </div>
           <ul style={{ margin: 0, paddingLeft: 14 }}>
             {node.examples.slice(0, 3).map((ex, i) => (
-              <li key={i} style={{ fontSize: 10.5, color: "#1a4060", lineHeight: 1.6 }}>
+              <li key={i} style={{ fontSize: 13, color: "#1a4060", lineHeight: 1.6 }}>
                 {ex}
               </li>
             ))}
@@ -112,7 +112,7 @@ function FlowArrow({ from, to }: { from: EssenceLayer; to: EssenceLayer }) {
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 6,
-      fontSize: 10, color: "#0f2030",
+      fontSize: 12, color: "#0f2030",
       fontFamily: "var(--font-geist-mono), monospace",
       padding: "4px 0",
     }}>
@@ -147,7 +147,7 @@ export default function EssencePage() {
             background: "rgba(167,139,250,0.08)",
             border: "1px solid rgba(167,139,250,0.2)",
             borderRadius: 4, padding: "3px 10px", marginBottom: 16,
-            fontSize: 10, fontWeight: 700, letterSpacing: "2px",
+            fontSize: 12, fontWeight: 700, letterSpacing: "2px",
             textTransform: "uppercase" as const, color: "#A78BFA",
           }}>
             Philos Human Model
@@ -159,7 +159,7 @@ export default function EssencePage() {
           }}>
             Essence — the canonical model of who the user is.
           </h1>
-          <p style={{ fontSize: 13, color: "#2a4a64", maxWidth: 520, lineHeight: 1.7, marginBottom: 24 }}>
+          <p style={{ fontSize: 15, color: "#2a4a64", maxWidth: 520, lineHeight: 1.7, marginBottom: 24 }}>
             All agents query Essence. No agent maintains an independent user model.
             Observations feed the semantic pipeline; interpretations are derived, not assumed.
           </p>
@@ -172,7 +172,7 @@ export default function EssencePage() {
             padding: "16px 20px",
             display: "inline-block",
           }}>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase" as const, color: "#0f2030", marginBottom: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase" as const, color: "#0f2030", marginBottom: 10 }}>
               Generative flow (DAG)
             </div>
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 2 }}>
@@ -199,14 +199,14 @@ export default function EssencePage() {
                     {meta.label}
                   </h2>
                   <span style={{
-                    fontSize: 9, fontWeight: 700, letterSpacing: "1.5px",
+                    fontSize: 12, fontWeight: 700, letterSpacing: "1.5px",
                     textTransform: "uppercase" as const,
                     color: meta.accent + "99",
                   }}>
                     {nodes.length} nodes
                   </span>
                 </div>
-                <p style={{ fontSize: 12, color: "#1a3a55", maxWidth: 480 }}>
+                <p style={{ fontSize: 13, color: "#1a3a55", maxWidth: 480 }}>
                   {meta.description}
                 </p>
               </div>
@@ -233,11 +233,11 @@ export default function EssencePage() {
           padding: "16px 20px",
           marginBottom: 48,
         }}>
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase" as const, color: "#0f2030", marginBottom: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase" as const, color: "#0f2030", marginBottom: 10 }}>
             Semantic pipeline
           </div>
           <div style={{
-            fontSize: 10.5,
+            fontSize: 13,
             color: "#1a4060",
             fontFamily: "var(--font-geist-mono), monospace",
             lineHeight: 2,
@@ -258,7 +258,7 @@ export default function EssencePage() {
               </div>
             ))}
           </div>
-          <p style={{ fontSize: 11, color: "#0d2030", marginTop: 10, lineHeight: 1.6 }}>
+          <p style={{ fontSize: 13, color: "#0d2030", marginTop: 10, lineHeight: 1.6 }}>
             No interpretation writes directly to Canonical Essence.
             Evidence is cross-domain infrastructure — referenced here, not owned here.
           </p>
@@ -267,7 +267,7 @@ export default function EssencePage() {
         {/* Footer */}
         <div style={{
           borderTop: "1px solid #071420", paddingTop: 16,
-          fontSize: 11, color: "#0d1e2e",
+          fontSize: 13, color: "#0d1e2e",
           fontFamily: "var(--font-geist-mono), monospace",
         }}>
           Essence · Human Model v1 · Ontology: {Object.keys(ESSENCE_ONTOLOGY).length} nodes · All data is Candidate grade

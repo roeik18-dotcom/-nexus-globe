@@ -35,7 +35,7 @@ function Bar({ pct, color }: { pct: number; color: string }) {
     </div>
   );
 }
-const sec: React.CSSProperties = { fontSize: 9, color: C.borderSoft, letterSpacing: 2, textTransform: "uppercase", margin: "16px 0 7px" };
+const sec: React.CSSProperties = { fontSize: 12, color: C.borderSoft, letterSpacing: 2, textTransform: "uppercase", margin: "16px 0 7px" };
 const cell: React.CSSProperties = { background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: "9px 11px" };
 
 /** `chain` defaults to the locked Noa chain; pass a person chain to diagnose a real user. */
@@ -78,9 +78,9 @@ export default function PhilosDiagnostic({ chain }: { chain?: NoaChain }) {
   ];
 
   return (
-    <div dir="ltr" style={{ color: C.text, fontSize: 12 }}>
+    <div dir="ltr" style={{ color: C.text, fontSize: 13 }}>
       <div style={{ fontSize: 14, fontWeight: 800, color: C.cyan }}>Philos Diagnostic</div>
-      <div style={{ fontSize: 9, color: C.borderSoft, letterSpacing: 1, marginBottom: 10 }}>
+      <div style={{ fontSize: 12, color: C.borderSoft, letterSpacing: 1, marginBottom: 10 }}>
         Tension → Resistance → Leakage → Value → Impact → Action
       </div>
 
@@ -88,8 +88,8 @@ export default function PhilosDiagnostic({ chain }: { chain?: NoaChain }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 4 }}>
         {summary.map(s => (
           <div key={s.k} style={cell}>
-            <div style={{ fontSize: 8.5, color: C.borderSoft, letterSpacing: 1, textTransform: "uppercase" }}>{s.k}</div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: s.c, marginTop: 2, lineHeight: 1.2 }}>{s.v}</div>
+            <div style={{ fontSize: 12, color: C.borderSoft, letterSpacing: 1, textTransform: "uppercase" }}>{s.k}</div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: s.c, marginTop: 2, lineHeight: 1.2 }}>{s.v}</div>
           </div>
         ))}
       </div>
@@ -101,13 +101,13 @@ export default function PhilosDiagnostic({ chain }: { chain?: NoaChain }) {
           const isMax = f.name === strongest?.name;
           return (
             <div key={f.name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-              <div style={{ width: 130, fontSize: 9.5, color: isMax ? C.red : C.text, fontWeight: isMax ? 700 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.name}</div>
+              <div style={{ width: 130, fontSize: 12, color: isMax ? C.red : C.text, fontWeight: isMax ? 700 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.name}</div>
               <Bar pct={f.intensity} color={isMax ? C.red : C.borderSoft} />
-              <div style={{ width: 22, fontSize: 9.5, fontWeight: 700, color: isMax ? C.red : C.borderSoft }}>{f.intensity}</div>
+              <div style={{ width: 22, fontSize: 12, fontWeight: 700, color: isMax ? C.red : C.borderSoft }}>{f.intensity}</div>
             </div>
           );
         })}
-        <div style={{ fontSize: 10, color: "#9fc7df", marginTop: 4 }}>
+        <div style={{ fontSize: 12, color: "#9fc7df", marginTop: 4 }}>
           Strongest: <b style={{ color: C.red }}>{strongest?.name}</b> ({deptLabel(strongest?.department)}, {strongest?.intensity}) — where most of the tension accumulates.
         </div>
       </div>
@@ -117,18 +117,18 @@ export default function PhilosDiagnostic({ chain }: { chain?: NoaChain }) {
       <div style={cell}>
         {dimRanked.map((d, i) => (
           <div key={d.d} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-            <div style={{ width: 80, fontSize: 10, color: i === 0 ? C.orange : C.text, fontWeight: i === 0 ? 700 : 400 }}>{d.d}</div>
+            <div style={{ width: 80, fontSize: 12, color: i === 0 ? C.orange : C.text, fontWeight: i === 0 ? 700 : 400 }}>{d.d}</div>
             <Bar pct={d.v} color={i === 0 ? C.orange : C.borderSoft} />
-            <div style={{ width: 22, fontSize: 9.5, fontWeight: 700, color: i === 0 ? C.orange : C.borderSoft }}>{d.v}</div>
+            <div style={{ width: 22, fontSize: 12, fontWeight: 700, color: i === 0 ? C.orange : C.borderSoft }}>{d.v}</div>
           </div>
         ))}
-        <div style={{ fontSize: 10, color: "#9fc7df", marginTop: 2 }}>Pressure accumulates most in <b style={{ color: C.orange }}>{dimRanked[0]?.d}</b>.</div>
+        <div style={{ fontSize: 12, color: "#9fc7df", marginTop: 2 }}>Pressure accumulates most in <b style={{ color: C.orange }}>{dimRanked[0]?.d}</b>.</div>
       </div>
 
       {/* 3 · Leakage */}
       <div style={sec}>3 · Leakage</div>
       <div style={cell}>
-        <div style={{ display: "flex", gap: 14, marginBottom: 8, fontSize: 11 }}>
+        <div style={{ display: "flex", gap: 14, marginBottom: 8, fontSize: 13 }}>
           <span>Retained <b style={{ color: C.green }}>{retained}</b></span>
           <span>Lost <b style={{ color: C.red }}>{leak}</b></span>
           <span>Leakage <b style={{ color: C.orange }}>{leak}%</b></span>
@@ -137,7 +137,7 @@ export default function PhilosDiagnostic({ chain }: { chain?: NoaChain }) {
           <div style={{ width: `${retained}%`, background: C.green }} />
           <div style={{ width: `${leak}%`, background: C.red }} />
         </div>
-        {load && <div style={{ fontSize: 10, color: "#9fc7df", marginTop: 6 }}>Energy {load.beforeEnergy} → {load.afterEnergy} (+{load.energyRecovered}) once the network shares the load.</div>}
+        {load && <div style={{ fontSize: 12, color: "#9fc7df", marginTop: 6 }}>Energy {load.beforeEnergy} → {load.afterEnergy} (+{load.energyRecovered}) once the network shares the load.</div>}
       </div>
 
       {/* 4 · Value */}
@@ -145,13 +145,13 @@ export default function PhilosDiagnostic({ chain }: { chain?: NoaChain }) {
       <div style={cell}>
         {valueRanked.map((x, i) => (
           <div key={x.v} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-            <div style={{ width: 18, fontSize: 9, color: C.borderSoft }}>#{i + 1}</div>
-            <div style={{ width: 96, fontSize: 10, color: VALUE_COLOR[x.v], fontWeight: i === 0 ? 700 : 400 }}>● {x.v}</div>
+            <div style={{ width: 18, fontSize: 12, color: C.borderSoft }}>#{i + 1}</div>
+            <div style={{ width: 96, fontSize: 12, color: VALUE_COLOR[x.v], fontWeight: i === 0 ? 700 : 400 }}>● {x.v}</div>
             <Bar pct={(x.s / maxValueS) * 100} color={VALUE_COLOR[x.v]} />
-            <div style={{ width: 20, fontSize: 9.5, fontWeight: 700, color: VALUE_COLOR[x.v] }}>{x.s}</div>
+            <div style={{ width: 20, fontSize: 12, fontWeight: 700, color: VALUE_COLOR[x.v] }}>{x.s}</div>
           </div>
         ))}
-        <div style={{ fontSize: 10, color: "#9fc7df", marginTop: 2 }}>Dominant value: <b style={{ color: VALUE_COLOR[dominantValue] ?? C.cyan }}>{dominantValue}</b>.</div>
+        <div style={{ fontSize: 12, color: "#9fc7df", marginTop: 2 }}>Dominant value: <b style={{ color: VALUE_COLOR[dominantValue] ?? C.cyan }}>{dominantValue}</b>.</div>
       </div>
 
       {/* 5 · Impact */}
@@ -166,7 +166,7 @@ export default function PhilosDiagnostic({ chain }: { chain?: NoaChain }) {
           { k: "Orientation", v: `${orientation}/100` },
         ].map(s => (
           <div key={s.k} style={cell}>
-            <div style={{ fontSize: 8, color: C.borderSoft, textTransform: "uppercase", letterSpacing: 0.5 }}>{s.k}</div>
+            <div style={{ fontSize: 12, color: C.borderSoft, textTransform: "uppercase", letterSpacing: 0.5 }}>{s.k}</div>
             <div style={{ fontSize: 14, fontWeight: 800, color: C.green, marginTop: 2 }}>{s.v}</div>
           </div>
         ))}
@@ -175,9 +175,9 @@ export default function PhilosDiagnostic({ chain }: { chain?: NoaChain }) {
       {/* 6 · Action (ONE) */}
       <div style={sec}>6 · Action</div>
       <div style={{ ...cell, border: `1px solid ${C.cyan}`, background: "#06223a" }}>
-        <div style={{ fontSize: 9, color: C.borderSoft, letterSpacing: 1, textTransform: "uppercase" }}>Recommended action</div>
+        <div style={{ fontSize: 12, color: C.borderSoft, letterSpacing: 1, textTransform: "uppercase" }}>Recommended action</div>
         <div style={{ fontSize: 18, fontWeight: 800, color: C.cyan, margin: "3px 0 8px" }}>{cap(action?.recommendedAction ?? "stabilize")} → {action?.targetDimension ?? "Physical"}</div>
-        <div style={{ display: "flex", gap: 14, fontSize: 12 }}>
+        <div style={{ display: "flex", gap: 14, fontSize: 13 }}>
           <span style={{ color: C.green }}>+{action?.expectedEnergyGain ?? 16} Energy</span>
           <span style={{ color: C.green }}>−{action?.expectedLoadReduction ?? 11} Load</span>
           <span style={{ color: C.green }}>+{action?.expectedOrientationGain ?? 9} Orientation</span>

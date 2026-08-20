@@ -150,11 +150,11 @@ export default function BrainV2({
           <button onClick={() => setKnowledgeOpen((o) => !o)} style={S.knowledgeToggle}>ידע · מקורות</button>
         </div>
         {nextAction ? (
-          <a href={nextAction.href} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 700, color: "#02101f", background: `linear-gradient(135deg, ${COLOR.accent}, #34d399)`, textDecoration: "none", borderRadius: RADIUS.pill, padding: "6px 14px" }}>
+          <a href={nextAction.href} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#02101f", background: `linear-gradient(135deg, ${COLOR.accent}, #34d399)`, textDecoration: "none", borderRadius: RADIUS.pill, padding: "6px 14px" }}>
             <span style={TYPE.micro}>NEXT ACTION</span> {nextAction.label} →
           </a>
         ) : (
-          <span style={{ fontSize: 11, color: COLOR.textFaint, fontStyle: "italic" }}>אין פעולה הבאה מוצדקת כרגע.</span>
+          <span style={{ fontSize: 13, color: COLOR.textFaint, fontStyle: "italic" }}>אין פעולה הבאה מוצדקת כרגע.</span>
         )}
       </div>
 
@@ -244,7 +244,7 @@ function LevelOne({ core }: { core: OrientationCore | undefined }) {
           return (
             <Card key={d.key} border={d.color} wide>
               <CardTitle color={d.color}>{d.label}</CardTitle>
-              <div style={{ fontSize: 12, color: "#9fb0d0" }}>{d.detail}</div>
+              <div style={{ fontSize: 13, color: "#9fb0d0" }}>{d.detail}</div>
               {mark ? (
                 <CardLine label="מדידה אמיתית" value={`level ${mark.level} · stability ${mark.stability}`} />
               ) : (
@@ -261,12 +261,12 @@ function LevelOne({ core }: { core: OrientationCore | undefined }) {
         {REGULATORY_LAYER.map((r) => (
           <Card key={r.key} border={r.color} dashed wide>
             <CardTitle color={r.color}>{r.label}</CardTitle>
-            <div style={{ fontSize: 12, color: "#9fb0d0" }}>{r.detail}</div>
+            <div style={{ fontSize: 13, color: "#9fb0d0" }}>{r.detail}</div>
             <Empty>{r.source}</Empty>
             {r.humanConfigSection && r.humanConfigHeading ? (
               <a
                 href={`/hub/human-config?section=${encodeURIComponent(r.humanConfigSection)}&heading=${encodeURIComponent(r.humanConfigHeading)}`}
-                style={{ display: "block", fontSize: 10, color: r.color, marginTop: 4, textDecoration: "none" }}
+                style={{ display: "block", fontSize: 12, color: r.color, marginTop: 4, textDecoration: "none" }}
               >
                 → Human Config מקור: {r.humanConfigHeading}
               </a>
@@ -289,7 +289,7 @@ function LevelTwo({ lifecycle }: { lifecycle: ActionLifecycleSummary }) {
         {CONTEXTUAL_FIELDS.map((f) => (
           <Card key={f.key} border={f.color} wide>
             <CardTitle color={f.color}>{f.label}</CardTitle>
-            <div style={{ fontSize: 12, color: "#9fb0d0" }}>{f.detail}</div>
+            <div style={{ fontSize: 13, color: "#9fb0d0" }}>{f.detail}</div>
           </Card>
         ))}
       </div>
@@ -300,8 +300,8 @@ function LevelTwo({ lifecycle }: { lifecycle: ActionLifecycleSummary }) {
           const observed = v.key === "v1" || v.key === "v5" ? hasStateMovement : false;
           return (
             <Card key={v.key} border={observed ? "#34d399" : "#3a4d70"} dashed={!observed} wide>
-              <CardTitle color={observed ? "#34d399" : "#5a76a3"}>{v.label}</CardTitle>
-              <div style={{ fontSize: 11.5, color: "#9fb0d0" }}>{v.detail}</div>
+              <CardTitle color={observed ? "#34d399" : "#6c86b5"}>{v.label}</CardTitle>
+              <div style={{ fontSize: 13, color: "#9fb0d0" }}>{v.detail}</div>
               <CardMeta>{observed ? "נצפה — יש state_prime אמיתי במאגר" : "UNKNOWN — לא נצפה עדיין"}</CardMeta>
             </Card>
           );
@@ -396,7 +396,7 @@ function LevelFour({
 function LoopRow({ entry, focused, onClick }: { entry: ActionLifecycleEntry; focused: boolean; onClick: () => void }) {
   const effect = entry.effects[0];
   const learning = effect?.learnings[0];
-  const stageColor = entry.verification_state === "effect_verified" ? "#34d399" : entry.verification_state === "effect_claimed_only" ? "#fbbf24" : "#5a76a3";
+  const stageColor = entry.verification_state === "effect_verified" ? "#34d399" : entry.verification_state === "effect_claimed_only" ? "#fbbf24" : "#6c86b5";
   return (
     <div onClick={onClick} style={{ ...S.loopRow, borderColor: focused ? "#5b9cf6" : "rgba(90,120,180,0.18)", opacity: focused ? 1 : 0.85, cursor: "pointer" }}>
       <LoopStage label="ACTION" value={entry.action.action.type} known color="#f2635c" />
@@ -405,7 +405,7 @@ function LoopRow({ entry, focused, onClick }: { entry: ActionLifecycleEntry; foc
       <LoopArrow open={!!effect} />
       <LoopStage label="EVIDENCE" value={entry.verification_state === "no_effect_recorded" ? "לא ידוע" : entry.verification_state === "effect_claimed_only" ? "נטען" : "אומת"} known={entry.verification_state !== "no_effect_recorded"} color={stageColor} />
       <LoopArrow open={!!learning} />
-      <LoopStage label="LEARNING" value={learning ? (learning.learning.result.kind === "state_prime" ? "state_prime" : "no_update") : "לא ידוע"} known={!!learning} color={learning?.learning.result.kind === "state_prime" ? "#34d399" : "#5a76a3"} />
+      <LoopStage label="LEARNING" value={learning ? (learning.learning.result.kind === "state_prime" ? "state_prime" : "no_update") : "לא ידוע"} known={!!learning} color={learning?.learning.result.kind === "state_prime" ? "#34d399" : "#6c86b5"} />
     </div>
   );
 }
@@ -420,7 +420,7 @@ function LoopStage({ label, value, known, color }: { label: string; value: strin
 }
 
 function LoopArrow({ open }: { open: boolean }) {
-  return <div style={{ color: open ? "#5a76a3" : "#1e2740", fontSize: 16, padding: "0 2px" }}>→</div>;
+  return <div style={{ color: open ? "#6c86b5" : "#1e2740", fontSize: 16, padding: "0 2px" }}>→</div>;
 }
 
 function ActionDetailPanel({ entry }: { entry: ActionLifecycleEntry }) {
@@ -483,7 +483,7 @@ function LevelSix({ valueContext }: { valueContext: ValueContext }) {
           ))}
         </div>
       )}
-      <div style={{ fontSize: 10.5, color: "#5a76a3", marginTop: 6 }}>
+      <div style={{ fontSize: 13, color: "#6c86b5", marginTop: 6 }}>
         {valueContext.totalRuntimeValues ?? 0} ערכים רשומים כיום ביקום הערכים המלא — <a href="/hub/community?mode=universe" style={{ color: "#5b9cf6" }}>צפה ב-VALUE UNIVERSE המלא →</a>
       </div>
     </div>
@@ -549,18 +549,18 @@ function CardTitle({ children, color }: { children: React.ReactNode; color: stri
 
 function CardLine({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ fontSize: 12, color: "#dbe6f6", marginTop: 4 }}>
-      <span style={{ color: "#5a76a3" }}>{label}: </span>{value}
+    <div style={{ fontSize: 13, color: "#dbe6f6", marginTop: 4 }}>
+      <span style={{ color: "#6c86b5" }}>{label}: </span>{value}
     </div>
   );
 }
 
 function CardMeta({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontSize: 10.5, color: "#5a76a3", marginTop: 4, fontFamily: "ui-monospace, monospace" }}>{children}</div>;
+  return <div style={{ fontSize: 13, color: "#6c86b5", marginTop: 4, fontFamily: "ui-monospace, monospace" }}>{children}</div>;
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontSize: 12, color: "#7b8ca6", fontStyle: "italic" }}>{children}</div>;
+  return <div style={{ fontSize: 13, color: "#7b8ca6", fontStyle: "italic" }}>{children}</div>;
 }
 
 function FlowNote({ children }: { children: React.ReactNode }) {
@@ -569,8 +569,8 @@ function FlowNote({ children }: { children: React.ReactNode }) {
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display: "flex", gap: 8, fontSize: 12.5, padding: "4px 0", borderBottom: "1px solid rgba(90,120,180,0.1)" }}>
-      <span style={{ color: "#5a76a3", minWidth: 160 }}>{label}</span>
+    <div style={{ display: "flex", gap: 8, fontSize: 13, padding: "4px 0", borderBottom: "1px solid rgba(90,120,180,0.1)" }}>
+      <span style={{ color: "#6c86b5", minWidth: 160 }}>{label}</span>
       <span style={{ color: "#e8edf6" }}>{value}</span>
     </div>
   );
@@ -586,12 +586,12 @@ function KnowledgeDrawer({ knowledge, onClose }: { knowledge: KnowledgeNode[]; o
       {knowledge.filter((n) => n.kind === "model" || n.kind === "taxonomy").map((n) => (
         <div key={n.id} style={S.drawerItem}>
           <div style={{ fontWeight: 700 }}>{n.label}</div>
-          {n.detail ? <div style={{ fontSize: 11, color: "#9fb0d0", marginTop: 2 }}>{n.detail}</div> : null}
-          {n.source ? <div style={{ fontSize: 10, color: "#f2d34a", marginTop: 4 }}>מקור: {n.source}</div> : null}
+          {n.detail ? <div style={{ fontSize: 13, color: "#9fb0d0", marginTop: 2 }}>{n.detail}</div> : null}
+          {n.source ? <div style={{ fontSize: 12, color: "#f2d34a", marginTop: 4 }}>מקור: {n.source}</div> : null}
         </div>
       ))}
       {knowledge.filter((n) => n.kind === "category").map((n) => (
-        <div key={n.id} style={{ fontSize: 11, color: "#9fb0d0", padding: "3px 8px" }}>· {n.label}</div>
+        <div key={n.id} style={{ fontSize: 13, color: "#9fb0d0", padding: "3px 8px" }}>· {n.label}</div>
       ))}
     </div>
   );
@@ -601,44 +601,44 @@ const S: Record<string, React.CSSProperties> = {
   root: { fontFamily: "system-ui", background: COLOR.bg, color: COLOR.text, minHeight: "100%", padding: "14px 20px 32px", position: "relative" },
   topBar: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 },
   levelTabs: { display: "flex", gap: 6, flexWrap: "wrap" },
-  levelTab: { fontSize: 11.5, fontWeight: 500, padding: "7px 14px", borderRadius: RADIUS.md, border: "none", background: COLOR.bgRaised, color: COLOR.textDim, cursor: "pointer" },
+  levelTab: { fontSize: 13, fontWeight: 500, padding: "7px 14px", borderRadius: RADIUS.md, border: "none", background: COLOR.bgRaised, color: COLOR.textDim, cursor: "pointer" },
   levelTabActive: { color: "#02101f", background: COLOR.accent, fontWeight: 700 },
-  subjectLine: { fontSize: 11.5, color: "#7f97c2", display: "flex", alignItems: "center", gap: 10 },
-  knowledgeToggle: { fontSize: 10.5, padding: "3px 10px", borderRadius: 10, border: "1px solid #2a3f66", background: "transparent", color: "#9fb0d0", cursor: "pointer" },
+  subjectLine: { fontSize: 13, color: "#7f97c2", display: "flex", alignItems: "center", gap: 10 },
+  knowledgeToggle: { fontSize: 13, padding: "3px 10px", borderRadius: 10, border: "1px solid #2a3f66", background: "transparent", color: "#9fb0d0", cursor: "pointer" },
 
   threeCol: { display: "grid", gridTemplateColumns: "1fr 1.1fr 1fr", gap: 20, alignItems: "start" },
   column: { display: "flex", flexDirection: "column", gap: 8, minWidth: 0 },
-  columnTitle: { fontSize: 12.5, fontWeight: 700, letterSpacing: 0.5 },
-  columnNote: { fontSize: 10.5, color: "#5a76a3", lineHeight: 1.5 },
+  columnTitle: { fontSize: 13, fontWeight: 700, letterSpacing: 0.5 },
+  columnNote: { fontSize: 13, color: "#6c86b5", lineHeight: 1.5 },
 
   humanCore: { display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "18px 0" },
   humanCircle: { width: 116, height: 116, borderRadius: "50%", border: `3px solid ${COLOR.accent}`, background: "radial-gradient(circle, rgba(91,156,246,0.3), rgba(52,211,153,0.08) 70%, transparent 100%)", boxShadow: "0 0 32px -8px rgba(91,156,246,0.5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: COLOR.text },
-  humanSub: { fontSize: 12, color: COLOR.textDim, fontWeight: 600 },
-  motiveNote: { fontSize: 10.5, color: "#5a76a3", textAlign: "center", lineHeight: 1.6, marginTop: 4 },
+  humanSub: { fontSize: 13, color: COLOR.textDim, fontWeight: 600 },
+  motiveNote: { fontSize: 13, color: "#6c86b5", textAlign: "center", lineHeight: 1.6, marginTop: 4 },
 
   stack: { display: "flex", flexDirection: "column", gap: 10 },
   rowWrap: { display: "flex", flexWrap: "wrap", gap: 10 },
-  sectionHead: { fontSize: 11.5, fontWeight: 700, color: "#5aa6ff", letterSpacing: 0.5, marginTop: 6 },
+  sectionHead: { fontSize: 13, fontWeight: 700, color: "#5aa6ff", letterSpacing: 0.5, marginTop: 6 },
 
   card: { border: "1px solid", borderRadius: 10, padding: "10px 14px", background: "rgba(17,23,38,0.7)", minWidth: 160 },
-  flowNote: { fontSize: 10.5, color: "#5a76a3", textAlign: "center", marginTop: 8, lineHeight: 1.5 },
+  flowNote: { fontSize: 13, color: "#6c86b5", textAlign: "center", marginTop: 8, lineHeight: 1.5 },
 
   loopList: { display: "flex", flexDirection: "column", gap: 8 },
   loopRow: { display: "flex", alignItems: "stretch", gap: 4, border: "1px solid", borderRadius: 10, padding: 8, overflowX: "auto" },
   loopStage: { border: "1px solid", borderRadius: 8, padding: "6px 10px", minWidth: 110, flex: "0 0 auto" },
-  loopStageLabel: { fontSize: 9, letterSpacing: 1, color: "#5a76a3" },
-  loopStageValue: { fontSize: 12, color: "#f2f6fc", marginTop: 2 },
+  loopStageLabel: { fontSize: 12, letterSpacing: 1, color: "#6c86b5" },
+  loopStageValue: { fontSize: 13, color: "#f2f6fc", marginTop: 2 },
 
   detailPanel: { background: "#111726", border: "1px solid #2a3f66", borderRadius: 10, padding: "12px 16px", marginTop: 6 },
 
   principleGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10 },
-  provenanceNote: { fontSize: 11, color: "#5a76a3", lineHeight: 1.6, maxWidth: 900 },
-  sourceLensNote: { fontSize: 9, color: "#5a76a3", marginTop: 6, paddingTop: 4, borderTop: "1px dashed rgba(90,120,180,0.25)", fontStyle: "italic" },
+  provenanceNote: { fontSize: 13, color: "#6c86b5", lineHeight: 1.6, maxWidth: 900 },
+  sourceLensNote: { fontSize: 12, color: "#6c86b5", marginTop: 6, paddingTop: 4, borderTop: "1px dashed rgba(90,120,180,0.25)", fontStyle: "italic" },
   evalList: { display: "flex", flexDirection: "column", gap: 4, margin: 0, padding: "0 20px 0 0", listStyle: "disc" },
-  evalItem: { fontSize: 12.5, color: "#cfe0f5", lineHeight: 1.6 },
+  evalItem: { fontSize: 13, color: "#cfe0f5", lineHeight: 1.6 },
 
   drawer: { position: "absolute", top: 0, left: 0, bottom: 0, width: 300, background: "#0b0f1acc", backdropFilter: "blur(6px)", borderLeft: "1px solid #2a3f66", padding: 14, overflowY: "auto", zIndex: 5 },
-  drawerHead: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color: "#b592e8", marginBottom: 10 },
-  drawerClose: { fontSize: 10, padding: "3px 8px", borderRadius: 8, border: "1px solid #2a3f66", background: "transparent", color: "#9fb0d0", cursor: "pointer" },
-  drawerItem: { fontSize: 12, padding: "8px 10px", marginBottom: 6, borderRadius: 6, border: "1px solid #1e2740" },
+  drawerHead: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#b592e8", marginBottom: 10 },
+  drawerClose: { fontSize: 12, padding: "3px 8px", borderRadius: 8, border: "1px solid #2a3f66", background: "transparent", color: "#9fb0d0", cursor: "pointer" },
+  drawerItem: { fontSize: 13, padding: "8px 10px", marginBottom: 6, borderRadius: 6, border: "1px solid #1e2740" },
 };

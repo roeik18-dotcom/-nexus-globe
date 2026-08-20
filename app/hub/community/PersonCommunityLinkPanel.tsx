@@ -21,7 +21,7 @@ const STATUS_LABEL: Record<LinkStatus, string> = {
   CONFLICT: "CONFLICT",
 };
 const STATUS_COLOR: Record<LinkStatus, string> = {
-  NOT_LINKED: "#5a76a3",
+  NOT_LINKED: "#6c86b5",
   UNVERIFIED: "#fbbf24",
   DECLARED_SAME_PERSON: "#5b9cf6",
   VERIFIED_SAME_PERSON: "#34d399",
@@ -98,7 +98,7 @@ export default function PersonCommunityLinkPanel({
             {pending ? "…" : "אשר שוב — שלב 2/2"}
           </button>
         ) : null}
-        {status === "VERIFIED_SAME_PERSON" ? <span style={{ color: "#34d399", fontSize: 12, fontWeight: 700 }}>✓ אותה זהות קנונית</span> : null}
+        {status === "VERIFIED_SAME_PERSON" ? <span style={{ color: "#34d399", fontSize: 13, fontWeight: 700 }}>✓ אותה זהות קנונית</span> : null}
       </div>
     </section>
   );
@@ -108,12 +108,12 @@ const S: Record<string, React.CSSProperties> = {
   card: { background: "rgba(18,24,38,0.7)", border: "1px solid rgba(91,156,246,0.3)", borderRadius: 16, padding: "16px 18px", margin: "16px 20px" },
   head: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
   title: { fontSize: 13.5, fontWeight: 700, margin: 0, color: "#f0f4fc" },
-  statusTag: { fontSize: 10.5, fontWeight: 800, letterSpacing: 0.5, fontFamily: "ui-monospace, monospace" },
-  row: { display: "flex", justifyContent: "space-between", gap: 8, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 11.5, marginBottom: 3 },
+  statusTag: { fontSize: 13, fontWeight: 800, letterSpacing: 0.5, fontFamily: "ui-monospace, monospace" },
+  row: { display: "flex", justifyContent: "space-between", gap: 8, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 13, marginBottom: 3 },
   meta: { color: "#8aa0c8" },
   value: { color: "#dbe6f6", fontWeight: 600 },
-  note: { fontSize: 11, color: "#8fa3c9", lineHeight: 1.7, margin: "8px 0", maxWidth: 720 },
-  error: { fontSize: 11, color: "#f2635c", marginBottom: 8 },
+  note: { fontSize: 13, color: "#8fa3c9", lineHeight: 1.7, margin: "8px 0", maxWidth: 720 },
+  error: { fontSize: 13, color: "#f2635c", marginBottom: 8 },
   actions: { marginTop: 8 },
-  button: { fontSize: 12, fontWeight: 700, padding: "7px 16px", borderRadius: 10, border: "none", background: "#5b9cf6", color: "#0b0f1a", cursor: "pointer" },
+  button: { fontSize: 13, fontWeight: 700, padding: "7px 16px", borderRadius: 10, border: "none", background: "#5b9cf6", color: "#0b0f1a", cursor: "pointer" },
 };

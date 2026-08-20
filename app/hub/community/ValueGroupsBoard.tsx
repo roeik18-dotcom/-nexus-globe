@@ -317,7 +317,7 @@ const S: Record<string, React.CSSProperties> = {
   chipId: { fontFamily: "ui-monospace, monospace", direction: "ltr", unicodeBidi: "isolate" },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(330px, 1fr))", gap: SPACE.md },
   demoLane: { marginTop: SPACE.md, background: "rgba(0,0,0,0.2)", borderRadius: RADIUS.md, padding: "6px 12px", opacity: 0.85 },
-  demoSummary: { cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#5a76a3", padding: "4px 0", display: "flex", gap: 10, alignItems: "baseline" },
+  demoSummary: { cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#6c86b5", padding: "4px 0", display: "flex", gap: 10, alignItems: "baseline" },
   demoNote: { fontSize: FS.tag, color: COLOR.textFaint },
   card: { border: "1px solid", borderRadius: RADIUS.lg, padding: `${SPACE.md}px ${SPACE.lg}px`, background: "rgba(10,14,23,0.5)", display: "flex", flexDirection: "column", gap: 6 },
   cardHead: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 },

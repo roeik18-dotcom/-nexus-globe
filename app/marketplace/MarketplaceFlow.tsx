@@ -105,27 +105,27 @@ function StageCard({ stage, index }: { stage: FlowStage; index: number }) {
         <span style={{ ...TYPE.micro, color: active ? p.text : COLOR.textFaint }}>{index}. {stage.label}</span>
         <ProvenanceBadge p={active ? stage.provenance : "UNKNOWN"} />
       </div>
-      <div dir="rtl" style={{ fontSize: 9.5, color: COLOR.textFaint }}>{stage.gloss}</div>
+      <div dir="rtl" style={{ fontSize: 12, color: COLOR.textFaint }}>{stage.gloss}</div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
         <span style={{ fontSize: 22, fontWeight: 800, color: active ? COLOR.text : "#8798b8" }}>{stage.count}</span>
-        {stage.sub ? <span style={{ fontSize: 9, color: COLOR.textFaint }}>{stage.sub}</span> : null}
+        {stage.sub ? <span style={{ fontSize: 12, color: COLOR.textFaint }}>{stage.sub}</span> : null}
       </div>
       {stage.latest ? (
         <div dir="rtl" style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: "auto", paddingTop: 5, borderTop: `1px solid ${COLOR.border}` }}>
-          <div style={{ fontSize: 10.5, fontWeight: 600, color: COLOR.text, lineHeight: 1.3 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: COLOR.text, lineHeight: 1.3 }}>
             {stage.latest.text.length > 52 ? `${stage.latest.text.slice(0, 52)}…` : stage.latest.text}
           </div>
-          <div style={{ fontSize: 9, color: COLOR.textDim, fontFamily: "ui-monospace, monospace", direction: "ltr", textAlign: "right" }}>
+          <div style={{ fontSize: 12, color: COLOR.textDim, fontFamily: "ui-monospace, monospace", direction: "ltr", textAlign: "right" }}>
             {stage.latest.owner} · {stage.latest.time.slice(0, 10)}
           </div>
         </div>
       ) : (
-        <div dir="rtl" style={{ marginTop: "auto", paddingTop: 5, borderTop: `1px solid ${COLOR.border}`, fontSize: 9.5, color: "#8798b8", fontStyle: "italic", lineHeight: 1.35 }}>
+        <div dir="rtl" style={{ marginTop: "auto", paddingTop: 5, borderTop: `1px solid ${COLOR.border}`, fontSize: 12, color: "#8798b8", fontStyle: "italic", lineHeight: 1.35 }}>
           {stage.note ?? "UNKNOWN — אין רשומה"}
         </div>
       )}
       {stage.latest && stage.note ? (
-        <div dir="rtl" style={{ fontSize: 8.5, color: COLOR.textFaint, lineHeight: 1.3 }}>{stage.note}</div>
+        <div dir="rtl" style={{ fontSize: 12, color: COLOR.textFaint, lineHeight: 1.3 }}>{stage.note}</div>
       ) : null}
     </a>
   );
@@ -151,7 +151,7 @@ const S: Record<string, React.CSSProperties> = {
   eyebrow: { ...TYPE.micro, color: COLOR.accent, marginBottom: 4 },
   title: { fontSize: 13.5, fontWeight: 800, margin: 0, color: COLOR.text, direction: "ltr", textAlign: "right" },
   headMeta: { display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" },
-  chip: { fontSize: 9.5, fontWeight: 700, color: COLOR.textDim, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 9px", fontFamily: "ui-monospace, monospace" },
+  chip: { fontSize: 12, fontWeight: 700, color: COLOR.textDim, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 9px", fontFamily: "ui-monospace, monospace" },
   rail: { overflowX: "auto", paddingBottom: 4 },
   track: { display: "flex", alignItems: "stretch", minWidth: "fit-content" },
 };

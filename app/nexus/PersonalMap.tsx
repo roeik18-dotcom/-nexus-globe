@@ -47,8 +47,8 @@ function Card(props: { n: number; q: string; accent: string; children: React.Rea
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderInlineStart: `3px solid ${props.accent}`, borderRadius: 6, padding: "10px 12px", marginBottom: 8 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-        <span style={{ width: 16, height: 16, borderRadius: "50%", background: props.accent + "22", color: props.accent, fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{props.n}</span>
-        <span style={{ fontSize: 9, color: C.borderSoft, letterSpacing: 1, textTransform: "uppercase" }}>{props.q}</span>
+        <span style={{ width: 16, height: 16, borderRadius: "50%", background: props.accent + "22", color: props.accent, fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{props.n}</span>
+        <span style={{ fontSize: 12, color: C.borderSoft, letterSpacing: 1, textTransform: "uppercase" }}>{props.q}</span>
       </div>
       {props.children}
     </div>
@@ -87,13 +87,13 @@ export default function PersonalMap({ profile, chain }: { profile?: IntakeProfil
   const actDim = profile ? profile.needDim : (action?.targetDimension ?? "Physical");
 
   const big = (color: string): React.CSSProperties => ({ fontSize: 17, fontWeight: 800, color });
-  const sub: React.CSSProperties = { fontSize: 10.5, color: "#9fc7df", marginTop: 2 };
+  const sub: React.CSSProperties = { fontSize: 13, color: "#9fc7df", marginTop: 2 };
 
   return (
-    <div dir="ltr" style={{ color: C.text, fontSize: 12 }}>
+    <div dir="ltr" style={{ color: C.text, fontSize: 13 }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
         <div style={{ fontSize: 15, fontWeight: 800, color: C.cyan }}>You Are Here</div>
-        <div style={{ fontSize: 9, color: C.borderSoft, letterSpacing: 1 }}>{(chain || profile) ? "PERSONAL MAP · YOU" : "PERSONAL MAP · NOA"}</div>
+        <div style={{ fontSize: 12, color: C.borderSoft, letterSpacing: 1 }}>{(chain || profile) ? "PERSONAL MAP · YOU" : "PERSONAL MAP · NOA"}</div>
       </div>
 
       {/* 1 · Strongest resistance */}
@@ -104,7 +104,7 @@ export default function PersonalMap({ profile, chain }: { profile?: IntakeProfil
 
       {/* 2 · Where energy is leaking */}
       <Card n={2} q="Where energy is leaking" accent={C.orange}>
-        <div style={big(C.orange)}>{leak?.totalLeakage ?? 78} <span style={{ fontSize: 11, color: C.borderSoft }}>/ 100 · {leak?.leakageLevel ?? "high"}</span></div>
+        <div style={big(C.orange)}>{leak?.totalLeakage ?? 78} <span style={{ fontSize: 13, color: C.borderSoft }}>/ 100 · {leak?.leakageLevel ?? "high"}</span></div>
         <div style={sub}>strongest at {leak?.strongestLeakingDepartment ?? "Emotional"} · {leak?.strongestLeakingCell?.channel ?? "Emotion"} ({leak?.strongestLeakingCell?.dominance ?? 95}%)</div>
       </Card>
 
@@ -116,10 +116,10 @@ export default function PersonalMap({ profile, chain }: { profile?: IntakeProfil
 
       {/* 4 · Who is helping */}
       <Card n={4} q="Who is helping" accent={C.green}>
-        <div style={big(C.green)}>{helpers.length} people <span style={{ fontSize: 11, color: C.borderSoft }}>· community {load?.communityPct ?? 65}%</span></div>
+        <div style={big(C.green)}>{helpers.length} people <span style={{ fontSize: 13, color: C.borderSoft }}>· community {load?.communityPct ?? 65}%</span></div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
           {helpers.slice(0, 5).map(h => (
-            <span key={h.id} title={`${ROLE_VALUE[h.role] ?? ""} · ${h.loadType}`} style={{ fontSize: 9, padding: "2px 7px", borderRadius: 10, background: "#06223a", border: `1px solid ${C.borderSoft}`, color: C.text }}>{h.name.split(" ")[0]} · {h.allocated}</span>
+            <span key={h.id} title={`${ROLE_VALUE[h.role] ?? ""} · ${h.loadType}`} style={{ fontSize: 12, padding: "2px 7px", borderRadius: 10, background: "#06223a", border: `1px solid ${C.borderSoft}`, color: C.text }}>{h.name.split(" ")[0]} · {h.allocated}</span>
           ))}
         </div>
       </Card>
@@ -127,7 +127,7 @@ export default function PersonalMap({ profile, chain }: { profile?: IntakeProfil
       {/* 5 · What to do now */}
       <Card n={5} q="What to do now" accent={C.cyan}>
         <div style={big(C.cyan)}>{actName} → {actDim}</div>
-        <div style={{ display: "flex", gap: 12, marginTop: 6, fontSize: 11 }}>
+        <div style={{ display: "flex", gap: 12, marginTop: 6, fontSize: 13 }}>
           <span style={{ color: C.green }}>+{action?.expectedEnergyGain ?? 16} Energy</span>
           <span style={{ color: C.green }}>−{action?.expectedLoadReduction ?? 11} Load</span>
           <span style={{ color: C.green }}>+{action?.expectedOrientationGain ?? 9} Orient.</span>
@@ -136,7 +136,7 @@ export default function PersonalMap({ profile, chain }: { profile?: IntakeProfil
 
       {/* 6 · Where am I currently */}
       <Card n={6} q="Where am I currently" accent={C.green}>
-        <div style={big(C.green)}>{orientation}<span style={{ fontSize: 13, color: C.borderSoft }}>/100</span></div>
+        <div style={big(C.green)}>{orientation}<span style={{ fontSize: 15, color: C.borderSoft }}>/100</span></div>
         <div style={{ height: 6, background: "#0a1a2e", borderRadius: 4, overflow: "hidden", margin: "6px 0" }}>
           <div style={{ width: `${orientation}%`, height: "100%", background: C.green, borderRadius: 4 }} />
         </div>
@@ -144,11 +144,11 @@ export default function PersonalMap({ profile, chain }: { profile?: IntakeProfil
       </Card>
 
       {profile && profile.values.length > 0 && (
-        <div style={{ fontSize: 10, color: C.borderSoft, textAlign: "center", marginTop: 2 }}>
+        <div style={{ fontSize: 12, color: C.borderSoft, textAlign: "center", marginTop: 2 }}>
           Bound by {profile.values.map(v => VALUE_HE[v] ?? v).join(" · ")}
         </div>
       )}
-      <div style={{ fontSize: 10, color: C.borderSoft, textAlign: "center", marginTop: 6 }}>
+      <div style={{ fontSize: 12, color: C.borderSoft, textAlign: "center", marginTop: 6 }}>
         Private Burden → Shared Responsibility
       </div>
     </div>

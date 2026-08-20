@@ -70,7 +70,7 @@ function Pill({ label, color }: { label: string; color: string }) {
     <span style={{
       display: "inline-flex", alignItems: "center",
       padding: "2px 8px", borderRadius: 4,
-      fontSize: 11, fontWeight: 600, letterSpacing: "0.4px",
+      fontSize: 13, fontWeight: 600, letterSpacing: "0.4px",
       fontFamily: "monospace",
       background: color + "20", color, border: `1px solid ${color}40`,
     }}>
@@ -84,7 +84,7 @@ function ValueChip({ id }: { id: string }) {
   return (
     <span style={{
       display: "inline-block", padding: "2px 10px", borderRadius: 12,
-      fontSize: 12, fontWeight: 500,
+      fontSize: 13, fontWeight: 500,
       background: c + "1A", color: c, border: `1px solid ${c}40`,
     }}>
       {id}
@@ -179,7 +179,7 @@ export default function PudmPage() {
             <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.4px" }}>
               PUDM Explorer
             </h1>
-            <span style={{ fontFamily: "monospace", fontSize: 12, color: "var(--muted)" }}>
+            <span style={{ fontFamily: "monospace", fontSize: 13, color: "var(--muted)" }}>
               Mission&nbsp;→&nbsp;Gap&nbsp;→&nbsp;Value&nbsp;→&nbsp;
               Capability&nbsp;→&nbsp;Provider
             </span>
@@ -196,7 +196,7 @@ export default function PudmPage() {
             ] as const).map(s => (
               <div key={s.label} style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
                 <span style={{ fontSize: 22, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.n}</span>
-                <span style={{ fontSize: 12, color: "var(--muted)" }}>{s.label}</span>
+                <span style={{ fontSize: 13, color: "var(--muted)" }}>{s.label}</span>
               </div>
             ))}
           </div>
@@ -205,13 +205,13 @@ export default function PudmPage() {
           <div style={{ marginTop: 16 }}>
             <a href="/marketplace" style={{
               display: "inline-flex", alignItems: "center", gap: 6,
-              fontSize: 12, fontFamily: "monospace",
+              fontSize: 13, fontFamily: "monospace",
               color: "#FB923C", textDecoration: "none",
               padding: "5px 12px", borderRadius: 4,
               background: "#FB923C0D", border: "1px solid #FB923C28",
             }}>
               Open Marketplace Coverage View
-              <span style={{ fontSize: 10, color: "var(--muted)" }}>
+              <span style={{ fontSize: 12, color: "var(--muted)" }}>
                 · Taxonomic coverage only — no provider selected.
               </span>
             </a>
@@ -239,12 +239,12 @@ export default function PudmPage() {
                   background: "var(--surface-2)", borderBottom: "1px solid var(--border)",
                   flexWrap: "wrap",
                 }}>
-                  <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700,
+                  <span style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700,
                     letterSpacing: "1px", color: "#58A6FF", opacity: 0.8 }}>MISSION</span>
                   <Pill label={m.evidenceGrade}  color={GRADE[m.evidenceGrade]  ?? "#6E7681"} />
                   <Pill label={m.state.status}   color={STATUS[m.state.status]  ?? "#6E7681"} />
                   <Pill label={m.state.horizon}  color="#58A6FF" />
-                  <code style={{ marginLeft: "auto", fontSize: 11, color: "var(--muted)", fontFamily: "monospace" }}>
+                  <code style={{ marginLeft: "auto", fontSize: 13, color: "var(--muted)", fontFamily: "monospace" }}>
                     {m.id}
                   </code>
                 </div>
@@ -254,15 +254,15 @@ export default function PudmPage() {
                   <p style={{ fontSize: 14, lineHeight: 1.65, maxWidth: 680, marginBottom: 14 }}>
                     &ldquo;{m.context.statement}&rdquo;
                   </p>
-                  <div style={{ display: "flex", gap: 24, fontSize: 12, color: "var(--muted)", marginBottom: 20, flexWrap: "wrap" }}>
-                    <span>Actor: <code style={{ color: "var(--text)", fontSize: 11 }}>{m.context.actor.id}</code> ({m.context.actor.type})</span>
+                  <div style={{ display: "flex", gap: 24, fontSize: 13, color: "var(--muted)", marginBottom: 20, flexWrap: "wrap" }}>
+                    <span>Actor: <code style={{ color: "var(--text)", fontSize: 13 }}>{m.context.actor.id}</code> ({m.context.actor.type})</span>
                     {m.context.domain && <span>Domain: <strong style={{ color: "var(--text)", fontWeight: 600 }}>{m.context.domain}</strong></span>}
                   </div>
 
                   {/* Gaps */}
                   <details open style={{ marginBottom: 14 }}>
-                    <summary style={{ fontSize: 13, fontWeight: 600, color: "#D29922", padding: "4px 0" }}>
-                      <span className="arrow" style={{ marginRight: 6, fontSize: 10 }}>▶</span>
+                    <summary style={{ fontSize: 15, fontWeight: 600, color: "#D29922", padding: "4px 0" }}>
+                      <span className="arrow" style={{ marginRight: 6, fontSize: 12 }}>▶</span>
                       Gaps ({mGaps.length})
                     </summary>
                     <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
@@ -272,21 +272,21 @@ export default function PudmPage() {
                           borderRadius: 6, padding: "12px 14px",
                         }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 8, flexWrap: "wrap" }}>
-                            <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700,
+                            <span style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700,
                               letterSpacing: "1px", color: "#D29922", opacity: 0.8 }}>GAP</span>
                             <Pill label={gap.state.status}   color={STATUS[gap.state.status]   ?? "#6E7681"} />
                             {gap.state.severity &&
                               <Pill label={gap.state.severity} color={SEVERITY[gap.state.severity] ?? "#6E7681"} />}
                             <Pill label={gap.evidenceGrade}  color={GRADE[gap.evidenceGrade]   ?? "#6E7681"} />
                             {gap.context.domain &&
-                              <span style={{ fontSize: 11, color: "var(--muted)" }}>{gap.context.domain}</span>}
-                            <code style={{ marginLeft: "auto", fontSize: 10, color: "var(--muted)" }}>{gap.id}</code>
+                              <span style={{ fontSize: 13, color: "var(--muted)" }}>{gap.context.domain}</span>}
+                            <code style={{ marginLeft: "auto", fontSize: 12, color: "var(--muted)" }}>{gap.id}</code>
                           </div>
-                          <p style={{ fontSize: 13, lineHeight: 1.55, marginBottom: 10, color: "var(--text)" }}>
+                          <p style={{ fontSize: 15, lineHeight: 1.55, marginBottom: 10, color: "var(--text)" }}>
                             {gap.context.description}
                           </p>
                           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                            <span style={{ fontSize: 11, color: "var(--muted)", marginRight: 2 }}>values →</span>
+                            <span style={{ fontSize: 13, color: "var(--muted)", marginRight: 2 }}>values →</span>
                             {(gap.requiredValues ?? []).map(ref => <ValueChip key={ref.valueId} id={ref.valueId} />)}
                           </div>
                         </div>
@@ -296,8 +296,8 @@ export default function PudmPage() {
 
                   {/* Required values → Capabilities */}
                   <details>
-                    <summary style={{ fontSize: 13, fontWeight: 600, color: "#3FB950", padding: "4px 0" }}>
-                      <span className="arrow" style={{ marginRight: 6, fontSize: 10 }}>▶</span>
+                    <summary style={{ fontSize: 15, fontWeight: 600, color: "#3FB950", padding: "4px 0" }}>
+                      <span className="arrow" style={{ marginRight: 6, fontSize: 12 }}>▶</span>
                       Required Values ({mValues.length})
                     </summary>
                     <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
@@ -310,8 +310,8 @@ export default function PudmPage() {
                             borderRadius: 6, padding: "10px 14px",
                           }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: vCaps.length > 0 ? 8 : 0 }}>
-                              <span style={{ fontSize: 13, fontWeight: 600, color: c }}>{v.context.label}</span>
-                              {v.context.domain && <span style={{ fontSize: 11, color: "var(--muted)" }}>{v.context.domain}</span>}
+                              <span style={{ fontSize: 15, fontWeight: 600, color: c }}>{v.context.label}</span>
+                              {v.context.domain && <span style={{ fontSize: 13, color: "var(--muted)" }}>{v.context.domain}</span>}
                             </div>
                             {vCaps.length > 0 && (
                               <div style={{ display: "grid", gap: 4 }}>
@@ -322,17 +322,17 @@ export default function PudmPage() {
                                   return (
                                     <div key={cap.id + relationType}>
                                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                                        <span style={{ fontSize: 10, color: "var(--muted)", fontFamily: "monospace" }}>capability →</span>
+                                        <span style={{ fontSize: 12, color: "var(--muted)", fontFamily: "monospace" }}>capability →</span>
                                         <span style={{
                                           display: "inline-block", padding: "2px 8px", borderRadius: 4,
-                                          fontSize: 11, fontWeight: 500,
+                                          fontSize: 13, fontWeight: 500,
                                           background: "#F472B618", color: "#F472B6", border: "1px solid #F472B630",
                                         }}>
                                           {cap.context.label}
                                         </span>
                                         <span title="value→capability relation type" style={{
                                           display: "inline-block", padding: "1px 6px", borderRadius: 3,
-                                          fontSize: 9, fontWeight: 600, letterSpacing: "0.3px",
+                                          fontSize: 12, fontWeight: 600, letterSpacing: "0.3px",
                                           background: relColor + "18", color: relColor, border: "1px solid " + relColor + "40",
                                         }}>
                                           {relationType}
@@ -341,18 +341,18 @@ export default function PudmPage() {
                                       {capProvs.length > 0 && (
                                         <div style={{ paddingLeft: 68, marginTop: 3 }}>
                                           <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}>
-                                            <span style={{ fontSize: 10, color: "var(--muted)", fontFamily: "monospace" }}>provider →</span>
+                                            <span style={{ fontSize: 12, color: "var(--muted)", fontFamily: "monospace" }}>provider →</span>
                                             {capProvs.map(prov => (
                                               <span key={prov.id} style={{
                                                 display: "inline-block", padding: "1px 7px", borderRadius: 4,
-                                                fontSize: 10, fontWeight: 500,
+                                                fontSize: 12, fontWeight: 500,
                                                 background: "#FB923C18", color: "#FB923C", border: "1px solid #FB923C30",
                                               }}>
                                                 {prov.context.label}
                                               </span>
                                             ))}
                                           </div>
-                                          <div style={{ fontSize: 9, color: "var(--muted)", fontStyle: "italic", marginTop: 2 }}>
+                                          <div style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic", marginTop: 2 }}>
                                             Example provider — no affiliation, participation, availability, or selection implied.
                                           </div>
                                         </div>
@@ -380,7 +380,7 @@ export default function PudmPage() {
           <h2 style={{ fontSize: 16, fontWeight: 700, letterSpacing: "-0.3px", marginBottom: 6 }}>
             Values <span style={{ fontWeight: 400, color: "var(--muted)", fontSize: 14 }}>— {values.length} Candidate</span>
           </h2>
-          <p style={{ fontSize: 13, color: "var(--muted)" }}>
+          <p style={{ fontSize: 15, color: "var(--muted)" }}>
             The 12 universal goods in the PUDM chain. Every Gap points to the Values it requires to close.
           </p>
         </div>
@@ -400,24 +400,24 @@ export default function PudmPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                   <span style={{ fontSize: 15, fontWeight: 700, color: c }}>{v.context.label}</span>
                   {v.context.domain && (
-                    <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: "auto" }}>{v.context.domain}</span>
+                    <span style={{ fontSize: 13, color: "var(--muted)", marginLeft: "auto" }}>{v.context.domain}</span>
                   )}
                 </div>
-                <p style={{ fontSize: 12, lineHeight: 1.6, color: "var(--muted)", marginBottom: 10 }}>
+                <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--muted)", marginBottom: 10 }}>
                   {v.context.description}
                 </p>
                 {cGaps.length > 0 ? (
-                  <div style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.8 }}>
+                  <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.8 }}>
                     <span style={{ marginRight: 4 }}>Needed by:</span>
                     {cGaps.map((g, i) => (
                       <span key={g.id}>
-                        <code style={{ color: c, fontSize: 11 }}>{g.id}</code>
+                        <code style={{ color: c, fontSize: 13 }}>{g.id}</code>
                         {i < cGaps.length - 1 && <span style={{ color: "var(--border)" }}>, </span>}
                       </span>
                     ))}
                   </div>
                 ) : (
-                  <span style={{ fontSize: 11, color: "var(--muted)", opacity: 0.4 }}>no gaps yet</span>
+                  <span style={{ fontSize: 13, color: "var(--muted)", opacity: 0.4 }}>no gaps yet</span>
                 )}
               </div>
             );
@@ -428,7 +428,7 @@ export default function PudmPage() {
         <div style={{
           marginTop: 48, padding: "12px 16px",
           background: "var(--surface-2)", borderRadius: 6,
-          fontSize: 11, color: "var(--muted)", fontFamily: "monospace",
+          fontSize: 13, color: "var(--muted)", fontFamily: "monospace",
         }}>
           Live · data/missions.json · data/gaps.json · data/values.json · data/capabilities.json · data/value-capability-relations.json · data/providers.json · data/provider-capability-relations.json
         </div>

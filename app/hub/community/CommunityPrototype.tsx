@@ -267,7 +267,7 @@ export default function CommunityPrototype({ live }: { live: PrototypeLiveData }
                   <text x={f.x} y={f.y} textAnchor="middle" dominantBaseline="middle" style={{ fontSize: isSelected ? 10.5 : 8.5, fontWeight: 700, fill: "#e6ebf5", pointerEvents: "none" }}>
                     {truncate(f.name_he, isSelected ? 22 : 12)}
                   </text>
-                  <text x={f.x} y={f.y + f.r + (isSelected ? 16 : 11)} textAnchor="middle" style={{ fontSize: 7.5, fill: "#8aa0c8", pointerEvents: "none" }}>
+                  <text x={f.x} y={f.y + f.r + (isSelected ? 16 : 11)} textAnchor="middle" style={{ fontSize: 12, fill: "#8aa0c8", pointerEvents: "none" }}>
                     {svCount}{(() => { const gc = (live.familyGroups[f.id] ?? []).filter((g) => includeDemo || g.status === "REAL").length; return gc > 0 ? ` · ${gc} קבוצה` : ""; })()}
                   </text>
                 </g>
@@ -467,53 +467,53 @@ function Empty({ children }: { children: React.ReactNode }) {
 
 const S: Record<string, React.CSSProperties> = {
   wrap: { fontFamily: "system-ui", color: "#e6ebf5", background: "#0b0f1a", minHeight: "100vh", paddingBottom: 40 },
-  protoBadge: { textAlign: "center", fontSize: 10.5, fontWeight: 700, color: "#0b0f1a", background: "#fbbf24", padding: "4px 0" },
+  protoBadge: { textAlign: "center", fontSize: 13, fontWeight: 700, color: "#0b0f1a", background: "#fbbf24", padding: "4px 0" },
   localNav: { display: "flex", alignItems: "center", gap: 6, padding: "12px 20px", borderBottom: "1px solid rgba(90,120,180,0.15)" },
-  navBtn: { fontSize: 11, fontWeight: 700, padding: "6px 14px", borderRadius: 12, border: "1px solid rgba(90,120,180,0.3)", background: "transparent", color: "#8fa3c9", cursor: "pointer" },
+  navBtn: { fontSize: 13, fontWeight: 700, padding: "6px 14px", borderRadius: 12, border: "1px solid rgba(90,120,180,0.3)", background: "transparent", color: "#8fa3c9", cursor: "pointer" },
   navBtnActive: { color: "#0b0f1a", background: "#5b9cf6", borderColor: "#5b9cf6" },
-  auditLink: { marginInlineStart: "auto", fontSize: 10.5, color: "#5a76a3", textDecoration: "none" },
+  auditLink: { marginInlineStart: "auto", fontSize: 13, color: "#6c86b5", textDecoration: "none" },
 
   hero: { textAlign: "center", padding: "20px 20px 6px" },
   heroTitle: { fontSize: 26, fontWeight: 800, letterSpacing: 2, color: "#f2f6fc" },
-  heroSub: { fontSize: 12.5, color: "#5b9cf6", marginTop: 6, fontWeight: 600 },
+  heroSub: { fontSize: 13, color: "#5b9cf6", marginTop: 6, fontWeight: 600 },
   searchRow: { display: "flex", justifyContent: "center", alignItems: "center", gap: 10, marginTop: 14, flexWrap: "wrap" },
-  searchInput: { fontSize: 13, padding: "9px 16px", borderRadius: 20, border: "1px solid rgba(90,120,180,0.3)", background: "rgba(18,24,38,0.6)", color: "#e6ebf5", width: 260, textAlign: "center" },
+  searchInput: { fontSize: 15, padding: "9px 16px", borderRadius: 20, border: "1px solid rgba(90,120,180,0.3)", background: "rgba(18,24,38,0.6)", color: "#e6ebf5", width: 260, textAlign: "center" },
   realDemoToggle: { display: "flex", borderRadius: 20, overflow: "hidden", border: "1px solid rgba(90,120,180,0.3)" },
-  toggleBtn: { fontSize: 10.5, fontWeight: 700, padding: "8px 14px", border: "none", background: "transparent", color: "#8fa3c9", cursor: "pointer" },
+  toggleBtn: { fontSize: 13, fontWeight: 700, padding: "8px 14px", border: "none", background: "transparent", color: "#8fa3c9", cursor: "pointer" },
   toggleBtnActive: { background: "#34d399", color: "#0b0f1a" },
   toggleBtnActiveDemo: { background: "#fbbf24", color: "#0b0f1a" },
-  demoNote: { fontSize: 10.5, color: "#fbbf24", marginTop: 8 },
+  demoNote: { fontSize: 13, color: "#fbbf24", marginTop: 8 },
 
   mapArea: { padding: "8px 12px" },
   svg: { width: "100%", height: "auto", display: "block" },
-  legend: { display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", padding: "6px 10px", fontSize: 10 },
+  legend: { display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", padding: "6px 10px", fontSize: 12 },
   legendItem: { display: "flex", alignItems: "center", gap: 5, color: "#8fa3c9" },
   legendDot: { width: 9, height: 9, borderRadius: "50%", display: "inline-block" },
   legendLine: { width: 18, height: 2, display: "inline-block" },
-  mapNote: { textAlign: "center", fontSize: 10, color: "#5a76a3", marginTop: 2 },
+  mapNote: { textAlign: "center", fontSize: 12, color: "#6c86b5", marginTop: 2 },
 
   detailPanel: { flex: "0 0 34%", maxWidth: 380, padding: "14px 18px", background: "rgba(18,24,38,0.6)", border: "1px solid rgba(90,120,180,0.16)", borderRadius: 14, margin: "8px 20px 0 0" },
-  drawerClose: { fontSize: 11, color: "#8fa3c9", background: "transparent", border: "none", cursor: "pointer", padding: 0, marginBottom: 10 },
+  drawerClose: { fontSize: 13, color: "#8fa3c9", background: "transparent", border: "none", cursor: "pointer", padding: 0, marginBottom: 10 },
   drawerTitle: { fontSize: 17, fontWeight: 800, color: "#f2f6fc" },
-  drawerDef: { fontSize: 12, color: "#9fb0d0", marginTop: 6, lineHeight: 1.6 },
+  drawerDef: { fontSize: 13, color: "#9fb0d0", marginTop: 6, lineHeight: 1.6 },
   drawerSection: { marginTop: 14 },
-  drawerSectionTitle: { fontSize: 10.5, fontWeight: 700, letterSpacing: 0.5, color: "#5a76a3", marginBottom: 4 },
-  pending: { fontSize: 11, color: "#5a76a3", fontStyle: "italic" },
-  note: { fontSize: 10.5, color: "#8fa3c9", lineHeight: 1.6 },
+  drawerSectionTitle: { fontSize: 13, fontWeight: 700, letterSpacing: 0.5, color: "#6c86b5", marginBottom: 4 },
+  pending: { fontSize: 13, color: "#6c86b5", fontStyle: "italic" },
+  note: { fontSize: 13, color: "#8fa3c9", lineHeight: 1.6 },
 
   chipRow: { display: "flex", flexWrap: "wrap", gap: 5 },
-  chip: { fontSize: 10, padding: "3px 8px", borderRadius: 8, border: "1px solid rgba(90,120,180,0.3)", color: "#dbe6f6" },
-  chipMore: { fontSize: 10, padding: "3px 8px", color: "#5a76a3" },
+  chip: { fontSize: 12, padding: "3px 8px", borderRadius: 8, border: "1px solid rgba(90,120,180,0.3)", color: "#dbe6f6" },
+  chipMore: { fontSize: 12, padding: "3px 8px", color: "#6c86b5" },
   list: { display: "flex", flexDirection: "column", gap: 4 },
-  listRow: { display: "flex", justifyContent: "space-between", gap: 8, padding: "5px 8px", borderRadius: 6, background: "rgba(90,120,180,0.06)", fontSize: 11 },
+  listRow: { display: "flex", justifyContent: "space-between", gap: 8, padding: "5px 8px", borderRadius: 6, background: "rgba(90,120,180,0.06)", fontSize: 13 },
   listRowBtn: { border: "1px solid transparent", cursor: "pointer", color: "#e6ebf5", fontFamily: "inherit", textAlign: "right", width: "100%" },
-  listMeta: { fontSize: 9.5, fontWeight: 700 },
-  empty: { fontSize: 11, color: "#7b8ca6", fontStyle: "italic" },
+  listMeta: { fontSize: 12, fontWeight: 700 },
+  empty: { fontSize: 13, color: "#7b8ca6", fontStyle: "italic" },
   groupCard: { display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 },
-  nextActionBtn: { display: "inline-block", fontSize: 11.5, fontWeight: 700, color: "#0b0f1a", background: "#5b9cf6", padding: "8px 14px", borderRadius: 8, textDecoration: "none" },
+  nextActionBtn: { display: "inline-block", fontSize: 13, fontWeight: 700, color: "#0b0f1a", background: "#5b9cf6", padding: "8px 14px", borderRadius: 8, textDecoration: "none" },
 
   networkStrip: { display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap", padding: "18px 20px 6px" },
   netStat: { textAlign: "center", background: "rgba(18,24,38,0.6)", border: "1px solid rgba(90,120,180,0.16)", borderRadius: 12, padding: "10px 16px", minWidth: 92 },
   netStatValue: { fontSize: 20, fontWeight: 800 },
-  netStatLabel: { fontSize: 9.5, color: "#8fa3c9", marginTop: 3 },
+  netStatLabel: { fontSize: 12, color: "#8fa3c9", marginTop: 3 },
 };

@@ -45,17 +45,17 @@ export default function CommunityComparison({
 }
 
 function badgeStyle(p: MetricProvenance): React.CSSProperties {
-  return { fontSize: 9, fontWeight: 800, padding: "1px 6px", borderRadius: 5, marginRight: 4, color: p === "DEMO" ? "#fbbf24" : "#34d399", border: `1px solid ${p === "DEMO" ? "#fbbf24" : "#34d399"}55` };
+  return { fontSize: 12, fontWeight: 800, padding: "1px 6px", borderRadius: 5, marginRight: 4, color: p === "DEMO" ? "#fbbf24" : "#34d399", border: `1px solid ${p === "DEMO" ? "#fbbf24" : "#34d399"}55` };
 }
 
 const S: Record<string, React.CSSProperties> = {
   card: { background: "rgba(18,24,38,0.7)", border: "1px solid rgba(90,120,180,0.14)", borderRadius: 16, padding: "16px 18px", marginTop: 16 },
-  head: { fontSize: 12, fontWeight: 700, color: "#5aa6ff", marginBottom: 6 },
-  subHead: { fontSize: 12, color: "#dbe6f6", marginBottom: 10 },
+  head: { fontSize: 13, fontWeight: 700, color: "#5aa6ff", marginBottom: 6 },
+  subHead: { fontSize: 13, color: "#dbe6f6", marginBottom: 10 },
   rows: { display: "flex", flexDirection: "column", gap: 4 },
-  row: { display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 8, alignItems: "center", fontSize: 12, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)" },
+  row: { display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 8, alignItems: "center", fontSize: 13, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)" },
   metricLabel: { color: "#8fa3c9" },
   val: { color: "#e8edf6", textAlign: "center" as const, minWidth: 60 },
-  vs: { color: "#5a76a3" },
-  note: { fontSize: 10, color: "#5a76a3", marginTop: 8 },
+  vs: { color: "#6c86b5" },
+  note: { fontSize: 12, color: "#6c86b5", marginTop: 8 },
 };

@@ -51,7 +51,7 @@ export default function EvaluateMatchForm({
 
   if (needOptions.length === 0 || offerOptions.length === 0) {
     return (
-      <div id="match-eval" dir="rtl" style={{ fontSize: 11, color: "#8fa3c9", background: "rgba(90,120,180,0.06)", borderRadius: 10, padding: 12, marginBottom: 12 }}>
+      <div id="match-eval" dir="rtl" style={{ fontSize: 13, color: "#8fa3c9", background: "rgba(90,120,180,0.06)", borderRadius: 10, padding: 12, marginBottom: 12 }}>
         התאמה (canon) · MATCH — דורש לפחות Need אמיתי אחד ו-Offer אמיתי אחד. רשמו את שניהם למעלה כדי להעריך התאמה.
       </div>
     );
@@ -70,7 +70,7 @@ export default function EvaluateMatchForm({
         });
       }}
     >
-      <div style={{ fontSize: 11, letterSpacing: 0.5, color: "#8fa3c9" }}>הערכת התאמה (canon, לא נשמר — נגזר בכל בקשה) · EVALUATE MATCH (derived, not persisted)</div>
+      <div style={{ fontSize: 13, letterSpacing: 0.5, color: "#8fa3c9" }}>הערכת התאמה (canon, לא נשמר — נגזר בכל בקשה) · EVALUATE MATCH (derived, not persisted)</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <select name="need_id" required defaultValue={needOptions[0]?.need_id} style={selectStyle}>
           {needOptions.map((n) => <option key={n.need_id} value={n.need_id}>{n.label}</option>)}
@@ -80,20 +80,20 @@ export default function EvaluateMatchForm({
         </select>
       </div>
       <div>
-        <label style={{ fontSize: 10.5, color: "#8fa3c9", display: "block", marginBottom: 3 }}>
+        <label style={{ fontSize: 13, color: "#8fa3c9", display: "block", marginBottom: 3 }}>
           CONTEXT — משפט קצר שמתאר את ההקשר האמיתי של ניסיון ההתאמה הזה · one short sentence describing the real-world context of this match
         </label>
         <input name="context" type="text" required style={inputStyle} />
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {GATES.map((g, i) => (
-          <label key={g} style={{ fontSize: 11.5, display: "flex", alignItems: "flex-start", gap: 8, lineHeight: 1.5 }}>
+          <label key={g} style={{ fontSize: 13, display: "flex", alignItems: "flex-start", gap: 8, lineHeight: 1.5 }}>
             <input type="checkbox" name={g} style={{ marginTop: 2 }} />
             <span>{i + 1}. {GATE_QUESTION[g]}</span>
           </label>
         ))}
       </div>
-      <div style={{ fontSize: 10, color: "#5a76a3" }}>אף תשובה אינה מסומנת מראש — כל שאלה דורשת אישור מפורש שלך. · No answer is pre-checked — every question requires your explicit answer.</div>
+      <div style={{ fontSize: 12, color: "#6c86b5" }}>אף תשובה אינה מסומנת מראש — כל שאלה דורשת אישור מפורש שלך. · No answer is pre-checked — every question requires your explicit answer.</div>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <button type="submit" disabled={pending} style={btnStyle}>{pending ? "מעריך…" : "הערך התאמה · EVALUATE"}</button>
       </div>
@@ -105,29 +105,29 @@ export default function EvaluateMatchForm({
                 const failed = (result.result.rejection_reasons as string[]).includes(`${g}_false`);
                 const s = failed ? STATUS.blocked : STATUS.verified;
                 return (
-                  <span key={g} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, fontWeight: 700, padding: "3px 9px", borderRadius: RADIUS.pill, background: s.bg, border: `1px solid ${s.border}`, color: s.text }}>
+                  <span key={g} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 700, padding: "3px 9px", borderRadius: RADIUS.pill, background: s.bg, border: `1px solid ${s.border}`, color: s.text }}>
                     {failed ? "✗" : "✓"} {g}
                   </span>
                 );
               })}
             </div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: result.result.decision === "permitted" ? STATUS.verified.text : STATUS.blocked.text }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: result.result.decision === "permitted" ? STATUS.verified.text : STATUS.blocked.text }}>
               decision: {result.result.decision}
             </div>
             {result.permit ? (
-              <div style={{ fontSize: 10.5, color: STATUS.verified.text, marginTop: 6 }}>
+              <div style={{ fontSize: 13, color: STATUS.verified.text, marginTop: 6 }}>
                 MATCH PERMIT issued (valid 10 min) — ניתן להשתמש בו ביצירת Action למטה. · usable in Action creation below.
               </div>
             ) : null}
           </div>
         ) : (
-          <div style={{ fontSize: 11, color: STATUS.blocked.text }}>{result.message}</div>
+          <div style={{ fontSize: 13, color: STATUS.blocked.text }}>{result.message}</div>
         )
       ) : null}
     </form>
   );
 }
 
-const selectStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 12, flex: 1, minWidth: 160 };
-const inputStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 12, width: "100%" };
-const btnStyle: React.CSSProperties = { background: COLOR.accent, color: "#0b0f1a", fontWeight: 600, fontSize: 12, border: "none", borderRadius: 6, padding: "7px 14px", cursor: "pointer" };
+const selectStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 13, flex: 1, minWidth: 160 };
+const inputStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 13, width: "100%" };
+const btnStyle: React.CSSProperties = { background: COLOR.accent, color: "#0b0f1a", fontWeight: 600, fontSize: 13, border: "none", borderRadius: 6, padding: "7px 14px", cursor: "pointer" };

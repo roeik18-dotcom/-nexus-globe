@@ -45,10 +45,10 @@ export default function CreateNeedForm(
         });
       }}
     >
-      <div style={{ fontSize: 11, letterSpacing: 0.5, color: "#8fa3c9" }}>צורך חדש · NEW NEED (person_roei) — אותו Need store כמו /marketplace</div>
+      <div style={{ fontSize: 13, letterSpacing: 0.5, color: "#8fa3c9" }}>צורך חדש · NEW NEED (person_roei) — אותו Need store כמו /marketplace</div>
       {community ? (
-        <div style={{ fontSize: 10.5, color: "#34d399", display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontSize: 8, letterSpacing: 1, border: "1px solid rgba(52,211,153,0.4)", borderRadius: 4, padding: "1px 5px" }}>COMMUNITY_HAS_NEED</span>
+        <div style={{ fontSize: 13, color: "#34d399", display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 12, letterSpacing: 1, border: "1px solid rgba(52,211,153,0.4)", borderRadius: 4, padding: "1px 5px" }}>COMMUNITY_HAS_NEED</span>
           <span>ייווצר קשר אמיתי לקבוצה <b>{community.label}</b> — הצורך עצמו נשאר של האדם ({community.group_id})</span>
         </div>
       ) : null}
@@ -61,7 +61,7 @@ export default function CreateNeedForm(
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <button type="submit" disabled={pending} style={btnStyle}>{pending ? "רושם…" : "רשום צורך · RECORD NEED"}</button>
         {result ? (
-          <span style={{ fontSize: 11, color: result.ok ? "#34d399" : "#f2635c" }}>
+          <span style={{ fontSize: 13, color: result.ok ? "#34d399" : "#f2635c" }}>
             {result.ok ? `נרשם · need_id: ${result.id.slice(0, 12)}…` : result.message}
           </span>
         ) : null}
@@ -70,6 +70,6 @@ export default function CreateNeedForm(
   );
 }
 
-const selectStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 12 };
-const inputStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 12, flex: 1, minWidth: 140 };
-const btnStyle: React.CSSProperties = { background: "#5b9cf6", color: "#0b0f1a", fontWeight: 600, fontSize: 12, border: "none", borderRadius: 6, padding: "7px 14px", cursor: "pointer" };
+const selectStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 13 };
+const inputStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 13, flex: 1, minWidth: 140 };
+const btnStyle: React.CSSProperties = { background: "#5b9cf6", color: "#0b0f1a", fontWeight: 600, fontSize: 13, border: "none", borderRadius: 6, padding: "7px 14px", cursor: "pointer" };

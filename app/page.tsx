@@ -99,7 +99,7 @@ export default function HomePage() {
             background: "rgba(52,211,153,0.08)",
             border: "1px solid rgba(52,211,153,0.2)",
             borderRadius: 4, padding: "3px 10px", marginBottom: 16,
-            fontSize: 10, fontWeight: 700, letterSpacing: "2px",
+            fontSize: 12, fontWeight: 700, letterSpacing: "2px",
             textTransform: "uppercase" as const, color: "#34D399",
           }}>
             Philos Research System
@@ -111,7 +111,7 @@ export default function HomePage() {
           }}>
             Understand what blocks a mission, why it is blocked, and what capabilities are missing.
           </h1>
-          <p style={{ fontSize: 13, color: "#2a4a64", maxWidth: 480, lineHeight: 1.7 }}>
+          <p style={{ fontSize: 15, color: "#2a4a64", maxWidth: 480, lineHeight: 1.7 }}>
             Five lenses onto the same data model. Each route is independent —
             no login, no state to carry between them.
           </p>
@@ -136,7 +136,7 @@ export default function HomePage() {
                   {v.label}
                 </span>
                 <span style={{
-                  fontSize: 8.5, fontWeight: 700, letterSpacing: "1.5px",
+                  fontSize: 12, fontWeight: 700, letterSpacing: "1.5px",
                   textTransform: "uppercase" as const,
                   color: v.statusColor,
                   background: v.statusColor + "14",
@@ -149,24 +149,24 @@ export default function HomePage() {
               </div>
 
               {/* Role */}
-              <div style={{ fontSize: 11, fontWeight: 600, color: "#1a3a55", marginBottom: 8, textTransform: "uppercase" as const, letterSpacing: "0.8px" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#1a3a55", marginBottom: 8, textTransform: "uppercase" as const, letterSpacing: "0.8px" }}>
                 {v.role}
               </div>
 
               {/* Description */}
-              <p style={{ fontSize: 12, color: "#1e3a52", lineHeight: 1.65, marginBottom: 14 }}>
+              <p style={{ fontSize: 13, color: "#1e3a52", lineHeight: 1.65, marginBottom: 14 }}>
                 {v.desc}
               </p>
 
               {/* Footer: display type + arrow */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{
-                  fontSize: 9.5, color: "#0f2030",
+                  fontSize: 12, color: "#0f2030",
                   fontFamily: "var(--font-geist-mono), monospace",
                 }}>
                   {v.display}
                 </span>
-                <span style={{ fontSize: 11, color: v.accent + "99" }}>→</span>
+                <span style={{ fontSize: 13, color: v.accent + "99" }}>→</span>
               </div>
             </a>
           ))}
@@ -175,7 +175,7 @@ export default function HomePage() {
         {/* Footer note */}
         <div style={{
           marginTop: 48, borderTop: "1px solid #071420", paddingTop: 16,
-          fontSize: 11, color: "#0d1e2e",
+          fontSize: 13, color: "#0d1e2e",
           fontFamily: "var(--font-geist-mono), monospace",
         }}>
           Philos · PUDM v0 · All data is Candidate grade — designed, not validated

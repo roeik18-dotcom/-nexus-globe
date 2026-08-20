@@ -29,7 +29,7 @@ export const STATUS_COLOR: Record<PhilosStatus, string> = {
   verified: "#22d3ee",
   active: "#5aa6ff",
   pending: "#fbbf24",
-  unknown: "#5a76a3",
+  unknown: "#6c86b5",
   blocked: "#f2635c",
   demo: "#a78bfa",
 };
@@ -45,10 +45,10 @@ export const STATUS_LABEL: Record<PhilosStatus, string> = {
 export const TYPE: Record<"display" | "h1" | "h2" | "body" | "meta" | "audit", React.CSSProperties> = {
   display: { fontSize: 22, fontWeight: 800, color: "#f0f4fc", letterSpacing: 0.2 },
   h1: { fontSize: 15, fontWeight: 800, color: "#f0f4fc" },
-  h2: { fontSize: 12, fontWeight: 700, color: "#8fa3c9", letterSpacing: 0.3 },
-  body: { fontSize: 12, fontWeight: 500, color: "#dbe6f6", lineHeight: 1.6 },
-  meta: { fontSize: 9.5, fontWeight: 500, color: "#5a76a3" },
-  audit: { fontSize: 9, fontWeight: 500, color: "#5a76a3" },
+  h2: { fontSize: 13, fontWeight: 700, color: "#8fa3c9", letterSpacing: 0.3 },
+  body: { fontSize: 13, fontWeight: 500, color: "#dbe6f6", lineHeight: 1.6 },
+  meta: { fontSize: 12, fontWeight: 500, color: "#6c86b5" },
+  audit: { fontSize: 12, fontWeight: 500, color: "#6c86b5" },
 };
 
 // ── NODE — a real entity (Person, Value, Value Group, Need, Resource,
@@ -96,7 +96,7 @@ export function StatusDot({ status }: { status: PhilosStatus }) {
 
 export function StatusTag({ status, children }: { status: PhilosStatus; children?: ReactNode }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 9, fontWeight: 800, letterSpacing: 0.4, color: STATUS_COLOR[status] }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 800, letterSpacing: 0.4, color: STATUS_COLOR[status] }}>
       <StatusDot status={status} />
       {children ?? STATUS_LABEL[status]}
     </span>
@@ -133,7 +133,7 @@ export function PhilosEdge({ label, kind = "relation" }: { label?: string; kind?
   const glyph = kind === "flow" ? "↓" : "↔";
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "2px 0" }}>
-      <span style={{ fontSize: 13, color: "#3d4f75" }}>{glyph}</span>
+      <span style={{ fontSize: 15, color: "#3d4f75" }}>{glyph}</span>
       {label ? <span style={TYPE.meta}>{label}</span> : null}
     </div>
   );
@@ -169,7 +169,7 @@ export function PhilosFlow({ steps, direction = "horizontal" }: { steps: PhilosF
             <StatusDot status={stepColor[s.state]} />
             <span style={{ display: "flex", flexDirection: "column", alignItems: direction === "horizontal" ? "flex-start" : "stretch" }}>
               <span style={{ fontSize: s.state === "current" ? 12.5 : 11, fontWeight: s.state === "current" ? 800 : 600, color: s.state === "done" ? "#8fa3c9" : "#f0f4fc" }}>{s.label}</span>
-              {s.labelEn ? <span style={{ fontSize: 8, color: "#5a76a3" }}>{s.labelEn}</span> : null}
+              {s.labelEn ? <span style={{ fontSize: 12, color: "#6c86b5" }}>{s.labelEn}</span> : null}
             </span>
           </div>
           {i < steps.length - 1 ? <PhilosEdge kind="flow" /> : null}
@@ -219,14 +219,14 @@ export function PhilosDelta({
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: 8, color: "#5a76a3" }}>STATE (t0)</div>
+        <div style={{ fontSize: 12, color: "#6c86b5" }}>STATE (t0)</div>
         <div style={{ fontSize: 14, fontWeight: 700, color: "#8fa3c9" }}>{from}</div>
       </div>
-      <span style={{ fontSize: 11, color: positive ? STATUS_COLOR.real : STATUS_COLOR.blocked, fontWeight: 800 }}>
+      <span style={{ fontSize: 13, color: positive ? STATUS_COLOR.real : STATUS_COLOR.blocked, fontWeight: 800 }}>
         Δ {positive ? "+" : ""}{delta} →
       </span>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: 8, color: "#5a76a3" }}>STATE (t1)</div>
+        <div style={{ fontSize: 12, color: "#6c86b5" }}>STATE (t1)</div>
         <div style={{ fontSize: 14, fontWeight: 800, color: "#f0f4fc" }}>{to}</div>
       </div>
     </div>

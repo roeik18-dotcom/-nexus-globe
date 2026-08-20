@@ -553,11 +553,11 @@ export default function Page() {
             ].map(m => (
               <div key={m.label} style={{ flex: 1, textAlign: "center" }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: m.color, lineHeight: 1 }}>{m.val}</div>
-                <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 1 }}>{m.label}</div>
+                <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 1 }}>{m.label}</div>
               </div>
             ))}
             <div style={{ width: 1, height: 24, background: "#0a2a4a", margin: "0 8px" }} />
-            <div style={{ fontSize: 9, color: FORCE_COLOR[pulse.dominant as DominantForce] ?? "#38bdf8", letterSpacing: 1 }}>
+            <div style={{ fontSize: 12, color: FORCE_COLOR[pulse.dominant as DominantForce] ?? "#38bdf8", letterSpacing: 1 }}>
               {FORCE_LABEL[pulse.dominant as DominantForce] ?? pulse.dominant}
             </div>
           </div>
@@ -575,13 +575,13 @@ export default function Page() {
               pointerEvents: "none", maxWidth: 560,
             }}
           >
-            <div style={{ fontSize: 9, letterSpacing: 3, color: FORCE_COLOR[last.dominantForce], textTransform: "uppercase", marginBottom: 6 }}>
+            <div style={{ fontSize: 12, letterSpacing: 3, color: FORCE_COLOR[last.dominantForce], textTransform: "uppercase", marginBottom: 6 }}>
               Last action · {last.name}
             </div>
             <div style={{ fontSize: 16, color: "#00f5d4", fontWeight: 700, marginBottom: 8 }}>
               {last.action}
             </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: 10, color: "#8bb8cc" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: 12, color: "#8bb8cc" }}>
               <span>force: <b style={{ color: FORCE_COLOR[last.dominantForce] }}>{FORCE_LABEL[last.dominantForce]}</b></span>
               <span>context: <b style={{ color: "#e0f2fe" }}>{CONTEXT_LABEL[last.context]}</b></span>
               <span>intensity: <b style={{ color: "#e0f2fe" }}>{last.intensity}/10</b></span>
@@ -598,7 +598,7 @@ export default function Page() {
           background: "rgba(3,15,30,0.85)", border: "1px solid #0a2a4a",
           backdropFilter: "blur(8px)", borderRadius: 8, padding: "10px 12px",
         }}>
-          <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>
+          <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>
             {activeTopic ? `קווים · ${activeTopic.title}` : "קווים"}
           </div>
 
@@ -608,7 +608,7 @@ export default function Page() {
               {SEMANTIC_LEGEND.map(({ color, label }) => (
                 <div key={label} style={{ display: "flex", alignItems: "center", gap: 3 }}>
                   <span style={{ width: 12, height: 3, borderRadius: 2, background: color, display: "inline-block" }} />
-                  <span style={{ fontSize: 9, color }}>{label}</span>
+                  <span style={{ fontSize: 12, color }}>{label}</span>
                 </div>
               ))}
             </div>
@@ -619,7 +619,7 @@ export default function Page() {
               {(["agree", "tension", "conflict"] as const).map(r => (
                 <span key={r} style={{
                   display: "flex", alignItems: "center", gap: 6,
-                  padding: "4px 8px", fontSize: 10,
+                  padding: "4px 8px", fontSize: 12,
                   border: `1px solid ${RELATION_COLOR[r]}`,
                   background: `${RELATION_COLOR[r]}22`,
                   color: RELATION_COLOR[r],
@@ -638,7 +638,7 @@ export default function Page() {
                 onClick={() => setLinkTypeMask(m => ({ ...m, [t]: !m[t] }))}
                 style={{
                   display: "flex", alignItems: "center", gap: 6,
-                  padding: "4px 8px", fontSize: 10,
+                  padding: "4px 8px", fontSize: 12,
                   border: `1px solid ${linkTypeMask[t] ? LINK_COLOR[t] : "#0a2a4a"}`,
                   background: linkTypeMask[t] ? `${LINK_COLOR[t]}22` : "transparent",
                   color: linkTypeMask[t] ? LINK_COLOR[t] : "#8bb8cc",
@@ -655,7 +655,7 @@ export default function Page() {
 
           {!activeTopic && (
             <>
-              <div style={{ marginTop: 8, fontSize: 9, color: "#8bb8cc" }}>
+              <div style={{ marginTop: 8, fontSize: 12, color: "#8bb8cc" }}>
                 min strength: <b style={{ color: "#38bdf8" }}>{minStrength.toFixed(2)}</b>
               </div>
               <input
@@ -678,15 +678,15 @@ export default function Page() {
             boxShadow: `0 0 18px ${LINK_COLOR[selectedLink.type]}44`,
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-              <span style={{ fontSize: 10, letterSpacing: 2, color: LINK_COLOR[selectedLink.type], textTransform: "uppercase" }}>
+              <span style={{ fontSize: 12, letterSpacing: 2, color: LINK_COLOR[selectedLink.type], textTransform: "uppercase" }}>
                 {LINK_LABEL[selectedLink.type]}
               </span>
               <button onClick={() => setSelectedLink(null)} style={{
                 background: "transparent", border: "none", color: "#8bb8cc", cursor: "pointer", fontSize: 14,
               }}>×</button>
             </div>
-            <div style={{ fontSize: 12, color: "#e0f2fe", marginBottom: 6 }}>{selectedLink.reason}</div>
-            <div style={{ fontSize: 10, color: "#8bb8cc" }}>
+            <div style={{ fontSize: 13, color: "#e0f2fe", marginBottom: 6 }}>{selectedLink.reason}</div>
+            <div style={{ fontSize: 12, color: "#8bb8cc" }}>
               strength: <b style={{ color: LINK_COLOR[selectedLink.type] }}>{selectedLink.strength.toFixed(2)}</b>
               {selectedLink.directional && <span> · directional →</span>}
             </div>
@@ -700,7 +700,7 @@ export default function Page() {
               background: "rgba(3,15,30,0.75)",
               border: "1px solid #0a2a4a", backdropFilter: "blur(8px)",
               borderRadius: 8, padding: "12px 16px",
-              fontSize: 11, color: "#8bb8cc",
+              fontSize: 13, color: "#8bb8cc",
             }}
           >
             Create the first connection. <a href="/" style={{ color: "#38bdf8" }}>דף הבית →</a>
@@ -915,24 +915,24 @@ export default function Page() {
         {/* Panel header + Feed toggle */}
         <div style={{ padding: "14px 20px 10px", borderBottom: "1px solid #0a2a4a", flexShrink: 0, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <div style={{ fontSize: 13, letterSpacing: 4, color: "#38bdf8", fontWeight: 700, marginBottom: 2 }}>
+            <div style={{ fontSize: 15, letterSpacing: 4, color: "#38bdf8", fontWeight: 700, marginBottom: 2 }}>
               PHILOS · NEXUS
             </div>
-            <div style={{ fontSize: 10, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase" }}>
+            <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase" }}>
               {visible.length}/{allNodes.length} nodes · {filteredLinks.length} links
             </div>
           </div>
           <div style={{ display: "flex", gap: 4 }}>
             <button onClick={() => { setShowFeed(f => !f); setShowDynamics(false); setShowNoa(false); }}
-              style={{ padding: "4px 8px", borderRadius: 4, fontSize: 9, cursor: "pointer", fontWeight: 600, border: `1px solid ${showFeed ? "#38bdf8" : "#1e4060"}`, background: showFeed ? "#38bdf822" : "transparent", color: showFeed ? "#38bdf8" : "#1e4060" }}>
+              style={{ padding: "4px 8px", borderRadius: 4, fontSize: 12, cursor: "pointer", fontWeight: 600, border: `1px solid ${showFeed ? "#38bdf8" : "#1e4060"}`, background: showFeed ? "#38bdf822" : "transparent", color: showFeed ? "#38bdf8" : "#1e4060" }}>
               ⚡ Feed
             </button>
             <button onClick={() => { setShowDynamics(d => !d); setShowFeed(false); setShowNoa(false); }}
-              style={{ padding: "4px 8px", borderRadius: 4, fontSize: 9, cursor: "pointer", fontWeight: 600, border: `1px solid ${showDynamics ? "#a78bfa" : "#1e4060"}`, background: showDynamics ? "#a78bfa22" : "transparent", color: showDynamics ? "#a78bfa" : "#1e4060" }}>
+              style={{ padding: "4px 8px", borderRadius: 4, fontSize: 12, cursor: "pointer", fontWeight: 600, border: `1px solid ${showDynamics ? "#a78bfa" : "#1e4060"}`, background: showDynamics ? "#a78bfa22" : "transparent", color: showDynamics ? "#a78bfa" : "#1e4060" }}>
               ◈ Dynamics
             </button>
             <button onClick={() => { setShowNoa(n => !n); setShowFeed(false); setShowDynamics(false); }}
-              style={{ padding: "4px 8px", borderRadius: 4, fontSize: 9, cursor: "pointer", fontWeight: 600, border: `1px solid ${showNoa ? "#34d399" : "#1e4060"}`, background: showNoa ? "#34d39922" : "transparent", color: showNoa ? "#34d399" : "#1e4060" }}>
+              style={{ padding: "4px 8px", borderRadius: 4, fontSize: 12, cursor: "pointer", fontWeight: 600, border: `1px solid ${showNoa ? "#34d399" : "#1e4060"}`, background: showNoa ? "#34d39922" : "transparent", color: showNoa ? "#34d399" : "#1e4060" }}>
               ◉ נועה
             </button>
           </div>
@@ -970,11 +970,11 @@ export default function Page() {
             border: `1px solid ${FORCE_COLOR[dominantBaseForce(profile)]}55`,
             background: "#040e1c",
           }}>
-            <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>
+            <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>
               Anchor · אתה
             </div>
             <div style={{ fontSize: 14, fontWeight: 700 }}>{profile.name}</div>
-            <div style={{ fontSize: 10, color: "#8bb8cc", marginBottom: 6 }}>
+            <div style={{ fontSize: 12, color: "#8bb8cc", marginBottom: 6 }}>
               {profile.age} · {profile.location || "—"}
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -988,7 +988,7 @@ export default function Page() {
                 צמיחה: {profile.growthCoefficient > 0 ? "+" : ""}{profile.growthCoefficient.toFixed(2)}
               </Pill>
             </div>
-            <a href="/profile" style={{ display: "inline-block", marginTop: 8, fontSize: 10, color: "#38bdf8" }}>
+            <a href="/profile" style={{ display: "inline-block", marginTop: 8, fontSize: 12, color: "#38bdf8" }}>
               → ערוך פרופיל
             </a>
           </div>
@@ -999,7 +999,7 @@ export default function Page() {
             display: "block", padding: 12, marginBottom: 16,
             border: "1px solid #fbbf2466", borderRadius: 6,
             background: "#fbbf2411", color: "#fbbf24",
-            fontSize: 11, textDecoration: "none", textAlign: "center",
+            fontSize: 13, textDecoration: "none", textAlign: "center",
           }}>
             → צור פרופיל להיות מסומן בגלובוס
           </a>
@@ -1008,11 +1008,11 @@ export default function Page() {
         {/* DAILY SUMMARY */}
         <div style={{ padding: 12, border: `1px solid ${IMPACT_COLOR[daily.impact]}55`, borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <span style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase" }}>
+            <span style={{ fontSize: 12, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase" }}>
               סיכום יום
             </span>
             <span style={{
-              fontSize: 9, padding: "2px 6px", borderRadius: 10,
+              fontSize: 12, padding: "2px 6px", borderRadius: 10,
               background: `${IMPACT_COLOR[daily.impact]}22`,
               color: IMPACT_COLOR[daily.impact],
               border: `1px solid ${IMPACT_COLOR[daily.impact]}66`,
@@ -1025,16 +1025,16 @@ export default function Page() {
           <ScoreBar label="social"   value={daily.socialScore}   color="#fb923c" />
           <ScoreBar label="value"    value={daily.valueScore}    color={IMPACT_COLOR[daily.impact]} />
 
-          <div style={{ marginTop: 10, fontSize: 10, color: "#8bb8cc", lineHeight: 1.5 }}>
+          <div style={{ marginTop: 10, fontSize: 12, color: "#8bb8cc", lineHeight: 1.5 }}>
             <div>avg intensity: <b style={{ color: "#e0f2fe" }}>{daily.avgIntensity.toFixed(1)}</b> · forward: <b style={{ color: "#e0f2fe" }}>{Math.round(daily.forwardRatio * 100)}%</b></div>
             <div>links: <b style={{ color: "#e0f2fe" }}>{daily.linksCreated}</b> · help: <b style={{ color: "#e0f2fe" }}>{daily.helpGiven}</b></div>
           </div>
 
           <div style={{ marginTop: 10, padding: "8px 10px", background: `${IMPACT_COLOR[daily.impact]}11`, borderRadius: 4 }}>
-            <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 4 }}>
+            <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 4 }}>
               המלצה
             </div>
-            <div style={{ fontSize: 11, color: "#e0f2fe", lineHeight: 1.4 }}>
+            <div style={{ fontSize: 13, color: "#e0f2fe", lineHeight: 1.4 }}>
               {daily.recommendation}
             </div>
           </div>
@@ -1043,7 +1043,7 @@ export default function Page() {
         {/* MATCHES */}
         {matches.length > 0 && (
           <div style={{ padding: 12, border: "1px solid #ef444455", borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
-            <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
+            <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
               Match · מי צריך את מי
             </div>
             {matches.map((m, i) => (
@@ -1058,11 +1058,11 @@ export default function Page() {
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, color: "#e0f2fe", fontWeight: 700 }}>
+                  <span style={{ fontSize: 13, color: "#e0f2fe", fontWeight: 700 }}>
                     {m.a.name} {m.link.directional ? "→" : "↔"} {m.b.name}
                   </span>
                   <span style={{
-                    fontSize: 8, padding: "2px 6px", borderRadius: 8,
+                    fontSize: 12, padding: "2px 6px", borderRadius: 8,
                     background: `${URGENCY_COLOR[m.urgency]}22`,
                     color: URGENCY_COLOR[m.urgency],
                     border: `1px solid ${URGENCY_COLOR[m.urgency]}66`,
@@ -1071,8 +1071,8 @@ export default function Page() {
                     {URGENCY_LABEL[m.urgency]} · {(m.score * 100).toFixed(0)}
                   </span>
                 </div>
-                <div style={{ fontSize: 9, color: "#8bb8cc", marginBottom: 4 }}>{m.reason}</div>
-                <div style={{ fontSize: 10, color: "#00f5d4", fontStyle: "italic" }}>
+                <div style={{ fontSize: 12, color: "#8bb8cc", marginBottom: 4 }}>{m.reason}</div>
+                <div style={{ fontSize: 12, color: "#00f5d4", fontStyle: "italic" }}>
                   → {m.suggestion}
                 </div>
               </div>
@@ -1087,12 +1087,12 @@ export default function Page() {
           background: "#040e1c",
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <span style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase" }}>
+            <span style={{ fontSize: 12, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase" }}>
               Debate · דיון ציבורי
             </span>
             {activeTopic && (
               <span style={{
-                fontSize: 9, padding: "2px 6px", borderRadius: 8,
+                fontSize: 12, padding: "2px 6px", borderRadius: 8,
                 background: `${activeTopic.color}22`, color: activeTopic.color,
                 border: `1px solid ${activeTopic.color}66`,
               }}>
@@ -1130,7 +1130,7 @@ export default function Page() {
                 {activeTopic.axes.map(ax => (
                   <div key={ax.key} style={{
                     display: "flex", justifyContent: "space-between",
-                    fontSize: 9, color: "#8bb8cc", marginBottom: 2,
+                    fontSize: 12, color: "#8bb8cc", marginBottom: 2,
                   }}>
                     <span>{ax.left}</span>
                     <span style={{ color: "#1e4060" }}>↔</span>
@@ -1143,7 +1143,7 @@ export default function Page() {
               <div style={{ marginBottom: 8 }}>
                 <div style={{
                   display: "flex", justifyContent: "space-between",
-                  fontSize: 10, color: "#8bb8cc", marginBottom: 3,
+                  fontSize: 12, color: "#8bb8cc", marginBottom: 3,
                 }}>
                   <span>system stress</span>
                   <b style={{ color: stress > 0.5 ? "#ef4444" : stress > 0.25 ? "#fb923c" : "#22c55e" }}>
@@ -1163,7 +1163,7 @@ export default function Page() {
                 onClick={() => setStressMode(m => !m)}
                 style={{
                   width: "100%", marginBottom: 8,
-                  padding: "6px 8px", fontSize: 10, letterSpacing: 1,
+                  padding: "6px 8px", fontSize: 12, letterSpacing: 1,
                   color: stressMode ? "#ef4444" : "#8bb8cc",
                   background: stressMode ? "#ef444411" : "transparent",
                   border: `1px solid ${stressMode ? "#ef444488" : "#0a2a4a"}`,
@@ -1175,7 +1175,7 @@ export default function Page() {
 
               {/* clusters */}
               {topicClusters.length > 0 && (
-                <div style={{ fontSize: 10, color: "#8bb8cc", marginBottom: 8 }}>
+                <div style={{ fontSize: 12, color: "#8bb8cc", marginBottom: 8 }}>
                   קלאסטרים: {topicClusters.map(c => c.userIds.length).join(" · ")}
                   <span style={{ color: "#1e4060" }}> ({topicClusters.length} קבוצות)</span>
                 </div>
@@ -1184,7 +1184,7 @@ export default function Page() {
               {/* top tensions */}
               {topTensions.length > 0 && (
                 <div style={{ marginBottom: 8 }}>
-                  <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 4 }}>
+                  <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 4 }}>
                     מתחים מובילים
                   </div>
                   {topTensions.map(e => {
@@ -1201,16 +1201,16 @@ export default function Page() {
                           padding: "4px 6px", marginBottom: 3,
                           border: `1px solid ${RELATION_COLOR[e.relation]}44`,
                           background: `${RELATION_COLOR[e.relation]}0e`,
-                          borderRadius: 4, fontSize: 10, cursor: "pointer",
+                          borderRadius: 4, fontSize: 12, cursor: "pointer",
                         }}
                       >
                         <span style={{ color: "#e0f2fe", flex: 1 }}>
                           {a.name} ↔ {b.name}
                         </span>
-                        <span style={{ color: RELATION_COLOR[e.relation], fontSize: 9 }}>
+                        <span style={{ color: RELATION_COLOR[e.relation], fontSize: 12 }}>
                           {RELATION_LABEL[e.relation]}
                         </span>
-                        <b style={{ color: "#38bdf8", fontSize: 10 }}>{e.dist.toFixed(2)}</b>
+                        <b style={{ color: "#38bdf8", fontSize: 12 }}>{e.dist.toFixed(2)}</b>
                       </div>
                     );
                   })}
@@ -1229,7 +1229,7 @@ export default function Page() {
               }}
               style={{
                 flex: 1,
-                padding: "6px 8px", fontSize: 9, letterSpacing: 1,
+                padding: "6px 8px", fontSize: 12, letterSpacing: 1,
                 color: "#a78bfa", background: "transparent",
                 border: "1px dashed #a78bfa66", borderRadius: 4, cursor: "pointer",
               }}
@@ -1239,7 +1239,7 @@ export default function Page() {
             <button
               onClick={() => { clearStances(); setStances([]); }}
               style={{
-                padding: "6px 8px", fontSize: 9,
+                padding: "6px 8px", fontSize: 12,
                 color: "#8bb8cc", background: "transparent",
                 border: "1px solid #0a2a4a", borderRadius: 4, cursor: "pointer",
               }}
@@ -1253,10 +1253,10 @@ export default function Page() {
         {needFits.length > 0 && (
           <div style={{ padding: 12, border: "1px solid #a78bfa55", borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase" }}>
+              <span style={{ fontSize: 12, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase" }}>
                 Need · חוסר ↔ השלמה
               </span>
-              <span style={{ fontSize: 9, color: "#a78bfa" }}>
+              <span style={{ fontSize: 12, color: "#a78bfa" }}>
                 {needFits.filter(f => f.bidirectional).length} הדדיים
               </span>
             </div>
@@ -1272,11 +1272,11 @@ export default function Page() {
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, color: "#e0f2fe", fontWeight: 700 }}>
+                  <span style={{ fontSize: 13, color: "#e0f2fe", fontWeight: 700 }}>
                     {f.a.name} {f.bidirectional ? "⇌" : f.matched.aGetsFromB.length ? "←" : "→"} {f.b.name}
                   </span>
                   <span style={{
-                    fontSize: 8, padding: "2px 6px", borderRadius: 8,
+                    fontSize: 12, padding: "2px 6px", borderRadius: 8,
                     background: "#a78bfa22", color: "#a78bfa",
                     border: "1px solid #a78bfa66",
                     letterSpacing: 1, textTransform: "uppercase",
@@ -1292,10 +1292,10 @@ export default function Page() {
                     <NeedPill key={"b" + t} tag={t} dir="out" />
                   ))}
                 </div>
-                <div style={{ fontSize: 9, color: "#8bb8cc", marginBottom: 2 }}>
+                <div style={{ fontSize: 12, color: "#8bb8cc", marginBottom: 2 }}>
                   {f.reason}
                 </div>
-                <div style={{ fontSize: 10, color: "#00f5d4", fontStyle: "italic" }}>
+                <div style={{ fontSize: 12, color: "#00f5d4", fontStyle: "italic" }}>
                   → {f.suggestion}
                 </div>
               </div>
@@ -1306,7 +1306,7 @@ export default function Page() {
         {/* FORCE MAP */}
         {pulse && (
           <div style={{ padding: 12, border: "1px solid #0a2a4a", borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
-            <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
+            <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
               Map of Forces
             </div>
             {Object.entries(pulse.fd)
@@ -1316,7 +1316,7 @@ export default function Page() {
                 const col = FORCE_COLOR[f as DominantForce] ?? "#38bdf8";
                 return (
                   <div key={f} style={{ marginBottom: 5 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: col, marginBottom: 2 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: col, marginBottom: 2 }}>
                       <span>{FORCE_LABEL[f as DominantForce] ?? f}</span>
                       <span>{pct}%</span>
                     </div>
@@ -1327,7 +1327,7 @@ export default function Page() {
                 );
               })
             }
-            <div style={{ marginTop: 8, display: "flex", gap: 8, fontSize: 9, color: "#8bb8cc" }}>
+            <div style={{ marginTop: 8, display: "flex", gap: 8, fontSize: 12, color: "#8bb8cc" }}>
               <span>total: {pulse.total}</span>
               <span>energy: {pulse.energy}</span>
               <span>stress: {pulse.stress}%</span>
@@ -1337,7 +1337,7 @@ export default function Page() {
 
         {/* WHAT CHANGED TODAY */}
         <div style={{ padding: 12, border: "1px solid #0a2a4a", borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
-          <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
+          <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
             שינויים היום
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
@@ -1349,7 +1349,7 @@ export default function Page() {
             ].map(s => (
               <div key={s.label} style={{ padding: "6px 8px", borderRadius: 4, border: `1px solid ${s.color}22`, background: s.color + "08" }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: s.color }}>{s.val}</div>
-                <div style={{ fontSize: 8, color: "#1e4060" }}>{s.label}</div>
+                <div style={{ fontSize: 12, color: "#1e4060" }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -1358,7 +1358,7 @@ export default function Page() {
         {/* REAL OPPORTUNITIES */}
         {systemOpportunities.length > 0 && (
           <div style={{ padding: 12, border: "1px solid #0a2a4a", borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
-            <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 10 }}>
+            <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 10 }}>
               הזדמנויות אמיתיות
             </div>
             {systemOpportunities.map(opp => (
@@ -1369,7 +1369,7 @@ export default function Page() {
 
         {/* TARGET */}
         <div style={{ padding: 12, border: "1px solid #0a2a4a", borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
-          <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
+          <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
             Target · מול מי מדרגים
           </div>
 
@@ -1396,7 +1396,7 @@ export default function Page() {
 
         {/* FILTER */}
         <div style={{ padding: 12, border: "1px solid #0a2a4a", borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
-          <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
+          <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
             Filter
           </div>
 
@@ -1443,7 +1443,7 @@ export default function Page() {
             onClick={() => { setFilter({}); setTarget({}); }}
             style={{
               marginTop: 10, width: "100%",
-              padding: "6px 8px", fontSize: 10,
+              padding: "6px 8px", fontSize: 12,
               background: "transparent", color: "#8bb8cc",
               border: "1px solid #0a2a4a", borderRadius: 4, cursor: "pointer",
             }}
@@ -1455,16 +1455,16 @@ export default function Page() {
         {/* SELECTED — PENTAGON PANEL */}
         {selected && (
           <div style={{ padding: 12, border: `1px solid ${FORCE_COLOR[selected.dominantForce]}88`, borderRadius: 6, background: "#040e1c", marginBottom: 16 }}>
-            <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>
+            <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>
               Pentagon
             </div>
             <div style={{ fontSize: 16, fontWeight: 700 }}>{selected.name}</div>
-            <div style={{ fontSize: 10, color: "#8bb8cc", marginBottom: 8 }}>
+            <div style={{ fontSize: 12, color: "#8bb8cc", marginBottom: 8 }}>
               {CONTEXT_LABEL[selected.context]} · intensity {selected.intensity}/10
             </div>
 
             <div style={{
-              fontSize: 13, color: "#00f5d4", fontWeight: 600,
+              fontSize: 15, color: "#00f5d4", fontWeight: 600,
               padding: "8px 10px", background: "#00f5d411",
               border: "1px solid #00f5d433", borderRadius: 4,
               marginBottom: 10,
@@ -1472,7 +1472,7 @@ export default function Page() {
               {selected.action}
             </div>
 
-            <div style={{ fontSize: 11, color: "#8bb8cc", marginBottom: 10, lineHeight: 1.4, fontStyle: "italic" }}>
+            <div style={{ fontSize: 13, color: "#8bb8cc", marginBottom: 10, lineHeight: 1.4, fontStyle: "italic" }}>
               "{selected.event}"
             </div>
 
@@ -1496,10 +1496,10 @@ export default function Page() {
                   border: `1px solid ${REPUTATION_LEVEL_COLOR[rep.level]}44`,
                   background: `${REPUTATION_LEVEL_COLOR[rep.level]}08`,
                 }}>
-                  <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>Proof Layer</div>
+                  <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>Proof Layer</div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                     <span style={{
-                      fontSize: 10, padding: "2px 8px", borderRadius: 8,
+                      fontSize: 12, padding: "2px 8px", borderRadius: 8,
                       background: REPUTATION_LEVEL_COLOR[rep.level] + "22",
                       color: REPUTATION_LEVEL_COLOR[rep.level],
                       border: `1px solid ${REPUTATION_LEVEL_COLOR[rep.level]}55`,
@@ -1507,11 +1507,11 @@ export default function Page() {
                     }}>
                       {REPUTATION_LEVEL_LABEL[rep.level]}
                     </span>
-                    <span style={{ fontSize: 11, color: REPUTATION_LEVEL_COLOR[rep.level], fontWeight: 700 }}>
+                    <span style={{ fontSize: 13, color: REPUTATION_LEVEL_COLOR[rep.level], fontWeight: 700 }}>
                       {rep.overall}/100
                     </span>
                   </div>
-                  <div style={{ display: "flex", gap: 8, fontSize: 9, color: "#8bb8cc" }}>
+                  <div style={{ display: "flex", gap: 8, fontSize: 12, color: "#8bb8cc" }}>
                     <span>✓ מאומת: <b style={{ color: "#34d399" }}>{verified.length}</b></span>
                     <span>⏳ ממתין: <b style={{ color: "#fbbf24" }}>{claimed.length}</b></span>
                     <span>proof trust: <b style={{ color: REPUTATION_LEVEL_COLOR[rep.level] }}>{proofTrustMap[selected.id] ?? 0}</b></span>
@@ -1522,7 +1522,7 @@ export default function Page() {
 
             {selected.conflict && (
               <div style={{
-                fontSize: 10, color: "#ef4444", padding: "6px 8px",
+                fontSize: 12, color: "#ef4444", padding: "6px 8px",
                 border: "1px solid #ef444455", background: "#ef444411",
                 borderRadius: 4, marginBottom: 10,
               }}>
@@ -1539,26 +1539,26 @@ export default function Page() {
                   padding: "6px 8px", borderRadius: 4,
                   border: "1px solid #ef444444", background: "#ef44440e",
                 }}>
-                  <div style={{ fontSize: 8, color: "#ef4444", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>
+                  <div style={{ fontSize: 12, color: "#ef4444", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>
                     צריך
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
                     {selectedNeeds.needs.length
                       ? selectedNeeds.needs.map(t => <NeedPill key={"n" + t} tag={t} dir="in" />)
-                      : <span style={{ fontSize: 10, color: "#1e4060" }}>—</span>}
+                      : <span style={{ fontSize: 12, color: "#1e4060" }}>—</span>}
                   </div>
                 </div>
                 <div style={{
                   padding: "6px 8px", borderRadius: 4,
                   border: "1px solid #22c55e44", background: "#22c55e0e",
                 }}>
-                  <div style={{ fontSize: 8, color: "#22c55e", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>
+                  <div style={{ fontSize: 12, color: "#22c55e", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>
                     מציע
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
                     {selectedNeeds.offers.length
                       ? selectedNeeds.offers.map(t => <NeedPill key={"o" + t} tag={t} dir="out" />)
-                      : <span style={{ fontSize: 10, color: "#1e4060" }}>—</span>}
+                      : <span style={{ fontSize: 12, color: "#1e4060" }}>—</span>}
                   </div>
                 </div>
               </div>
@@ -1572,8 +1572,8 @@ export default function Page() {
               const nextColor = evo.next ? (FORCE_COLOR[evo.next as DominantForce] ?? "#a78bfa") : "#a78bfa";
               return (
                 <div style={{ padding: "8px 10px", borderRadius: 4, marginBottom: 10, border: "1px solid #0a2a4a", background: "#040e1c" }}>
-                  <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 1, textTransform: "uppercase", marginBottom: 7 }}>זרימת מתח · Tension Flow</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8, flexWrap: "wrap", fontSize: 9 }}>
+                  <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 1, textTransform: "uppercase", marginBottom: 7 }}>זרימת מתח · Tension Flow</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8, flexWrap: "wrap", fontSize: 12 }}>
                     <span style={{ padding: "2px 7px", borderRadius: 10, border: `1px solid ${FORCE_COLOR[selected.dominantForce]}55`, color: FORCE_COLOR[selected.dominantForce], background: FORCE_COLOR[selected.dominantForce] + "22", fontWeight: 600 }}>
                       {FORCE_LABEL[selected.dominantForce]}
                     </span>
@@ -1584,7 +1584,7 @@ export default function Page() {
                       <span style={{ padding: "2px 7px", borderRadius: 10, border: `1px solid ${nextColor}55`, color: nextColor }}>{FORCE_LABEL[evo.next as DominantForce] ?? evo.next}</span>
                     </>}
                   </div>
-                  <div style={{ fontSize: 10, color: "#00f5d4", padding: "6px 8px", background: "#020d1a", borderRadius: 4 }}>{evo.action}</div>
+                  <div style={{ fontSize: 12, color: "#00f5d4", padding: "6px 8px", background: "#020d1a", borderRadius: 4 }}>{evo.action}</div>
                 </div>
               );
             })()}
@@ -1597,7 +1597,7 @@ export default function Page() {
               const conns = links.filter(l => l.source === selected.id || l.target === selected.id).length;
               return (
                 <div style={{ padding: "8px 10px", borderRadius: 4, marginBottom: 10, border: "1px solid #0a2a4a", background: "#040e1c" }}>
-                  <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 1, textTransform: "uppercase", marginBottom: 7 }}>למה זה משנה</div>
+                  <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 1, textTransform: "uppercase", marginBottom: 7 }}>למה זה משנה</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>
                     <SmallCard label="⚠ סיכון"       text={evo.risk}         color="#f87171" />
                     <SmallCard label="✦ הזדמנות"     text={evo.opportunity}  color="#34d399" />
@@ -1611,7 +1611,7 @@ export default function Page() {
             {/* ── SELECTED NODE OPPORTUNITIES ── */}
             {selectedOpportunities.length > 0 && (
               <div style={{ marginBottom: 10 }}>
-                <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>הזדמנויות עבור {selected.name}</div>
+                <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>הזדמנויות עבור {selected.name}</div>
                 {selectedOpportunities.map(opp => (
                   <OppCard key={opp.id} opp={opp} compact />
                 ))}
@@ -1638,12 +1638,12 @@ export default function Page() {
                   border: `1px solid ${activeTopic.color}44`,
                   background: `${activeTopic.color}0e`,
                 }}>
-                  <div style={{ fontSize: 9, color: activeTopic.color, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>
+                  <div style={{ fontSize: 12, color: activeTopic.color, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>
                     עמדה · {activeTopic.title}
                   </div>
                   {activeTopic.axes.map((ax, i) => (
                     <div key={ax.key} style={{ marginBottom: 6 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#8bb8cc", marginBottom: 2 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#8bb8cc", marginBottom: 2 }}>
                         <span>{ax.left}</span>
                         <b style={{ color: "#e0f2fe" }}>{(values[i] ?? 0).toFixed(2)}</b>
                         <span>{ax.right}</span>
@@ -1663,7 +1663,7 @@ export default function Page() {
             {/* CONNECTIONS */}
             {selectedConnections.length > 0 && (
               <>
-                <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6, marginTop: 4 }}>
+                <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6, marginTop: 4 }}>
                   Connections · {selectedConnections.length}
                 </div>
                 {selectedConnections.map(({ link, other }) => (
@@ -1675,7 +1675,7 @@ export default function Page() {
                       padding: "6px 8px", marginBottom: 4,
                       border: `1px solid ${LINK_COLOR[link.type]}44`,
                       background: `${LINK_COLOR[link.type]}0e`,
-                      borderRadius: 4, cursor: "pointer", fontSize: 10,
+                      borderRadius: 4, cursor: "pointer", fontSize: 12,
                     }}
                   >
                     <span style={{ width: 8, height: 8, background: LINK_COLOR[link.type], borderRadius: 2 }} />
@@ -1684,10 +1684,10 @@ export default function Page() {
                       {link.directional && link.target === selected.id && "← "}
                       {other.name}
                     </span>
-                    <span style={{ color: LINK_COLOR[link.type], fontSize: 9 }}>
+                    <span style={{ color: LINK_COLOR[link.type], fontSize: 12 }}>
                       {LINK_LABEL[link.type]}
                     </span>
-                    <b style={{ color: "#38bdf8", fontSize: 10 }}>{link.strength.toFixed(2)}</b>
+                    <b style={{ color: "#38bdf8", fontSize: 12 }}>{link.strength.toFixed(2)}</b>
                   </div>
                 ))}
               </>
@@ -1696,7 +1696,7 @@ export default function Page() {
         )}
 
         {/* RANKED LIST */}
-        <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", margin: "6px 0 8px" }}>
+        <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase", margin: "6px 0 8px" }}>
           Ranked
         </div>
         {ranked.map(n => {
@@ -1718,7 +1718,7 @@ export default function Page() {
               <div style={{
                 width: 20, height: 20, borderRadius: 4,
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 10, fontWeight: 700,
+                fontSize: 12, fontWeight: 700,
                 color: isTop ? "#020d1a" : "#8bb8cc",
                 background: isTop ? FORCE_COLOR[n.dominantForce] : "transparent",
                 border: isTop ? "none" : "1px solid #0a2a4a",
@@ -1726,18 +1726,18 @@ export default function Page() {
                 {n.rank}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 11, color: "#caf0f8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <div style={{ fontSize: 13, color: "#caf0f8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {n.name}
                 </div>
-                <div style={{ fontSize: 9, color: "#1e4060" }}>
+                <div style={{ fontSize: 12, color: "#1e4060" }}>
                   {FORCE_LABEL[n.dominantForce]} · {CONTEXT_LABEL[n.context]} · int {n.intensity}
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: isTop ? "#fbbf24" : "#38bdf8", fontWeight: 700 }}>
+                <div style={{ fontSize: 13, color: isTop ? "#fbbf24" : "#38bdf8", fontWeight: 700 }}>
                   {n.score.toFixed(1)}
                 </div>
-                <div style={{ fontSize: 8, color: "#1e4060" }}>score</div>
+                <div style={{ fontSize: 12, color: "#1e4060" }}>score</div>
               </div>
             </div>
           );
@@ -1746,7 +1746,7 @@ export default function Page() {
         <div style={{ marginTop: 16, display: "flex", gap: 6 }}>
           <a href="/" style={{
             flex: 1, textAlign: "center",
-            padding: "10px 12px", fontSize: 11, letterSpacing: 2,
+            padding: "10px 12px", fontSize: 13, letterSpacing: 2,
             color: "#020d1a", fontWeight: 700,
             background: "linear-gradient(135deg,#00f5d4,#38bdf8)",
             borderRadius: 6, textDecoration: "none",
@@ -1763,7 +1763,7 @@ export default function Page() {
               }
             }}
             style={{
-              padding: "10px 12px", fontSize: 10,
+              padding: "10px 12px", fontSize: 12,
               background: "transparent", color: "#8bb8cc",
               border: "1px solid #0a2a4a", borderRadius: 6, cursor: "pointer",
             }}
@@ -1780,7 +1780,7 @@ export default function Page() {
           }}
           style={{
             width: "100%", marginTop: 8,
-            padding: "8px 10px", fontSize: 10, letterSpacing: 2,
+            padding: "8px 10px", fontSize: 12, letterSpacing: 2,
             color: "#a78bfa", background: "transparent",
             border: "1px dashed #a78bfa66", borderRadius: 6,
             cursor: "pointer",
@@ -1806,7 +1806,7 @@ function OppCard({ opp, compact = false }: { opp: RealOpportunity; compact?: boo
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
         <span style={{
-          fontSize: 9, padding: "1px 7px", borderRadius: 3, fontWeight: 700,
+          fontSize: 12, padding: "1px 7px", borderRadius: 3, fontWeight: 700,
           background: col + "22", color: col,
         }}>
           {OPPORTUNITY_TYPE_LABEL[opp.type]}
@@ -1814,26 +1814,26 @@ function OppCard({ opp, compact = false }: { opp: RealOpportunity; compact?: boo
         <span style={{ flex: 1, fontSize: compact ? 10 : 11, color: "#caf0f8", fontWeight: 600 }}>
           {opp.provider.name}
         </span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: opp.score >= 70 ? "#34d399" : opp.score >= 40 ? "#fbbf24" : "#8bb8cc" }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: opp.score >= 70 ? "#34d399" : opp.score >= 40 ? "#fbbf24" : "#8bb8cc" }}>
           {opp.score}%
         </span>
       </div>
       {!compact && (
-        <div style={{ fontSize: 10, color: "#8bb8cc", marginBottom: 5 }}>{opp.reason}</div>
+        <div style={{ fontSize: 12, color: "#8bb8cc", marginBottom: 5 }}>{opp.reason}</div>
       )}
-      <div style={{ display: "flex", gap: 10, fontSize: 9, color: "#8bb8cc", marginBottom: compact ? 0 : 5 }}>
+      <div style={{ display: "flex", gap: 10, fontSize: 12, color: "#8bb8cc", marginBottom: compact ? 0 : 5 }}>
         <span>צריך: <b style={{ color: "#f87171" }}>{opp.matchedNeeds.map(n => NEED_LABEL[n]).join(", ")}</b></span>
         <span>מציע: <b style={{ color: "#34d399" }}>{opp.matchedOffers.map(n => NEED_LABEL[n]).join(", ")}</b></span>
       </div>
       {!compact && (
-        <div style={{ display: "flex", gap: 8, fontSize: 9, color: "#1e4060", marginBottom: 5 }}>
+        <div style={{ display: "flex", gap: 8, fontSize: 12, color: "#1e4060", marginBottom: 5 }}>
           <span>אמון: <b style={{ color: "#38bdf8" }}>{opp.avgTrust}</b></span>
           {opp.bidirectional && <span style={{ color: "#fbbf24" }}>⇌ הדדי</span>}
           {opp.contextMatch  && <span style={{ color: "#34d399" }}>◉ אותו הקשר</span>}
         </div>
       )}
       {!compact && (
-        <div style={{ fontSize: 9, padding: "4px 7px", background: "#020d1a", borderRadius: 4, color: "#00f5d4" }}>
+        <div style={{ fontSize: 12, padding: "4px 7px", background: "#020d1a", borderRadius: 4, color: "#00f5d4" }}>
           → {opp.suggestedAction}
         </div>
       )}
@@ -1844,8 +1844,8 @@ function OppCard({ opp, compact = false }: { opp: RealOpportunity; compact?: boo
 function SmallCard({ label, text, color }: { label: string; text: string; color: string }) {
   return (
     <div style={{ padding: "5px 7px", borderRadius: 4, border: `1px solid ${color}22`, background: color + "08" }}>
-      <div style={{ fontSize: 8, color, letterSpacing: 0.5, marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: 9, color: "#8bb8cc" }}>{text}</div>
+      <div style={{ fontSize: 12, color, letterSpacing: 0.5, marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 12, color: "#8bb8cc" }}>{text}</div>
     </div>
   );
 }
@@ -1906,7 +1906,7 @@ function getLinkSemanticColor(link: Link, s: UserNode, t: UserNode): string {
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#8bb8cc", marginBottom: 3 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#8bb8cc", marginBottom: 3 }}>
       <span>{k}</span>
       <b style={{ color: "#e0f2fe" }}>{v}</b>
     </div>
@@ -1915,7 +1915,7 @@ function Row({ k, v }: { k: string; v: string }) {
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontSize: 9, color: "#8bb8cc", letterSpacing: 1, marginBottom: 4 }}>
+    <div style={{ fontSize: 12, color: "#8bb8cc", letterSpacing: 1, marginBottom: 4 }}>
       {children}
     </div>
   );
@@ -1929,7 +1929,7 @@ function MiniChip({
       type="button"
       onClick={onClick}
       style={{
-        padding: "6px 4px", fontSize: 10,
+        padding: "6px 4px", fontSize: 12,
         borderRadius: 4,
         border: `1px solid ${active ? color : "#0a2a4a"}`,
         background: active ? `${color}22` : "transparent",
@@ -1945,7 +1945,7 @@ function MiniChip({
 function Pill({ children, color }: { children: React.ReactNode; color: string }) {
   return (
     <span style={{
-      fontSize: 9, padding: "2px 6px", borderRadius: 10,
+      fontSize: 12, padding: "2px 6px", borderRadius: 10,
       background: `${color}22`, color,
       border: `1px solid ${color}55`,
     }}>
@@ -1960,8 +1960,8 @@ function MetaBox({ label, value, color }: { label: string; value: string; color:
       padding: "6px 8px", borderRadius: 4,
       border: `1px solid ${color}44`, background: `${color}0e`,
     }}>
-      <div style={{ fontSize: 8, color: "#8bb8cc", letterSpacing: 1, textTransform: "uppercase" }}>{label}</div>
-      <div style={{ fontSize: 12, color, fontWeight: 700 }}>{value}</div>
+      <div style={{ fontSize: 12, color: "#8bb8cc", letterSpacing: 1, textTransform: "uppercase" }}>{label}</div>
+      <div style={{ fontSize: 13, color, fontWeight: 700 }}>{value}</div>
     </div>
   );
 }
@@ -1970,7 +1970,7 @@ function ScoreBar({ label, value, color }: { label: string; value: number; color
   const pct = Math.max(0, Math.min(100, (value / 10) * 100));
   return (
     <div style={{ marginBottom: 6 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#8bb8cc", marginBottom: 2 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#8bb8cc", marginBottom: 2 }}>
         <span>{label}</span>
         <b style={{ color }}>{value.toFixed(1)}</b>
       </div>
@@ -1986,7 +1986,7 @@ function NeedPill({ tag, dir }: { tag: NeedTag; dir: "in" | "out" }) {
   const arrow = dir === "in" ? "←" : "→";
   return (
     <span style={{
-      fontSize: 9, padding: "2px 6px", borderRadius: 8,
+      fontSize: 12, padding: "2px 6px", borderRadius: 8,
       background: `${col}1a`, color: col,
       border: `1px solid ${col}55`,
       letterSpacing: 0.3, whiteSpace: "nowrap",

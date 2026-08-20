@@ -82,7 +82,7 @@ export default function ValueDomainDemoPanel({ today }: { today: string }) {
         <div key={r.result_id} style={S.row}>
           <span>{r.expected_result}</span>
           <span style={S.meta}>{r.observed_result ?? "טרם נצפה"}</span>
-          <span style={{ color: r.accepted ? "#34d399" : "#5a76a3" }}>{r.accepted ? "התקבל" : "לא ידוע"}</span>
+          <span style={{ color: r.accepted ? "#34d399" : "#6c86b5" }}>{r.accepted ? "התקבל" : "לא ידוע"}</span>
         </div>
       ))}
 
@@ -123,18 +123,18 @@ export default function ValueDomainDemoPanel({ today }: { today: string }) {
 const S: Record<string, React.CSSProperties> = {
   card: { background: "rgba(18,24,38,0.7)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 16, padding: "16px 18px", marginTop: 16 },
   head: { display: "flex", alignItems: "center", gap: 10, marginBottom: 6 },
-  badge: { fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 6, border: "1px solid #fbbf2455", color: "#fbbf24", fontFamily: "ui-monospace, monospace" },
+  badge: { fontSize: 12, fontWeight: 800, padding: "2px 8px", borderRadius: 6, border: "1px solid #fbbf2455", color: "#fbbf24", fontFamily: "ui-monospace, monospace" },
   title: { fontSize: 13.5, fontWeight: 700, margin: 0, color: "#f0f4fc" },
-  note: { fontSize: 10.5, color: "#8fa3c9", lineHeight: 1.7, marginBottom: 10, maxWidth: 900 },
-  subHead: { fontSize: 10.5, fontWeight: 700, color: "#8fa3c9", marginTop: 10, marginBottom: 4 },
+  note: { fontSize: 13, color: "#8fa3c9", lineHeight: 1.7, marginBottom: 10, maxWidth: 900 },
+  subHead: { fontSize: 13, fontWeight: 700, color: "#8fa3c9", marginTop: 10, marginBottom: 4 },
 
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginBottom: 8 },
   paramCard: { border: "1px solid rgba(90,120,180,0.2)", borderRadius: 8, padding: "8px 10px" },
-  paramLabel: { fontSize: 12, fontWeight: 700, color: "#dbe6f6" },
-  paramLevel: { fontSize: 11, color: "#5aa6ff", marginTop: 2 },
-  tag: { fontSize: 10, color: "#8fa3c9", marginTop: 4 },
-  sourceLink: { display: "block", fontSize: 9.5, color: "#5b9cf6", textDecoration: "none", marginTop: 4 },
+  paramLabel: { fontSize: 13, fontWeight: 700, color: "#dbe6f6" },
+  paramLevel: { fontSize: 13, color: "#5aa6ff", marginTop: 2 },
+  tag: { fontSize: 12, color: "#8fa3c9", marginTop: 4 },
+  sourceLink: { display: "block", fontSize: 12, color: "#5b9cf6", textDecoration: "none", marginTop: 4 },
 
-  row: { display: "flex", justifyContent: "space-between", gap: 8, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 11.5, marginBottom: 3 },
+  row: { display: "flex", justifyContent: "space-between", gap: 8, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 13, marginBottom: 3 },
   meta: { color: "#8aa0c8" },
 };

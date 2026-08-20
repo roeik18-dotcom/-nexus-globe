@@ -88,7 +88,7 @@ export default function SystemRoleRail({ evidence }: { evidence: SystemRoleEvide
                 opacity: carried ? 1 : 0.6,
               }}
             >
-              <span style={{ fontSize: 12 }}>{r.glyph}</span>
+              <span style={{ fontSize: 13 }}>{r.glyph}</span>
               <span style={{ ...TYPE.micro, fontSize: FS.tag, color: carried ? r.hex : COLOR.textFaint }}>{r.name}</span>
               <span style={{ fontSize: FS.tag, color: COLOR.textFaint, textAlign: "center", lineHeight: 1.25 }}>
                 {r.fn.replace(/ layer$/, "")}

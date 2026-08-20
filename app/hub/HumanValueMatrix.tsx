@@ -57,15 +57,15 @@ export default function HumanValueMatrix() {
 
 const S: Record<string, React.CSSProperties> = {
   wrap: { marginTop: 12 },
-  head: { fontSize: 11.5, fontWeight: 700, color: "#5aa6ff", marginBottom: 8 },
+  head: { fontSize: 13, fontWeight: 700, color: "#5aa6ff", marginBottom: 8 },
   scroll: { overflowX: "auto", border: "1px solid rgba(90,120,180,0.2)", borderRadius: 8 },
-  table: { borderCollapse: "collapse", width: "100%", fontSize: 10.5 },
+  table: { borderCollapse: "collapse", width: "100%", fontSize: 13 },
   thCorner: { minWidth: 160, borderBottom: "1px solid rgba(90,120,180,0.2)" },
   th: { padding: "6px 8px", color: "#8fa3c9", fontWeight: 700, textAlign: "center", borderBottom: "1px solid rgba(90,120,180,0.2)", minWidth: 140 },
   tdLabel: { padding: "5px 8px", textAlign: "right", borderBottom: "1px solid rgba(90,120,180,0.08)", color: "#dbe6f6", fontWeight: 600, whiteSpace: "nowrap" },
   td: { padding: "5px 8px", textAlign: "center", borderBottom: "1px solid rgba(90,120,180,0.08)" },
-  cellUnknown: { color: "#5a76a3" },
-  cellRelated: { color: "#fbbf24", fontSize: 9.5, fontWeight: 700, cursor: "help" },
-  detail: { fontSize: 10.5, color: "#8fa3c9", marginTop: 8, lineHeight: 1.7 },
-  evidence: { fontSize: 9.5, color: "#5a76a3", marginTop: 2 },
+  cellUnknown: { color: "#6c86b5" },
+  cellRelated: { color: "#fbbf24", fontSize: 12, fontWeight: 700, cursor: "help" },
+  detail: { fontSize: 13, color: "#8fa3c9", marginTop: 8, lineHeight: 1.7 },
+  evidence: { fontSize: 12, color: "#6c86b5", marginTop: 2 },
 };

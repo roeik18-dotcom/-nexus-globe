@@ -29,7 +29,7 @@ const C = {
   text: "#cfe6f5", cyan: "#38bdf8", green: "#34d399", red: "#ef4444",
   orange: "#fb923c", yellow: "#fbbf24", purple: "#a78bfa",
 };
-const sec: React.CSSProperties = { fontSize: 9, color: C.borderSoft, letterSpacing: 2, textTransform: "uppercase", margin: "12px 0 7px" };
+const sec: React.CSSProperties = { fontSize: 12, color: C.borderSoft, letterSpacing: 2, textTransform: "uppercase", margin: "12px 0 7px" };
 const VALUE_COLOR: Record<string, string> = {
   Truth: "#38bdf8", Justice: "#a78bfa", Protection: "#34d399",
   Responsibility: "#fb923c", Dignity: "#fbbf24",
@@ -78,17 +78,17 @@ export default function NoaNetworkEffects({ chain }: { chain: NoaChain }) {
 
   return (
     <div style={{ marginTop: 14, color: C.text }}>
-      <div style={{ fontSize: 11, color: C.purple, letterSpacing: 2.5, textTransform: "uppercase", fontWeight: 800 }}>Network Effects</div>
-      <div style={{ fontSize: 9.5, color: C.borderSoft, marginTop: 2, marginBottom: 8 }}>
+      <div style={{ fontSize: 13, color: C.purple, letterSpacing: 2.5, textTransform: "uppercase", fontWeight: 800 }}>Network Effects</div>
+      <div style={{ fontSize: 12, color: C.borderSoft, marginTop: 2, marginBottom: 8 }}>
         the case value-network — Noa&apos;s helpers — that actually carried the burden
       </div>
 
       {/* 1 · VALUES HARMED → ACTIVATED HELPER COMMUNITIES */}
       <div style={sec}>Values Harmed → Activated Helper Communities</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
-        {communities.length === 0 && <span style={{ fontSize: 10, color: C.borderSoft }}>no helper communities active</span>}
+        {communities.length === 0 && <span style={{ fontSize: 12, color: C.borderSoft }}>no helper communities active</span>}
         {communities.map(c => (
-          <span key={c.value} style={{ fontSize: 9.5, fontWeight: 700, color: VALUE_COLOR[c.value] ?? C.cyan, border: `1px solid ${(VALUE_COLOR[c.value] ?? C.cyan)}66`, borderRadius: 999, padding: "1px 8px" }}>
+          <span key={c.value} style={{ fontSize: 12, fontWeight: 700, color: VALUE_COLOR[c.value] ?? C.cyan, border: `1px solid ${(VALUE_COLOR[c.value] ?? C.cyan)}66`, borderRadius: 999, padding: "1px 8px" }}>
             ● {c.value}
           </span>
         ))}
@@ -106,11 +106,11 @@ export default function NoaNetworkEffects({ chain }: { chain: NoaChain }) {
           <div key={c.value} onClick={() => selectSync(c.value, "opm", c.value)}
             style={{ cursor: "pointer", background: matched ? "#06223a" : C.card, border: `1px solid ${matched ? C.cyan : col + "55"}`, borderRadius: 7, padding: "6px 9px", marginBottom: 5 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 6 }}>
-              <span style={{ fontSize: 11.5, fontWeight: 800, color: col }}>{c.value}{matched ? " ◀" : ""}</span>
-              <span style={{ fontSize: 8.5, fontWeight: 700, color: risk.col }}>{risk.label}</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: col }}>{c.value}{matched ? " ◀" : ""}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: risk.col }}>{risk.label}</span>
             </div>
-            <div style={{ fontSize: 9, color: C.borderSoft, marginTop: 1 }}>{c.roles.join(", ")}</div>
-            <div style={{ display: "flex", gap: 10, marginTop: 3, fontSize: 9.5 }}>
+            <div style={{ fontSize: 12, color: C.borderSoft, marginTop: 1 }}>{c.roles.join(", ")}</div>
+            <div style={{ display: "flex", gap: 10, marginTop: 3, fontSize: 12 }}>
               <span style={{ color: C.borderSoft }}>👥 <b style={{ color: C.text }}>{c.people}</b></span>
               <span style={{ color: C.borderSoft }}>cap <b style={{ color: C.green }}>{c.capacity}</b></span>
               <span style={{ color: C.borderSoft }}>carried <b style={{ color: C.orange }}>{c.carried}</b></span>
@@ -121,7 +121,7 @@ export default function NoaNetworkEffects({ chain }: { chain: NoaChain }) {
               <div style={{ flex: 1, height: 5, background: "#0a2a4a", borderRadius: 3, overflow: "hidden" }}>
                 <div style={{ width: `${Math.min(100, utilPct)}%`, height: "100%", background: risk.col }} />
               </div>
-              <span style={{ fontSize: 8.5, fontWeight: 700, color: risk.col, whiteSpace: "nowrap" }}>{utilPct}% utilized</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: risk.col, whiteSpace: "nowrap" }}>{utilPct}% utilized</span>
             </div>
           </div>
         );
@@ -130,7 +130,7 @@ export default function NoaNetworkEffects({ chain }: { chain: NoaChain }) {
       {/* 3 · BURDEN CARRIED → REMAINING GAP (real chain.load figures) */}
       <div style={sec}>Burden Carried → Remaining Gap</div>
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 7, padding: "8px 10px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginBottom: 6 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 6 }}>
           <span style={{ color: C.borderSoft }}>Original <b style={{ color: C.text }}>{originalGap}</b></span>
           <span style={{ color: C.borderSoft }}>Carried <b style={{ color: C.green }}>{distributed}</b></span>
           <span style={{ color: C.borderSoft }}>Remaining <b style={{ color: remainingGap > 0 ? C.red : C.green }}>{remainingGap}</b></span>
@@ -139,49 +139,49 @@ export default function NoaNetworkEffects({ chain }: { chain: NoaChain }) {
           <div style={{ width: `${carryPct}%`, background: C.green }} title={`carried ${carryPct}%`} />
           <div style={{ width: `${100 - carryPct}%`, background: C.red }} title="remaining gap" />
         </div>
-        <div style={{ fontSize: 8.5, color: C.borderSoft, marginTop: 5 }}>{carryPct}% of the burden carried by the helper network</div>
+        <div style={{ fontSize: 12, color: C.borderSoft, marginTop: 5 }}>{carryPct}% of the burden carried by the helper network</div>
       </div>
 
       {/* 4 · VALUE FLOW — OPMCloud-style: communities → carried/remaining → recovery */}
       <div style={sec}>Value Flow</div>
-      <div style={{ fontSize: 8.5, color: C.borderSoft, marginBottom: 6 }}>helper communities → carried → remaining → recovery</div>
+      <div style={{ fontSize: 12, color: C.borderSoft, marginBottom: 6 }}>helper communities → carried → remaining → recovery</div>
       <div style={{ display: "flex", height: 22, borderRadius: 6, overflow: "hidden", border: `1px solid ${C.border}` }}>
         {communities.map(c => (
           <div key={c.value} title={`${c.value} carried ${c.carried}`}
             style={{ width: `${(c.carried / Math.max(1, originalGap)) * 100}%`, background: VALUE_COLOR[c.value] ?? C.cyan, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 7.5, fontWeight: 800, color: "#03101e" }}>{c.carried}</span>
+            <span style={{ fontSize: 12, fontWeight: 800, color: "#03101e" }}>{c.carried}</span>
           </div>
         ))}
         <div title={`remaining ${remainingGap}`}
           style={{ width: `${(remainingGap / Math.max(1, originalGap)) * 100}%`, background: C.red, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontSize: 7.5, fontWeight: 800, color: "#fff" }}>{remainingGap}</span>
+          <span style={{ fontSize: 12, fontWeight: 800, color: "#fff" }}>{remainingGap}</span>
         </div>
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 5, fontSize: 8.5 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 5, fontSize: 12 }}>
         {communities.map(c => (
           <span key={c.value} style={{ color: VALUE_COLOR[c.value] ?? C.cyan }}>● {c.value} {distributed > 0 ? Math.round((c.carried / distributed) * 100) : 0}%</span>
         ))}
         <span style={{ color: C.red }}>● remaining {originalGap > 0 ? Math.round((remainingGap / originalGap) * 100) : 0}%</span>
       </div>
 
-      <div style={{ textAlign: "center", fontSize: 11, color: C.borderSoft, margin: "5px 0 2px" }}>↓</div>
-      <div style={{ textAlign: "center", fontSize: 10 }}>
+      <div style={{ textAlign: "center", fontSize: 13, color: C.borderSoft, margin: "5px 0 2px" }}>↓</div>
+      <div style={{ textAlign: "center", fontSize: 12 }}>
         <b style={{ color: C.green }}>{distributed} carried</b> <span style={{ color: C.borderSoft }}>·</span> <b style={{ color: remainingGap > 0 ? C.red : C.green }}>{remainingGap} remaining</b>
       </div>
-      <div style={{ textAlign: "center", fontSize: 11, color: C.borderSoft, margin: "2px 0" }}>↓</div>
+      <div style={{ textAlign: "center", fontSize: 13, color: C.borderSoft, margin: "2px 0" }}>↓</div>
 
       {/* recovery track (verified Wellbeing endpoint) */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 3, flexWrap: "wrap" }}>
         {WELLBEING_STATES.map((s, i) => (
           <span key={s} style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
-            <span style={{ fontSize: 8, fontWeight: 700, color: STATE_COLOR[s], border: `1px solid ${STATE_COLOR[s]}${s === projectedEnd ? "" : "66"}`, background: s === projectedEnd ? `${STATE_COLOR[s]}22` : "transparent", borderRadius: 999, padding: "2px 7px" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: STATE_COLOR[s], border: `1px solid ${STATE_COLOR[s]}${s === projectedEnd ? "" : "66"}`, background: s === projectedEnd ? `${STATE_COLOR[s]}22` : "transparent", borderRadius: 999, padding: "2px 7px" }}>
               {s}{s === projectedEnd ? " ◀" : ""}
             </span>
-            {i < WELLBEING_STATES.length - 1 && <span style={{ fontSize: 9, color: C.borderSoft }}>→</span>}
+            {i < WELLBEING_STATES.length - 1 && <span style={{ fontSize: 12, color: C.borderSoft }}>→</span>}
           </span>
         ))}
       </div>
-      <div style={{ fontSize: 8.5, color: C.borderSoft, marginTop: 5 }}>
+      <div style={{ fontSize: 12, color: C.borderSoft, marginTop: 5 }}>
         helpers carried the burden · click a value to find it across the wider globe network
       </div>
     </div>

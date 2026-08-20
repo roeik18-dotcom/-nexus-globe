@@ -487,7 +487,7 @@ export default function WorldView({
   function inlChip(label: string, color: string) {
     return (
       <span key={label} style={{
-        display: "inline-block", fontSize: 8, fontWeight: 600,
+        display: "inline-block", fontSize: 12, fontWeight: 600,
         padding: "2px 6px", borderRadius: 3, marginRight: 4, marginBottom: 3,
         background: `${color}18`, color, border: `1px solid ${color}30`,
         letterSpacing: "0.4px", textTransform: "uppercase" as const,
@@ -497,14 +497,14 @@ export default function WorldView({
   function inlRow(label: string, value: string, color = "#2a5a8a") {
     return (
       <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 6, marginBottom: 4 }}>
-        <span style={{ fontSize: 9.5, color: "#1a3550", flexShrink: 0 }}>{label}</span>
-        <span style={{ fontSize: 9.5, color, textAlign: "right" as const, fontWeight: 500 }}>{value}</span>
+        <span style={{ fontSize: 12, color: "#1a3550", flexShrink: 0 }}>{label}</span>
+        <span style={{ fontSize: 12, color, textAlign: "right" as const, fontWeight: 500 }}>{value}</span>
       </div>
     );
   }
   function inlDesc(text: string, color: string) {
     return (
-      <p style={{ fontSize: 10, color: `${color}bb`, lineHeight: 1.55, margin: "8px 0 10px", fontStyle: "italic" as const }}>
+      <p style={{ fontSize: 12, color: `${color}bb`, lineHeight: 1.55, margin: "8px 0 10px", fontStyle: "italic" as const }}>
         {text.length > 180 ? text.slice(0, 178) + "…" : text}
       </p>
     );
@@ -543,7 +543,7 @@ export default function WorldView({
             {inlRow("Evidence grade", m.evidenceGrade, "#A371F7")}
           </div>
           {m.context.actor && (
-            <div style={{ marginTop: 8, fontSize: 9, color: "#1a3550" }}>
+            <div style={{ marginTop: 8, fontSize: 12, color: "#1a3550" }}>
               Actor · <span style={{ color: "#3a5a80" }}>{m.context.actor.type}</span>
             </div>
           )}
@@ -573,7 +573,7 @@ export default function WorldView({
           {gDesc && inlDesc(gDesc, inspColor)}
           {gVals.length > 0 && (
             <div style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 9, color: "#1a3550", marginBottom: 4 }}>Required values</div>
+              <div style={{ fontSize: 12, color: "#1a3550", marginBottom: 4 }}>Required values</div>
               <div>
                 {gVals.map(rv => {
                   const v = valueById.get(rv.valueId) as unknown as { context?: { label?: string } } | undefined;
@@ -650,13 +650,13 @@ export default function WorldView({
           {cDesc && inlDesc(cDesc, inspColor)}
           {valuesCap.length > 0 && (
             <div style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 9, color: "#1a3550", marginBottom: 4 }}>Addresses values</div>
+              <div style={{ fontSize: 12, color: "#1a3550", marginBottom: 4 }}>Addresses values</div>
               <div>{valuesCap.map(l => inlChip(l, "#22D3EE"))}</div>
             </div>
           )}
           {provsCap.length > 0 && (
             <div style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 9, color: "#1a3550", marginBottom: 4 }}>Providers</div>
+              <div style={{ fontSize: 12, color: "#1a3550", marginBottom: 4 }}>Providers</div>
               <div>{provsCap.map(l => inlChip(l, "#34D399"))}</div>
             </div>
           )}
@@ -690,7 +690,7 @@ export default function WorldView({
           </div>
           {pDesc && inlDesc(pDesc, inspColor)}
           {pWeb && (
-            <div style={{ marginBottom: 10, fontSize: 9.5, color: "#22D3EE", wordBreak: "break-all" as const }}>
+            <div style={{ marginBottom: 10, fontSize: 12, color: "#22D3EE", wordBreak: "break-all" as const }}>
               {pWeb.startsWith("http") ? (
                 <a href={pWeb} target="_blank" rel="noopener noreferrer" style={{ color: "#22D3EE" }}>{pWeb}</a>
               ) : pWeb}
@@ -698,7 +698,7 @@ export default function WorldView({
           )}
           {capsProv.length > 0 && (
             <div style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 9, color: "#1a3550", marginBottom: 4 }}>Capabilities delivered</div>
+              <div style={{ fontSize: 12, color: "#1a3550", marginBottom: 4 }}>Capabilities delivered</div>
               <div>{capsProv.map(l => inlChip(l, "#FFB84D"))}</div>
             </div>
           )}
@@ -758,7 +758,7 @@ export default function WorldView({
       const tgtNode = graphNodes.find(n => n.id === inspectedEdge.target);
       inspTitle   = `${srcNode?.label ?? inspectedEdge.source} → ${tgtNode?.label ?? inspectedEdge.target}`;
       inspContent = (
-        <div style={{ fontSize: 9.5, color: "#1a3550", lineHeight: 1.6 }}>
+        <div style={{ fontSize: 12, color: "#1a3550", lineHeight: 1.6 }}>
           Structural edge — not a stored relation.
         </div>
       );
@@ -790,7 +790,7 @@ export default function WorldView({
                 background: "rgba(255,107,107,0.10)",
                 border: "1px solid rgba(255,107,107,0.22)",
                 borderRadius: 4, padding: "2px 9px",
-                fontSize: 10, fontWeight: 700, letterSpacing: "1.5px",
+                fontSize: 12, fontWeight: 700, letterSpacing: "1.5px",
                 textTransform: "uppercase" as const, color: "#ff6b6b",
               }}>Potential Map</span>
               <span style={{
@@ -798,7 +798,7 @@ export default function WorldView({
                 background: "rgba(52,211,153,0.10)",
                 border: "1px solid rgba(52,211,153,0.25)",
                 borderRadius: 4, padding: "2px 9px",
-                fontSize: 10, fontWeight: 700, letterSpacing: "1.5px",
+                fontSize: 12, fontWeight: 700, letterSpacing: "1.5px",
                 textTransform: "uppercase" as const, color: "#34D399",
               }} title={`${missions.length} Missions · ${gaps.length} Gaps · ${values.length} Values · ${capabilities.length} Capabilities · ${providers.length} Providers`}>Live · {missions.length}M · {gaps.length}G · {values.length}V · {capabilities.length}C · {providers.length}P</span>
               <span style={{
@@ -806,14 +806,14 @@ export default function WorldView({
                 background: "rgba(164,113,247,0.10)",
                 border: "1px solid rgba(164,113,247,0.22)",
                 borderRadius: 4, padding: "2px 9px",
-                fontSize: 10, fontWeight: 700, letterSpacing: "1.5px",
+                fontSize: 12, fontWeight: 700, letterSpacing: "1.5px",
                 textTransform: "uppercase" as const, color: "#A371F7",
               }}>Live PUDM Cascade</span>
             </div>
             <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.3px", color: "#e0f0ff", marginBottom: 6 }}>
               Living World
             </h1>
-            <p style={{ fontSize: 12.5, color: "#3a5a78", maxWidth: 500, lineHeight: 1.65 }}>
+            <p style={{ fontSize: 13, color: "#3a5a78", maxWidth: 500, lineHeight: 1.65 }}>
               Potential layer (dashed) shows the architecture&apos;s design space.
               Cascade layer (solid) animates the full Value → Capability → Provider chain for a real mission.
             </p>
@@ -826,7 +826,7 @@ export default function WorldView({
 
         {/* Mission selector */}
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 8 }}>
             Select Mission — cascade replays on each click
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -837,7 +837,7 @@ export default function WorldView({
                   key={m.id}
                   onClick={() => startCascade(m.id)}
                   style={{
-                    fontSize: 11, padding: "5px 12px", borderRadius: 4,
+                    fontSize: 13, padding: "5px 12px", borderRadius: 4,
                     cursor: "pointer", fontWeight: isActive ? 700 : 400,
                     background: isActive ? "#A371F7" : "transparent",
                     color: isActive ? "#fff" : "#2a4a6a",
@@ -854,7 +854,7 @@ export default function WorldView({
               onClick={() => startCascade(selectedMissionId)}
               title="Replay the Mission → Gap → Value → Capability → Provider cascade for the current mission"
               style={{
-                fontSize: 11, padding: "5px 12px", borderRadius: 4, cursor: "pointer",
+                fontSize: 13, padding: "5px 12px", borderRadius: 4, cursor: "pointer",
                 fontWeight: 600, background: "transparent", color: "#22D3EE",
                 border: "1px solid rgba(34,211,238,0.4)",
                 fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
@@ -874,7 +874,7 @@ export default function WorldView({
 
         {/* Semantic Level Selector */}
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 6 }}>
             Semantic Level
           </div>
           <div style={{ display: "flex", gap: 4 }}>
@@ -887,7 +887,7 @@ export default function WorldView({
                   onClick={() => { preserveZoomRef.current = true; setSemanticLevel(lvl); }}
                   title={`L${lvl}: ${labels[lvl]}`}
                   style={{
-                    flex: 1, fontSize: 8, padding: "4px 2px", borderRadius: 3, cursor: "pointer",
+                    flex: 1, fontSize: 12, padding: "4px 2px", borderRadius: 3, cursor: "pointer",
                     fontWeight: isActive ? 700 : 400,
                     background: isActive ? "rgba(34,211,238,0.18)" : "transparent",
                     color: isActive ? "#22D3EE" : "#2a4a6a",
@@ -899,7 +899,7 @@ export default function WorldView({
                 >
                   L{lvl}
                   <br />
-                  <span style={{ fontSize: 7, opacity: 0.7 }}>{labels[lvl]}</span>
+                  <span style={{ fontSize: 12, opacity: 0.7 }}>{labels[lvl]}</span>
                 </button>
               );
             })}
@@ -911,17 +911,17 @@ export default function WorldView({
           background: "rgba(164,113,247,0.05)",
           border: "1px solid rgba(164,113,247,0.15)",
           borderRadius: 5, padding: "9px 14px", marginBottom: viewMode === "contextual" && activeCapIds.size === 0 ? 8 : 14,
-          fontSize: 11, color: "#6a4a8a", lineHeight: 1.6,
+          fontSize: 13, color: "#6a4a8a", lineHeight: 1.6,
         }}>
           <strong style={{ color: "#A371F7" }}>Live Reference Cascade</strong> — repository-backed, not observed flow.
           &nbsp;·&nbsp;
           {viewMode === "contextual" ? (
             <>Showing <strong style={{ color: "#A371F7" }}>Contextual</strong> chain via{" "}
-            <code style={{ fontSize: 10, color: "#7a5aaa", background: "rgba(164,113,247,0.1)", padding: "1px 4px", borderRadius: 2 }}>required_for</code>
+            <code style={{ fontSize: 12, color: "#7a5aaa", background: "rgba(164,113,247,0.1)", padding: "1px 4px", borderRadius: 2 }}>required_for</code>
             {" "}— what is required for this specific mission.</>
           ) : (
             <>Showing <strong style={{ color: "#FFB84D" }}>Explore Taxonomy</strong> chain via{" "}
-            <code style={{ fontSize: 10, color: "#9a7030", background: "rgba(255,184,77,0.08)", padding: "1px 4px", borderRadius: 2 }}>can_address</code>
+            <code style={{ fontSize: 12, color: "#9a7030", background: "rgba(255,184,77,0.08)", padding: "1px 4px", borderRadius: 2 }}>can_address</code>
             {" "}— what can address these values in general.</>
           )}
         </div>
@@ -932,7 +932,7 @@ export default function WorldView({
             background: "rgba(248,113,113,0.05)",
             border: "1px solid rgba(248,113,113,0.2)",
             borderRadius: 5, padding: "9px 14px", marginBottom: 14,
-            fontSize: 11, color: "#7a3030", lineHeight: 1.6,
+            fontSize: 13, color: "#7a3030", lineHeight: 1.6,
           }}>
             <strong style={{ color: "#F87171" }}>No contextual qualification exists for this mission</strong>
             {" "}— switch to <strong>Explore Taxonomy</strong> to see general capability coverage.
@@ -944,7 +944,7 @@ export default function WorldView({
           background: "rgba(255,184,77,0.06)",
           border: "1px solid rgba(255,184,77,0.18)",
           borderRadius: 5, padding: "9px 14px", marginBottom: 28,
-          fontSize: 11.5, color: "#9a7030", lineHeight: 1.6,
+          fontSize: 13, color: "#9a7030", lineHeight: 1.6,
         }}>
           <strong style={{ color: "#FFB84D" }}>Potential Layer</strong> — dashed lines show the architecture&apos;s full design space.
           &nbsp;·&nbsp;
@@ -977,17 +977,17 @@ export default function WorldView({
               border: "1px solid rgba(164,113,247,0.2)",
               borderRadius: 6, padding: "12px 14px",
             }}>
-              <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#5a3a90", marginBottom: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#5a3a90", marginBottom: 8 }}>
                 Mission
               </div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#c0a0ff", lineHeight: 1.4, marginBottom: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#c0a0ff", lineHeight: 1.4, marginBottom: 4 }}>
                 {selectedMission ? missionLabel(selectedMission) : "—"}
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
-                <div style={{ fontSize: 9, color: "#7a5aaa", fontStyle: "italic" }}>
+                <div style={{ fontSize: 12, color: "#7a5aaa", fontStyle: "italic" }}>
                   {missionStage}
                 </div>
-                <div style={{ fontSize: 9, fontWeight: 700, color: "#A371F7", fontVariantNumeric: "tabular-nums" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#A371F7", fontVariantNumeric: "tabular-nums" }}>
                   {cascadeStep >= 3 ? `${coveragePct}%` : "—"}
                 </div>
               </div>
@@ -999,7 +999,7 @@ export default function WorldView({
                   transition: "width 0.5s ease",
                 }} />
               </div>
-              <div style={{ fontSize: 8, color: "#4a2a7a", marginTop: 5, fontFamily: "var(--font-geist-mono), monospace" }}>
+              <div style={{ fontSize: 12, color: "#4a2a7a", marginTop: 5, fontFamily: "var(--font-geist-mono), monospace" }}>
                 {cascadeStep < 4
                   ? `Step ${cascadeStep}/4 · ${STAGE_NAMES[cascadeStep]}`
                   : <span style={{ color: "#34D399" }}>Chain complete</span>
@@ -1013,7 +1013,7 @@ export default function WorldView({
               border: "1px solid #081828",
               borderRadius: 6, padding: "12px 14px",
             }}>
-              <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
                 Primary Blocker
               </div>
               <div style={{ display: "flex", flexDirection: "column" as const, gap: 10 }}>
@@ -1021,10 +1021,10 @@ export default function WorldView({
                   <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                     <div style={{ width: 6, height: 6, borderRadius: "50%", background: VALUE_COLOR[dominantVal.id], marginTop: 3, flexShrink: 0 }} />
                     <div>
-                      <div style={{ fontSize: 9.5, fontWeight: 600, color: VALUE_COLOR[dominantVal.id], marginBottom: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: VALUE_COLOR[dominantVal.id], marginBottom: 1 }}>
                         Dominant value
                       </div>
-                      <div style={{ fontSize: 9, color: "#1a4a6a", lineHeight: 1.45 }}>
+                      <div style={{ fontSize: 12, color: "#1a4a6a", lineHeight: 1.45 }}>
                         <strong style={{ color: "#3a6a9a" }}>{dominantVal.label}</strong>
                         {" "}in {valGapCount.get(dominantVal.id)}/{selectedMission?.gaps.length ?? 0} gaps
                       </div>
@@ -1035,10 +1035,10 @@ export default function WorldView({
                   <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                     <div style={{ width: 6, height: 6, borderRadius: "50%", background: VALUE_COLOR[topConnectedVal.id], marginTop: 3, flexShrink: 0 }} />
                     <div>
-                      <div style={{ fontSize: 9.5, fontWeight: 600, color: VALUE_COLOR[topConnectedVal.id], marginBottom: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: VALUE_COLOR[topConnectedVal.id], marginBottom: 1 }}>
                         Most connected
                       </div>
-                      <div style={{ fontSize: 9, color: "#1a4a6a", lineHeight: 1.45 }}>
+                      <div style={{ fontSize: 12, color: "#1a4a6a", lineHeight: 1.45 }}>
                         <strong style={{ color: "#3a6a9a" }}>{topConnectedVal.label}</strong>
                         {" "}→ {topConnectedVcrCount} capabilities
                       </div>
@@ -1049,10 +1049,10 @@ export default function WorldView({
                   <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                     <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#F87171", marginTop: 3, flexShrink: 0 }} />
                     <div>
-                      <div style={{ fontSize: 9.5, fontWeight: 600, color: "#F87171", marginBottom: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "#F87171", marginBottom: 1 }}>
                         Coverage gap
                       </div>
-                      <div style={{ fontSize: 9, color: "#3a2020", lineHeight: 1.45 }}>
+                      <div style={{ fontSize: 12, color: "#3a2020", lineHeight: 1.45 }}>
                         {uncoveredCapCount} {uncoveredCapCount !== 1 ? "capabilities" : "capability"} with no provider
                       </div>
                     </div>
@@ -1062,17 +1062,17 @@ export default function WorldView({
                   <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                     <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#34D399", marginTop: 3, flexShrink: 0 }} />
                     <div>
-                      <div style={{ fontSize: 9.5, fontWeight: 600, color: "#34D399", marginBottom: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "#34D399", marginBottom: 1 }}>
                         Full coverage
                       </div>
-                      <div style={{ fontSize: 9, color: "#1a4a3a", lineHeight: 1.45 }}>
+                      <div style={{ fontSize: 12, color: "#1a4a3a", lineHeight: 1.45 }}>
                         All {activeCapIds.size} capabilities have providers
                       </div>
                     </div>
                   </div>
                 )}
                 {cascadeStep < 3 && (
-                  <div style={{ fontSize: 9, color: "#0f2030", lineHeight: 1.45 }}>
+                  <div style={{ fontSize: 12, color: "#0f2030", lineHeight: 1.45 }}>
                     Waiting for cascade to reach Capabilities…
                   </div>
                 )}
@@ -1085,7 +1085,7 @@ export default function WorldView({
               border: "1px solid #081828",
               borderRadius: 6, padding: "12px 14px",
             }}>
-              <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
                 Next Action
               </div>
               <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
@@ -1106,15 +1106,15 @@ export default function WorldView({
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
                         <code style={{
-                          fontSize: 8.5, color: action.color,
+                          fontSize: 12, color: action.color,
                           background: `${action.color}0f`,
                           padding: "1px 4px", borderRadius: 2,
                         }}>
                           {action.label}
                         </code>
-                        <span style={{ fontSize: 8.5, color: action.color, opacity: 0.8 }}>{action.status}</span>
+                        <span style={{ fontSize: 12, color: action.color, opacity: 0.8 }}>{action.status}</span>
                       </div>
-                      <div style={{ fontSize: 9, color: "#0f2030", lineHeight: 1.45 }}>{action.note}</div>
+                      <div style={{ fontSize: 12, color: "#0f2030", lineHeight: 1.45 }}>{action.note}</div>
                     </div>
                   </div>
                 ))}
@@ -1127,7 +1127,7 @@ export default function WorldView({
               border: "1px solid #0a1e30",
               borderRadius: 6, padding: "12px 14px",
             }}>
-              <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
                 Live Flow
               </div>
               <div style={{ display: "flex", flexDirection: "column" as const }}>
@@ -1151,7 +1151,7 @@ export default function WorldView({
                           transition: "background 0.3s ease, box-shadow 0.3s ease",
                         }} />
                         <span style={{
-                          fontSize: 10.5, flex: 1,
+                          fontSize: 13, flex: 1,
                           color: isActive ? node.color : "#1a3550",
                           fontWeight: isActive ? 600 : 400,
                           transition: "color 0.3s ease",
@@ -1160,7 +1160,7 @@ export default function WorldView({
                         </span>
                         {node.count !== null && (
                           <span style={{
-                            fontSize: 9.5, fontWeight: 600, fontVariantNumeric: "tabular-nums",
+                            fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums",
                             color: isActive ? node.color : "#0a1e30",
                           }}>
                             {isActive ? node.count : "—"}
@@ -1187,13 +1187,13 @@ export default function WorldView({
               border: "1px solid #081828",
               borderRadius: 6, padding: "12px 14px",
             }}>
-              <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
                 System State
               </div>
               <div style={{ display: "flex", flexDirection: "column" as const, gap: 5 }}>
                 {/* Mode toggle */}
                 <div style={{ marginBottom: 4 }}>
-                  <div style={{ fontSize: 9, color: "#1a3550", marginBottom: 3, letterSpacing: "0.5px", textTransform: "uppercase" as const }}>Mode</div>
+                  <div style={{ fontSize: 12, color: "#1a3550", marginBottom: 3, letterSpacing: "0.5px", textTransform: "uppercase" as const }}>Mode</div>
                   <div style={{ display: "flex", gap: 3 }}>
                     {(["contextual", "taxonomic"] as const).map(mode => {
                       const on     = viewMode === mode;
@@ -1203,7 +1203,7 @@ export default function WorldView({
                           key={mode}
                           onClick={() => { preserveZoomRef.current = true; setViewMode(mode); }}
                           style={{
-                            flex: 1, fontSize: 8, fontWeight: on ? 700 : 400,
+                            flex: 1, fontSize: 12, fontWeight: on ? 700 : 400,
                             padding: "3px 4px", borderRadius: 3, cursor: "pointer",
                             background: on ? `${accent}22` : "transparent",
                             color: on ? accent : "#1a3550",
@@ -1228,8 +1228,8 @@ export default function WorldView({
                     { label: "Evidence",     value: String(evidenceCount),                                         color: "#6E7681" },
                   ] as { label: string; value: string; color: string }[]).map(row => (
                     <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 10, color: "#1a3550" }}>{row.label}</span>
-                      <span style={{ fontSize: 10, fontWeight: 600, color: row.color, fontVariantNumeric: "tabular-nums" }}>
+                      <span style={{ fontSize: 12, color: "#1a3550" }}>{row.label}</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: row.color, fontVariantNumeric: "tabular-nums" }}>
                         {row.value}
                       </span>
                     </div>
@@ -1244,15 +1244,15 @@ export default function WorldView({
               border: "1px solid #071420",
               borderRadius: 6, padding: "12px 14px",
             }}>
-              <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550", marginBottom: 10 }}>
                 Mission Health
               </div>
 
               {/* Health score bar */}
               <div style={{ marginBottom: 10 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                  <span style={{ fontSize: 9, color: "#1a3550" }}>Health score</span>
-                  <span style={{ fontSize: 9, fontWeight: 700, color: missionHealthPct >= 80 ? "#34D399" : missionHealthPct >= 50 ? "#FFB84D" : "#F87171", fontVariantNumeric: "tabular-nums" }}>
+                  <span style={{ fontSize: 12, color: "#1a3550" }}>Health score</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: missionHealthPct >= 80 ? "#34D399" : missionHealthPct >= 50 ? "#FFB84D" : "#F87171", fontVariantNumeric: "tabular-nums" }}>
                     {missionHealthPct}%
                   </span>
                 </div>
@@ -1295,9 +1295,9 @@ export default function WorldView({
                   },
                 ] as { label: string; value: string; color: string }[]).map(row => (
                   <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 9.5, color: "#1a3550" }}>{row.label}</span>
+                    <span style={{ fontSize: 12, color: "#1a3550" }}>{row.label}</span>
                     <span style={{
-                      fontSize: 8, fontWeight: 700, letterSpacing: "0.8px",
+                      fontSize: 12, fontWeight: 700, letterSpacing: "0.8px",
                       color: row.color,
                       fontFamily: "var(--font-geist-mono), monospace",
                     }}>
@@ -1321,10 +1321,10 @@ export default function WorldView({
                   background: "none", border: "none", cursor: "pointer", padding: 0,
                 }}
               >
-                <span style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550" }}>
+                <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#1a3550" }}>
                   Coverage Delta Explorer
                 </span>
-                <span style={{ fontSize: 9, color: explorerOpen ? "#22D3EE" : "#1a3550" }}>
+                <span style={{ fontSize: 12, color: explorerOpen ? "#22D3EE" : "#1a3550" }}>
                   {explorerOpen ? "▲" : "▼"}
                 </span>
               </button>
@@ -1349,10 +1349,10 @@ export default function WorldView({
           marginTop: 48, paddingTop: 16,
           display: "flex", justifyContent: "space-between", flexWrap: "wrap" as const, gap: 8,
         }}>
-          <span style={{ fontSize: 11, color: "#102030", fontFamily: "var(--font-geist-mono), monospace" }}>
+          <span style={{ fontSize: 13, color: "#102030", fontFamily: "var(--font-geist-mono), monospace" }}>
             /world · Potential + Live Layer + PUDM Cascade · {missions.length}M {gaps.length}G {values.length}V {capabilities.length}C {providers.length}P
           </span>
-          <span style={{ fontSize: 11, color: "#0d1e2e" }}>
+          <span style={{ fontSize: 13, color: "#0d1e2e" }}>
             Values: Candidate grade — designed, not validated
           </span>
         </footer>
@@ -1390,7 +1390,7 @@ export default function WorldView({
           {/* Header row */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <span style={{
-              fontSize: 8, fontWeight: 700, letterSpacing: "2.5px",
+              fontSize: 12, fontWeight: 700, letterSpacing: "2.5px",
               textTransform: "uppercase" as const,
               color: `${inspColor}cc`, background: `${inspColor}12`,
               padding: "3px 8px", borderRadius: 3,
@@ -1402,7 +1402,7 @@ export default function WorldView({
               onClick={() => { setInspectedNode(null); setInspectedEdge(null); }}
               aria-label="Close inspector"
               style={{
-                fontSize: 13, lineHeight: 1,
+                fontSize: 15, lineHeight: 1,
                 color: `${inspColor}88`, background: "none",
                 border: "none", cursor: "pointer", padding: "2px 4px",
               }}
@@ -1416,7 +1416,7 @@ export default function WorldView({
 
           {/* Subtitle / domain */}
           {inspSubtitle && (
-            <div style={{ fontSize: 10, color: `${inspColor}66`, marginBottom: 12 }}>
+            <div style={{ fontSize: 12, color: `${inspColor}66`, marginBottom: 12 }}>
               {inspSubtitle}
             </div>
           )}
@@ -1430,13 +1430,13 @@ export default function WorldView({
               background: "rgba(110,118,129,0.1)", border: "1px solid rgba(110,118,129,0.3)",
               borderRadius: 5, padding: "8px 12px", marginBottom: 12,
             }}>
-              <div style={{ fontSize: 10, color: "#6E7681", marginBottom: 6 }}>
+              <div style={{ fontSize: 12, color: "#6E7681", marginBottom: 6 }}>
                 Hidden at current semantic level (L{semanticLevel})
               </div>
               <button
                 onClick={() => { preserveZoomRef.current = true; setSemanticLevel(NODE_MIN_LEVEL[inspectedNode.type] as SemanticLevel); }}
                 style={{
-                  fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 3, cursor: "pointer",
+                  fontSize: 12, fontWeight: 700, padding: "3px 8px", borderRadius: 3, cursor: "pointer",
                   background: "rgba(34,211,238,0.12)", color: "#22D3EE",
                   border: "1px solid rgba(34,211,238,0.3)",
                   fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
@@ -1453,7 +1453,7 @@ export default function WorldView({
           {/* ID footer */}
           <div style={{ marginTop: "auto", paddingTop: 16 }}>
             <div style={{
-              fontSize: 8, fontFamily: "var(--font-geist-mono), monospace",
+              fontSize: 12, fontFamily: "var(--font-geist-mono), monospace",
               color: "#0f2030", wordBreak: "break-all" as const,
             }}>
               {inspectedNode

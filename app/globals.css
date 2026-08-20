@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* PHILOS IS A DARK PRODUCT, UNCONDITIONALLY.
+     These were the create-next-app defaults: a white page with #171717 text,
+     flipped to light text only inside `prefers-color-scheme: dark`. Every
+     PHILOS surface paints its own dark background regardless of the OS
+     setting — so on a machine in LIGHT mode the inherited foreground stayed
+     near-black and any element that did not set its own colour rendered
+     near-black on near-black. Measured at 1.06:1: not low contrast,
+     invisible. It is why "WORKFLOW_STAGE (18)" and whole Hebrew paragraphs
+     on Marketplace were unreadable rather than merely dim. */
+  --background: #0a0e17;
+  --foreground: #f2f6fc;
 }
 
 @theme inline {
@@ -12,15 +21,93 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* No `prefers-color-scheme` override: the product does not have a light
+   theme, and pretending it does is what produced the invisible-text bug. */
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHILOS FOUNDATION — focus, target size, and the reading floor.
+
+   A live sweep of the running product found 58 of 60 sampled focusable
+   elements with NO visible focus change at all: six of seven surfaces
+   returned zero. The product could not be operated by keyboard, and nothing
+   in the component layer was going to fix that one element at a time.
+
+   These rules are global on purpose. A focus ring that each component has to
+   remember is a focus ring that most components forget.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* FOCUS — visible against every PHILOS ground.
+   The browser default is a thin dark outline that disappears entirely on this
+   product's near-black surfaces, so it is replaced rather than relied on. Two
+   rings: a light inner and a dark outer, so the indicator survives on the
+   canvas of the globe as well as on a raised card. */
+:where(a, button, summary, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid #8fc2ff;
+  outline-offset: 2px;
+  border-radius: 3px;
+  box-shadow: 0 0 0 4px rgba(4, 10, 22, 0.85);
+}
+
+/* Keep the ring off pointer users without hiding it from keyboard users —
+   :focus-visible already does this; this only removes the UA fallback ring. */
+:where(a, button, summary, input, select, textarea, [tabindex]):focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* TARGET SIZE — 32×32 minimum hit area, without inflating the visible mark.
+
+   `min-block-size` alone did nothing here: an `<a>` is inline by default and
+   an inline box ignores min-height entirely, so the first version of this
+   rule measured as applied and changed nothing — nav links stayed 28px tall.
+   The control has to establish a box before a minimum can bind to it. */
+:where(button, a[href], summary, input[type="checkbox"], input[type="radio"]) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 32px;
+}
+
+/* A checkbox glyph is ~13px wide and must stay that size visually — the
+   requirement is a 32px HIT AREA, not a 32px checkbox. Setting both minimums
+   letterboxes the small glyph inside a full-size target, which is exactly the
+   distinction "hit area may exceed visible icon size" asks for. */
+:where(input[type="checkbox"], input[type="radio"]) {
+  min-inline-size: 32px;
+  min-block-size: 32px;
+}
+
+/* A native select renders at 31px on this platform — one pixel short of the
+   floor, and not something a component author would ever notice. */
+:where(select) {
+  min-block-size: 32px;
+}
+
+/* A control that is genuinely a text link inside a running sentence should
+   not become a 32px box mid-line; it gets its target from padding instead.
+   Marked explicitly rather than guessed at from context. */
+:where(.inline-target), :where(p) a[href] {
+  display: inline;
+  min-block-size: auto;
+  padding-block: 4px;
+}
+
+/* Full-width rows — disclosure summaries and list links — should fill their
+   line rather than centre a short label in the middle of it. */
+:where(summary), :where(a[href]):has(> *) {
+  justify-content: flex-start;
+}
+
+/* Respect the OS setting. PHILOS has a rotating globe and animated arcs. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

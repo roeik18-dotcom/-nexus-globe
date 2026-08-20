@@ -226,7 +226,7 @@ export default function NoaOpmGraph({ opm, agents }: { opm: Opm; agents: OpmAgen
   return (
     <div style={{ background: "radial-gradient(circle at 50% 0%, #07182b 0%, #030f1e 80%)", border: `1px solid ${C.border}`, borderRadius: 10, padding: "8px 6px" }}>
       {/* legend */}
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 8, color: C.borderSoft, padding: "0 6px 6px" }}>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 12, color: C.borderSoft, padding: "0 6px 6px" }}>
         <span>▭ object</span><span>◯ process</span><span>⬭ state</span><span style={{ color: C.green }}>● agent</span><span style={{ color: C.green }}>c consent</span>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }} role="img" aria-label="OPM graph view of the verified causal graph">

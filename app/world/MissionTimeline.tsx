@@ -67,7 +67,7 @@ export default function MissionTimeline({ mission }: { mission: MissionLike }) {
 
   return (
     <div style={{ marginBottom: 14 }}>
-      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#1a3550", marginBottom: 10 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#1a3550", marginBottom: 10 }}>
         Living Timeline · Start → Today → {targetIsForecast ? "Forecast" : "Target"}
       </div>
       <div style={{ position: "relative", height: 44, margin: "0 8px" }}>
@@ -84,7 +84,7 @@ export default function MissionTimeline({ mission }: { mission: MissionLike }) {
         {marker(pct(now), C.now, "Today", fmt(now), "bottom")}
         {marker(pct(target), C.target, targetIsForecast ? "Forecast" : "Target", fmt(target), "top")}
       </div>
-      <div style={{ fontSize: 9, color: "#1a3550", margin: "2px 8px 0", display: "flex", gap: 14, flexWrap: "wrap" }}>
+      <div style={{ fontSize: 12, color: "#1a3550", margin: "2px 8px 0", display: "flex", gap: 14, flexWrap: "wrap" }}>
         <span><i style={{ background: C.ev, ...dot }} />{evidence.length} evidence observation{evidence.length === 1 ? "" : "s"}</span>
         {targetIsForecast && <span><i style={{ background: C.target, ...dot }} />forecast from “{mission.state?.horizon}” horizon (illustrative)</span>}
       </div>
@@ -98,7 +98,7 @@ function marker(left: string, color: string, label: string, date: string, side: 
   return (
     <>
       <div style={{ position: "absolute", top: 15, left, width: 3, height: 12, marginLeft: -1.5, background: color, borderRadius: 2 }} />
-      <div style={{ position: "absolute", left, transform: "translateX(-50%)", [side === "top" ? "top" : "bottom"]: side === "top" ? -2 : -2, whiteSpace: "nowrap", fontSize: 9, color, fontWeight: 600 }}>
+      <div style={{ position: "absolute", left, transform: "translateX(-50%)", [side === "top" ? "top" : "bottom"]: side === "top" ? -2 : -2, whiteSpace: "nowrap", fontSize: 12, color, fontWeight: 600 }}>
         {label}<span style={{ color: "#1a3550", fontWeight: 400 }}> · {date}</span>
       </div>
     </>

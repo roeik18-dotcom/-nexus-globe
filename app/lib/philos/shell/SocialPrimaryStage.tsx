@@ -410,5 +410,5 @@ const S: Record<string, React.CSSProperties> = {
   representation: { minWidth: 0 },
 
   audit: { background: "rgba(0,0,0,0.26)", opacity: 0.72, borderRadius: RADIUS.md, padding: "6px 12px" },
-  auditSummary: { cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#5a76a3", padding: "3px 0" },
+  auditSummary: { cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#6c86b5", padding: "3px 0" },
 };

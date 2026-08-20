@@ -183,10 +183,10 @@ function PhilosOrientation({ selected }: { selected: FoundContext }) {
         )}
       </div>
 
-      <div style={{ marginTop: 10, fontSize: 11, color: "#8fa3c9", lineHeight: 1.7 }}>
-        <span style={{ color: "#5a76a3" }}>אדם מול עצמו · העולם · הסיטואציה — </span>
+      <div style={{ marginTop: 10, fontSize: 13, color: "#8fa3c9", lineHeight: 1.7 }}>
+        <span style={{ color: "#6c86b5" }}>אדם מול עצמו · העולם · הסיטואציה — </span>
         עדיין לא ממופה: אין שדה במודל הנוכחי (Observation/CellState) שמייצג את שלושת העדשות הללו.
-        <span style={{ color: "#5a76a3" }}> ״היקף״ (Frame: אישי/יחסי/מערכתי) הוא ציר אחר — </span>
+        <span style={{ color: "#6c86b5" }}> ״היקף״ (Frame: אישי/יחסי/מערכתי) הוא ציר אחר — </span>
         מגדיר את היקף המצב הנמדד, לא את זווית ההתבוננות עליו. אין להניח זהות בין השניים.
       </div>
     </div>
@@ -198,10 +198,10 @@ function PhilosOrientation({ selected }: { selected: FoundContext }) {
 function Chip({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 100 }}>
-      <span style={{ fontSize: 9, letterSpacing: 1, color: "#5a76a3", textTransform: "uppercase" }}>{label}</span>
+      <span style={{ fontSize: 12, letterSpacing: 1, color: "#6c86b5", textTransform: "uppercase" }}>{label}</span>
       <span
         style={{
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: 600,
           color: color ?? "#dbe6f6",
           display: "inline-flex",
@@ -228,7 +228,7 @@ function ActionBar({ actions }: { actions: ContextAction[] }) {
 
 function ActionPill({ action }: { action: ContextAction }) {
   const base = {
-    fontSize: 11,
+    fontSize: 13,
     padding: "6px 12px",
     borderRadius: 20,
     border: "1px solid",
@@ -278,7 +278,7 @@ function SelectedContextHero({ selected }: { selected: SelectedContext }) {
     borderRadius: 8,
     maxWidth: 900,
   } as const;
-  const kicker = { fontSize: 10, letterSpacing: 2, color: "#5aa6ff", marginBottom: 8 } as const;
+  const kicker = { fontSize: 12, letterSpacing: 2, color: "#5aa6ff", marginBottom: 8 } as const;
 
   if (selected.status === "unknown" || selected.status === "not_found") {
     const src =
@@ -296,7 +296,7 @@ function SelectedContextHero({ selected }: { selected: SelectedContext }) {
     return (
       <div style={{ ...shell, borderColor: "#5a4a2a" }}>
         <div style={kicker}>SELECTED SYSTEM CONTEXT</div>
-        <div style={{ fontSize: 13 }}>
+        <div style={{ fontSize: 15 }}>
           {src} —{" "}
           {selected.status === "unknown"
             ? "not a recognized identifier shape. UNKNOWN."
@@ -321,7 +321,7 @@ function SelectedContextHero({ selected }: { selected: SelectedContext }) {
 
   return (
     <div style={{ ...shell, borderLeft: `3px solid ${claimedColor}` }}>
-      <div dir="rtl" style={{ textAlign: "right", fontSize: 10, letterSpacing: 1, color: "#5aa6ff" }}>
+      <div dir="rtl" style={{ textAlign: "right", fontSize: 12, letterSpacing: 1, color: "#5aa6ff" }}>
         ההקשר הנבחר
       </div>
 
@@ -341,12 +341,12 @@ function SelectedContextHero({ selected }: { selected: SelectedContext }) {
       <NeedActionLine selected={selected} />
 
       <details style={{ marginTop: 16 }}>
-        <summary style={{ cursor: "pointer", fontSize: 10, letterSpacing: 1.5, color: "#5a76a3" }}>
+        <summary style={{ cursor: "pointer", fontSize: 12, letterSpacing: 1.5, color: "#6c86b5" }}>
           תצוגה מתקדמת — Canon / SystemContextRef / STATE+TIME גולמי (diagnostic detail)
         </summary>
         <div style={{ marginTop: 10 }}>
           <div style={kicker}>SELECTED SYSTEM CONTEXT</div>
-          <div style={{ fontSize: 11, color: "#7f97c2" }}>
+          <div style={{ fontSize: 13, color: "#7f97c2" }}>
             {selected.system === "canon" ? "canon Observation" : "legacy event"} · {selected.matched_id}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 20, marginTop: 14 }}>
@@ -370,16 +370,16 @@ function SelectedContextHero({ selected }: { selected: SelectedContext }) {
 function ExplanationRow({ q, a }: { q: string; a: string }) {
   return (
     <div>
-      <div style={{ fontSize: 10, letterSpacing: 0.5, color: "#5a76a3" }}>{q}</div>
-      <div style={{ fontSize: 12, color: "#cfe0f5", marginTop: 3, lineHeight: 1.4 }}>{a}</div>
+      <div style={{ fontSize: 12, letterSpacing: 0.5, color: "#6c86b5" }}>{q}</div>
+      <div style={{ fontSize: 13, color: "#cfe0f5", marginTop: 3, lineHeight: 1.4 }}>{a}</div>
     </div>
   );
 }
 
 type FoundContext = Extract<SelectedContext, { status: "found" }>;
 
-const sectionHead = { fontSize: 10, letterSpacing: 1.5, color: "#5aa6ff", marginTop: 18, marginBottom: 8 } as const;
-const emptyState = { fontSize: 12, color: "#7b8ca6", fontStyle: "italic" as const };
+const sectionHead = { fontSize: 12, letterSpacing: 1.5, color: "#5aa6ff", marginTop: 18, marginBottom: 8 } as const;
+const emptyState = { fontSize: 13, color: "#7b8ca6", fontStyle: "italic" as const };
 
 /**
  * PRIMARY VISUAL — a real spatial STATE(t0) → FORCE/EVENT → Δ → STATE(t1) →
@@ -402,13 +402,13 @@ function StateTransitionFlow({ selected }: { selected: FoundContext }) {
   const Box = ({ x, label, sub, known, color }: { x: number; label: string; sub: string; known: boolean; color: string }) => (
     <g>
       <rect x={x} y={y} width={boxW} height={boxH} rx={8} fill={known ? `${color}18` : "none"} stroke={color} strokeWidth={known ? 2 : 1.5} strokeDasharray={known ? undefined : "4 4"} />
-      <text x={x + boxW / 2} y={y + 24} fill={known ? "#f2f6fc" : "#5a76a3"} fontSize={11} fontWeight={700} textAnchor="middle">{label}</text>
-      <text x={x + boxW / 2} y={y + 44} fill={known ? "#9fb0d0" : "#5a76a3"} fontSize={10} textAnchor="middle">{sub}</text>
+      <text x={x + boxW / 2} y={y + 24} fill={known ? "#f2f6fc" : "#6c86b5"} fontSize={11} fontWeight={700} textAnchor="middle">{label}</text>
+      <text x={x + boxW / 2} y={y + 44} fill={known ? "#9fb0d0" : "#6c86b5"} fontSize={10} textAnchor="middle">{sub}</text>
     </g>
   );
   const Arrow = ({ x1, x2, label, open }: { x1: number; x2: number; label?: string; open: boolean }) => (
     <g>
-      <line x1={x1} y1={y + boxH / 2} x2={x2} y2={y + boxH / 2} stroke={open ? "#5a76a3" : "#1e2740"} strokeWidth={2} strokeDasharray={open ? undefined : "5 5"} markerEnd="url(#dfArrow)" />
+      <line x1={x1} y1={y + boxH / 2} x2={x2} y2={y + boxH / 2} stroke={open ? "#6c86b5" : "#1e2740"} strokeWidth={2} strokeDasharray={open ? undefined : "5 5"} markerEnd="url(#dfArrow)" />
       {label ? <text x={(x1 + x2) / 2} y={y + boxH / 2 - 8} fill="#7b8ca6" fontSize={9} textAnchor="middle">{label}</text> : null}
     </g>
   );
@@ -422,7 +422,7 @@ function StateTransitionFlow({ selected }: { selected: FoundContext }) {
       <div style={{ ...sectionHead, textAlign: "right" }}>ציר זמן — מצב ← כוח/אירוע ← מעבר ← מצב ← פעולה ← השפעה</div>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxHeight: 170 }} role="img" aria-label="ציר מעבר מצב">
         <defs>
-          <marker id="dfArrow" markerWidth={8} markerHeight={8} refX={6} refY={4} orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#5a76a3" /></marker>
+          <marker id="dfArrow" markerWidth={8} markerHeight={8} refX={6} refY={4} orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6c86b5" /></marker>
         </defs>
         <Box x={xs.t0} label="מצב קודם (t0)" sub={hasPrior ? `level ${prior!.level}` : "לא ידוע"} known={hasPrior} color="#7f97c2" />
         <Arrow x1={xs.t0 + boxW} x2={xs.force} open={hasPrior} label={selected.relationships && selected.relationships.length > 0 ? selected.relationships[0].relation_label : undefined} />
@@ -432,9 +432,9 @@ function StateTransitionFlow({ selected }: { selected: FoundContext }) {
         <Arrow x1={xs.t1 + boxW} x2={xs.action} open={admissible} />
         <Box x={xs.action} label="פעולה" sub={admissible ? "כשיר" : "חסום"} known={admissible} color="#f2635c" />
         <Arrow x1={xs.action + boxW} x2={xs.effect} open={false} />
-        <Box x={xs.effect} label="השפעה / למידה" sub="לא ידוע" known={false} color="#5a76a3" />
+        <Box x={xs.effect} label="השפעה / למידה" sub="לא ידוע" known={false} color="#6c86b5" />
       </svg>
-      <div style={{ fontSize: 10, color: "#5a76a3", marginTop: 4 }}>
+      <div style={{ fontSize: 12, color: "#6c86b5", marginTop: 4 }}>
         קרונולוגיה אינה סיבתיות — "כוח/אירוע" מוצג רק כאשר קיים קשר אמיתי (relationships) או Δ אמיתי; "פעולה"/"השפעה" מוצגים כלא ידוע כל עוד אין מנגנון ממומש.
       </div>
     </div>
@@ -491,10 +491,10 @@ function ActionEffectLearningFlow({ selected }: { selected: FoundContext }) {
     background: known ? `${color}14` : "transparent",
     opacity: known ? 1 : 0.65,
   } as const);
-  const stageLabel = { fontSize: 9, letterSpacing: 1, color: "#5a76a3" } as const;
-  const stageValue = { fontSize: 12, color: "#f2f6fc", marginTop: 3 } as const;
-  const stageTime = { fontSize: 9.5, color: "#7b8ca6", marginTop: 3 } as const;
-  const arrow = { color: "#5a76a3", fontSize: 14, padding: "0 2px", flex: "0 0 auto" } as const;
+  const stageLabel = { fontSize: 12, letterSpacing: 1, color: "#6c86b5" } as const;
+  const stageValue = { fontSize: 13, color: "#f2f6fc", marginTop: 3 } as const;
+  const stageTime = { fontSize: 12, color: "#7b8ca6", marginTop: 3 } as const;
+  const arrow = { color: "#6c86b5", fontSize: 14, padding: "0 2px", flex: "0 0 auto" } as const;
 
   return (
     <div dir="rtl" style={{ marginTop: 14 }}>
@@ -502,7 +502,7 @@ function ActionEffectLearningFlow({ selected }: { selected: FoundContext }) {
         Action / Effect / Learning — STATE(t0) → ORIENTATION → ACTION → EXPECTED EFFECT → OBSERVED EFFECT → DELTA → LEARNING → STATE(t1)
       </div>
       {actionLifecycle.actions.length > 1 ? (
-        <div style={{ fontSize: 10, color: "#5a76a3", marginBottom: 6 }}>
+        <div style={{ fontSize: 12, color: "#6c86b5", marginBottom: 6 }}>
           {actionLifecycle.actions.length} Actions רשומות לנושא זה — מוצגת האחרונה ({entry.action.action.action_id}).
         </div>
       ) : null}
@@ -546,7 +546,7 @@ function ActionEffectLearningFlow({ selected }: { selected: FoundContext }) {
           </div>
         </div>
         <div style={arrow}>→</div>
-        <div style={stageBox(!!learningRecord, learningRecord?.learning.result.kind === "state_prime" ? "#34d399" : "#5a76a3")}>
+        <div style={stageBox(!!learningRecord, learningRecord?.learning.result.kind === "state_prime" ? "#34d399" : "#6c86b5")}>
           <div style={stageLabel}>LEARNING</div>
           <div style={stageValue}>
             {learningRecord
@@ -573,10 +573,10 @@ function ActionEffectLearningFlow({ selected }: { selected: FoundContext }) {
           </div>
         </div>
       </div>
-      <div style={{ fontSize: 10, color: "#5a76a3", marginTop: 4 }}>
+      <div style={{ fontSize: 12, color: "#6c86b5", marginTop: 4 }}>
         קרונולוגיה אינה סיבתיות — כל שלב מוצג רק כאשר קיים קישור אמיתי (action_ref / effect_ref) במאגר; שלב לא ידוע נשאר "לא ידוע", לעולם לא מומצא.
       </div>
-      <div style={{ fontSize: 10, color: "#fbbf24", marginTop: 3 }}>
+      <div style={{ fontSize: 12, color: "#fbbf24", marginTop: 3 }}>
         גבול פתוח — Effect מאומת מוכיח תוצאת Effect לפי רשומת האימות שלו בלבד; אינו מוכיח Learning ואינו מוכיח State(t+1).
       </div>
     </div>
@@ -620,31 +620,31 @@ function StateAndTime({ selected }: { selected: FoundContext }) {
   return (
     <div>
       <div style={sectionHead}>STATE + TIME</div>
-      <div style={{ fontSize: 11, color: "#7b8ca6", marginBottom: 8 }}>
+      <div style={{ fontSize: 13, color: "#7b8ca6", marginBottom: 8 }}>
         Most recent PRIOR Observation for the same subject — chronological order only, never a causal claim.
       </div>
       <div style={{ display: "flex", alignItems: "stretch", gap: 10, flexWrap: "wrap" }}>
         <div style={box}>
-          <div style={{ fontSize: 9, letterSpacing: 1, color: "#5a76a3" }}>PRIOR · {prior.observed_at}</div>
-          <div style={{ fontSize: 12, marginTop: 4 }}>{prior.label}</div>
+          <div style={{ fontSize: 12, letterSpacing: 1, color: "#6c86b5" }}>PRIOR · {prior.observed_at}</div>
+          <div style={{ fontSize: 13, marginTop: 4 }}>{prior.label}</div>
           {prior.level !== undefined ? (
-            <div style={{ fontSize: 11, color: "#9fb0d0", marginTop: 4 }}>
+            <div style={{ fontSize: 13, color: "#9fb0d0", marginTop: 4 }}>
               level {prior.level} · stability {prior.stability}
             </div>
           ) : null}
         </div>
-        <div style={{ display: "flex", alignItems: "center", color: "#5a76a3", fontSize: 16 }}>→</div>
+        <div style={{ display: "flex", alignItems: "center", color: "#6c86b5", fontSize: 16 }}>→</div>
         <div style={{ ...box, borderColor: "#38bdf6" }}>
-          <div style={{ fontSize: 9, letterSpacing: 1, color: "#38bdf8" }}>CURRENT · {selected.timestamp}</div>
-          <div style={{ fontSize: 12, marginTop: 4 }}>{selected.label}</div>
+          <div style={{ fontSize: 12, letterSpacing: 1, color: "#38bdf8" }}>CURRENT · {selected.timestamp}</div>
+          <div style={{ fontSize: 13, marginTop: 4 }}>{selected.label}</div>
         </div>
       </div>
       {delta && (delta.level !== undefined || delta.stability !== undefined) ? (
-        <div style={{ fontSize: 11, color: "#cfe0f5", marginTop: 8 }}>
+        <div style={{ fontSize: 13, color: "#cfe0f5", marginTop: 8 }}>
           observed change:{" "}
           {delta.level !== undefined ? <>level {delta.level >= 0 ? "+" : ""}{delta.level.toFixed(2)} </> : null}
           {delta.stability !== undefined ? <>· stability {delta.stability >= 0 ? "+" : ""}{delta.stability.toFixed(2)}</> : null}
-          <span style={{ color: "#5a76a3" }}> (plain difference between two real values — not a verified causal effect)</span>
+          <span style={{ color: "#6c86b5" }}> (plain difference between two real values — not a verified causal effect)</span>
         </div>
       ) : null}
     </div>
@@ -666,13 +666,13 @@ function Relationships({ selected }: { selected: FoundContext }) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {rels.map((r, i) => (
-            <div key={`${r.direction}-${r.other_id}-${i}`} style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>
+            <div key={`${r.direction}-${r.other_id}-${i}`} style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ color: r.direction === "incoming" ? "#fbbf24" : "#34d399", fontWeight: 700 }}>
                 {r.direction === "incoming" ? "↙" : "↗"}
               </span>
               <span>{r.relation_label}</span>
               <span style={{ color: "#7f97c2" }}>{r.other_label}</span>
-              <span style={{ color: "#5a76a3", marginLeft: "auto" }}>
+              <span style={{ color: "#6c86b5", marginLeft: "auto" }}>
                 {r.origin ?? "—"} · {r.evidence_level ?? "—"}
               </span>
             </div>
@@ -704,9 +704,9 @@ function NeedActionLine({ selected }: { selected: FoundContext }) {
       : `not admissible — missing ${selected.actionSpace.blockers.join(", ")}`;
 
   return (
-    <div style={{ fontSize: 11, color: "#8fa3c9", marginTop: 12, lineHeight: 1.6 }}>
-      <span style={{ color: "#5a76a3" }}>need: </span>{needText}
-      <span style={{ color: "#5a76a3" }}> · action: </span>{actionText}
+    <div style={{ fontSize: 13, color: "#8fa3c9", marginTop: 12, lineHeight: 1.6 }}>
+      <span style={{ color: "#6c86b5" }}>need: </span>{needText}
+      <span style={{ color: "#6c86b5" }}> · action: </span>{actionText}
     </div>
   );
 }
@@ -727,7 +727,7 @@ function EvidenceTrace({ selected }: { selected: FoundContext }) {
   return (
     <div>
       <div style={sectionHead}>EVIDENCE TRACE</div>
-      <div style={{ fontSize: 12, lineHeight: 1.8 }}>
+      <div style={{ fontSize: 13, lineHeight: 1.8 }}>
         <div>Source Evidence → {selected.system === "canon" ? "canon Observation" : "legacy event"} <b>{selected.matched_id}</b></div>
         <div>→ persisted fact: {selected.persisted_or_derived} ({selected.provenance})</div>
         <div>→ derived projection: {selected.label}</div>
@@ -743,7 +743,7 @@ function EvidenceTrace({ selected }: { selected: FoundContext }) {
           → unknown/unresolved: {unresolvedBits.length > 0 ? unresolvedBits.join(", ") : "nothing outstanding for this record"}
         </div>
       </div>
-      <div style={{ fontSize: 11, color: "#7b8ca6", marginTop: 8, maxWidth: 640 }}>
+      <div style={{ fontSize: 13, color: "#7b8ca6", marginTop: 8, maxWidth: 640 }}>
         Why does it matter: PHILOS does not compute significance or a ranking for this item — canon's own design
         forbids a single combined score (PHILOS-MELTING-POT-CANON.md §21). Shown as recorded, not ranked.
       </div>
@@ -800,10 +800,10 @@ function CanonPanel({ canon, highlightId }: { canon: CanonDynamicsGraph; highlig
 
   return (
     <div style={{ marginTop: 28, paddingTop: 16, borderTop: "1px solid #1e2740" }}>
-      <div style={{ fontSize: 10, letterSpacing: 2, color: "#5a76a3", marginBottom: 6 }}>
+      <div style={{ fontSize: 12, letterSpacing: 2, color: "#6c86b5", marginBottom: 6 }}>
         CANON OBSERVATIONS — TIME/DOMAIN VIEW
       </div>
-      <p style={{ fontSize: 11, opacity: 0.6, margin: "0 0 10px", maxWidth: 900 }}>
+      <p style={{ fontSize: 13, opacity: 0.6, margin: "0 0 10px", maxWidth: 900 }}>
         A separate log from the causal graph above — no edge is drawn between the two systems.
         Every dot is a real, persisted Observation for a normal-mode (REAL/DEMO) subject; click one to select it.
         visible {visibleNodes.length}{hiddenCount > 0 ? ` (${hiddenCount} TEST/PLACEHOLDER/SYSTEM Observation(s) in the store, hidden in normal mode)` : ""} ·
@@ -811,7 +811,7 @@ function CanonPanel({ canon, highlightId }: { canon: CanonDynamicsGraph; highlig
         cognitive {canon.summary.domains.C}
       </p>
       {visibleNodes.length === 0 ? (
-        <div style={{ fontSize: 12, opacity: 0.7 }}>No canon Observations for a normal-mode subject in the store.</div>
+        <div style={{ fontSize: 13, opacity: 0.7 }}>No canon Observations for a normal-mode subject in the store.</div>
       ) : (
         <svg viewBox={`0 0 ${W} ${CANON_H}`} width="100%" role="img" aria-label="Canon Observation timeline">
           {CANON_LANES.map((d) => (
@@ -828,6 +828,14 @@ function CanonPanel({ canon, highlightId }: { canon: CanonDynamicsGraph; highlig
             const href = `/dynamics?ctx=${encodeURIComponent(encodeSystemContextRef({ kind: "canon_observation", canon_event_id: n.canon_event_id }))}`;
             return (
               <a key={n.id} href={href}>
+                {/* HIT AREA, not a bigger dot. The visible mark is r=5 — a
+                    timeline point, and enlarging it would falsify the density
+                    of the plot. This transparent circle gives the link a 32px
+                    target without changing what the reader sees, which is the
+                    "hit area may exceed the visible icon" rule applied in SVG
+                    terms rather than with a CSS box that an SVG anchor ignores
+                    anyway. */}
+                <circle cx={p.x} cy={p.y} r={16} fill="transparent" />
                 <circle
                   cx={p.x}
                   cy={p.y}
@@ -861,15 +869,15 @@ function CanonPanel({ canon, highlightId }: { canon: CanonDynamicsGraph; highlig
 function TimeRangePanel({ timeRange }: { timeRange: TimeRangeSummary }) {
   const cell = { minWidth: 90, textAlign: "center" as const };
   const num = { fontSize: 20, fontWeight: 700, color: "#5b9cf6", fontVariantNumeric: "tabular-nums" as const };
-  const lbl = { fontSize: 9.5, color: "#5a76a3", letterSpacing: 0.5, marginTop: 2 };
+  const lbl = { fontSize: 12, color: "#6c86b5", letterSpacing: 0.5, marginTop: 2 };
   return (
     <div dir="rtl" style={{ display: "flex", gap: 20, alignItems: "center", padding: "10px 16px", background: "#0f1a2e", border: "1px solid #2a3f66", borderRadius: 8, marginBottom: 16, maxWidth: 900 }}>
-      <div style={{ fontSize: 10, letterSpacing: 1, color: "#5aa6ff", minWidth: 70 }}>טווח זמן</div>
+      <div style={{ fontSize: 12, letterSpacing: 1, color: "#5aa6ff", minWidth: 70 }}>טווח זמן</div>
       <div style={cell}><div style={num}>{timeRange.today}</div><div style={lbl}>היום</div></div>
       <div style={cell}><div style={num}>{timeRange.last7}</div><div style={lbl}>7 ימים</div></div>
       <div style={cell}><div style={num}>{timeRange.last30}</div><div style={lbl}>30 יום</div></div>
       <div style={cell}><div style={num}>{timeRange.allTime}</div><div style={lbl}>כל הזמן</div></div>
-      <div style={{ fontSize: 9.5, color: "#5a76a3", marginLeft: "auto" }}>Observations אמיתיים · נכון ל-{timeRange.asOf.slice(0, 16).replace("T", " ")}</div>
+      <div style={{ fontSize: 12, color: "#6c86b5", marginLeft: "auto" }}>Observations אמיתיים · נכון ל-{timeRange.asOf.slice(0, 16).replace("T", " ")}</div>
     </div>
   );
 }
@@ -894,12 +902,12 @@ function CommunityCapitalPanel({ community }: { community: CommunityCapitalConte
   return (
     <div dir="rtl" style={{ padding: "12px 16px", background: "#0f1a2e", border: "1px solid #2a3f66", borderRadius: 8, marginBottom: 16, maxWidth: 900 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-        <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 6, border: `1px solid ${badgeColor}55`, color: badgeColor, fontFamily: "ui-monospace, monospace" }}>{provenance}</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: "#f2f6fc" }}>{group.name} — הון לאורך זמן</span>
+        <span style={{ fontSize: 12, fontWeight: 800, padding: "2px 8px", borderRadius: 6, border: `1px solid ${badgeColor}55`, color: badgeColor, fontFamily: "ui-monospace, monospace" }}>{provenance}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "#f2f6fc" }}>{group.name} — הון לאורך זמן</span>
       </div>
 
       {capital.length === 0 ? (
-        <div style={{ fontSize: 12, color: "#7b8ca6", fontStyle: "italic" }}>אין תנועת כסף רשומה לקהילה זו.</div>
+        <div style={{ fontSize: 13, color: "#7b8ca6", fontStyle: "italic" }}>אין תנועת כסף רשומה לקהילה זו.</div>
       ) : (
         <div style={{ display: "flex", alignItems: "flex-end", gap: 5, height: 70, marginBottom: 10, overflowX: "auto" }}>
           {capital.map((p) => (
@@ -910,7 +918,7 @@ function CommunityCapitalPanel({ community }: { community: CommunityCapitalConte
         </div>
       )}
 
-      <div style={{ fontSize: 10.5, color: "#5a76a3", marginBottom: 8 }}>
+      <div style={{ fontSize: 13, color: "#6c86b5", marginBottom: 8 }}>
         זמין כרגע: ₪{group.budget.available.toLocaleString()} · הושקע: ₪{group.budget.spent.toLocaleString()}
       </div>
 
@@ -918,9 +926,9 @@ function CommunityCapitalPanel({ community }: { community: CommunityCapitalConte
           `member.joined` events only (see `buildMembershipTimeline`
           header — no leave event type exists, so this is honestly
           monotonic, never a fabricated churn curve). */}
-      <div style={{ fontSize: 10.5, color: "#8fa3c9", marginBottom: 4 }}>חברות לאורך זמן · {group.members.length} חברים כיום</div>
+      <div style={{ fontSize: 13, color: "#8fa3c9", marginBottom: 4 }}>חברות לאורך זמן · {group.members.length} חברים כיום</div>
       {membership.length === 0 ? (
-        <div style={{ fontSize: 12, color: "#7b8ca6", fontStyle: "italic", marginBottom: 8 }}>אין אירוע member.joined רשום.</div>
+        <div style={{ fontSize: 13, color: "#7b8ca6", fontStyle: "italic", marginBottom: 8 }}>אין אירוע member.joined רשום.</div>
       ) : (
         <div style={{ display: "flex", alignItems: "flex-end", gap: 5, height: 40, marginBottom: 10, overflowX: "auto" }}>
           {membership.map((p) => (
@@ -937,12 +945,12 @@ function CommunityCapitalPanel({ community }: { community: CommunityCapitalConte
           a community link — canon's Action type carries no community_id
           field), non-zero only where the DEMO marketplace scenario's own
           object graph actually reaches this community. */}
-      <div style={{ fontSize: 10, color: "#5a76a3", marginBottom: 8 }}>
+      <div style={{ fontSize: 12, color: "#6c86b5", marginBottom: 8 }}>
         גשר · Actions מקושרים (ACTION_AFFECTS_COMMUNITY): {bridgeActionCount > 0 ? `${bridgeActionCount} (DEMO)` : "0 — לא ידוע ל-canon Action אמיתי"}
       </div>
 
       {group.allocations.length === 0 ? (
-        <div style={{ fontSize: 12, color: "#7b8ca6", fontStyle: "italic" }}>אין הקצאה/השקעה רשומה.</div>
+        <div style={{ fontSize: 13, color: "#7b8ca6", fontStyle: "italic" }}>אין הקצאה/השקעה רשומה.</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {group.allocations.map((a) => {
@@ -956,9 +964,9 @@ function CommunityCapitalPanel({ community }: { community: CommunityCapitalConte
                 : effects.some((i) => i.rejected)
                   ? "Effect נדחה"
                   : "Effect ממתין";
-            const effectColor = effects.length === 0 ? "#5a76a3" : effects.some((i) => i.verified) ? "#34d399" : effects.some((i) => i.rejected) ? "#f2635c" : "#fbbf24";
+            const effectColor = effects.length === 0 ? "#6c86b5" : effects.some((i) => i.verified) ? "#34d399" : effects.some((i) => i.rejected) ? "#f2635c" : "#fbbf24";
             return (
-              <div key={a.allocation_id} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11.5, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.06)", flexWrap: "wrap" }}>
+              <div key={a.allocation_id} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.06)", flexWrap: "wrap" }}>
                 <span style={{ color: "#dbe6f6" }}>{a.title}</span>
                 <span style={{ color: "#8aa0c8" }}>₪{a.amount.toLocaleString()} · {ALLOC_STATE_LABEL[a.state]}</span>
                 <span style={{ color: effectColor, fontWeight: 600 }}>{effectLabel}</span>
@@ -969,7 +977,7 @@ function CommunityCapitalPanel({ community }: { community: CommunityCapitalConte
       )}
 
       {tensions.length > 0 ? (
-        <div style={{ marginTop: 8, fontSize: 10.5, color: "#f2635c" }}>
+        <div style={{ marginTop: 8, fontSize: 13, color: "#f2635c" }}>
           {tensions.length} Tension פתוח בקהילה זו — {tensions[0].label}
         </div>
       ) : null}
@@ -994,13 +1002,13 @@ function ImpactScope({ selected }: { selected: Extract<SelectedContext, { status
   const lifecycle = selected.actionLifecycle;
   return (
     <div dir="rtl" style={{ display: "flex", gap: 16, flexWrap: "wrap", padding: "10px 16px", background: "#0f1a2e", border: "1px solid #2a3f66", borderRadius: 8, marginBottom: 16, maxWidth: 900 }}>
-      <div style={{ fontSize: 10, letterSpacing: 1, color: "#5aa6ff", minWidth: 90 }}>היקף השפעה</div>
-      <div style={{ fontSize: 12, color: "#dbe6f6" }}>
-        <span style={{ color: "#5a76a3" }}>ההשפעה שלי: </span>
+      <div style={{ fontSize: 12, letterSpacing: 1, color: "#5aa6ff", minWidth: 90 }}>היקף השפעה</div>
+      <div style={{ fontSize: 13, color: "#dbe6f6" }}>
+        <span style={{ color: "#6c86b5" }}>ההשפעה שלי: </span>
         {lifecycle ? `${lifecycle.counts.actions_total} Action(s), ${lifecycle.counts.effect_verified} אומתו` : "לא חושב"}
       </div>
-      <div style={{ fontSize: 12, color: "#7b8ca6", fontStyle: "italic" }}>
-        <span style={{ color: "#5a76a3" }}>השפעה קולקטיבית: </span>
+      <div style={{ fontSize: 13, color: "#7b8ca6", fontStyle: "italic" }}>
+        <span style={{ color: "#6c86b5" }}>השפעה קולקטיבית: </span>
         לא ידוע — Action/Effect קנוני אינם נושאים group_id
       </div>
     </div>
@@ -1295,7 +1303,7 @@ export default function DynamicsView({
               primary flow content. */}
           {today ? (
             <details dir="rtl" style={{ margin: "12px 0 0" }}>
-              <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>
+              <summary style={{ cursor: "pointer", fontSize: 13, letterSpacing: 1, color: "#6c86b5", padding: "4px 0" }}>
                 EXAMPLES / DEMO — Value Domain (Music, hypothesis-only) — לא משפיע על REAL
               </summary>
               <div style={{ marginTop: 8 }}>
@@ -1316,14 +1324,14 @@ export default function DynamicsView({
           AUDIT / DEBUG — גרף סיבתי legacy (כל האירועים, כל הנתיבים) · {view.hud.nodes} nodes / {view.hud.edges} edges
         </summary>
         <div style={{ marginTop: 10 }}>
-      <div dir="rtl" style={{ textAlign: "right", fontSize: 10, letterSpacing: 1, color: "#5a76a3", marginBottom: 4 }}>
+      <div dir="rtl" style={{ textAlign: "right", fontSize: 12, letterSpacing: 1, color: "#6c86b5", marginBottom: 4 }}>
         גרף סיבתי — כוחות פועלים ושינוי לאורך זמן
       </div>
-      <p style={{ fontSize: 11, opacity: 0.65, margin: "0 0 8px", maxWidth: 640 }}>
+      <p style={{ fontSize: 13, opacity: 0.65, margin: "0 0 8px", maxWidth: 640 }}>
         Solid = declared (self_report); dashed = inferred (system_inference). Horizontal position
         is time; vertical position within a lane is layout, not measurement.
       </p>
-      <div style={{ fontSize: 12, marginBottom: 6, opacity: 0.85 }}>
+      <div style={{ fontSize: 13, marginBottom: 6, opacity: 0.85 }}>
         nodes {view.hud.nodes} · edges {view.hud.edges} (explicit {view.hud.explicit_edges} /
         inferred {view.hud.inferred_edges}) · withheld {view.hud.withheld} · unresolved {view.hud.unresolved}
       </div>
@@ -1389,7 +1397,7 @@ export default function DynamicsView({
         })}
       </svg>
 
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12, marginTop: 10 }}>
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 13, marginTop: 10 }}>
         {DOMAIN_ORDER.map((d) => (
           <span key={d} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             <span style={{ width: 10, height: 10, background: DOMAIN_COLOR[d], display: "inline-block", borderRadius: 2 }} />
@@ -1407,16 +1415,16 @@ export default function DynamicsView({
       {/* UNKNOWN / UNVERIFIED — visually separated, never hidden */}
       {view.withheld.text || view.unresolved.length > 0 ? (
         <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #1e2740" }}>
-          <div dir="rtl" style={{ textAlign: "right", fontSize: 10, letterSpacing: 1, color: "#fbbf24", marginBottom: 8 }}>
+          <div dir="rtl" style={{ textAlign: "right", fontSize: 12, letterSpacing: 1, color: "#fbbf24", marginBottom: 8 }}>
             לא ידוע / לא מאומת
           </div>
           {view.withheld.text ? (
-            <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 8 }}>⨯ {view.withheld.text}</div>
+            <div style={{ fontSize: 13, opacity: 0.85, marginBottom: 8 }}>⨯ {view.withheld.text}</div>
           ) : null}
           {view.unresolved.length > 0 ? (
             <>
-              <div style={{ fontSize: 13, marginBottom: 4 }}>Unresolved ({view.unresolved.length})</div>
-              <ul style={{ fontSize: 12, opacity: 0.85, margin: 0, paddingLeft: 18 }}>
+              <div style={{ fontSize: 15, marginBottom: 4 }}>Unresolved ({view.unresolved.length})</div>
+              <ul style={{ fontSize: 13, opacity: 0.85, margin: 0, paddingLeft: 18 }}>
                 {view.unresolved.map((u) => (
                   <li key={`${u.event_id}-${u.reference}`}>{u.text}</li>
                 ))}
@@ -1436,5 +1444,5 @@ export default function DynamicsView({
 /** Shared treatment for the two demoted sections below the timeline. */
 const S_SEC: Record<string, React.CSSProperties> = {
   details: { margin: "0 0 12px", borderTop: "1px solid rgba(90,120,180,0.15)" },
-  summary: { cursor: "pointer", fontSize: 11, fontWeight: 700, letterSpacing: 1, color: "#5a76a3", padding: "10px 0" },
+  summary: { cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: 1, color: "#6c86b5", padding: "10px 0" },
 };

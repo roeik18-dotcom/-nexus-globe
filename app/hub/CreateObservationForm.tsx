@@ -34,7 +34,7 @@ export default function CreateObservationForm() {
         });
       }}
     >
-      <div style={{ fontSize: 11, letterSpacing: 0.5, color: "#8fa3c9" }}>תצפית עצמית חדשה · NEW SELF-OBSERVATION (person_roei)</div>
+      <div style={{ fontSize: 13, letterSpacing: 0.5, color: "#8fa3c9" }}>תצפית עצמית חדשה · NEW SELF-OBSERVATION (person_roei)</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <select name="domain" required style={selectStyle}>
           {DOMAINS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
@@ -51,7 +51,7 @@ export default function CreateObservationForm() {
       </div>
       {result ? (
         result.ok ? (
-          <div style={{ fontSize: 11, color: "#34d399", background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.25)", borderRadius: 6, padding: "6px 10px" }}>
+          <div style={{ fontSize: 13, color: "#34d399", background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.25)", borderRadius: 6, padding: "6px 10px" }}>
             <div style={{ fontWeight: 700 }}>נרשם · RECORDED</div>
             <div style={{ color: "#cfe0f5", marginTop: 2 }}>
               entity id: {result.canon_event_id.slice(0, 12)}… · dimension: {result.domain}/{result.frame} ·
@@ -66,19 +66,19 @@ export default function CreateObservationForm() {
                 </div>
               </div>
             ) : (
-              <div style={{ color: "#5a76a3", marginTop: 6, paddingTop: 6, borderTop: "1px solid rgba(52,211,153,0.2)" }}>
+              <div style={{ color: "#6c86b5", marginTop: 6, paddingTop: 6, borderTop: "1px solid rgba(52,211,153,0.2)" }}>
                 אין שינוי מצב מוצדק קנונית: {result.gatingReason}
               </div>
             )}
           </div>
         ) : (
-          <span style={{ fontSize: 11, color: "#f2635c" }}>{result.message}</span>
+          <span style={{ fontSize: 13, color: "#f2635c" }}>{result.message}</span>
         )
       ) : null}
     </form>
   );
 }
 
-const selectStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 12 };
-const inputStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 12, flex: 1, minWidth: 140 };
-const btnStyle: React.CSSProperties = { background: "#5b9cf6", color: "#0b0f1a", fontWeight: 600, fontSize: 12, border: "none", borderRadius: 6, padding: "7px 14px", cursor: "pointer" };
+const selectStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 13 };
+const inputStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 13, flex: 1, minWidth: 140 };
+const btnStyle: React.CSSProperties = { background: "#5b9cf6", color: "#0b0f1a", fontWeight: 600, fontSize: 13, border: "none", borderRadius: 6, padding: "7px 14px", cursor: "pointer" };

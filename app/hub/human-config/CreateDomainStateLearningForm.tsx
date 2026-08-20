@@ -50,7 +50,7 @@ export default function CreateDomainStateLearningForm({
 
   if (parameterOptions.length === 0 || actionOptions.length === 0 || effectOptions.length === 0) {
     return (
-      <div dir="rtl" style={{ fontSize: 11, color: "#8fa3c9", background: "rgba(90,120,180,0.06)", borderRadius: 10, padding: 12, marginBottom: 12 }}>
+      <div dir="rtl" style={{ fontSize: 13, color: "#8fa3c9", background: "rgba(90,120,180,0.06)", borderRadius: 10, padding: 12, marginBottom: 12 }}>
         <div style={{ color: "#fbbf24", fontWeight: 700, marginBottom: 4 }}>
           כלל מוצר ניסיוני (DomainState · level + 1) — אינו מעבר מצב קנוני של PHILOS
         </div>
@@ -74,10 +74,10 @@ export default function CreateDomainStateLearningForm({
         });
       }}
     >
-      <div style={{ fontSize: 11, letterSpacing: 0.5, color: "#8fa3c9" }}>
+      <div style={{ fontSize: 13, letterSpacing: 0.5, color: "#8fa3c9" }}>
         עדכון DomainState (person_roei) — Prior State → Action → Effect → Updated DomainState
       </div>
-      <div style={{ fontSize: 10.5, color: "#fbbf24", lineHeight: 1.45 }}>
+      <div style={{ fontSize: 13, color: "#fbbf24", lineHeight: 1.45 }}>
         כלל מוצר ניסיוני · EXPERIMENTAL PRODUCT RULE — הרמה מתקדמת ב-<code>prior.level + 1</code>.
         זהו אינו מעבר מצב קנוני של PHILOS, ואינו קובע ש-State(t+1) של האדם השתנה.
         קנון אינו קובע כלל עדכון; השאלות הפתוחות מתועדות ב-<code>canon/STATE-TRANSITION-BOUNDARY.md</code>.
@@ -107,9 +107,9 @@ export default function CreateDomainStateLearningForm({
       </div>
       {result ? (
         result.ok ? (
-          <div style={{ fontSize: 11.5, color: "#dbe6f6", background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.25)", borderRadius: 6, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
+          <div style={{ fontSize: 13, color: "#dbe6f6", background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.25)", borderRadius: 6, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
             <div style={{ fontWeight: 700, color: "#34d399" }}>DomainState עודכן · DOMAINSTATE UPDATED</div>
-            <div style={{ color: "#fbbf24", fontSize: 10.5 }}>
+            <div style={{ color: "#fbbf24", fontSize: 13 }}>
               {result.rule} — כלל מוצר ניסיוני (level + 1), לא מעבר מצב קנוני
             </div>
             <div>BEFORE — level {result.prior_level} ({result.prior_observed_at.slice(0, 16).replace("T", " ")})</div>
@@ -118,15 +118,15 @@ export default function CreateDomainStateLearningForm({
             <div>Δ delta — {result.delta >= 0 ? "+" : ""}{result.delta}</div>
             <div>AFTER — level {result.updated_level} ({result.updated_observed_at.slice(0, 16).replace("T", " ")})</div>
             <div style={{ color: "#8fa3c9" }}>evidence — {result.evidence}</div>
-            <div style={{ color: "#5a76a3" }}>state_id: {result.state_id.slice(0, 16)}…</div>
+            <div style={{ color: "#6c86b5" }}>state_id: {result.state_id.slice(0, 16)}…</div>
           </div>
         ) : (
-          <div style={{ fontSize: 11, color: "#f2635c" }}>{result.message}</div>
+          <div style={{ fontSize: 13, color: "#f2635c" }}>{result.message}</div>
         )
       ) : null}
     </form>
   );
 }
 
-const selectStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 12, flex: 1, minWidth: 220 };
-const btnStyle: React.CSSProperties = { background: "#5b9cf6", color: "#0b0f1a", fontWeight: 600, fontSize: 12, border: "none", borderRadius: 6, padding: "7px 14px", cursor: "pointer" };
+const selectStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 13, flex: 1, minWidth: 220 };
+const btnStyle: React.CSSProperties = { background: "#5b9cf6", color: "#0b0f1a", fontWeight: 600, fontSize: 13, border: "none", borderRadius: 6, padding: "7px 14px", cursor: "pointer" };

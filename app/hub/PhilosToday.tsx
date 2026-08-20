@@ -196,7 +196,7 @@ export default function PhilosToday({
 
         {canonSection ? (
           <details style={{ margin: "12px 0" }}>
-            <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>
+            <summary style={{ cursor: "pointer", fontSize: 13, letterSpacing: 1, color: "#6c86b5", padding: "4px 0" }}>
               DETAILS / AUDIT — Canon field-level lookup (Observation → CellState → Need)
             </summary>
             <div style={{ marginTop: 8 }}>{canonSection}</div>
@@ -224,29 +224,29 @@ const S: Record<string, React.CSSProperties> = {
   page: { maxWidth: 1180, margin: "0 auto", padding: "26px 30px 46px" },
   heroHead: { fontSize: 22, fontWeight: 800, color: "#f4f8ff", marginBottom: 12 },
   heroSub: { fontSize: 14, fontWeight: 400, color: "#7f93b5" },
-  notice: { fontSize: 11.5, lineHeight: 1.6, color: "#8aa0c8", padding: "9px 13px", borderRadius: 10, background: "rgba(90,120,180,0.08)", border: "1px solid rgba(90,120,180,0.16)", marginBottom: 16 },
+  notice: { fontSize: 13, lineHeight: 1.6, color: "#8aa0c8", padding: "9px 13px", borderRadius: 10, background: "rgba(90,120,180,0.08)", border: "1px solid rgba(90,120,180,0.16)", marginBottom: 16 },
 
   you: { ...card, marginBottom: 16, padding: "16px 18px" },
   youHead: { display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, marginBottom: 10 },
   youTitle: { fontSize: 14, fontWeight: 700, margin: 0, color: "#f0f4fc" },
   youBody: { display: "flex", flexDirection: "column", gap: 8 },
-  youLine: { fontSize: 12.5, lineHeight: 1.7, color: "#a9bcdc" },
+  youLine: { fontSize: 13, lineHeight: 1.7, color: "#a9bcdc" },
   youStrong: { color: "#e8edf6" },
   youMuted: { color: "#7f93b5" },
   youList: { listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 5 },
-  youItem: { fontSize: 12.5, lineHeight: 1.6, color: "#a9bcdc" },
+  youItem: { fontSize: 13, lineHeight: 1.6, color: "#a9bcdc" },
 
   stats: { display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 14, marginBottom: 20 },
   stat: { ...card, textAlign: "center", padding: "18px 10px" },
   statN: { fontSize: 26, fontWeight: 800, color: "#f4f8ff", fontVariantNumeric: "tabular-nums", lineHeight: 1.1, letterSpacing: "-0.5px" },
-  statL: { fontSize: 10.5, color: "#6a83ad", marginTop: 6, lineHeight: 1.3 },
+  statL: { fontSize: 13, color: "#6a83ad", marginTop: 6, lineHeight: 1.3 },
 
   grid: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 },
   card,
   cardHead: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   cardTitle: { fontSize: 15, fontWeight: 700, margin: 0, color: "#f0f4fc" },
-  hint: { fontSize: 10, color: "#5f7aa6" },
-  placeholder: { fontSize: 12.5, lineHeight: 1.7, color: "#7f93b5", minHeight: 44 },
+  hint: { fontSize: 12, color: "#5f7aa6" },
+  placeholder: { fontSize: 13, lineHeight: 1.7, color: "#7f93b5", minHeight: 44 },
 
   flow: { display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", minHeight: 44 },
   flowAmt: { fontSize: 24, fontWeight: 800, color: "#34d399" },
@@ -256,5 +256,5 @@ const S: Record<string, React.CSSProperties> = {
   flowArr: { color: "#5f7aa6", fontSize: 18 },
 
   cta: { display: "block", marginTop: 22, textAlign: "center", padding: "15px", borderRadius: 14, background: "linear-gradient(90deg, rgba(70,120,200,0.2), rgba(52,211,153,0.14))", border: "1px solid rgba(110,160,240,0.3)", color: "#eaf1ff", fontSize: 15, fontWeight: 600, textDecoration: "none" },
-  globeLink: { display: "block", marginTop: 14, textAlign: "center", fontSize: 12.5, color: "#6b87a8", textDecoration: "none" },
+  globeLink: { display: "block", marginTop: 14, textAlign: "center", fontSize: 13, color: "#6b87a8", textDecoration: "none" },
 };

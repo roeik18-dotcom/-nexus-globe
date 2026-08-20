@@ -13,7 +13,7 @@ const LINK_TONE: Record<string, string> = {
   VERIFIED_REFERENCE_LINK: "#34d399",
   CHRONOLOGICAL_ONLY: "#8798b8",
   UNLINKED: "#fbbf24",
-  NO_LINK_POSSIBLE: "#5a6f96",
+  NO_LINK_POSSIBLE: "#6c86b5",
 };
 const GLYPH: Record<string, string> = {
   VERIFIED_REFERENCE_LINK: "→", CHRONOLOGICAL_ONLY: "⋯", UNLINKED: "⊣", NO_LINK_POSSIBLE: "·",
@@ -63,8 +63,8 @@ const S: Record<string, React.CSSProperties> = {
   eyebrow: { ...TYPE.micro, fontSize: FS.tag, color: COLOR.accent },
   counts: { fontSize: FS.tag, color: COLOR.textFaint, fontFamily: "ui-monospace, monospace" },
   row: { display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 7, padding: "3px 8px", background: "rgba(90,120,180,0.04)", borderRadius: RADIUS.sm, marginBottom: 2 },
-  glyph: { fontSize: 12, width: 12, textAlign: "center" },
-  edge: { fontSize: 10.5, color: COLOR.text, minWidth: 230 },
+  glyph: { fontSize: 13, width: 12, textAlign: "center" },
+  edge: { fontSize: 13, color: COLOR.text, minWidth: 230 },
   ids: { fontSize: FS.tag, color: COLOR.textDim, fontFamily: "ui-monospace, monospace", maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
   basis: { fontSize: FS.tag, color: COLOR.textFaint, flex: 1, minWidth: 200, lineHeight: 1.45 },
   note: { marginTop: 5, fontSize: FS.tag, color: COLOR.textFaint, lineHeight: 1.5 },

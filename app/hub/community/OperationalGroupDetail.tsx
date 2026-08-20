@@ -24,7 +24,7 @@ export default function OperationalGroupDetail({ profile }: { profile: Operation
       <header style={S.head}>
         <div>
           <div style={S.eyebrow}>קבוצה תפעולית · OPERATIONAL VALUE GROUP</div>
-          <h2 style={S.title}>{p.name} <span style={{ fontSize: 11, color: COLOR.textDim, fontFamily: "ui-monospace, monospace" }}>{p.group_id}</span></h2>
+          <h2 style={S.title}>{p.name} <span style={{ fontSize: 13, color: COLOR.textDim, fontFamily: "ui-monospace, monospace" }}>{p.group_id}</span></h2>
         </div>
         <div style={S.headMeta}>
           <ProvenanceBadge p="REAL" />
@@ -38,9 +38,9 @@ export default function OperationalGroupDetail({ profile }: { profile: Operation
         {p.trace.map((h) => (
           <div key={h.step} style={S.row}>
             <span style={{ ...TYPE.micro, color: h.ref ? "#34d399" : "#8798b8", minWidth: 150 }}>{h.step}</span>
-            <span style={{ flex: 1, fontSize: 11.5, color: h.ref ? COLOR.text : "#8798b8", fontStyle: h.ref ? "normal" : "italic" }}>
+            <span style={{ flex: 1, fontSize: 13, color: h.ref ? COLOR.text : "#8798b8", fontStyle: h.ref ? "normal" : "italic" }}>
               {h.detail}
-              <span style={{ display: "block", fontSize: 9, color: COLOR.textFaint, fontFamily: "ui-monospace, monospace", direction: "ltr", textAlign: "right" }}>
+              <span style={{ display: "block", fontSize: 12, color: COLOR.textFaint, fontFamily: "ui-monospace, monospace", direction: "ltr", textAlign: "right" }}>
                 {h.ref ? `${h.ref.slice(0, 22)}${h.ref.length > 22 ? "…" : ""} · via ${h.linked_via}` : "אין רשומה מקשרת"}
               </span>
             </span>
@@ -144,7 +144,7 @@ function KV({ k, v }: { k: string; v: string }) {
   return (
     <div style={S.row}>
       <span style={{ ...TYPE.micro, color: "#8fa3c9", minWidth: 110, flexShrink: 0 }}>{k}</span>
-      <span style={{ flex: 1, fontSize: 11.5, color: COLOR.text, lineHeight: 1.45 }}>{v}</span>
+      <span style={{ flex: 1, fontSize: 13, color: COLOR.text, lineHeight: 1.45 }}>{v}</span>
     </div>
   );
 }
@@ -161,7 +161,7 @@ const S: Record<string, React.CSSProperties> = {
   eyebrow: { ...TYPE.micro, color: "#34d399", marginBottom: 4 },
   title: { fontSize: 18, fontWeight: 800, margin: 0, color: COLOR.text },
   headMeta: { display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" },
-  chip: { fontSize: 9.5, fontWeight: 700, color: COLOR.textDim, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 9px", fontFamily: "ui-monospace, monospace" },
+  chip: { fontSize: 12, fontWeight: 700, color: COLOR.textDim, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 9px", fontFamily: "ui-monospace, monospace" },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: SPACE.md, marginTop: SPACE.md },
   sec: { border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.md}px`, background: "rgba(10,14,23,0.45)" },
   secHead: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 },

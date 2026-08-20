@@ -112,15 +112,15 @@ export default function ProofLabPanel({ userName }: { userName: string }) {
   // ── Styles ───────────────────────────────────────────────────────
   const S: Record<string, React.CSSProperties> = {
     root:    { display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" },
-    section: { padding: "8px 14px 3px", fontSize: 9, letterSpacing: 2.5, color: "#1e4060", textTransform: "uppercase" },
+    section: { padding: "8px 14px 3px", fontSize: 12, letterSpacing: 2.5, color: "#1e4060", textTransform: "uppercase" },
     card:    { margin: "3px 8px", padding: "7px 10px", borderRadius: 6, border: "1px solid #0a2a4a", background: "#040e1c" },
-    input:   { width: "100%", background: "#020d1a", border: "1px solid #0a2a4a", borderRadius: 4, color: "#caf0f8", padding: "5px 8px", fontSize: 11, fontFamily: "inherit", direction: "rtl", resize: "none" as const, outline: "none" },
-    btn:     { padding: "5px 10px", border: "none", borderRadius: 4, background: "#0ea5e9", color: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer" },
-    btnGhost:{ padding: "4px 8px", border: "1px solid #0a2a4a", borderRadius: 4, background: "transparent", color: "#8bb8cc", fontSize: 10, cursor: "pointer" },
-    badge:   { padding: "1px 6px", borderRadius: 3, fontSize: 9, fontWeight: 700, flexShrink: 0 as const },
+    input:   { width: "100%", background: "#020d1a", border: "1px solid #0a2a4a", borderRadius: 4, color: "#caf0f8", padding: "5px 8px", fontSize: 13, fontFamily: "inherit", direction: "rtl", resize: "none" as const, outline: "none" },
+    btn:     { padding: "5px 10px", border: "none", borderRadius: 4, background: "#0ea5e9", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" },
+    btnGhost:{ padding: "4px 8px", border: "1px solid #0a2a4a", borderRadius: 4, background: "transparent", color: "#8bb8cc", fontSize: 12, cursor: "pointer" },
+    badge:   { padding: "1px 6px", borderRadius: 3, fontSize: 12, fontWeight: 700, flexShrink: 0 as const },
     logItem: { display: "flex", alignItems: "flex-start", gap: 6, padding: "5px 0", borderBottom: "1px solid #0a2a4a" },
     tabs:    { display: "flex", gap: 2, padding: "6px 8px 0", borderBottom: "1px solid #0a2a4a" },
-    tab:     { padding: "5px 10px", fontSize: 10, borderRadius: "4px 4px 0 0", border: "none", cursor: "pointer", fontFamily: "inherit" },
+    tab:     { padding: "5px 10px", fontSize: 12, borderRadius: "4px 4px 0 0", border: "none", cursor: "pointer", fontFamily: "inherit" },
   };
 
   const tabStyle = (t: Tab): React.CSSProperties => ({
@@ -146,7 +146,7 @@ export default function ProofLabPanel({ userName }: { userName: string }) {
         <div style={{ height: 4, borderRadius: 2, background: "#0a2a4a", overflow: "hidden" }}>
           <div style={{ height: "100%", borderRadius: 2, background: trustBarGradient(trust), width: `${trust}%`, transition: "width .4s ease" }} />
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3, fontSize: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3, fontSize: 12 }}>
           <span style={{ color: "#ef4444" }}>חדש</span>
           <span style={{ color: "#fbbf24" }}>בניה (20)</span>
           <span style={{ color: "#34d399" }}>מהימן (60)</span>
@@ -157,12 +157,12 @@ export default function ProofLabPanel({ userName }: { userName: string }) {
       {/* ── Reputation card ── */}
       <div style={{ margin: "4px 8px 0", padding: "8px 10px", borderRadius: 6, border: `1px solid ${REPUTATION_LEVEL_COLOR[reputation.level]}33`, background: "#040e1c" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-          <div style={{ fontSize: 9, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase" }}>מוניטין</div>
+          <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 2, textTransform: "uppercase" }}>מוניטין</div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 10, background: REPUTATION_LEVEL_COLOR[reputation.level] + "22", color: REPUTATION_LEVEL_COLOR[reputation.level], border: `1px solid ${REPUTATION_LEVEL_COLOR[reputation.level]}55`, fontWeight: 600 }}>
+            <span style={{ fontSize: 12, padding: "2px 7px", borderRadius: 10, background: REPUTATION_LEVEL_COLOR[reputation.level] + "22", color: REPUTATION_LEVEL_COLOR[reputation.level], border: `1px solid ${REPUTATION_LEVEL_COLOR[reputation.level]}55`, fontWeight: 600 }}>
               {REPUTATION_LEVEL_LABEL[reputation.level]}
             </span>
-            <span style={{ fontSize: 13, color: REPUTATION_LEVEL_COLOR[reputation.level], fontWeight: 700 }}>
+            <span style={{ fontSize: 15, color: REPUTATION_LEVEL_COLOR[reputation.level], fontWeight: 700 }}>
               {reputation.overall}
             </span>
           </div>
@@ -194,8 +194,8 @@ export default function ProofLabPanel({ userName }: { userName: string }) {
           <div style={{ margin: "0 8px", display: "flex", flexDirection: "column", gap: 3 }}>
             {opps.map(o => (
               <div key={o.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 10px", borderRadius: 4, border: `1px solid ${o.unlocked ? "#00f5d444" : "#0a2a4a"}`, background: o.unlocked ? "#00f5d408" : "#040e1c" }}>
-                <span style={{ fontSize: 10, color: o.unlocked ? "#00f5d4" : "#1e4060" }}>{o.name}</span>
-                <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: o.unlocked ? "#064e3b" : "#0a1929", color: o.unlocked ? "#34d399" : "#1e4060" }}>
+                <span style={{ fontSize: 12, color: o.unlocked ? "#00f5d4" : "#1e4060" }}>{o.name}</span>
+                <span style={{ fontSize: 12, padding: "1px 6px", borderRadius: 3, background: o.unlocked ? "#064e3b" : "#0a1929", color: o.unlocked ? "#34d399" : "#1e4060" }}>
                   {o.unlocked ? "פתוח" : `${o.threshold}`}
                 </span>
               </div>
@@ -207,7 +207,7 @@ export default function ProofLabPanel({ userName }: { userName: string }) {
           <div style={{ margin: "0 8px" }}>
             <textarea value={text} onChange={e => handleTextChange(e.target.value)} placeholder="למשל: עזרתי ללקוח..." rows={2} style={S.input} />
             <input value={valueNote} onChange={e => setValueNote(e.target.value)} placeholder="ערך שנוצר" style={{ ...S.input, marginTop: 4 }} />
-            {preview && <div style={{ fontSize: 10, color: TYPE_COLOR[preview.type] ?? "#38bdf8", marginTop: 3 }}>→ {ACTION_LABELS[preview.type as keyof typeof ACTION_LABELS]} · +{preview.pts}</div>}
+            {preview && <div style={{ fontSize: 12, color: TYPE_COLOR[preview.type] ?? "#38bdf8", marginTop: 3 }}>→ {ACTION_LABELS[preview.type as keyof typeof ACTION_LABELS]} · +{preview.pts}</div>}
             <button style={{ ...S.btn, marginTop: 5, width: "100%" }} onClick={submitAction}>▸ רשום</button>
           </div>
 
@@ -215,17 +215,17 @@ export default function ProofLabPanel({ userName }: { userName: string }) {
           <div style={S.section}>יומן פעולות</div>
           <div style={{ padding: "0 8px 8px" }}>
             {user.actions.length === 0
-              ? <div style={{ fontSize: 10, color: "#1e4060", textAlign: "center", padding: 10 }}>אין פעולות עדיין</div>
+              ? <div style={{ fontSize: 12, color: "#1e4060", textAlign: "center", padding: 10 }}>אין פעולות עדיין</div>
               : [...user.actions].reverse().map((a: ProofAction) => (
                 <div key={a.id} style={S.logItem}>
                   <span style={{ ...S.badge, background: (TYPE_COLOR[a.type] ?? "#475569") + "22", color: TYPE_COLOR[a.type] ?? "#475569" }}>
                     {ACTION_LABELS[a.type]}
                   </span>
-                  <div style={{ flex: 1, fontSize: 10, color: "#8bb8cc", lineHeight: 1.4 }}>
+                  <div style={{ flex: 1, fontSize: 12, color: "#8bb8cc", lineHeight: 1.4 }}>
                     {a.text}
-                    {a.valueNote && <div style={{ color: "#1e4060", fontSize: 9 }}>{a.valueNote}</div>}
+                    {a.valueNote && <div style={{ color: "#1e4060", fontSize: 12 }}>{a.valueNote}</div>}
                   </div>
-                  <span style={{ fontSize: 10, color: "#34d399", fontWeight: 700 }}>+{a.points}</span>
+                  <span style={{ fontSize: 12, color: "#34d399", fontWeight: 700 }}>+{a.points}</span>
                 </div>
               ))
             }
@@ -284,17 +284,17 @@ export default function ProofLabPanel({ userName }: { userName: string }) {
           <div style={S.section}>ההוכחות שלי</div>
           <div style={{ padding: "0 8px 8px" }}>
             {myProofs.length === 0
-              ? <div style={{ fontSize: 10, color: "#1e4060", textAlign: "center", padding: 10 }}>אין הוכחות עדיין</div>
+              ? <div style={{ fontSize: 12, color: "#1e4060", textAlign: "center", padding: 10 }}>אין הוכחות עדיין</div>
               : [...myProofs].reverse().map(p => (
                 <div key={p.id} style={{ ...S.logItem, flexDirection: "column", gap: 3 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <span style={{ ...S.badge, background: PROOF_STATUS_COLOR[p.status] + "22", color: PROOF_STATUS_COLOR[p.status] }}>
                       {PROOF_STATUS_LABEL[p.status]}
                     </span>
-                    <span style={{ fontSize: 10, color: "#caf0f8", flex: 1 }}>{p.claim}</span>
-                    <span style={{ fontSize: 10, color: "#34d399", fontWeight: 700 }}>+{p.weight}</span>
+                    <span style={{ fontSize: 12, color: "#caf0f8", flex: 1 }}>{p.claim}</span>
+                    <span style={{ fontSize: 12, color: "#34d399", fontWeight: 700 }}>+{p.weight}</span>
                   </div>
-                  <div style={{ fontSize: 9, color: "#1e4060", paddingRight: 4 }}>
+                  <div style={{ fontSize: 12, color: "#1e4060", paddingRight: 4 }}>
                     {p.evidenceType === "link" ? "🔗" : p.evidenceType === "peer" ? "👤" : "📝"} {p.evidence}
                     {p.verifiedBy && <span style={{ color: "#34d399", marginRight: 6 }}> · אומת על ידי {p.verifiedBy}</span>}
                   </div>
@@ -311,12 +311,12 @@ export default function ProofLabPanel({ userName }: { userName: string }) {
           <div style={S.section}>הוכחות ממתינות לאימות</div>
           <div style={{ padding: "0 8px 8px" }}>
             {pendingProofs.length === 0
-              ? <div style={{ fontSize: 10, color: "#1e4060", textAlign: "center", padding: 10 }}>אין הוכחות ממתינות</div>
+              ? <div style={{ fontSize: 12, color: "#1e4060", textAlign: "center", padding: 10 }}>אין הוכחות ממתינות</div>
               : pendingProofs.map(p => (
                 <div key={p.id} style={{ ...S.card, marginBottom: 6 }}>
-                  <div style={{ fontSize: 10, color: "#38bdf8", fontWeight: 600, marginBottom: 4 }}>{p.userId}</div>
-                  <div style={{ fontSize: 11, color: "#caf0f8", marginBottom: 4 }}>{p.claim}</div>
-                  <div style={{ fontSize: 9, color: "#1e4060", marginBottom: 6 }}>
+                  <div style={{ fontSize: 12, color: "#38bdf8", fontWeight: 600, marginBottom: 4 }}>{p.userId}</div>
+                  <div style={{ fontSize: 13, color: "#caf0f8", marginBottom: 4 }}>{p.claim}</div>
+                  <div style={{ fontSize: 12, color: "#1e4060", marginBottom: 6 }}>
                     {p.evidenceType === "link" ? "🔗" : p.evidenceType === "peer" ? "👤" : "📝"} {p.evidence}
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
@@ -347,7 +347,7 @@ function Metric({ label, val, color, max }: { label: string; val: number; color:
   return (
     <div style={{ textAlign: "center" }}>
       <div style={{ fontSize: 15, color, fontWeight: 700 }}>{val}{max ? `/${max}` : ""}</div>
-      <div style={{ fontSize: 8, color: "#1e4060", letterSpacing: 1 }}>{label.toUpperCase()}</div>
+      <div style={{ fontSize: 12, color: "#1e4060", letterSpacing: 1 }}>{label.toUpperCase()}</div>
     </div>
   );
 }
@@ -356,11 +356,11 @@ function RepFactor({ label, val, max, color }: { label: string; val: number; max
   const pct = Math.round((val / max) * 100);
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <div style={{ fontSize: 9, color: "#8bb8cc", width: 44, textAlign: "right", flexShrink: 0 }}>{label}</div>
+      <div style={{ fontSize: 12, color: "#8bb8cc", width: 44, textAlign: "right", flexShrink: 0 }}>{label}</div>
       <div style={{ flex: 1, height: 4, borderRadius: 2, background: "#0a2a4a", overflow: "hidden" }}>
         <div style={{ width: `${pct}%`, height: "100%", borderRadius: 2, background: color, transition: "width .3s" }} />
       </div>
-      <div style={{ fontSize: 9, color, fontWeight: 600, width: 28, flexShrink: 0 }}>{val}/{max}</div>
+      <div style={{ fontSize: 12, color, fontWeight: 600, width: 28, flexShrink: 0 }}>{val}/{max}</div>
     </div>
   );
 }

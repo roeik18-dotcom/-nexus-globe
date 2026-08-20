@@ -36,7 +36,7 @@ import { linksByRelation, type EntityLink } from "@/app/lib/philos/bridge/entity
 
 export type Provenance = "REAL" | "DEMO";
 
-const SEVERITY_COLOR: Record<TensionItem["severity"], string> = { high: "#f2635c", medium: "#fbbf24", low: "#8aa0c8", unknown: "#5a76a3" };
+const SEVERITY_COLOR: Record<TensionItem["severity"], string> = { high: "#f2635c", medium: "#fbbf24", low: "#8aa0c8", unknown: "#6c86b5" };
 
 export default function CommunityCommandTerminal({
   group,
@@ -199,7 +199,7 @@ export default function CommunityCommandTerminal({
           urgency" discipline Hub/Brain/Dynamics already established. */}
       <SectionHead>הפעולה הבאה התקפה · NEXT VALID ACTION</SectionHead>
       {tensions.length > 0 ? (
-        <div style={{ fontSize: 12, color: "#dbe6f6", padding: "8px 10px", borderRadius: 8, background: "rgba(242,99,92,0.08)", border: "1px solid rgba(242,99,92,0.25)" }}>
+        <div style={{ fontSize: 13, color: "#dbe6f6", padding: "8px 10px", borderRadius: 8, background: "rgba(242,99,92,0.08)", border: "1px solid rgba(242,99,92,0.25)" }}>
           בדוק Tension: {tensions[0].label} — <a href="/dynamics" style={{ color: "#5b9cf6" }}>Dynamics →</a>
         </div>
       ) : group.members.length === 0 ? (
@@ -259,7 +259,7 @@ function Glance({ q, a }: { q: string; a: string }) {
 function Metric({ label, value, color, unit = "money" }: { label: string; value: number; color: string; unit?: "money" | "count" }) {
   return (
     <div style={{ minWidth: 130 }}>
-      <div style={{ fontSize: 9, letterSpacing: 1, color: "#5a76a3", textTransform: "uppercase" }}>{label}</div>
+      <div style={{ fontSize: 12, letterSpacing: 1, color: "#6c86b5", textTransform: "uppercase" }}>{label}</div>
       <div style={{ fontSize: 17, fontWeight: 700, color }}>{unit === "money" ? `₪${value.toLocaleString()}` : value.toLocaleString()}</div>
     </div>
   );
@@ -284,41 +284,41 @@ function Empty({ children }: { children: React.ReactNode }) {
 const S: Record<string, React.CSSProperties> = {
   card: { background: "rgba(18,24,38,0.7)", border: "1px solid rgba(90,120,180,0.14)", borderRadius: 16, padding: "18px 20px", marginTop: 16, fontFamily: "system-ui", color: "#e6ebf5" },
   head: { display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginBottom: 10 },
-  badge: { fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 6, border: "1px solid", marginLeft: 8, fontFamily: "ui-monospace, monospace" },
+  badge: { fontSize: 12, fontWeight: 800, padding: "2px 8px", borderRadius: 6, border: "1px solid", marginLeft: 8, fontFamily: "ui-monospace, monospace" },
   title: { fontSize: 17, fontWeight: 800, display: "inline", margin: 0, color: "#f0f4fc" },
-  sub: { fontSize: 11, color: "#7f97c2" },
+  sub: { fontSize: 13, color: "#7f97c2" },
 
   glance: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginBottom: 14 },
   glanceItem: { background: "rgba(91,156,246,0.06)", border: "1px solid rgba(90,120,180,0.18)", borderRadius: 8, padding: "8px 10px" },
-  glanceQ: { fontSize: 9.5, color: "#5a76a3" },
-  glanceA: { fontSize: 13, fontWeight: 700, color: "#e8edf6", marginTop: 3 },
+  glanceQ: { fontSize: 12, color: "#6c86b5" },
+  glanceA: { fontSize: 15, fontWeight: 700, color: "#e8edf6", marginTop: 3 },
 
-  sectionHead: { fontSize: 11.5, fontWeight: 700, color: "#5aa6ff", letterSpacing: 0.5, marginTop: 16, marginBottom: 8 },
+  sectionHead: { fontSize: 13, fontWeight: 700, color: "#5aa6ff", letterSpacing: 0.5, marginTop: 16, marginBottom: 8 },
   metricsRow: { display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 8 },
 
-  chartMeta: { fontSize: 9.5, color: "#5a76a3", fontFamily: "ui-monospace, monospace", marginBottom: 6 },
+  chartMeta: { fontSize: 12, color: "#6c86b5", fontFamily: "ui-monospace, monospace", marginBottom: 6 },
   timeline: { display: "flex", alignItems: "flex-end", gap: 6, height: 90, padding: "0 4px", overflowX: "auto" },
   timelineBar: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", minWidth: 28 },
   timelineFill: { width: 14, borderRadius: 3 },
-  timelineLabel: { fontSize: 8.5, color: "#5a76a3", marginTop: 4 },
+  timelineLabel: { fontSize: 12, color: "#6c86b5", marginTop: 4 },
 
   allocList: { display: "flex", flexDirection: "column", gap: 4 },
   allocRow: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, background: "rgba(90,120,180,0.06)", flexWrap: "wrap" },
   tensionRow: { display: "flex", alignItems: "center", gap: 10, padding: "6px 10px", borderRadius: 8, background: "rgba(242,99,92,0.06)", flexWrap: "wrap" },
-  tensionSeverity: { fontSize: 10, fontWeight: 800, textTransform: "uppercase", minWidth: 50, fontFamily: "ui-monospace, monospace" },
-  demoFlowLink: { fontSize: 10, color: "#fbbf24", textDecoration: "none", fontWeight: 700 },
-  allocTitle: { fontSize: 12.5, color: "#e8edf6" },
-  allocMeta: { fontSize: 10.5, color: "#8aa0c8" },
-  allocState: { fontSize: 10.5, fontWeight: 700 },
+  tensionSeverity: { fontSize: 12, fontWeight: 800, textTransform: "uppercase", minWidth: 50, fontFamily: "ui-monospace, monospace" },
+  demoFlowLink: { fontSize: 12, color: "#fbbf24", textDecoration: "none", fontWeight: 700 },
+  allocTitle: { fontSize: 13, color: "#e8edf6" },
+  allocMeta: { fontSize: 13, color: "#8aa0c8" },
+  allocState: { fontSize: 13, fontWeight: 700 },
 
   rankList: { display: "flex", flexDirection: "column", gap: 4 },
-  rankRow: { display: "flex", alignItems: "center", gap: 8, fontSize: 12 },
-  rankPos: { color: "#5a76a3", minWidth: 24 },
+  rankRow: { display: "flex", alignItems: "center", gap: 8, fontSize: 13 },
+  rankPos: { color: "#6c86b5", minWidth: 24 },
   rankName: { minWidth: 100, color: "#dbe6f6" },
   rankBar: { flex: 1, height: 8, background: "rgba(90,120,180,0.15)", borderRadius: 4, overflow: "hidden" },
   rankBarFill: { display: "block", height: "100%", background: "#5b9cf6" },
   rankCount: { minWidth: 24, textAlign: "right", color: "#8aa0c8" },
 
-  provenanceNote: { fontSize: 10.5, color: "#5a76a3", lineHeight: 1.6 },
-  emptyRow: { fontSize: 12, color: "#7b8ca6", fontStyle: "italic", padding: "4px 2px", lineHeight: 1.6 },
+  provenanceNote: { fontSize: 13, color: "#6c86b5", lineHeight: 1.6 },
+  emptyRow: { fontSize: 13, color: "#7b8ca6", fontStyle: "italic", padding: "4px 2px", lineHeight: 1.6 },
 };

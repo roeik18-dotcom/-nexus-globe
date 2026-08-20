@@ -9,15 +9,15 @@
  */
 
 export const TYPE = {
-  display: { fontSize: 26, fontWeight: 800, letterSpacing: -0.3, lineHeight: 1.15 },
-  title: { fontSize: 17, fontWeight: 700, letterSpacing: -0.1, lineHeight: 1.25 },
-  subtitle: { fontSize: 13, fontWeight: 600, letterSpacing: 0.1, lineHeight: 1.35 },
-  body: { fontSize: 13, fontWeight: 500, lineHeight: 1.55 },
-  meta: { fontSize: 11, fontWeight: 700, letterSpacing: 1.1, textTransform: "uppercase" as const },
-  /* Raised to the 10px floor. `micro` was the single biggest source of
-     sub-floor text: it is spread into dozens of styles across every surface,
-     so one number here fixed more than any per-component edit could. */
-  micro: { fontSize: 10, fontWeight: 600, letterSpacing: 0.6, textTransform: "uppercase" as const },
+  display: { fontSize: 30, fontWeight: 800, letterSpacing: -0.3, lineHeight: 1.15 },
+  title: { fontSize: 19, fontWeight: 700, letterSpacing: -0.1, lineHeight: 1.25 },
+  subtitle: { fontSize: 15, fontWeight: 600, letterSpacing: 0.1, lineHeight: 1.35 },
+  body: { fontSize: 15, fontWeight: 500, lineHeight: 1.6 },
+  meta: { fontSize: 13, fontWeight: 700, letterSpacing: 1.1, textTransform: "uppercase" as const },
+  /* Spread into dozens of styles across every surface, so this one number
+     moves more sub-floor text than any per-component edit could. It is the
+     12px floor now, not the 10px one. */
+  micro: { fontSize: 12, fontWeight: 600, letterSpacing: 0.6, textTransform: "uppercase" as const },
 } as const;
 
 /**
@@ -29,21 +29,38 @@ export const TYPE = {
  * anything else, and text under 10px — especially Hebrew, whose letterforms
  * carry more detail per glyph than Latin — is not "small", it is unread.
  *
- * Every size in the social family comes from here. The floor is 10px and it
- * is not negotiable: if something does not fit at 10px, the answer is less
- * content, not smaller text.
+ * ── THE SCALE WAS THE PROBLEM ──────────────────────────────────────────
+ * A live measurement of all seven surfaces found 80.8% of visible text below
+ * 12px and only 8.6% at 14px or more: 10px was the de-facto body size and
+ * hierarchy was being attempted entirely with weight and colour on a flat
+ * 10/11px base. That is the textbook definition of fake hierarchy, and it is
+ * most of why the product read as a console rather than a product.
+ *
+ * The floor is now 12px and the body is 15px. Every size in the product comes
+ * from here, so this one table moves all seven surfaces at once — the same
+ * leverage that made `TYPE.micro` the single biggest fix in the earlier pass.
+ * If something does not fit at 15px, the answer is less content on that
+ * screen, not smaller text.
  */
 export const FS = {
+  /** The surface's own name. Exactly one per screen — the thing the eye
+   *  should land on before it reads anything, which means it must out-rank
+   *  every figure the screen draws. World's gate renders a 44px "0"; at 26px
+   *  the title lost to it and the 3-second test still failed there. */
+  title: 30,
   /** Section and card titles. */
-  head: 15,
-  /** The thing a person came to read. */
-  read: 12,
+  head: 19,
+  /** Secondary section headings. */
+  section: 16,
+  /** THE BODY SIZE. The thing a person came to read. */
+  read: 15,
   /** Supporting detail beside the thing they read. */
-  meta: 11,
-  /** The floor. Epistemic sentences, provenance notes, ids. */
-  base: 10,
-  /** Uppercase micro-labels ONLY — simple letterforms, never a sentence. */
-  tag: 10,
+  meta: 13,
+  /** Metadata, provenance notes, ids. */
+  base: 13,
+  /** Uppercase micro-labels ONLY — simple letterforms, never a sentence.
+   *  This is the FLOOR and nothing may go below it. */
+  tag: 12,
 } as const;
 
 /** 4px base unit — every margin/padding in the redesign is a multiple. */
@@ -59,7 +76,12 @@ export const COLOR = {
   borderStrong: "rgba(120,150,220,0.32)",
   text: "#f2f6fc",
   textDim: "#9fb0d0",
-  textFaint: "#5a6f96",
+  /* 4.59:1 at worst against bgCard — was #5a6f96 at 3.33:1, the only token
+     in the palette that failed WCAG AA and the source of most of the
+     measured 29–58% per-surface failure. Same hue and saturation, raised
+     lightness, so semantic differentiation between text / textDim / textFaint
+     survives rather than being solved by making everything white. */
+  textFaint: "#6c86b5",
   accent: "#5b9cf6",
   accentDim: "rgba(91,156,246,0.12)",
 } as const;

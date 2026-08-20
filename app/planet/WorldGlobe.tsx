@@ -57,8 +57,8 @@ import {
 function Chip({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <span style={{ fontSize: FS.tag, letterSpacing: 1, color: "#5a76a3", textTransform: "uppercase" }}>{label}</span>
-      <span style={{ fontSize: 11, fontWeight: 600, color: color ?? "#dbe6f6", display: "inline-flex", alignItems: "center", gap: 5 }}>
+      <span style={{ fontSize: FS.tag, letterSpacing: 1, color: "#6c86b5", textTransform: "uppercase" }}>{label}</span>
+      <span style={{ fontSize: 13, fontWeight: 600, color: color ?? "#dbe6f6", display: "inline-flex", alignItems: "center", gap: 5 }}>
         {color ? <span style={{ width: 6, height: 6, borderRadius: 3, background: color, display: "inline-block" }} /> : null}
         {value}
       </span>
@@ -67,7 +67,7 @@ function Chip({ label, value, color }: { label: string; value: string; color?: s
 }
 
 function ActionPill({ action }: { action: ContextAction }) {
-  const base = { fontSize: 10, padding: "5px 10px", borderRadius: 20, border: "1px solid", display: "inline-block" };
+  const base = { fontSize: 12, padding: "5px 10px", borderRadius: 20, border: "1px solid", display: "inline-block" };
   if (action.state === "live" && action.href) {
     return (
       <a href={action.href} style={{ ...base, color: "#02101f", background: "#38bdf8", borderColor: "#38bdf8", fontWeight: 600, textDecoration: "none" }}>
@@ -103,11 +103,11 @@ function ContextInspector({ selected, registry }: { selected: SelectedContext; r
     border: "1px solid #2a3f66",
     borderRadius: 8,
     padding: "14px 16px",
-    fontSize: 11,
+    fontSize: 13,
     color: "#cfe0f5",
   } as const;
-  const kicker = { fontSize: 10, letterSpacing: 2, color: "#5aa6ff", marginBottom: 8 } as const;
-  const q = { fontSize: FS.tag, letterSpacing: 0.5, color: "#5a76a3", marginTop: 10 } as const;
+  const kicker = { fontSize: 12, letterSpacing: 2, color: "#5aa6ff", marginBottom: 8 } as const;
+  const q = { fontSize: FS.tag, letterSpacing: 0.5, color: "#6c86b5", marginTop: 10 } as const;
 
   if (selected.status === "unknown" || selected.status === "not_found") {
     const src =
@@ -155,9 +155,9 @@ function ContextInspector({ selected, registry }: { selected: SelectedContext; r
     <div style={{ ...box, borderLeft: `3px solid ${claimedColor}` }}>
       <div style={kicker}>SELECTED CONTEXT</div>
 
-      <div style={{ fontSize: FS.tag, letterSpacing: 0.5, color: "#5a76a3" }}>WHAT AM I LOOKING AT?</div>
-      <div style={{ fontSize: 13, fontWeight: 700, color: "#f2f6fc", marginTop: 3 }}>{selected.label}</div>
-      <div style={{ fontSize: 10, color: "#7f97c2", marginTop: 2 }}>
+      <div style={{ fontSize: FS.tag, letterSpacing: 0.5, color: "#6c86b5" }}>WHAT AM I LOOKING AT?</div>
+      <div style={{ fontSize: 15, fontWeight: 700, color: "#f2f6fc", marginTop: 3 }}>{selected.label}</div>
+      <div style={{ fontSize: 12, color: "#7f97c2", marginTop: 2 }}>
         {selected.system === "canon" ? "canon Observation" : "legacy event"} · {selected.matched_id}
       </div>
 
@@ -206,7 +206,7 @@ function ContextInspector({ selected, registry }: { selected: SelectedContext; r
 
       {/* Same shared knownNeeds/actionSpace Dynamics and Marketplace show —
           compact here, since Globe's emphasis is system/relationship/location. */}
-      <div style={{ fontSize: 10, color: "#5a76a3", marginTop: 10, lineHeight: 1.6 }}>
+      <div style={{ fontSize: 12, color: "#6c86b5", marginTop: 10, lineHeight: 1.6 }}>
         need:{" "}
         {!selected.knownNeeds
           ? "not computed"
@@ -257,10 +257,10 @@ function BridgeSection({ subject, registry }: { subject: string; registry: Entit
   ];
   return (
     <>
-      <div style={{ fontSize: FS.tag, letterSpacing: 0.5, color: "#5a76a3", marginTop: 10 }}>BRIDGE — TYPED CROSS-ENTITY LINKS</div>
+      <div style={{ fontSize: FS.tag, letterSpacing: 0.5, color: "#6c86b5", marginTop: 10 }}>BRIDGE — TYPED CROSS-ENTITY LINKS</div>
       <div style={{ marginTop: 4 }}>
         {links.length === 0 ? (
-          <span style={{ color: "#5a76a3", fontStyle: "italic" }}>לא נמצא קישור אמיתי או DEMO ל-{subject}.</span>
+          <span style={{ color: "#6c86b5", fontStyle: "italic" }}>לא נמצא קישור אמיתי או DEMO ל-{subject}.</span>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {links.map((l) => {
@@ -323,7 +323,7 @@ export function CanonActivityPanel({ canonActions, canonEffects, canonNeeds, can
     maxHeight: 430, overflowY: "auto",
     background: "rgba(4,10,22,0.94)", backdropFilter: "blur(10px)",
     border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.md, padding: "14px 16px",
-    fontSize: 11, color: COLOR.textDim,
+    fontSize: 13, color: COLOR.textDim,
   } as const;
   const kicker = { ...TYPE.meta, color: COLOR.accent, marginBottom: 8 } as const;
   const q = { ...TYPE.micro, color: COLOR.textFaint, marginTop: 10 } as const;
@@ -416,17 +416,17 @@ export function RegionLayerPanel({ registry }: { registry: EntityLink[] }) {
       {[...byRegion.entries()].map(([regionId, r]) => (
         <div key={regionId} style={{ marginBottom: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#dbe6f6" }}>{r.communities[0].source.type === "community" ? r.communities[0].target.canonical_id : regionId}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#dbe6f6" }}>{r.communities[0].source.type === "community" ? r.communities[0].target.canonical_id : regionId}</span>
             <span style={{ fontSize: FS.tag, fontWeight: 800, padding: "1px 5px", borderRadius: 4, color: r.provenance === "DEMO" ? "#fbbf24" : "#34d399", border: `1px solid ${r.provenance === "DEMO" ? "#fbbf24" : "#34d399"}55` }}>{r.provenance}</span>
           </div>
           {r.communities.map((c) => (
-            <a key={c.link_id} href={`/hub/community?community=${c.source.canonical_id}`} style={{ display: "block", fontSize: 10, color: "#5b9cf6", textDecoration: "none", marginTop: 2 }}>
+            <a key={c.link_id} href={`/hub/community?community=${c.source.canonical_id}`} style={{ display: "block", fontSize: 12, color: "#5b9cf6", textDecoration: "none", marginTop: 2 }}>
               → {c.source.canonical_id}
             </a>
           ))}
         </div>
       ))}
-      <div style={{ fontSize: FS.tag, color: "#5a76a3", marginTop: 4 }}>
+      <div style={{ fontSize: FS.tag, color: "#6c86b5", marginTop: 4 }}>
         אין קואורדינטות אמיתיות — קיבוץ לפי group.region בלבד, לא מפה.
       </div>
     </div>
@@ -804,7 +804,7 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
                 cursor: "pointer",
                 fontSize: FS.meta,
                 letterSpacing: 1.2,
-                color: "#5a76a3",
+                color: "#6c86b5",
                 padding: "3px 0",
               }}
             >
@@ -954,9 +954,9 @@ const S: Record<string, React.CSSProperties> = {
   stars: { position: "absolute", top: 0, left: 0, width: 1, height: 1, borderRadius: "50%", background: "transparent", zIndex: 0 },
   breathe: { position: "absolute", left: "50%", top: "50%", width: "76vmin", height: "76vmin", transform: "translate(-50%,-50%)", borderRadius: "50%", background: "radial-gradient(circle, rgba(70,140,255,0.22) 0%, rgba(50,110,230,0.06) 45%, transparent 66%)", zIndex: 0, pointerEvents: "none" },
   stage: { position: "absolute", inset: 0, zIndex: 1 },
-  loading: { position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#4f6a99", letterSpacing: "3px", fontSize: 12 },
+  loading: { position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#4f6a99", letterSpacing: "3px", fontSize: 13 },
 
-  topCenter: { position: "absolute", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 10, fontSize: 11, letterSpacing: "3px", color: "#c3d5f2", textAlign: "center" },
+  topCenter: { position: "absolute", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 10, fontSize: 13, letterSpacing: "3px", color: "#c3d5f2", textAlign: "center" },
   purposeLine: { fontSize: FS.tag, letterSpacing: "0.3px", color: "#6f89b6", marginTop: 5, maxWidth: 360, textTransform: "none" },
 
   /* ONE anchor for everything in this corner. Nothing inside it is
@@ -970,7 +970,7 @@ const S: Record<string, React.CSSProperties> = {
   },
   /* One disclosure style for every collapsed panel on this surface — the
      legend used `railHead`, the audit stack used two inline objects. */
-  hudSummary: { cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#5a76a3", padding: "4px 2px" },
+  hudSummary: { cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#6c86b5", padding: "4px 2px" },
 
   /* NETWORK_UNIQUE_ONLY — the drawing's own counts, inside the shared stage's
      representation slot. */
@@ -981,7 +981,7 @@ const S: Record<string, React.CSSProperties> = {
   },
   drawnItem: { display: "inline-flex", alignItems: "baseline", gap: 6 },
   drawnNum: { fontSize: 18, fontWeight: 700, color: "#eaf1ff", lineHeight: 1, fontVariantNumeric: "tabular-nums" },
-  drawnLabel: { fontSize: FS.tag, textTransform: "uppercase", letterSpacing: 1.4, color: "#5a76a3" },
+  drawnLabel: { fontSize: FS.tag, textTransform: "uppercase", letterSpacing: 1.4, color: "#6c86b5" },
 
   legend: { display: "flex", flexDirection: "column", gap: 5, maxWidth: 260, padding: "4px 2px 2px" },
   legendRow: { display: "flex", alignItems: "center", gap: 9 },
@@ -990,13 +990,13 @@ const S: Record<string, React.CSSProperties> = {
   /* 10px floor — these were 9.5 and 8.5, the last two sub-floor sizes on
      this surface. A legend nobody can read is not a legend. */
   legendText: { fontSize: FS.tag, color: "#7f97c2", lineHeight: 1.5 },
-  legendNote: { fontSize: FS.tag, color: "#5a76a3", lineHeight: 1.55, marginTop: 5 },
+  legendNote: { fontSize: FS.tag, color: "#6c86b5", lineHeight: 1.55, marginTop: 5 },
   /* Pinned BELOW the right-hand context panel rather than vertically centred:
      centred, it sat at 394-506 and was completely covered by CANON ACTIVITY
      (168-630, zIndex 12) — the rail rendered but was never visible. */
   rightRail: { position: "absolute", right: 24, top: 620, zIndex: 10, width: 190, display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" },
-  railHead: { fontSize: FS.tag, letterSpacing: "2.5px", color: "#3e587f", marginBottom: 8 },
-  streamRow: { fontSize: 10, lineHeight: 1.5, color: "#7f97c2", textAlign: "right" },
-  streamId: { color: "#3e587f" },
+  railHead: { fontSize: FS.tag, letterSpacing: "2.5px", color: "#6c86b5", marginBottom: 8 },
+  streamRow: { fontSize: 12, lineHeight: 1.5, color: "#7f97c2", textAlign: "right" },
+  streamId: { color: "#6c86b5" },
 
 };

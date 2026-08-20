@@ -112,7 +112,7 @@ const S: Record<string, React.CSSProperties> = {
   scopePill: { ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint, border: `1px solid ${COLOR.border}`, borderRadius: 4, padding: "1px 6px" },
   scopeHere: { color: COLOR.text, borderColor: COLOR.borderStrong, background: "rgba(120,150,220,0.1)" },
   rule: { fontSize: FS.tag, color: COLOR.textFaint, lineHeight: 1.5, flex: 1, minWidth: 240 },
-  row: { display: "flex", alignItems: "center", gap: 7, padding: "2px 0", borderTop: `1px solid ${COLOR.border}`, fontSize: 10 },
+  row: { display: "flex", alignItems: "center", gap: 7, padding: "2px 0", borderTop: `1px solid ${COLOR.border}`, fontSize: 12 },
   at: { fontFamily: "ui-monospace, monospace", fontSize: FS.tag, color: COLOR.textFaint, minWidth: 74 },
   dot: { width: 6, height: 6, borderRadius: "50%", flexShrink: 0 },
   kind: { fontFamily: "ui-monospace, monospace", fontSize: FS.tag, color: COLOR.textDim, minWidth: 112 },
@@ -121,6 +121,6 @@ const S: Record<string, React.CSSProperties> = {
   verif: { ...TYPE.micro, fontSize: FS.tag, minWidth: 52 },
   id: { fontFamily: "ui-monospace, monospace", fontSize: FS.tag, color: COLOR.textFaint },
   refs: { fontSize: FS.tag, color: COLOR_ROLE.blue },
-  empty: { fontSize: 10, color: COLOR.textFaint, fontStyle: "italic", padding: "5px 0", lineHeight: 1.6 },
+  empty: { fontSize: 12, color: COLOR.textFaint, fontStyle: "italic", padding: "5px 0", lineHeight: 1.6 },
   more: { fontSize: FS.tag, color: COLOR.textFaint, paddingTop: 4 },
 };

@@ -17,7 +17,7 @@ const STATUS_LABEL: Record<Status, string> = {
   PRODUCT_STRUCTURE: "מבנה מוצר אמיתי",
   VISUAL_REFERENCE: "מסגור חזותי בלבד",
 };
-const STATUS_COLOR: Record<Status, string> = { SOURCE_PROVEN: GREEN, PRODUCT_STRUCTURE: BLUE, VISUAL_REFERENCE: "#5a76a3" };
+const STATUS_COLOR: Record<Status, string> = { SOURCE_PROVEN: GREEN, PRODUCT_STRUCTURE: BLUE, VISUAL_REFERENCE: "#6c86b5" };
 
 interface Shot { n: number; narration: string; color: string; status: Status; product: string; link?: string }
 
@@ -44,7 +44,7 @@ export default function ExplainerSequence() {
 
   return (
     <div dir="rtl" style={{ fontFamily: "system-ui", background: "#080b13", color: "#e6ebf5", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div style={{ fontSize: 10, letterSpacing: 2, color: "#5aa6ff" }}>PHILOS — רצף הסבר · שוט {shot.n}/{SHOTS.length}</div>
+      <div style={{ fontSize: 12, letterSpacing: 2, color: "#5aa6ff" }}>PHILOS — רצף הסבר · שוט {shot.n}/{SHOTS.length}</div>
 
       <div style={{ width: 200, height: 200, borderRadius: "50%", border: `3px solid ${shot.color}`, background: `${shot.color}18`, display: "flex", alignItems: "center", justifyContent: "center", margin: "24px 0", transition: "all 0.4s" }}>
         <div style={{ width: 40, height: 40, borderRadius: "50%", background: shot.color }} />
@@ -53,21 +53,21 @@ export default function ExplainerSequence() {
       <div style={{ fontSize: 20, fontWeight: 700, textAlign: "center", maxWidth: 520 }}>{shot.narration}</div>
 
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 16 }}>
-        <span style={{ fontSize: 10, padding: "4px 10px", borderRadius: 12, border: `1px solid ${STATUS_COLOR[shot.status]}`, color: STATUS_COLOR[shot.status] }}>
+        <span style={{ fontSize: 12, padding: "4px 10px", borderRadius: 12, border: `1px solid ${STATUS_COLOR[shot.status]}`, color: STATUS_COLOR[shot.status] }}>
           {STATUS_LABEL[shot.status]}
         </span>
-        <span style={{ fontSize: 11, color: "#7f97c2" }}>{shot.product}</span>
+        <span style={{ fontSize: 13, color: "#7f97c2" }}>{shot.product}</span>
       </div>
 
       {shot.link ? (
-        <a href={shot.link} style={{ fontSize: 12, color: shot.color, marginTop: 10 }}>פתח במוצר →</a>
+        <a href={shot.link} style={{ fontSize: 13, color: shot.color, marginTop: 10 }}>פתח במוצר →</a>
       ) : null}
 
       <div style={{ display: "flex", gap: 8, marginTop: 28 }}>
-        <button onClick={() => setI((v) => Math.max(0, v - 1))} disabled={i === 0} style={{ fontSize: 12, padding: "6px 16px", borderRadius: 20, border: "1px solid #2a3f66", background: "transparent", color: i === 0 ? "#3a4d70" : "#e6ebf5", cursor: i === 0 ? "default" : "pointer" }}>
+        <button onClick={() => setI((v) => Math.max(0, v - 1))} disabled={i === 0} style={{ fontSize: 13, padding: "6px 16px", borderRadius: 20, border: "1px solid #2a3f66", background: "transparent", color: i === 0 ? "#3a4d70" : "#e6ebf5", cursor: i === 0 ? "default" : "pointer" }}>
           הקודם
         </button>
-        <button onClick={() => setI((v) => Math.min(SHOTS.length - 1, v + 1))} disabled={i === SHOTS.length - 1} style={{ fontSize: 12, padding: "6px 16px", borderRadius: 20, border: `1px solid ${shot.color}`, background: shot.color, color: "#0b0f1a", fontWeight: 600, cursor: i === SHOTS.length - 1 ? "default" : "pointer", opacity: i === SHOTS.length - 1 ? 0.4 : 1 }}>
+        <button onClick={() => setI((v) => Math.min(SHOTS.length - 1, v + 1))} disabled={i === SHOTS.length - 1} style={{ fontSize: 13, padding: "6px 16px", borderRadius: 20, border: `1px solid ${shot.color}`, background: shot.color, color: "#0b0f1a", fontWeight: 600, cursor: i === SHOTS.length - 1 ? "default" : "pointer", opacity: i === SHOTS.length - 1 ? 0.4 : 1 }}>
           הבא
         </button>
       </div>
@@ -78,7 +78,7 @@ export default function ExplainerSequence() {
         ))}
       </div>
 
-      <div style={{ fontSize: 10, color: "#5a76a3", marginTop: 20, maxWidth: 460, textAlign: "center" }}>
+      <div style={{ fontSize: 12, color: "#6c86b5", marginTop: 20, maxWidth: 460, textAlign: "center" }}>
         סטוריבורד מלא: PHILOS-EXPLAINER-STORYBOARD.md · לא סרטון סופי — רצף אמיתי, לא תיאור בלבד.
       </div>
     </div>

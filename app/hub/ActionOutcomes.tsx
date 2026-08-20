@@ -115,18 +115,18 @@ const S: Record<string, React.CSSProperties> = {
   card: { background: "rgba(18,24,38,0.7)", border: "1px solid rgba(90,120,180,0.14)", borderRadius: 16, padding: "16px 18px", marginTop: 16 },
   cardHead: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 },
   cardTitle: { fontSize: 15, fontWeight: 700, margin: 0, color: "#f0f4fc" },
-  hint: { fontSize: 10, color: "#5f7aa6" },
+  hint: { fontSize: 12, color: "#5f7aa6" },
 
   bucket: { marginTop: 10 },
-  bucketTitle: { fontSize: 11, fontWeight: 700, color: "#8fa3c9", marginBottom: 6 },
+  bucketTitle: { fontSize: 13, fontWeight: 700, color: "#8fa3c9", marginBottom: 6 },
   bucketBody: { display: "flex", flexDirection: "column", gap: 4 },
 
   row: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, background: "rgba(90,120,180,0.06)", border: "1px solid rgba(90,120,180,0.1)" },
-  rowLabel: { fontSize: 12.5, color: "#e8edf6" },
-  rowMeta: { fontSize: 10.5, color: "#5f7aa6", fontFamily: "ui-monospace, monospace" },
-  emptyRow: { fontSize: 12, color: "#7b8ca6", fontStyle: "italic", padding: "4px 2px" },
+  rowLabel: { fontSize: 13, color: "#e8edf6" },
+  rowMeta: { fontSize: 13, color: "#5f7aa6", fontFamily: "ui-monospace, monospace" },
+  emptyRow: { fontSize: 13, color: "#7b8ca6", fontStyle: "italic", padding: "4px 2px" },
 
-  badge: { fontSize: 10.5, fontWeight: 700, padding: "2px 8px", borderRadius: 6, border: "1px solid", fontFamily: "ui-monospace, monospace" },
+  badge: { fontSize: 13, fontWeight: 700, padding: "2px 8px", borderRadius: 6, border: "1px solid", fontFamily: "ui-monospace, monospace" },
 
-  counts: { marginTop: 12, fontSize: 10.5, color: "#5f7aa6", borderTop: "1px solid rgba(90,120,180,0.14)", paddingTop: 8 },
+  counts: { marginTop: 12, fontSize: 13, color: "#5f7aa6", borderTop: "1px solid rgba(90,120,180,0.14)", paddingTop: 8 },
 };

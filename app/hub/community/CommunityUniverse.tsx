@@ -297,7 +297,7 @@ function Overview({
       </Section>
 
       <details style={{ margin: "12px 20px" }}>
-        <summary style={{ cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>
+        <summary style={{ cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#6c86b5", padding: "4px 0" }}>
           DETAILS / AUDIT — קבוצות פוטנציאליות, פעילות חיה גולמית
         </summary>
         <div style={{ marginTop: 8 }}>
@@ -357,7 +357,7 @@ const CONCEPT_TYPE_COLOR: Partial<Record<SourceConceptType, string>> = {
   VALUE: "#34d399", VALUE_DOMAIN: "#5b9cf6", PRINCIPLE: "#a78bfa", TENSION: "#f2635c",
   OPPOSITION: "#f2635c", GROUP_CRITERION: "#fbbf24", MEASURABLE_DIMENSION: "#5aa6ff",
   CONTINUUM: "#5aa6ff", OUTCOME: "#34d399", QUALITY: "#5b9cf6",
-  NON_VALUE: "#5a76a3", REVIEW_REQUIRED: "#8fa3c9",
+  NON_VALUE: "#6c86b5", REVIEW_REQUIRED: "#8fa3c9",
 };
 
 // §50 — SOURCE MODEL → RUNTIME CANON promotion status colors — now the
@@ -546,7 +546,7 @@ function ValueLandscape({
           <a href="?mode=needs" style={S.actionBtn}>קדם ערך זה · ADVANCE THIS VALUE → צור Need</a>
           <a href="?mode=resources" style={S.actionBtn}>קדם ערך זה · ADVANCE THIS VALUE → צור Offer</a>
         </div>
-        <div style={{ fontSize: FS.meta, color: "#5a76a3", marginTop: 6 }}>
+        <div style={{ fontSize: FS.meta, color: "#6c86b5", marginTop: 6 }}>
           DEFEND THIS VALUE — לא מוצג: אין אות "איום" אמיתי בשום מקום ב-canon; הצגתה הייתה דורשת המצאת איום.
         </div>
 
@@ -599,7 +599,7 @@ function ValueLandscape({
             does nothing. */}
         <div style={{ ...S.subHead, marginTop: 14 }}>קמפיינים · CAMPAIGNS (0)</div>
         <Empty>0 — Campaign אינה ישות persisted בבנייה זו עדיין (דורש store חדש, החלטת scope נפרדת).</Empty>
-        <div style={{ fontSize: FS.meta, color: "#5a76a3", padding: "6px 10px", border: "1px dashed rgba(90,120,180,0.3)", borderRadius: 6, marginTop: 4, display: "inline-block" }}>
+        <div style={{ fontSize: FS.meta, color: "#6c86b5", padding: "6px 10px", border: "1px dashed rgba(90,120,180,0.3)", borderRadius: 6, marginTop: 4, display: "inline-block" }}>
           CREATE CAMPAIGN · not connected yet
         </div>
       </Section>
@@ -673,7 +673,7 @@ function ValueLandscape({
              already uses for GROUP DETAIL). Kept, not deleted: real
              evidence, just not primary-viewport material. */}
       <details dir="rtl" style={{ margin: "0 0 16px" }}>
-        <summary style={{ cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>DETAILS / AUDIT</summary>
+        <summary style={{ cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#6c86b5", padding: "4px 0" }}>DETAILS / AUDIT</summary>
         <div style={{ marginTop: 8 }}>
           <Section title={`מועמדים ממקור · SOURCE CANDIDATES (${SOURCE_CONCEPTS.length} מקור · ${countCanonicalConcepts()} קנוני לאחר איחוד כפילויות)`}>
             <div style={S.note}>
@@ -682,7 +682,7 @@ function ValueLandscape({
             </div>
             <div style={S.grid}>
               {SOURCE_CONCEPT_TYPES.map((t) => (
-                <a key={t} href={`?mode=values&conceptType=${t}`} style={{ ...S.valueCard, borderColor: `${CONCEPT_TYPE_COLOR[t] ?? "#5a76a3"}55`, ...(selectedConceptType === t ? { background: "rgba(91,156,246,0.12)" } : {}) }}>
+                <a key={t} href={`?mode=values&conceptType=${t}`} style={{ ...S.valueCard, borderColor: `${CONCEPT_TYPE_COLOR[t] ?? "#6c86b5"}55`, ...(selectedConceptType === t ? { background: "rgba(91,156,246,0.12)" } : {}) }}>
                   <div style={{ ...S.valueCardTitle, color: CONCEPT_TYPE_COLOR[t] ?? "#8fa3c9" }}>{t}</div>
                   <div style={S.valueCardMeta}>{sourceCounts[t]} concepts</div>
                 </a>
@@ -767,8 +767,8 @@ function ValueLandscape({
             <div style={S.statGrid}>
               <Stat value={SOURCE_CORPUS_TRIAGE.TOTAL_FILES} label="TOTAL FILES" color="#8fa3c9" />
               <Stat value={SOURCE_CORPUS_TRIAGE.SEMANTIC_FILES} label="SEMANTIC" color="#5b9cf6" />
-              <Stat value={SOURCE_CORPUS_TRIAGE.MEDIA_OUT_OF_SCOPE} label="MEDIA (OUT OF SCOPE)" color="#5a76a3" />
-              <Stat value={SOURCE_CORPUS_TRIAGE.CODE_OUT_OF_SCOPE} label="CODE (OUT OF SCOPE)" color="#5a76a3" />
+              <Stat value={SOURCE_CORPUS_TRIAGE.MEDIA_OUT_OF_SCOPE} label="MEDIA (OUT OF SCOPE)" color="#6c86b5" />
+              <Stat value={SOURCE_CORPUS_TRIAGE.CODE_OUT_OF_SCOPE} label="CODE (OUT OF SCOPE)" color="#6c86b5" />
               <Stat value={SOURCE_CORPUS_TRIAGE.ARCHIVES} label="ARCHIVES (VERIFIED REDUNDANT)" color="#fbbf24" />
               <Stat value={SOURCE_CORPUS_TRIAGE.UNREADABLE} label="UNREADABLE / BLOCKED" color="#f2635c" />
               <Stat value={SOURCE_CORPUS_TRIAGE.SEMANTIC_FILES_REMAINING} label="SEMANTIC REMAINING" color="#34d399" />
@@ -782,7 +782,7 @@ function ValueLandscape({
 
 // ── GROUPS ───────────────────────────────────────────────────────────────
 
-const STATUS_COLOR: Record<GroupRegistryEntry["status"], string> = { REAL: "#34d399", DEMO: "#fbbf24", ARCHIVED: "#5a76a3", FORMING: "#a78bfa" };
+const STATUS_COLOR: Record<GroupRegistryEntry["status"], string> = { REAL: "#34d399", DEMO: "#fbbf24", ARCHIVED: "#6c86b5", FORMING: "#a78bfa" };
 
 function GroupLandscape({
   groupRegistry, possibleGroups, people, universeFamilyCandidates,
@@ -988,7 +988,7 @@ function ActivityMode({
   return (
     <>
       <Section title={`קבוצה · LEGACY GROUP ACTIVITY (${activity.length})`}>
-        <div style={{ fontSize: FS.meta, color: "#5a76a3", marginBottom: 8 }}>
+        <div style={{ fontSize: FS.meta, color: "#6c86b5", marginBottom: 8 }}>
           מקור: יומן Value-Group ההיסטורי (legacy event log) — נפרד לגמרי ממערכת ה-canon למטה, אין מיזוג מזהים.
         </div>
         {activity.length === 0 ? <Empty>אין פעילות רשומה.</Empty> : (
@@ -1032,7 +1032,7 @@ function CanonActivitySection({
 
   return (
     <Section title={`CANON · פעילות Action/Effect קנונית (${canonActions.length + canonEffects.length})`}>
-      <div style={{ fontSize: FS.meta, color: "#5a76a3", marginBottom: 8 }}>
+      <div style={{ fontSize: FS.meta, color: "#6c86b5", marginBottom: 8 }}>
         מקור: canon actionStore/effectStore — אותם action_id/effect_id בדיוק כמו ב-/marketplace וב-/dynamics. אין group_id על Action קנוני — אין ייחוס קבוצתי מומצא.
       </div>
       {canonActions.length === 0 && canonEffects.length === 0 ? (
@@ -1077,7 +1077,7 @@ function ImpactMode({ impact }: { impact: ImpactRow[] }) {
           {impact.map((i) => (
             <div key={i.impact_id} style={S.listRow}>
               <span style={S.listTitle}>{i.statement}</span>
-              <span style={{ ...S.listMeta, color: i.verified ? "#34d399" : "#5a76a3" }}>{i.group_name} · {i.verified ? "VERIFIED" : i.verification_level}</span>
+              <span style={{ ...S.listMeta, color: i.verified ? "#34d399" : "#6c86b5" }}>{i.group_name} · {i.verified ? "VERIFIED" : i.verification_level}</span>
             </div>
           ))}
         </div>
@@ -1088,7 +1088,7 @@ function ImpactMode({ impact }: { impact: ImpactRow[] }) {
 
 // ── shared bits ──────────────────────────────────────────────────────────
 
-const PROV_COLOR: Record<string, string> = { REAL: "#34d399", DEMO: "#fbbf24", LEGACY: "#5a76a3" };
+const PROV_COLOR: Record<string, string> = { REAL: "#34d399", DEMO: "#fbbf24", LEGACY: "#6c86b5" };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -1147,7 +1147,7 @@ export const S: Record<string, React.CSSProperties> = {
 
   detailGrid: { display: "flex", flexDirection: "column", gap: 4 },
   detailRow: { display: "flex", flexDirection: "column", gap: 2, padding: "6px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)" },
-  detailLabel: { fontSize: FS.base, color: "#5a76a3", letterSpacing: 0.5 },
+  detailLabel: { fontSize: FS.base, color: "#6c86b5", letterSpacing: 0.5 },
   detailValue: { fontSize: FS.read, color: "#dbe6f6" },
 
   list: { display: "flex", flexDirection: "column", gap: 4 },
@@ -1159,8 +1159,8 @@ export const S: Record<string, React.CSSProperties> = {
   feedRow: { display: "flex", alignItems: "center", gap: 8, padding: "5px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: FS.read, flexWrap: "wrap" },
   feedTag: { fontSize: FS.base, fontWeight: 800, fontFamily: "ui-monospace, monospace" },
   feedText: { flex: 1, color: "#dbe6f6" },
-  feedTime: { fontSize: FS.base, color: "#5a76a3" },
+  feedTime: { fontSize: FS.base, color: "#6c86b5" },
 
-  note: { fontSize: FS.meta, color: "#5a76a3", lineHeight: 1.7, marginBottom: 8 },
+  note: { fontSize: FS.meta, color: "#6c86b5", lineHeight: 1.7, marginBottom: 8 },
   empty: { fontSize: FS.read, color: "#7b8ca6", fontStyle: "italic", padding: "4px 2px", lineHeight: 1.6 },
 };

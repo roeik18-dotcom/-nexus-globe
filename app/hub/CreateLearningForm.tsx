@@ -24,7 +24,7 @@ export default function CreateLearningForm({
 
   if (effectOptions.length === 0 || observationOptions.length === 0) {
     return (
-      <div dir="rtl" style={{ fontSize: 11, color: "#8fa3c9", background: "rgba(90,120,180,0.06)", borderRadius: 10, padding: 12, marginBottom: 12 }}>
+      <div dir="rtl" style={{ fontSize: 13, color: "#8fa3c9", background: "rgba(90,120,180,0.06)", borderRadius: 10, padding: 12, marginBottom: 12 }}>
         למידה (canon) · LEARNING — דורש לפחות Effect אמיתי אחד ו-Observation אמיתית אחת (מצב קודם).
       </div>
     );
@@ -41,7 +41,7 @@ export default function CreateLearningForm({
         });
       }}
     >
-      <div style={{ fontSize: 11, letterSpacing: 0.5, color: "#8fa3c9" }}>למידה חדשה · NEW LEARNING (person_roei) — State → State'</div>
+      <div style={{ fontSize: 13, letterSpacing: 0.5, color: "#8fa3c9" }}>למידה חדשה · NEW LEARNING (person_roei) — State → State'</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <select name="effect_ref" required style={selectStyle}>
           <option value="">— בחר Effect —</option>
@@ -65,7 +65,7 @@ export default function CreateLearningForm({
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <button type="submit" disabled={pending} style={btnStyle}>{pending ? "רושם…" : "רשום למידה · RECORD LEARNING"}</button>
         {result ? (
-          <span style={{ fontSize: 11, color: result.ok ? "#34d399" : "#f2635c" }}>
+          <span style={{ fontSize: 13, color: result.ok ? "#34d399" : "#f2635c" }}>
             {result.ok
               // `state_prime` means the GATE accepted the caller's proposed
               // candidate — it does not set, persist or reach a State(t+1).
@@ -81,6 +81,6 @@ export default function CreateLearningForm({
   );
 }
 
-const selectStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 12, flex: 1, minWidth: 200 };
-const inputStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 12, flex: 1, minWidth: 140 };
-const btnStyle: React.CSSProperties = { background: "#5b9cf6", color: "#0b0f1a", fontWeight: 600, fontSize: 12, border: "none", borderRadius: 6, padding: "7px 14px", cursor: "pointer" };
+const selectStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 13, flex: 1, minWidth: 200 };
+const inputStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 13, flex: 1, minWidth: 140 };
+const btnStyle: React.CSSProperties = { background: "#5b9cf6", color: "#0b0f1a", fontWeight: 600, fontSize: 13, border: "none", borderRadius: 6, padding: "7px 14px", cursor: "pointer" };

@@ -20,7 +20,7 @@ export default function HumanConfigSummaryCard({ summary, sourceFileName }: { su
           <div style={S.note}>מקור: {sourceFileName} · Domain = "אדם" · {summary.sectionCount} Section · {summary.canonicalConceptCount} Canonical concept</div>
           <div style={S.row}>
             <Metric label="MAPPED" value={summary.mapped} color="#34d399" />
-            <Metric label="UNMAPPED" value={summary.unmapped} color="#5a76a3" />
+            <Metric label="UNMAPPED" value={summary.unmapped} color="#6c86b5" />
             <Metric label="REVIEW_REQUIRED" value={summary.reviewRequired} color="#fbbf24" />
           </div>
           <div style={S.note}>מצב חי (Live State) לכל פרמטר: לא ידוע — מבנה מקור בלבד, אין תצפית canon מקושרת עדיין.</div>
@@ -43,11 +43,11 @@ const S: Record<string, React.CSSProperties> = {
   card: { background: "rgba(18,24,38,0.7)", border: "1px solid rgba(90,120,180,0.14)", borderRadius: 16, padding: "14px 18px", marginTop: 16 },
   head: { display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8 },
   title: { fontSize: 13.5, fontWeight: 700, margin: 0, color: "#f0f4fc" },
-  link: { fontSize: 11, color: "#5b9cf6", textDecoration: "none" },
-  note: { fontSize: 10.5, color: "#8fa3c9", marginTop: 6, lineHeight: 1.6 },
-  empty: { fontSize: 11.5, color: "#7b8ca6", fontStyle: "italic", marginTop: 4 },
+  link: { fontSize: 13, color: "#5b9cf6", textDecoration: "none" },
+  note: { fontSize: 13, color: "#8fa3c9", marginTop: 6, lineHeight: 1.6 },
+  empty: { fontSize: 13, color: "#7b8ca6", fontStyle: "italic", marginTop: 4 },
   row: { display: "flex", gap: 16, marginTop: 8 },
   metric: { display: "flex", flexDirection: "column", gap: 1 },
   metricValue: { fontSize: 16, fontWeight: 800 },
-  metricLabel: { fontSize: 9, color: "#8fa3c9" },
+  metricLabel: { fontSize: 12, color: "#8fa3c9" },
 };

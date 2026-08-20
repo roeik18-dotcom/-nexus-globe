@@ -65,7 +65,7 @@ function FlowNode({ label, count, href }: { label: string; count: number; href: 
 function Arrow({ active }: { active: boolean }) {
   return (
     <div style={{ width: 20, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-      <span style={{ fontSize: 13, color: active ? STATUS.real.text : COLOR.textFaint }}>→</span>
+      <span style={{ fontSize: 15, color: active ? STATUS.real.text : COLOR.textFaint }}>→</span>
     </div>
   );
 }
@@ -73,7 +73,7 @@ function Arrow({ active }: { active: boolean }) {
 function Merge() {
   return (
     <div style={{ width: 20, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-      <span style={{ fontSize: 13, color: COLOR.textFaint }}>↔</span>
+      <span style={{ fontSize: 15, color: COLOR.textFaint }}>↔</span>
     </div>
   );
 }

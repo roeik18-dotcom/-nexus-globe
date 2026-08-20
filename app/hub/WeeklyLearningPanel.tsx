@@ -86,7 +86,7 @@ function Metric({ label, value, color }: { label: string; value: number; color?:
   return (
     <div style={S.paramCard}>
       <div style={{ fontSize: 18, fontWeight: 800, color: color ?? "#dbe6f6" }}>{value}</div>
-      <div style={{ fontSize: 9.5, color: "#8fa3c9" }}>{label}</div>
+      <div style={{ fontSize: 12, color: "#8fa3c9" }}>{label}</div>
     </div>
   );
 }
@@ -98,11 +98,11 @@ function Empty({ text }: { text: string }) {
 const S: Record<string, React.CSSProperties> = {
   card: { background: "rgba(18,24,38,0.7)", border: "1px solid rgba(91,156,246,0.3)", borderRadius: 16, padding: "16px 18px", marginTop: 16 },
   head: { display: "flex", alignItems: "center", gap: 10, marginBottom: 6 },
-  badge: { fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 6, border: "1px solid rgba(52,211,153,0.4)", color: "#34d399", fontFamily: "ui-monospace, monospace" },
+  badge: { fontSize: 12, fontWeight: 800, padding: "2px 8px", borderRadius: 6, border: "1px solid rgba(52,211,153,0.4)", color: "#34d399", fontFamily: "ui-monospace, monospace" },
   title: { fontSize: 13.5, fontWeight: 700, margin: 0, color: "#f0f4fc" },
-  subHead: { fontSize: 10.5, fontWeight: 700, color: "#8fa3c9", marginTop: 10, marginBottom: 4 },
+  subHead: { fontSize: 13, fontWeight: 700, color: "#8fa3c9", marginTop: 10, marginBottom: 4 },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginBottom: 8 },
   paramCard: { border: "1px solid rgba(90,120,180,0.2)", borderRadius: 8, padding: "8px 10px", textAlign: "center" },
-  row: { display: "flex", justifyContent: "space-between", gap: 8, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 11.5, marginBottom: 3 },
+  row: { display: "flex", justifyContent: "space-between", gap: 8, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 13, marginBottom: 3 },
   meta: { color: "#8aa0c8" },
 };

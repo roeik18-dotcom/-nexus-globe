@@ -46,14 +46,14 @@ function DeltaRow({ label, before, after, unit = "" }: DeltaRowProps) {
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 52px 52px 60px", gap: 4, alignItems: "center", padding: "3px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-      <span style={{ fontSize: 10, color: "#4a6a8a" }}>{label}</span>
-      <span style={{ fontSize: 10, fontWeight: 600, color: "#22D3EE", textAlign: "right" as const, fontVariantNumeric: "tabular-nums" }}>
+      <span style={{ fontSize: 12, color: "#4a6a8a" }}>{label}</span>
+      <span style={{ fontSize: 12, fontWeight: 600, color: "#22D3EE", textAlign: "right" as const, fontVariantNumeric: "tabular-nums" }}>
         {before}{unit}
       </span>
-      <span style={{ fontSize: 10, fontWeight: 600, color: "#5B8CFF", textAlign: "right" as const, fontVariantNumeric: "tabular-nums" }}>
+      <span style={{ fontSize: 12, fontWeight: 600, color: "#5B8CFF", textAlign: "right" as const, fontVariantNumeric: "tabular-nums" }}>
         {after}{unit}
       </span>
-      <span style={{ fontSize: 10, fontWeight: 700, color: delta.color, textAlign: "right" as const, fontVariantNumeric: "tabular-nums" }}>
+      <span style={{ fontSize: 12, fontWeight: 700, color: delta.color, textAlign: "right" as const, fontVariantNumeric: "tabular-nums" }}>
         {delta.text}
       </span>
     </div>
@@ -155,7 +155,7 @@ export default function CoverageDeltaExplorer({
   }
 
   const SELECT_STYLE: React.CSSProperties = {
-    fontSize: 10, padding: "3px 6px", borderRadius: 3,
+    fontSize: 12, padding: "3px 6px", borderRadius: 3,
     background: "#071420", color: "#8ab8d8",
     border: "1px solid #0c2040", fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
     width: "100%", marginTop: 3,
@@ -177,7 +177,7 @@ export default function CoverageDeltaExplorer({
               key={m}
               onClick={() => { setExplorerMode(m); setPatch(p => ({ ...p, mode: m })); }}
               style={{
-                flex: 1, fontSize: 9, padding: "4px 6px", borderRadius: 3, cursor: "pointer",
+                flex: 1, fontSize: 12, padding: "4px 6px", borderRadius: 3, cursor: "pointer",
                 fontWeight: active ? 700 : 400,
                 background: active ? "rgba(34,211,238,0.15)" : "transparent",
                 color: active ? "#22D3EE" : "#4a6a8a",
@@ -195,9 +195,9 @@ export default function CoverageDeltaExplorer({
       {/* Selectors */}
       {explorerMode === "remove" && (
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 9, color: "#4a6a8a", marginBottom: 2 }}>Select required_for link to remove</div>
+          <div style={{ fontSize: 12, color: "#4a6a8a", marginBottom: 2 }}>Select required_for link to remove</div>
           {contextualVcrs.length === 0 ? (
-            <div style={{ fontSize: 9, color: "#F87171", marginTop: 4 }}>No required_for links for this mission.</div>
+            <div style={{ fontSize: 12, color: "#F87171", marginTop: 4 }}>No required_for links for this mission.</div>
           ) : (
             <select
               value={patch.removeVcrId}
@@ -216,7 +216,7 @@ export default function CoverageDeltaExplorer({
       {explorerMode === "add" && (
         <div style={{ marginBottom: 12, display: "flex", flexDirection: "column" as const, gap: 8 }}>
           <div>
-            <div style={{ fontSize: 9, color: "#4a6a8a" }}>Gap</div>
+            <div style={{ fontSize: 12, color: "#4a6a8a" }}>Gap</div>
             <select
               value={patch.addGapId}
               onChange={e => setPatch(p => ({ ...p, addGapId: e.target.value, addCapId: "" }))}
@@ -230,7 +230,7 @@ export default function CoverageDeltaExplorer({
           </div>
           {patch.addGapId && (
             <div>
-              <div style={{ fontSize: 9, color: "#4a6a8a" }}>Capability to link</div>
+              <div style={{ fontSize: 12, color: "#4a6a8a" }}>Capability to link</div>
               <select
                 value={patch.addCapId}
                 onChange={e => setPatch(p => ({ ...p, addCapId: e.target.value }))}
@@ -244,7 +244,7 @@ export default function CoverageDeltaExplorer({
             </div>
           )}
           {patch.addGapId && !addGapFirstValueId && (
-            <div style={{ fontSize: 9, color: "#F87171" }}>Selected gap has no requiredValues — cannot form a VCR.</div>
+            <div style={{ fontSize: 12, color: "#F87171" }}>Selected gap has no requiredValues — cannot form a VCR.</div>
           )}
         </div>
       )}
@@ -252,10 +252,10 @@ export default function CoverageDeltaExplorer({
       {/* Before / After / Delta table */}
       <div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 52px 52px 60px", gap: 4, marginBottom: 4 }}>
-          <span style={{ fontSize: 8, color: "#1a3550", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const }}>Metric</span>
-          <span style={{ fontSize: 8, color: "#22D3EE", fontWeight: 700, textAlign: "right" as const }}>Before</span>
-          <span style={{ fontSize: 8, color: "#5B8CFF", fontWeight: 700, textAlign: "right" as const }}>After</span>
-          <span style={{ fontSize: 8, color: "#4a6a8a", fontWeight: 700, textAlign: "right" as const }}>Δ</span>
+          <span style={{ fontSize: 12, color: "#1a3550", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" as const }}>Metric</span>
+          <span style={{ fontSize: 12, color: "#22D3EE", fontWeight: 700, textAlign: "right" as const }}>Before</span>
+          <span style={{ fontSize: 12, color: "#5B8CFF", fontWeight: 700, textAlign: "right" as const }}>After</span>
+          <span style={{ fontSize: 12, color: "#4a6a8a", fontWeight: 700, textAlign: "right" as const }}>Δ</span>
         </div>
         <DeltaRow label="Coverage"         before={beforeMetrics.coveragePct}       after={afterMetrics?.coveragePct       ?? beforeMetrics.coveragePct}       unit="%" />
         <DeltaRow label="Graph Integrity"  before={beforeMetrics.graphIntegrityPct}  after={afterMetrics?.graphIntegrityPct  ?? beforeMetrics.graphIntegrityPct}  unit="%" />
@@ -265,7 +265,7 @@ export default function CoverageDeltaExplorer({
       </div>
 
       {!patchReady && (
-        <div style={{ marginTop: 8, fontSize: 9, color: "#1a3550", fontStyle: "italic" }}>
+        <div style={{ marginTop: 8, fontSize: 12, color: "#1a3550", fontStyle: "italic" }}>
           Select a link above to see the delta.
         </div>
       )}
@@ -274,7 +274,7 @@ export default function CoverageDeltaExplorer({
       <div style={{
         marginTop: 12, paddingTop: 10,
         borderTop: "1px solid rgba(34,211,238,0.08)",
-        fontSize: 8.5, color: "#1a3550", lineHeight: 1.5,
+        fontSize: 12, color: "#1a3550", lineHeight: 1.5,
       }}>
         Structural coverage calculation only — not a behavioral or causal prediction.
       </div>

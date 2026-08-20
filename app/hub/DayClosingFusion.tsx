@@ -33,8 +33,8 @@ const CLASS_COLOR: Record<ClosingQuestion["question_class"], string> = {
   evidence: "#fbbf24",
   gap: "#f2635c",
   constraint: "#f2635c",
-  value: "#5a76a3",
-  human_value: "#5a76a3",
+  value: "#6c86b5",
+  human_value: "#6c86b5",
   expected_vs_actual: "#a78bfa",
   learning: "#34d399",
   next_action: "#34d399",
@@ -145,24 +145,24 @@ function Empty({ children }: { children: React.ReactNode }) {
 
 const S: Record<string, React.CSSProperties> = {
   wrap: { marginTop: 16, paddingTop: 14, borderTop: "1px solid rgba(90,120,180,0.14)" },
-  head: { fontSize: 12.5, fontWeight: 700, color: "#a78bfa", marginBottom: 10 },
-  subHead: { fontSize: 10.5, fontWeight: 700, color: "#8fa3c9", marginTop: 10, marginBottom: 4 },
+  head: { fontSize: 13, fontWeight: 700, color: "#a78bfa", marginBottom: 10 },
+  subHead: { fontSize: 13, fontWeight: 700, color: "#8fa3c9", marginTop: 10, marginBottom: 4 },
 
   list: { display: "flex", flexDirection: "column", gap: 4 },
-  row: { display: "flex", justifyContent: "space-between", gap: 8, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 11.5 },
+  row: { display: "flex", justifyContent: "space-between", gap: 8, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 13 },
   meta: { color: "#8aa0c8" },
-  empty: { fontSize: 11, color: "#7b8ca6", fontStyle: "italic", padding: "3px 2px" },
+  empty: { fontSize: 13, color: "#7b8ca6", fontStyle: "italic", padding: "3px 2px" },
 
   fusionRow: { display: "flex", gap: 10, alignItems: "stretch" },
   fusionCol: { flex: 1, display: "flex", flexDirection: "column", gap: 3 },
-  fusionColHead: { fontSize: 9.5, fontWeight: 800, letterSpacing: 1, color: "#5a76a3", marginBottom: 2 },
-  fusionDivider: { display: "flex", alignItems: "center", fontSize: 16, color: "#5a76a3" },
+  fusionColHead: { fontSize: 12, fontWeight: 800, letterSpacing: 1, color: "#6c86b5", marginBottom: 2 },
+  fusionDivider: { display: "flex", alignItems: "center", fontSize: 16, color: "#6c86b5" },
 
   qCard: { border: "1px solid", borderRadius: 8, padding: "8px 10px", background: "rgba(90,120,180,0.04)" },
-  qClass: { fontSize: 9.5, fontWeight: 800, letterSpacing: 0.5 },
-  blockedTag: { fontSize: 8.5, fontWeight: 800, color: "#5a76a3", border: "1px solid #5a76a355", borderRadius: 4, padding: "1px 5px" },
-  qText: { fontSize: 12, color: "#dbe6f6", marginTop: 4 },
-  qReason: { fontSize: 10, color: "#7f97c2", marginTop: 3, fontStyle: "italic" },
+  qClass: { fontSize: 12, fontWeight: 800, letterSpacing: 0.5 },
+  blockedTag: { fontSize: 12, fontWeight: 800, color: "#6c86b5", border: "1px solid #6c86b555", borderRadius: 4, padding: "1px 5px" },
+  qText: { fontSize: 13, color: "#dbe6f6", marginTop: 4 },
+  qReason: { fontSize: 12, color: "#7f97c2", marginTop: 3, fontStyle: "italic" },
 
-  note: { fontSize: 9.5, color: "#5a76a3", marginTop: 10, lineHeight: 1.6 },
+  note: { fontSize: 12, color: "#6c86b5", marginTop: 10, lineHeight: 1.6 },
 };

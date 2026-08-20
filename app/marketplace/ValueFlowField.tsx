@@ -63,7 +63,7 @@ function FieldNode({
         strokeWidth={active ? 3 : 2}
         strokeDasharray={status === "absent" ? "4 4" : undefined}
       />
-      <text x={x} y={y} fill={status === "absent" ? "#5a76a3" : "#f2f6fc"} fontSize={12} fontWeight={700} textAnchor="middle" dominantBaseline="middle">
+      <text x={x} y={y} fill={status === "absent" ? "#6c86b5" : "#f2f6fc"} fontSize={12} fontWeight={700} textAnchor="middle" dominantBaseline="middle">
         {label}
       </text>
     </g>
@@ -86,7 +86,7 @@ function Edge({ from, to, open }: { from: { x: number; y: number }; to: { x: num
   return (
     <line
       x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-      stroke={open ? "#5a76a3" : "#1e2740"}
+      stroke={open ? "#6c86b5" : "#1e2740"}
       strokeWidth={open ? 2 : 1.5}
       strokeDasharray={open ? undefined : "5 5"}
     />
@@ -120,8 +120,8 @@ export default function ValueFlowField({
   return (
     <div dir="rtl" style={{ fontFamily: "system-ui", background: "#0b0f1a", color: "#e6ebf5" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "12px 20px 0" }}>
-        <div style={{ fontSize: 10, letterSpacing: 1, color: "#5aa6ff" }}>שדה זרימת ערך</div>
-        <div style={{ fontSize: 10, color: "#5a76a3" }}>קהילה / כלל</div>
+        <div style={{ fontSize: 12, letterSpacing: 1, color: "#5aa6ff" }}>שדה זרימת ערך</div>
+        <div style={{ fontSize: 12, color: "#6c86b5" }}>קהילה / כלל</div>
       </div>
 
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ minHeight: "60vh" }} role="img" aria-label="שדה זרימת ערך">
@@ -180,11 +180,11 @@ export default function ValueFlowField({
             לא מוצג — לא ניתן להגיע לשלב זה כל עוד שער ההסכמה חסום.
           </FocusPanel>
         ) : (
-          <div style={{ fontSize: 12, color: "#7b8ca6", fontStyle: "italic" }}>לחץ על צומת או שער כדי לראות פרטים אמיתיים.</div>
+          <div style={{ fontSize: 13, color: "#7b8ca6", fontStyle: "italic" }}>לחץ על צומת או שער כדי לראות פרטים אמיתיים.</div>
         )}
       </div>
 
-      <div dir="rtl" style={{ padding: "0 20px 16px", fontSize: 10, color: "#5a76a3", lineHeight: 1.7 }}>
+      <div dir="rtl" style={{ padding: "0 20px 16px", fontSize: 12, color: "#6c86b5", lineHeight: 1.7 }}>
         {ADMISSIBILITY_PREDICATE}
         <span style={{ marginRight: 6 }}> (PHILOS-MELTING-POT-CANON.md §21 — gate: {ADMISSIBILITY_GATE_FUNCTION})</span>
       </div>
@@ -195,8 +195,8 @@ export default function ValueFlowField({
 function FocusPanel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div style={{ background: "#111726", border: "1px solid #1e2740", borderRadius: 8, padding: "10px 14px", maxWidth: 500 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: "#f2f6fc" }}>{title}</div>
-      <div style={{ fontSize: 12, color: "#9fb0d0", marginTop: 6, lineHeight: 1.6 }}>{children}</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "#f2f6fc" }}>{title}</div>
+      <div style={{ fontSize: 13, color: "#9fb0d0", marginTop: 6, lineHeight: 1.6 }}>{children}</div>
     </div>
   );
 }

@@ -362,7 +362,7 @@ export default function CausalChainFlow({
           rendered them. A mention is not a measurement and not a runtime
           class — stated inline. */}
       {anchor ? (
-        <div style={{ marginTop: SPACE.sm, fontSize: 9.5, color: COLOR.textDim, lineHeight: 1.6 }}>
+        <div style={{ marginTop: SPACE.sm, fontSize: 12, color: COLOR.textDim, lineHeight: 1.6 }}>
           <span style={{ ...S.eyebrow, color: COLOR.textFaint }}>ניגודי מקור בתצפית · </span>
           {(() => {
             const m = detectBaseOppositions(anchor.mark.context ?? "");
@@ -470,13 +470,13 @@ function TemporalBlockBand({
                  background: st.ok ? "rgba(52,211,153,0.08)" : "rgba(251,191,36,0.05)",
                  borderRadius: RADIUS.sm, padding: "3px 8px",
                }}>
-            <span style={{ ...TYPE.micro, fontSize: 7.5, color: COLOR.textFaint }}>{i + 1}</span>
-            <span dir="rtl" style={{ fontSize: 10, color: st.ok ? "#6fe3b4" : "#fbbf24" }}>{st.label}</span>
-            <span dir="rtl" style={{ fontSize: 8.5, color: COLOR.textFaint }}>{st.note}</span>
+            <span style={{ ...TYPE.micro, fontSize: 12, color: COLOR.textFaint }}>{i + 1}</span>
+            <span dir="rtl" style={{ fontSize: 12, color: st.ok ? "#6fe3b4" : "#fbbf24" }}>{st.label}</span>
+            <span dir="rtl" style={{ fontSize: 12, color: COLOR.textFaint }}>{st.note}</span>
           </div>
         ))}
       </div>
-      <div style={{ fontSize: 9.5, color: COLOR.textDim, lineHeight: 1.6, marginTop: 5 }}>
+      <div style={{ fontSize: 12, color: COLOR.textDim, lineHeight: 1.6, marginTop: 5 }}>
         המצב האמיתי כרגע: <b>תצפית אחת</b> → אין t1 בת-השוואה → Action קיים → Effect קיים →
         אך <b>אין תצפית שנייה להשוות אליה</b> → <b>שינוי = UNKNOWN</b>.
         זו לולאה פתוחה כנה, לא כשל. לא נבנתה תצפית שנייה כדי לגרום למסך להיראות שלם.
@@ -539,7 +539,7 @@ function OpenBoundaryBand({
             <ProvenanceBadge p="CANON" />
           </div>
         ) : null}
-        <div style={{ ...S.baRow, background: "transparent", fontSize: 10, color: COLOR.textFaint }}>
+        <div style={{ ...S.baRow, background: "transparent", fontSize: 12, color: COLOR.textFaint }}>
           חמש השאלות הפתוחות מתועדות ב-<code>app/lib/philos/canon/STATE-TRANSITION-BOUNDARY.md</code> — לא נפתרות כאן.
         </div>
       </div>
@@ -715,7 +715,7 @@ function StageCard({ stage, index }: { stage: StageData; index: number }) {
         </span>
         {stage.boundary && !real ? <OpenBoundaryMark note={stage.empty} /> : <ProvenanceBadge p={stage.provenance} />}
       </div>
-      <div dir="rtl" style={{ fontSize: 9.5, color: COLOR.textFaint }}>{stage.gloss}</div>
+      <div dir="rtl" style={{ fontSize: 12, color: COLOR.textFaint }}>{stage.gloss}</div>
 
       {real ? (
         <div dir="rtl" style={{ ...w.text, minHeight: 34 }}>
@@ -737,7 +737,7 @@ function StageCard({ stage, index }: { stage: StageData; index: number }) {
       )}
 
       {stage.detail ? (
-        <div dir="rtl" style={{ fontSize: 10, color: COLOR.textDim, lineHeight: 1.3 }}>
+        <div dir="rtl" style={{ fontSize: 12, color: COLOR.textDim, lineHeight: 1.3 }}>
           {stage.detail.length > 46 ? `${stage.detail.slice(0, 46)}…` : stage.detail}
         </div>
       ) : null}
@@ -751,7 +751,7 @@ function StageCard({ stage, index }: { stage: StageData; index: number }) {
         style={{
           marginTop: "auto", paddingTop: 6, borderTop: `1px solid ${COLOR.border}`,
           display: "flex", justifyContent: "space-between", gap: 6,
-          fontSize: 9, fontFamily: "ui-monospace, monospace",
+          fontSize: 12, fontFamily: "ui-monospace, monospace",
         }}
       >
         <span style={{ color: stage.time ? COLOR.textDim : "#8798b8", fontStyle: stage.time ? "normal" : "italic" }}>
@@ -787,18 +787,18 @@ const S: Record<string, React.CSSProperties> = {
   eyebrow: { ...TYPE.micro, color: COLOR.accent, marginBottom: 4 },
   title: { fontSize: 14, fontWeight: 800, letterSpacing: 0.2, margin: 0, color: COLOR.text, direction: "ltr", textAlign: "right" },
   headMeta: { display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" },
-  headChip: { fontSize: 9.5, fontWeight: 700, color: COLOR.textDim, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 9px", fontFamily: "ui-monospace, monospace" },
+  headChip: { fontSize: 12, fontWeight: 700, color: COLOR.textDim, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 9px", fontFamily: "ui-monospace, monospace" },
   rail: { overflowX: "auto", paddingBottom: SPACE.sm },
   track: { display: "flex", alignItems: "stretch", minWidth: "fit-content" },
   stageWrap: { display: "flex", alignItems: "stretch" },
   beforeAfter: { marginTop: SPACE.md, paddingTop: SPACE.md, borderTop: `1px solid ${COLOR.border}` },
   baGrid: { display: "flex", flexDirection: "column", gap: 4, marginTop: 6 },
-  baRow: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, fontSize: 11, background: "rgba(90,120,180,0.05)", borderRadius: RADIUS.sm, padding: "5px 10px" },
+  baRow: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, fontSize: 13, background: "rgba(90,120,180,0.05)", borderRadius: RADIUS.sm, padding: "5px 10px" },
   baDomain: { minWidth: 78, fontWeight: 700, color: COLOR.textDim },
   baCell: { minWidth: 170, color: COLOR.textDim },
-  baTime: { fontSize: 9.5, color: COLOR.textFaint, marginInlineStart: 6, fontFamily: "ui-monospace, monospace" },
+  baTime: { fontSize: 12, color: COLOR.textFaint, marginInlineStart: 6, fontFamily: "ui-monospace, monospace" },
   baArrow: { color: COLOR.textFaint },
   baUnknown: { fontStyle: "italic", color: "#8798b8" },
-  baDelta: { minWidth: 120, fontWeight: 800, fontSize: 11 },
+  baDelta: { minWidth: 120, fontWeight: 800, fontSize: 13 },
   baProv: { marginInlineStart: "auto" },
 };

@@ -184,7 +184,7 @@ export default async function BrainPage({
         ) : entityContext.status === "found" ? (
           <StateDiffPanel selected={entityContext} />
         ) : entityContext.status === "unknown" || entityContext.status === "not_found" ? (
-          <div dir="rtl" style={{ marginTop: 10, padding: "10px 14px", borderRadius: 8, border: "1px solid #5a4a2a", fontSize: 11, color: "#cfe0f5" }}>
+          <div dir="rtl" style={{ marginTop: 10, padding: "10px 14px", borderRadius: 8, border: "1px solid #5a4a2a", fontSize: 13, color: "#cfe0f5" }}>
             {entityContext.status === "unknown" ? entityContext.raw : ctxRaw} — {entityContext.status === "unknown" ? "לא זוהה כמזהה תקין. לא ידוע." : "לא נמצאה רשומה תואמת. לא ידוע."}
           </div>
         ) : null}
@@ -230,7 +230,7 @@ export default async function BrainPage({
           props, same shared runtime state — nothing was removed. */}
       <div style={{ padding: "0 20px 20px", background: "#080b13" }}>
         <details>
-          <summary style={{ cursor: "pointer", fontSize: 11, fontWeight: 700, letterSpacing: 1, color: "#5a76a3", padding: "10px 0", borderTop: "1px solid rgba(90,120,180,0.15)" }}>
+          <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: 1, color: "#6c86b5", padding: "10px 0", borderTop: "1px solid rgba(90,120,180,0.15)" }}>
             AUDIT / DEBUG — מפת מציאות ואפשרות (Brain graph, {worldEvents.length} reality nodes)
           </summary>
           <div style={{ height: "80vh", minHeight: 480, marginTop: 10 }}>

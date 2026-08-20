@@ -135,19 +135,19 @@ export default function OrientationCore({
     <div dir="rtl" style={{ fontFamily: "system-ui", background: "#080b13", color: "#e6ebf5", padding: 16, borderRadius: 12, border: "1px solid #1e2740" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <div>
-          <div style={{ fontSize: 10, letterSpacing: 1, color: BLUE }}>אוריינטציה נוכחית — המודל, המצב החי, הראיה</div>
-          <div style={{ fontSize: 13, color: "#7f97c2", marginTop: 2 }}>נושא: {core.subject}</div>
+          <div style={{ fontSize: 12, letterSpacing: 1, color: BLUE }}>אוריינטציה נוכחית — המודל, המצב החי, הראיה</div>
+          <div style={{ fontSize: 15, color: "#7f97c2", marginTop: 2 }}>נושא: {core.subject}</div>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           <button
             onClick={() => setZoom("meso")}
-            style={{ fontSize: 10, padding: "5px 10px", borderRadius: 14, border: `1px solid ${zoom === "meso" ? BLUE : "#2a3f66"}`, background: "transparent", color: zoom === "meso" ? BLUE : "#7f97c2", cursor: "pointer" }}
+            style={{ fontSize: 12, padding: "5px 10px", borderRadius: 14, border: `1px solid ${zoom === "meso" ? BLUE : "#2a3f66"}`, background: "transparent", color: zoom === "meso" ? BLUE : "#7f97c2", cursor: "pointer" }}
           >
             תצוגת מערכת
           </button>
           <button
             onClick={() => setZoom("micro")}
-            style={{ fontSize: 10, padding: "5px 10px", borderRadius: 14, border: `1px solid ${zoom === "micro" ? BLUE : "#2a3f66"}`, background: "transparent", color: zoom === "micro" ? BLUE : "#7f97c2", cursor: "pointer" }}
+            style={{ fontSize: 12, padding: "5px 10px", borderRadius: 14, border: `1px solid ${zoom === "micro" ? BLUE : "#2a3f66"}`, background: "transparent", color: zoom === "micro" ? BLUE : "#7f97c2", cursor: "pointer" }}
           >
             זום פנימי — אדם
           </button>
@@ -194,7 +194,7 @@ export default function OrientationCore({
                 <g key={f.key} onClick={() => setFocused(isFocused ? null : f.key)} style={{ cursor: "pointer" }}>
                   <line x1={CENTER.x} y1={CENTER.y} x2={p.x} y2={p.y} stroke="#1e2740" strokeWidth={1} strokeDasharray="2 4" />
                   <circle cx={p.x} cy={p.y} r={isFocused ? 24 : 19} fill={f.proven ? `${ORANGE}22` : "none"} stroke={color} strokeWidth={isFocused ? 2.5 : 1.5} strokeDasharray={f.proven ? undefined : "3 3"} />
-                  <text x={p.x} y={p.y + 3} fill={f.proven ? "#f2e6d8" : "#5a76a3"} fontSize={f.proven ? 9.5 : 9} textAnchor="middle">
+                  <text x={p.x} y={p.y + 3} fill={f.proven ? "#f2e6d8" : "#6c86b5"} fontSize={f.proven ? 9.5 : 9} textAnchor="middle">
                     {f.proven ? f.label : "?"}
                   </text>
                 </g>
@@ -256,10 +256,10 @@ export default function OrientationCore({
                 ) : (
                   <circle cx={cx} cy={cy} r={isFocused ? nodeR + 6 : nodeR} fill={`${color}22`} stroke={color} strokeWidth={isFocused ? 3 : 2} />
                 )}
-                <text x={cx} y={cy - 8} fill={known ? "#f2f6fc" : "#5a76a3"} fontSize={zoom === "micro" ? 16 : 13} fontWeight={700} textAnchor="middle">
+                <text x={cx} y={cy - 8} fill={known ? "#f2f6fc" : "#6c86b5"} fontSize={zoom === "micro" ? 16 : 13} fontWeight={700} textAnchor="middle">
                   {DOMAIN_WORD[d]}
                 </text>
-                <text x={cx} y={cy + 12} fill={known ? "#9fb0d0" : "#5a76a3"} fontSize={zoom === "micro" ? 12 : 9} textAnchor="middle">
+                <text x={cx} y={cy + 12} fill={known ? "#9fb0d0" : "#6c86b5"} fontSize={zoom === "micro" ? 12 : 9} textAnchor="middle">
                   {known ? levelState(m!.level).label : "לא ידוע"}
                 </text>
                 {known && prior ? (
@@ -307,8 +307,8 @@ function FocusContent({
       <Panel title={domainWord[d]} border={domainColor[d]}>
         <div>מצב: <b style={{ color: levelState(m.level).color }}>{levelState(m.level).label}</b> (level {m.level})</div>
         <div style={{ marginTop: 2 }}>יציבות: {m.stability}</div>
-        <div style={{ fontSize: 10, color: "#7b8ca6", marginTop: 6 }}>ראיה: {m.context} · {m.observed_at}</div>
-        <a href={`/dynamics?ctx=${encodeURIComponent(encodeSystemContextRef({ kind: "canon_observation", canon_event_id: m.canon_event_id }))}`} style={{ display: "inline-block", marginTop: 8, fontSize: 11, color: BLUE }}>
+        <div style={{ fontSize: 12, color: "#7b8ca6", marginTop: 6 }}>ראיה: {m.context} · {m.observed_at}</div>
+        <a href={`/dynamics?ctx=${encodeURIComponent(encodeSystemContextRef({ kind: "canon_observation", canon_event_id: m.canon_event_id }))}`} style={{ display: "inline-block", marginTop: 8, fontSize: 13, color: BLUE }}>
           פתח ב-Dynamics →
         </a>
       </Panel>
@@ -322,7 +322,7 @@ function FocusContent({
         {force.proven ? (
           <>
             <div>ברמת קבוצה/חברה: {force.social}</div>
-            <div style={{ fontSize: 10, color: YELLOW, marginTop: 8 }}>מקור: קורפוס PHILOS חיצוני · REVIEW_REQUIRED — לא קנוני, לא מחושב, לא מקושר לנתון אמיתי.</div>
+            <div style={{ fontSize: 12, color: YELLOW, marginTop: 8 }}>מקור: קורפוס PHILOS חיצוני · REVIEW_REQUIRED — לא קנוני, לא מחושב, לא מקושר לנתון אמיתי.</div>
           </>
         ) : (
           <div style={{ color: "#7b8ca6", fontStyle: "italic" }}>לא ידוע — לא נמצא מקור עבור המיקום המבני הזה (מתוך מודל יעד של 10 כוחות; רק 6 אומתו במקור).</div>
@@ -355,23 +355,23 @@ function FocusContent({
       <Panel title="אדם" border={BLUE}>
         <div>נושא: {core.subject}</div>
         <div style={{ marginTop: 8 }}>
-          <span style={{ color: "#5a76a3" }}>צורך: </span>
+          <span style={{ color: "#6c86b5" }}>צורך: </span>
           {!knownNeeds.checked ? "לא ניתן לבדוק" : knownNeeds.needs.length > 0 ? `${knownNeeds.needs.length} צרכים אמיתיים` : "נבדק — אין צורך רשום"}
         </div>
         <div>
-          <span style={{ color: "#5a76a3" }}>מרחב פעולה: </span>
+          <span style={{ color: "#6c86b5" }}>מרחב פעולה: </span>
           {actionSpace.admissible ? "כשיר" : `חסום — חסר ${actionSpace.blockers.join(", ")}`}
         </div>
       </Panel>
     );
   }
 
-  return <div style={{ fontSize: 12, color: "#7b8ca6", fontStyle: "italic" }}>לחץ על אדם, ממד, כוח, עדשה או טבעת כדי לראות פרטים.</div>;
+  return <div style={{ fontSize: 13, color: "#7b8ca6", fontStyle: "italic" }}>לחץ על אדם, ממד, כוח, עדשה או טבעת כדי לראות פרטים.</div>;
 }
 
 function Panel({ title, border, children }: { title: string; border: string; children: ReactNode }) {
   return (
-    <div style={{ background: "#111726", border: `1px solid ${border}`, borderRadius: 8, padding: "10px 14px", fontSize: 12, lineHeight: 1.6 }}>
+    <div style={{ background: "#111726", border: `1px solid ${border}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, lineHeight: 1.6 }}>
       <div style={{ fontWeight: 700, color: "#f2f6fc", marginBottom: 4 }}>{title}</div>
       {children}
     </div>

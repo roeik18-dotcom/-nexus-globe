@@ -113,7 +113,7 @@ export default function DemoMarketplaceFlow() {
           <Meta>verified_outcome · {DEMO_EFFECT.verified_outcome?.verifier_type}</Meta>
         </Stage>
         <Arrow />
-        <Stage label="LEARNING" color={learning.result.kind === "state_prime" ? "#34d399" : "#5a76a3"}>
+        <Stage label="LEARNING" color={learning.result.kind === "state_prime" ? "#34d399" : "#6c86b5"}>
           <div>{learning.result.kind}</div>
           <Meta>{delta ? `Δ level +${delta.level_delta} · Δ stability +${delta.stability_delta.toFixed(2)}` : "—"}</Meta>
         </Stage>
@@ -148,20 +148,20 @@ function Meta({ children }: { children: React.ReactNode }) {
 const S: Record<string, React.CSSProperties> = {
   card: { background: "rgba(18,24,38,0.7)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 16, padding: "16px 18px", margin: "16px 20px" },
   head: { display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" },
-  communityLink: { marginRight: "auto", fontSize: 11, color: "#fbbf24", textDecoration: "none" },
-  badge: { fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 6, border: "1px solid #fbbf2455", color: "#fbbf24", fontFamily: "ui-monospace, monospace" },
+  communityLink: { marginRight: "auto", fontSize: 13, color: "#fbbf24", textDecoration: "none" },
+  badge: { fontSize: 12, fontWeight: 800, padding: "2px 8px", borderRadius: 6, border: "1px solid #fbbf2455", color: "#fbbf24", fontFamily: "ui-monospace, monospace" },
   title: { fontSize: 14, fontWeight: 700, margin: 0, color: "#f0f4fc" },
-  note: { fontSize: 10.5, color: "#8fa3c9", lineHeight: 1.7, marginBottom: 12, maxWidth: 900 },
+  note: { fontSize: 13, color: "#8fa3c9", lineHeight: 1.7, marginBottom: 12, maxWidth: 900 },
   commitmentRow: { display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "6px 10px", borderRadius: 8, background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.25)", width: "fit-content" },
-  commitmentLabel: { fontSize: 9.5, fontWeight: 800, letterSpacing: 1, color: "#5a76a3" },
-  commitmentValue: { fontSize: 12, fontWeight: 700, color: "#34d399" },
+  commitmentLabel: { fontSize: 12, fontWeight: 800, letterSpacing: 1, color: "#6c86b5" },
+  commitmentValue: { fontSize: 13, fontWeight: 700, color: "#34d399" },
   bridgeStrip: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 },
-  bridgeChip: { fontSize: 9, fontWeight: 700, letterSpacing: 0.3, padding: "3px 8px", borderRadius: 5, color: "#a78bfa", border: "1px solid rgba(167,139,250,0.35)", background: "rgba(167,139,250,0.06)" },
+  bridgeChip: { fontSize: 12, fontWeight: 700, letterSpacing: 0.3, padding: "3px 8px", borderRadius: 5, color: "#a78bfa", border: "1px solid rgba(167,139,250,0.35)", background: "rgba(167,139,250,0.06)" },
 
   chain: { display: "flex", alignItems: "stretch", gap: 4, overflowX: "auto", paddingBottom: 4 },
   stage: { border: "1px solid", borderRadius: 10, padding: "8px 12px", minWidth: 150, flex: "0 0 auto" },
-  stageLabel: { fontSize: 9.5, fontWeight: 800, letterSpacing: 1 },
-  stageBody: { fontSize: 12, color: "#dbe6f6", marginTop: 4, lineHeight: 1.4 },
-  meta: { fontSize: 9.5, color: "#5a76a3", marginTop: 4 },
-  arrow: { display: "flex", alignItems: "center", color: "#5a76a3", fontSize: 16, padding: "0 2px" },
+  stageLabel: { fontSize: 12, fontWeight: 800, letterSpacing: 1 },
+  stageBody: { fontSize: 13, color: "#dbe6f6", marginTop: 4, lineHeight: 1.4 },
+  meta: { fontSize: 12, color: "#6c86b5", marginTop: 4 },
+  arrow: { display: "flex", alignItems: "center", color: "#6c86b5", fontSize: 16, padding: "0 2px" },
 };

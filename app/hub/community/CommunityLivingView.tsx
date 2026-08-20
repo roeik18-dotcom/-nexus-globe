@@ -228,7 +228,7 @@ function IdentityBadge({ identityLink }: { identityLink: ShellIdentityLink }) {
     identityLink.status === "VERIFIED_SAME_PERSON" ? "#34d399" :
     identityLink.status === "CONFLICT" ? "#f2635c" :
     identityLink.status === "DECLARED_SAME_PERSON" ? "#5b9cf6" :
-    identityLink.status === "UNVERIFIED" ? "#fbbf24" : "#5a76a3";
+    identityLink.status === "UNVERIFIED" ? "#fbbf24" : "#6c86b5";
   return (
     <span style={{ ...S.identityBadge, color, borderColor: `${color}55` }} title={`${identityLink.person_id} ↔ ${identityLink.community_member_id}`}>
       ⚭ {identityLink.status}
@@ -257,7 +257,7 @@ function HeroStat({ value, label, color }: { value: number | string; label: stri
 function NeedsCell({ label, value }: { label: string; value: number }) {
   return (
     <div style={S.needsCell}>
-      <div style={{ ...S.needsCellValue, color: value > 0 ? "#34d399" : "#5a76a3" }}>{value > 0 ? value : "NOT YET REGISTERED"}</div>
+      <div style={{ ...S.needsCellValue, color: value > 0 ? "#34d399" : "#6c86b5" }}>{value > 0 ? value : "NOT YET REGISTERED"}</div>
       <div style={S.needsCellLabel}>{label}</div>
     </div>
   );
@@ -276,7 +276,7 @@ function FlowArrow() {
   return <div style={S.flowArrow}>→</div>;
 }
 
-const CHAIN_STATUS_COLOR: Record<"known" | "partial" | "gap", string> = { known: "#34d399", partial: "#fbbf24", gap: "#5a76a3" };
+const CHAIN_STATUS_COLOR: Record<"known" | "partial" | "gap", string> = { known: "#34d399", partial: "#fbbf24", gap: "#6c86b5" };
 
 function ChainNode({ label, status, text }: { label: string; status: "known" | "partial" | "gap"; text: string }) {
   return (
@@ -303,60 +303,60 @@ const S: Record<string, React.CSSProperties> = {
 
   hero: { background: "linear-gradient(135deg, rgba(52,211,153,0.08), rgba(91,156,246,0.05))", border: "1px solid rgba(52,211,153,0.25)", borderRadius: 16, padding: "18px 20px", margin: "16px 20px 0" },
   heroTop: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" },
-  badge: { fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 6, border: "1px solid", fontFamily: "ui-monospace, monospace" },
+  badge: { fontSize: 12, fontWeight: 800, padding: "2px 8px", borderRadius: 6, border: "1px solid", fontFamily: "ui-monospace, monospace" },
   heroTitle: { fontSize: 22, fontWeight: 800, margin: 0, color: "#f0f4fc" },
-  heroRegion: { fontSize: 12, color: "#8fa3c9" },
-  identityBadge: { fontSize: 9.5, fontWeight: 700, padding: "2px 8px", borderRadius: 10, border: "1px solid", fontFamily: "ui-monospace, monospace", marginRight: "auto" },
+  heroRegion: { fontSize: 13, color: "#8fa3c9" },
+  identityBadge: { fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 10, border: "1px solid", fontFamily: "ui-monospace, monospace", marginRight: "auto" },
   heroStats: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 10, marginTop: 16 },
   heroStat: { textAlign: "center" },
   heroStatValue: { fontSize: 24, fontWeight: 800 },
-  heroStatLabel: { fontSize: 9.5, color: "#8fa3c9", letterSpacing: 0.5, marginTop: 2 },
+  heroStatLabel: { fontSize: 12, color: "#8fa3c9", letterSpacing: 0.5, marginTop: 2 },
 
   quickNav: { display: "flex", flexWrap: "wrap", gap: 6, margin: "12px 20px" },
-  quickNavLink: { fontSize: 10.5, padding: "4px 10px", borderRadius: 12, border: "1px solid rgba(90,120,180,0.3)", color: "#8fa3c9", textDecoration: "none" },
+  quickNavLink: { fontSize: 13, padding: "4px 10px", borderRadius: 12, border: "1px solid rgba(90,120,180,0.3)", color: "#8fa3c9", textDecoration: "none" },
 
   section: { margin: "0 20px 16px", padding: "14px 16px", background: "rgba(18,24,38,0.6)", border: "1px solid rgba(90,120,180,0.16)", borderRadius: 14 },
-  sectionTitle: { fontSize: 12, fontWeight: 700, color: "#5aa6ff", letterSpacing: 0.5, marginBottom: 10 },
+  sectionTitle: { fontSize: 13, fontWeight: 700, color: "#5aa6ff", letterSpacing: 0.5, marginBottom: 10 },
 
   feed: { display: "flex", flexDirection: "column", gap: 4, maxHeight: 320, overflowY: "auto" },
-  feedRow: { display: "flex", alignItems: "center", gap: 8, padding: "5px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 11.5 },
-  feedIcon: { fontSize: 13 },
+  feedRow: { display: "flex", alignItems: "center", gap: 8, padding: "5px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 13 },
+  feedIcon: { fontSize: 15 },
   feedText: { flex: 1, color: "#dbe6f6" },
   feedActor: { color: "#f0f4fc" },
   feedDetail: { color: "#8fa3c9" },
-  feedTime: { fontSize: 9.5, color: "#5a76a3", whiteSpace: "nowrap" },
+  feedTime: { fontSize: 12, color: "#6c86b5", whiteSpace: "nowrap" },
 
   peopleGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8 },
   personCard: { border: "1px solid rgba(90,120,180,0.2)", borderRadius: 10, padding: "8px 10px", background: "rgba(90,120,180,0.04)" },
-  personName: { fontSize: 12.5, fontWeight: 700, color: "#dbe6f6" },
-  personMeta: { fontSize: 10, color: "#8aa0c8", marginTop: 3 },
-  personRole: { fontSize: 9.5, color: "#a78bfa", marginTop: 2 },
+  personName: { fontSize: 13, fontWeight: 700, color: "#dbe6f6" },
+  personMeta: { fontSize: 12, color: "#8aa0c8", marginTop: 3 },
+  personRole: { fontSize: 12, color: "#a78bfa", marginTop: 2 },
 
-  valueChip: { display: "inline-block", fontSize: 13, fontWeight: 700, padding: "5px 14px", borderRadius: 14, background: "rgba(91,156,246,0.12)", color: "#5b9cf6", marginBottom: 8 },
+  valueChip: { display: "inline-block", fontSize: 15, fontWeight: 700, padding: "5px 14px", borderRadius: 14, background: "rgba(91,156,246,0.12)", color: "#5b9cf6", marginBottom: 8 },
 
   needsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8 },
   needsCell: { border: "1px solid rgba(90,120,180,0.2)", borderRadius: 10, padding: "10px 12px" },
   needsCellValue: { fontSize: 15, fontWeight: 800 },
-  needsCellLabel: { fontSize: 9.5, color: "#8aa0c8", marginTop: 3 },
+  needsCellLabel: { fontSize: 12, color: "#8aa0c8", marginTop: 3 },
 
   capitalFlow: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 10 },
   capitalNode: { textAlign: "center", minWidth: 90 },
   capitalNodeValue: { fontSize: 16, fontWeight: 800 },
-  capitalNodeLabel: { fontSize: 9, color: "#8aa0c8", letterSpacing: 0.5, marginTop: 2 },
-  flowArrow: { color: "#5a76a3", fontSize: 14 },
+  capitalNodeLabel: { fontSize: 12, color: "#8aa0c8", letterSpacing: 0.5, marginTop: 2 },
+  flowArrow: { color: "#6c86b5", fontSize: 14 },
 
   allocList: { display: "flex", flexDirection: "column", gap: 4 },
   allocRow: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, background: "rgba(90,120,180,0.06)", flexWrap: "wrap" },
-  allocTitle: { fontSize: 12, color: "#e8edf6" },
-  allocMeta: { fontSize: 10, color: "#8aa0c8" },
-  allocState: { fontSize: 10.5, fontWeight: 700 },
+  allocTitle: { fontSize: 13, color: "#e8edf6" },
+  allocMeta: { fontSize: 12, color: "#8aa0c8" },
+  allocState: { fontSize: 13, fontWeight: 700 },
 
   chain: { display: "flex", flexDirection: "column", alignItems: "stretch", gap: 2 },
   chainNode: { border: "1px solid", borderRadius: 10, padding: "8px 12px", background: "rgba(90,120,180,0.04)" },
-  chainNodeLabel: { fontSize: 9.5, fontWeight: 800, letterSpacing: 0.5 },
-  chainNodeText: { fontSize: 12, color: "#dbe6f6", marginTop: 3, lineHeight: 1.5 },
-  chainArrow: { textAlign: "center", color: "#5a76a3", fontSize: 12 },
+  chainNodeLabel: { fontSize: 12, fontWeight: 800, letterSpacing: 0.5 },
+  chainNodeText: { fontSize: 13, color: "#dbe6f6", marginTop: 3, lineHeight: 1.5 },
+  chainArrow: { textAlign: "center", color: "#6c86b5", fontSize: 13 },
 
-  note: { fontSize: 10.5, color: "#5a76a3", marginTop: 8, lineHeight: 1.6 },
-  emptyRow: { fontSize: 12, color: "#7b8ca6", fontStyle: "italic", padding: "4px 2px" },
+  note: { fontSize: 13, color: "#6c86b5", marginTop: 8, lineHeight: 1.6 },
+  emptyRow: { fontSize: 13, color: "#7b8ca6", fontStyle: "italic", padding: "4px 2px" },
 };

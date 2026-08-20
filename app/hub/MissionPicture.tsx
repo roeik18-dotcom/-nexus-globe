@@ -84,9 +84,9 @@ function FunnelStage({ label, value, last }: { label: string; value: string; las
   const known = value !== "לא ידוע";
   return (
     <div style={S.funnelStage}>
-      <div style={{ ...S.funnelDot, background: known ? "#34d399" : "#5a76a3" }} />
+      <div style={{ ...S.funnelDot, background: known ? "#34d399" : "#6c86b5" }} />
       <div style={S.funnelLabel}>{label}</div>
-      <div style={{ ...S.funnelValue, color: known ? "#dbe6f6" : "#5a76a3" }}>{value}</div>
+      <div style={{ ...S.funnelValue, color: known ? "#dbe6f6" : "#6c86b5" }}>{value}</div>
       {!last ? <div style={S.funnelArrow}>↓</div> : null}
     </div>
   );
@@ -96,7 +96,7 @@ function Chain<T>({ label, d }: { label: string; d: { value: T | null; status: s
   return (
     <div style={S.chainCell}>
       <div style={S.chainLabel}>{label}</div>
-      <div style={{ ...S.chainValue, color: d.status === "unknown" ? "#5a76a3" : "#dbe6f6" }}>
+      <div style={{ ...S.chainValue, color: d.status === "unknown" ? "#6c86b5" : "#dbe6f6" }}>
         {d.value === null ? "לא ידוע" : String(d.value)}
       </div>
     </div>
@@ -107,23 +107,23 @@ const S: Record<string, React.CSSProperties> = {
   card: { background: "rgba(18,24,38,0.7)", border: "1px solid rgba(90,120,180,0.14)", borderRadius: 16, padding: "16px 18px", marginTop: 16 },
   head: { display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" },
   title: { fontSize: 13.5, fontWeight: 700, margin: 0, color: "#f0f4fc" },
-  badge: { fontSize: 10, fontWeight: 800, fontFamily: "ui-monospace, monospace" },
-  note: { fontSize: 10.5, color: "#8fa3c9", lineHeight: 1.7, marginTop: 6, marginBottom: 8 },
+  badge: { fontSize: 12, fontWeight: 800, fontFamily: "ui-monospace, monospace" },
+  note: { fontSize: 13, color: "#8fa3c9", lineHeight: 1.7, marginTop: 6, marginBottom: 8 },
 
-  row: { display: "flex", justifyContent: "space-between", gap: 8, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 11.5, marginBottom: 3 },
+  row: { display: "flex", justifyContent: "space-between", gap: 8, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 13, marginBottom: 3 },
 
   funnel: { display: "flex", flexDirection: "column", alignItems: "center", gap: 0, margin: "10px 0 14px" },
   funnelStage: { display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: 320 },
   funnelDot: { width: 8, height: 8, borderRadius: 4 },
-  funnelLabel: { fontSize: 9, color: "#5a76a3", marginTop: 2, letterSpacing: 0.5 },
-  funnelValue: { fontSize: 11, fontWeight: 600, marginTop: 1 },
-  funnelArrow: { fontSize: 11, color: "#5a76a3", margin: "2px 0" },
+  funnelLabel: { fontSize: 12, color: "#6c86b5", marginTop: 2, letterSpacing: 0.5 },
+  funnelValue: { fontSize: 13, fontWeight: 600, marginTop: 1 },
+  funnelArrow: { fontSize: 13, color: "#6c86b5", margin: "2px 0" },
   meta: { color: "#8aa0c8" },
 
   valuePath: { marginTop: 10, border: "1px solid rgba(251,191,36,0.25)", borderRadius: 10, padding: "8px 10px" },
-  valueTitle: { fontSize: 12, fontWeight: 700, color: "#fbbf24", marginBottom: 6 },
+  valueTitle: { fontSize: 13, fontWeight: 700, color: "#fbbf24", marginBottom: 6 },
   chainRow: { display: "flex", flexWrap: "wrap", gap: 6 },
   chainCell: { minWidth: 100, flex: "1 1 100px" },
-  chainLabel: { fontSize: 8.5, color: "#5a76a3" },
-  chainValue: { fontSize: 10.5, marginTop: 1, lineHeight: 1.4 },
+  chainLabel: { fontSize: 12, color: "#6c86b5" },
+  chainValue: { fontSize: 13, marginTop: 1, lineHeight: 1.4 },
 };

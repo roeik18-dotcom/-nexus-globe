@@ -241,7 +241,7 @@ export default function HubNowPanel({
                     >
                       <span style={{
                         ...S.cellValue,
-                        color: !observed ? "#4a5f85" : deficit ? "#fc8a84" : "#6fe3b4",
+                        color: !observed ? "#6c86b5" : deficit ? "#fc8a84" : "#6fe3b4",
                       }}>
                         {observed ? cell.level : "—"}
                       </span>
@@ -293,7 +293,7 @@ export default function HubNowPanel({
           {attentionChain.links.map((l, i) => (
             <AttentionLinkRow key={l.key} link={l} index={i + 1} />
           ))}
-          <div style={{ ...TYPE.micro, fontSize: 8, color: COLOR.textFaint, marginTop: 4, lineHeight: 1.5 }}>
+          <div style={{ ...TYPE.micro, fontSize: 12, color: COLOR.textFaint, marginTop: 4, lineHeight: 1.5 }}>
             רצף אינו סיבתיות — כל חוליה נגזרת מהחומר של הקודמת, ואינה מוסברת על ידה
           </div>
         </Card>
@@ -361,7 +361,7 @@ export default function HubNowPanel({
             changes.slice(0, 2).map((c) => (
               <Fragment key={c.action_id}>
                 <Line label="" value={c.what_changed_label} tone="plain" note={c.verification_state} clamp />
-                <div dir="ltr" style={{ fontSize: 8.5, fontFamily: "ui-monospace, monospace", color: COLOR.textFaint, marginTop: -2, marginBottom: 3 }}>
+                <div dir="ltr" style={{ fontSize: 12, fontFamily: "ui-monospace, monospace", color: COLOR.textFaint, marginTop: -2, marginBottom: 3 }}>
                   {c.action_id} · {c.recorded_at.slice(0, 16).replace("T", " ")}
                 </div>
               </Fragment>
@@ -499,7 +499,7 @@ function StatusChipMini({ status, n }: { status: EpistemicStatus; n: number }) {
     <span
       title={`${n} פריט בסטטוס ${status}`}
       style={{
-        ...TYPE.micro, fontSize: 8, letterSpacing: 0.4,
+        ...TYPE.micro, fontSize: 12, letterSpacing: 0.4,
         color: STATUS_TONE[status], border: `1px solid ${STATUS_TONE[status]}55`,
         borderRadius: RADIUS.pill, padding: "1px 6px", whiteSpace: "nowrap",
       }}
@@ -526,19 +526,19 @@ function AttentionLinkRow({ link, index }: { link: import("@/app/lib/philos/atte
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
-        <span style={{ ...TYPE.micro, fontSize: 8, color: COLOR.textFaint }}>{index}</span>
-        <span style={{ ...TYPE.micro, fontSize: 8.5, color: tone, letterSpacing: 0.4 }}>{link.label}</span>
-        <span style={{ fontSize: 9, color: COLOR.textFaint }}>{link.gloss}</span>
+        <span style={{ ...TYPE.micro, fontSize: 12, color: COLOR.textFaint }}>{index}</span>
+        <span style={{ ...TYPE.micro, fontSize: 12, color: tone, letterSpacing: 0.4 }}>{link.label}</span>
+        <span style={{ fontSize: 12, color: COLOR.textFaint }}>{link.gloss}</span>
       </div>
       {has ? (
         link.items.slice(0, 2).map((it, i) => (
-          <div key={i} style={{ fontSize: 11, color: COLOR.text, lineHeight: 1.4 }}>
+          <div key={i} style={{ fontSize: 13, color: COLOR.text, lineHeight: 1.4 }}>
             {it.text}
-            {it.detail ? <span style={{ color: COLOR.textFaint, fontSize: 9 }}> · {it.detail}</span> : null}
+            {it.detail ? <span style={{ color: COLOR.textFaint, fontSize: 12 }}> · {it.detail}</span> : null}
           </div>
         ))
       ) : (
-        <div style={{ fontSize: 10, color: "#8798b8", fontStyle: "italic", lineHeight: 1.4 }}>{link.empty}</div>
+        <div style={{ fontSize: 12, color: "#8798b8", fontStyle: "italic", lineHeight: 1.4 }}>{link.empty}</div>
       )}
     </div>
   );
@@ -561,7 +561,7 @@ const S: Record<string, React.CSSProperties> = {
     background: COLOR.bgRaised, border: `1px solid ${COLOR.border}`,
   },
   chipLabel: { ...TYPE.micro, color: COLOR.textFaint },
-  chipValue: { fontSize: 11, fontWeight: 700, fontFamily: "ui-monospace, monospace" },
+  chipValue: { fontSize: 13, fontWeight: 700, fontFamily: "ui-monospace, monospace" },
 
   card: {
     background: COLOR.bgCard,
@@ -591,23 +591,23 @@ const S: Record<string, React.CSSProperties> = {
   // `direction: ltr` is load-bearing: inside the RTL panel a signed canon
   // Level like `-1` renders as `1-`, which reads as a different number.
   cellValue: { fontSize: 17, fontWeight: 800, lineHeight: 1.1, fontFamily: "ui-monospace, monospace", direction: "ltr", unicodeBidi: "isolate" },
-  cellNote: { fontSize: 8.5, lineHeight: 1.3, marginTop: 1 },
+  cellNote: { fontSize: 12, lineHeight: 1.3, marginTop: 1 },
   num: { direction: "ltr", unicodeBidi: "isolate", display: "inline-block" } as React.CSSProperties,
-  cellLegend: { fontSize: 9.5, color: COLOR.textFaint, marginTop: 6, lineHeight: 1.4 },
+  cellLegend: { fontSize: 12, color: COLOR.textFaint, marginTop: 6, lineHeight: 1.4 },
   tileLabel: { ...TYPE.micro, color: COLOR.textFaint },
   // `direction: ltr` + bidi isolation is required, not cosmetic: inside the
   // RTL panel a signed level like `-1` renders as `1-`, which reads as a
   // different number. The value is a signed canon Level (§4), so its sign
   // must stay on the left of the digit.
   tileValue: { fontSize: 22, fontWeight: 800, lineHeight: 1.2, fontFamily: "ui-monospace, monospace", direction: "ltr", unicodeBidi: "isolate" },
-  tileNote: { fontSize: 9.5, lineHeight: 1.35 },
+  tileNote: { fontSize: 12, lineHeight: 1.35 },
 
   divider: { borderTop: `1px solid ${COLOR.border}`, margin: "6px 0 2px" },
-  empty: { fontSize: 11.5, color: "#8798b8", fontStyle: "italic", lineHeight: 1.5 },
+  empty: { fontSize: 13, color: "#8798b8", fontStyle: "italic", lineHeight: 1.5 },
   line: { padding: "1px 0" },
   lineMain: { display: "flex", alignItems: "baseline", gap: SPACE.sm },
-  lineLabel: { fontSize: 10.5, color: COLOR.textFaint, whiteSpace: "nowrap" },
-  lineValue: { fontSize: 12.5, fontWeight: 600, lineHeight: 1.5, minWidth: 0 },
-  lineNote: { fontSize: 10, color: COLOR.textFaint, marginTop: 1, lineHeight: 1.45 },
+  lineLabel: { fontSize: 13, color: COLOR.textFaint, whiteSpace: "nowrap" },
+  lineValue: { fontSize: 13, fontWeight: 600, lineHeight: 1.5, minWidth: 0 },
+  lineNote: { fontSize: 12, color: COLOR.textFaint, marginTop: 1, lineHeight: 1.45 },
   clamp: { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" } as React.CSSProperties,
 };

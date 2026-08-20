@@ -374,7 +374,7 @@ function Empty({ text }: { text: string }) {
 
 function STATUS_BADGE(kind: "real" | "demo"): React.CSSProperties {
   const s = STATUS[kind];
-  return { fontSize: 9.5, fontWeight: 800, padding: "1px 7px", borderRadius: 999, background: s.bg, border: `1px solid ${s.border}`, color: s.text, marginInlineStart: 8 };
+  return { fontSize: 12, fontWeight: 800, padding: "1px 7px", borderRadius: 999, background: s.bg, border: `1px solid ${s.border}`, color: s.text, marginInlineStart: 8 };
 }
 
 const S: Record<string, React.CSSProperties> = {
@@ -384,13 +384,13 @@ const S: Record<string, React.CSSProperties> = {
   grid2: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 },
   sectionRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12, marginTop: 12 },
   section: { border: "1px solid rgba(90,120,180,0.18)", borderRadius: 12, padding: "10px 12px", marginTop: 12 },
-  sectionTitle: { fontSize: 10.5, fontWeight: 800, letterSpacing: 1, color: "#8fa3c9", marginBottom: 6, textTransform: "uppercase" },
+  sectionTitle: { fontSize: 13, fontWeight: 800, letterSpacing: 1, color: "#8fa3c9", marginBottom: 6, textTransform: "uppercase" },
   stateCard: { border: "1px solid rgba(90,120,180,0.22)", borderRadius: 12, padding: "10px 12px", background: "rgba(10,14,23,0.4)" },
-  stateCardTitle: { fontSize: 12.5, fontWeight: 700, color: "#dbe6f6", marginBottom: 6 },
-  refChip: { fontSize: 9.5, color: "#8fa3c9", border: "1px solid rgba(90,120,180,0.25)", borderRadius: 999, padding: "2px 8px" },
+  stateCardTitle: { fontSize: 13, fontWeight: 700, color: "#dbe6f6", marginBottom: 6 },
+  refChip: { fontSize: 12, color: "#8fa3c9", border: "1px solid rgba(90,120,180,0.25)", borderRadius: 999, padding: "2px 8px" },
   zoneHead: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 4, paddingTop: 6, borderTop: "1px solid rgba(120,150,220,0.16)" },
-  zoneLabel: { fontSize: 10, fontWeight: 800, letterSpacing: 0.8, color: "#8fa3c9", textTransform: "uppercase" as const },
-  zoneGloss: { fontSize: 9.5, color: "#5a6f96", marginBottom: 3 },
-  row: { display: "flex", justifyContent: "space-between", gap: 8, padding: "3px 0", fontSize: 12 },
-  meta: { color: "#8aa0c8", fontSize: 11 },
+  zoneLabel: { fontSize: 12, fontWeight: 800, letterSpacing: 0.8, color: "#8fa3c9", textTransform: "uppercase" as const },
+  zoneGloss: { fontSize: 12, color: "#6c86b5", marginBottom: 3 },
+  row: { display: "flex", justifyContent: "space-between", gap: 8, padding: "3px 0", fontSize: 13 },
+  meta: { color: "#8aa0c8", fontSize: 13 },
 };

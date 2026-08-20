@@ -64,7 +64,7 @@ export default function HumanConfigPrototype({
       <div style={S.protoTag}>PROTOTYPE — תצוגה ראשונה בלבד · ?view=prototype · לא הסביבה הפעילה</div>
 
       <div style={{ ...TYPE.display, textAlign: "center" }}>Human Config</div>
-      <div style={{ textAlign: "center", fontSize: 12, color: "#5aa6ff", marginTop: 2, marginBottom: 4 }}>{subjectId}</div>
+      <div style={{ textAlign: "center", fontSize: 13, color: "#5aa6ff", marginTop: 2, marginBottom: 4 }}>{subjectId}</div>
       <div style={S.orientStrip}>ידוע {known}/{parameters.length} · השתנה {changed} · עדות {evidence}</div>
 
       <svg viewBox={`0 0 480 420`} style={S.svg} onClick={() => setSelectedId(null)}>
@@ -81,7 +81,7 @@ export default function HumanConfigPrototype({
 
         {/* hub — CURRENT CONFIG */}
         <circle cx={CX} cy={HUB_Y} r={16} fill="rgba(91,156,246,0.16)" stroke={STATUS_COLOR.active} strokeWidth={2} />
-        <text x={CX} y={HUB_Y + 34} textAnchor="middle" style={{ fontSize: 9.5, fontWeight: 700, fill: "#5aa6ff", letterSpacing: 0.4 }}>CURRENT CONFIG</text>
+        <text x={CX} y={HUB_Y + 34} textAnchor="middle" style={{ fontSize: 12, fontWeight: 700, fill: "#5aa6ff", letterSpacing: 0.4 }}>CURRENT CONFIG</text>
 
         {/* 7 parameter nodes — spatial, not a list */}
         {positioned.map((p) => {
@@ -103,7 +103,7 @@ export default function HumanConfigPrototype({
               />
               <text
                 x={p.x} y={p.y + r + 13} textAnchor="middle"
-                style={{ fontSize: isSelected ? 11 : 9.5, fontWeight: isSelected ? 800 : 600, fill: known_ ? "#dbe6f6" : "#5a76a3" }}
+                style={{ fontSize: isSelected ? 11 : 9.5, fontWeight: isSelected ? 800 : 600, fill: known_ ? "#dbe6f6" : "#6c86b5" }}
               >
                 {p.dimension.label_he}
               </text>
@@ -173,9 +173,9 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
 
 const S: Record<string, React.CSSProperties> = {
   wrap: { padding: "16px 20px 60px", color: "#e6ebf5", fontFamily: "system-ui", maxWidth: 640, margin: "0 auto" },
-  protoTag: { fontSize: 10, fontWeight: 700, color: "#fbbf24", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.25)", borderRadius: 8, padding: "5px 10px", marginBottom: 16, textAlign: "center" },
+  protoTag: { fontSize: 12, fontWeight: 700, color: "#fbbf24", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.25)", borderRadius: 8, padding: "5px 10px", marginBottom: 16, textAlign: "center" },
 
-  orientStrip: { textAlign: "center", fontSize: 10.5, color: "#5a76a3", marginBottom: 6 },
+  orientStrip: { textAlign: "center", fontSize: 13, color: "#6c86b5", marginBottom: 6 },
 
   svg: { width: "100%", height: "auto", display: "block" },
 
@@ -183,8 +183,8 @@ const S: Record<string, React.CSSProperties> = {
   detailHead: { display: "flex", alignItems: "center", justifyContent: "space-between" },
 
   updatePanel: { display: "flex", flexDirection: "column", gap: 8 },
-  updatePanelTag: { fontSize: 9.5, color: "#fbbf24" },
+  updatePanelTag: { fontSize: 12, color: "#fbbf24" },
   formRow: { display: "flex", flexDirection: "column", gap: 3 },
-  input: { background: "#0b0f1a", color: "#5a76a3", border: "1px solid #2a3550", borderRadius: 6, padding: "7px 9px", fontSize: 12.5 },
-  disabledSubmit: { background: "rgba(90,120,180,0.2)", color: "#5a76a3", fontWeight: 700, fontSize: 12, border: "none", borderRadius: 6, padding: "9px 14px", cursor: "not-allowed", alignSelf: "flex-start" },
+  input: { background: "#0b0f1a", color: "#6c86b5", border: "1px solid #2a3550", borderRadius: 6, padding: "7px 9px", fontSize: 13 },
+  disabledSubmit: { background: "rgba(90,120,180,0.2)", color: "#6c86b5", fontWeight: 700, fontSize: 13, border: "none", borderRadius: 6, padding: "9px 14px", cursor: "not-allowed", alignSelf: "flex-start" },
 };

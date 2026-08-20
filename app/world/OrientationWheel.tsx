@@ -94,7 +94,7 @@ export default function OrientationWheel({ bias }: { bias?: Bias }) {
 
   return (
     <div style={{ marginBottom: 14 }}>
-      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#1a3550", marginBottom: 8 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#1a3550", marginBottom: 8 }}>
         Orientation Field
       </div>
       <div style={{ display: "flex", justifyContent: "center" }}>

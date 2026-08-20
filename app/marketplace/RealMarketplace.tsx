@@ -151,7 +151,7 @@ export default function RealMarketplace({
         valueGroup={identityLink.status === "VERIFIED_SAME_PERSON" && realGroup ? { ...realGroup, provenance: "REAL" } : undefined}
       />
       {groupRelations && groupRelations.length > 0 ? (
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, margin: "0 0 10px", fontSize: 10 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, margin: "0 0 10px", fontSize: 12 }}>
           <span style={{ fontWeight: 800, letterSpacing: 0.6, color: "#8fa3c9" }}>PERSON↔GROUP (הקשר אישי — לא רלוונטיות עסקה):</span>
           {groupRelations.map((r) => (
             <span key={r} style={{ border: "1px solid rgba(52,211,153,0.35)", color: "#6fe3b4", borderRadius: 999, padding: "2px 8px", fontFamily: "ui-monospace, monospace" }}>{r}</span>
@@ -219,7 +219,7 @@ export default function RealMarketplace({
             {effects.map((e) => (
               <a key={e.effect.effect_id} href={`?ctx=${encodeURIComponent(`effect:${e.effect.effect_id}`)}`} style={{ ...S.listRow, textDecoration: "none", color: "inherit" }}>
                 <span style={S.listTitle}>{e.effect.claimed_outcome.statement}</span>
-                <span style={{ ...S.listMeta, color: e.effect.verified_outcome ? "#34d399" : "#5a76a3" }}>
+                <span style={{ ...S.listMeta, color: e.effect.verified_outcome ? "#34d399" : "#6c86b5" }}>
                   {e.effect.verified_outcome ? "VERIFIED" : "claimed only"}
                 </span>
               </a>
@@ -229,7 +229,7 @@ export default function RealMarketplace({
       </Section>
 
       <details style={{ margin: "12px 20px" }}>
-        <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>
+        <summary style={{ cursor: "pointer", fontSize: 13, letterSpacing: 1, color: "#6c86b5", padding: "4px 0" }}>
           DETAILS / AUDIT — פעילות שוק גולמית · RECENT MARKET ACTIVITY
         </summary>
         <div style={{ marginTop: 8 }}>
@@ -316,10 +316,10 @@ function RegisterOfferForm({ identityLink }: { identityLink: ShellIdentityLink }
       <input value={resource} onChange={(e) => setResource(e.target.value)} placeholder="משאב זמין (למשל: שעת ייעוץ)" style={S.input} />
       <input value={type} onChange={(e) => setType(e.target.value)} placeholder="סוג (knowledge/time/attention…)" style={{ ...S.input, maxWidth: 160 }} />
       <input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="כמות/יכולת" style={{ ...S.input, maxWidth: 120 }} />
-      <label style={{ fontSize: 10.5, display: "flex", alignItems: "center", gap: 4 }}>
+      <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 4 }}>
         <input type="checkbox" checked={willingness} onChange={(e) => setWillingness(e.target.checked)} /> willingness
       </label>
-      <label style={{ fontSize: 10.5, display: "flex", alignItems: "center", gap: 4 }}>
+      <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 4 }}>
         <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /> consent
       </label>
       <button disabled={pending || !resource.trim() || !type.trim() || !amount.trim() || !willingness || !consent} onClick={submit} style={S.button}>
@@ -348,28 +348,28 @@ const KIND_COLOR: Record<ActivityItem["kind"], string> = { need: "#f2635c", offe
 const S: Record<string, React.CSSProperties> = {
   wrap: { fontFamily: "system-ui", color: "#e6ebf5" },
   compactHero: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", margin: "16px 20px 0", padding: "10px 16px", background: "rgba(91,156,246,0.06)", border: "1px solid rgba(91,156,246,0.2)", borderRadius: 10 },
-  badge: { fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 6, border: "1px solid #34d39955", color: "#34d399", fontFamily: "ui-monospace, monospace" },
-  heroTitleSmall: { fontSize: 13, fontWeight: 800, color: "#f0f4fc" },
-  compactStats: { fontSize: 11, color: "#8fa3c9", marginRight: "auto" },
+  badge: { fontSize: 12, fontWeight: 800, padding: "2px 8px", borderRadius: 6, border: "1px solid #34d39955", color: "#34d399", fontFamily: "ui-monospace, monospace" },
+  heroTitleSmall: { fontSize: 15, fontWeight: 800, color: "#f0f4fc" },
+  compactStats: { fontSize: 13, color: "#8fa3c9", marginRight: "auto" },
 
   section: { margin: "0 20px 16px", padding: "14px 16px", background: "rgba(18,24,38,0.6)", border: "1px solid rgba(90,120,180,0.16)", borderRadius: 14 },
-  sectionTitle: { fontSize: 12, fontWeight: 700, color: "#5aa6ff", letterSpacing: 0.5, marginBottom: 10 },
+  sectionTitle: { fontSize: 13, fontWeight: 700, color: "#5aa6ff", letterSpacing: 0.5, marginBottom: 10 },
 
   feed: { display: "flex", flexDirection: "column", gap: 4 },
-  feedRow: { display: "flex", alignItems: "center", gap: 8, padding: "5px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 11.5 },
-  feedKind: { fontSize: 9, fontWeight: 800, minWidth: 50, fontFamily: "ui-monospace, monospace" },
+  feedRow: { display: "flex", alignItems: "center", gap: 8, padding: "5px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 13 },
+  feedKind: { fontSize: 12, fontWeight: 800, minWidth: 50, fontFamily: "ui-monospace, monospace" },
   feedText: { flex: 1, color: "#dbe6f6" },
-  feedTime: { fontSize: 9.5, color: "#5a76a3" },
+  feedTime: { fontSize: 12, color: "#6c86b5" },
 
   list: { display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 },
   listRow: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, background: "rgba(90,120,180,0.06)", flexWrap: "wrap" },
-  listTitle: { fontSize: 12, color: "#e8edf6" },
-  listMeta: { fontSize: 10, color: "#8aa0c8" },
+  listTitle: { fontSize: 13, color: "#e8edf6" },
+  listMeta: { fontSize: 12, color: "#8aa0c8" },
 
   form: { display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 },
-  input: { flex: 1, minWidth: 140, background: "rgba(18,24,38,0.7)", border: "1px solid rgba(90,120,180,0.3)", borderRadius: 8, padding: "6px 10px", color: "#e6ebf5", fontSize: 11.5 },
-  button: { fontSize: 11.5, fontWeight: 700, padding: "6px 14px", borderRadius: 8, border: "none", background: "#5b9cf6", color: "#0b0f1a", cursor: "pointer" },
-  error: { width: "100%", fontSize: 10.5, color: "#f2635c", marginTop: 4 },
+  input: { flex: 1, minWidth: 140, background: "rgba(18,24,38,0.7)", border: "1px solid rgba(90,120,180,0.3)", borderRadius: 8, padding: "6px 10px", color: "#e6ebf5", fontSize: 13 },
+  button: { fontSize: 13, fontWeight: 700, padding: "6px 14px", borderRadius: 8, border: "none", background: "#5b9cf6", color: "#0b0f1a", cursor: "pointer" },
+  error: { width: "100%", fontSize: 13, color: "#f2635c", marginTop: 4 },
 
-  empty: { fontSize: 11.5, color: "#7b8ca6", fontStyle: "italic", padding: "4px 2px", lineHeight: 1.6 },
+  empty: { fontSize: 13, color: "#7b8ca6", fontStyle: "italic", padding: "4px 2px", lineHeight: 1.6 },
 };

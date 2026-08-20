@@ -41,14 +41,14 @@ const levelColor: Record<string, string> = {
 };
 
 const sectionLabel: React.CSSProperties = {
-  fontSize: 9, color: C.borderSoft, letterSpacing: 2,
+  fontSize: 12, color: C.borderSoft, letterSpacing: 2,
   textTransform: "uppercase", margin: "18px 0 8px",
 };
 const card: React.CSSProperties = {
   background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 11,
 };
-const line: React.CSSProperties = { fontSize: 12, lineHeight: 1.7 };
-const metaTxt: React.CSSProperties = { fontSize: 10.5, color: C.borderSoft, marginTop: 4 };
+const line: React.CSSProperties = { fontSize: 13, lineHeight: 1.7 };
+const metaTxt: React.CSSProperties = { fontSize: 13, color: C.borderSoft, marginTop: 4 };
 
 function Bar({ pct, color }: { pct: number; color: string }) {
   return (
@@ -60,7 +60,7 @@ function Bar({ pct, color }: { pct: number; color: string }) {
 
 function actionBtn(active: boolean, color: string): React.CSSProperties {
   return {
-    padding: "5px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontWeight: 600,
+    padding: "5px 12px", borderRadius: 6, fontSize: 13, cursor: "pointer", fontWeight: 600,
     border: `1px solid ${color}`, background: active ? `${color}22` : "transparent", color,
     whiteSpace: "nowrap",
   };
@@ -69,7 +69,7 @@ function actionBtn(active: boolean, color: string): React.CSSProperties {
 function Stat({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6, padding: "8px 10px" }}>
-      <div style={{ fontSize: 9.5, color: C.borderSoft, marginBottom: 3 }}>{label}</div>
+      <div style={{ fontSize: 12, color: C.borderSoft, marginBottom: 3 }}>{label}</div>
       <div style={{ fontSize: 14, fontWeight: 700, color: color ?? C.text }}>{value}</div>
     </div>
   );
@@ -267,7 +267,7 @@ export default function NoaPanel() {
   }
 
   return (
-    <div dir="rtl" style={{ flex: 1, overflowY: "auto", padding: 18, color: C.text, fontSize: 13 }}>
+    <div dir="rtl" style={{ flex: 1, overflowY: "auto", padding: 18, color: C.text, fontSize: 15 }}>
 
       {/* Profile Card — person-first: who is this, what they stand for, who supports them.
           Hidden on Event Zero (journey): that tab owns a pain-first hierarchy
@@ -279,23 +279,23 @@ export default function NoaPanel() {
           {/* Deterministic Philos avatar: purple(truth/justice) → red(collapse) → green(recovery), white glow = orientation */}
           <div style={{ position: "relative", flexShrink: 0 }}>
             <div style={{ width: 52, height: 52, borderRadius: "50%", background: `linear-gradient(135deg, ${C.purple}, ${C.red} 52%, ${C.green})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: 0.5, boxShadow: "0 0 0 2px rgba(255,255,255,0.28), 0 0 14px rgba(255,255,255,0.12)" }}>{NOA_PROFILE.avatarInitial}</div>
-            <span style={{ position: "absolute", bottom: -2, right: -2, fontSize: 13, lineHeight: 1, background: C.card, borderRadius: "50%", padding: "1px 2px", border: `1px solid ${C.border}` }}>{NOA_PROFILE.flag}</span>
+            <span style={{ position: "absolute", bottom: -2, right: -2, fontSize: 15, lineHeight: 1, background: C.card, borderRadius: "50%", padding: "1px 2px", border: `1px solid ${C.border}` }}>{NOA_PROFILE.flag}</span>
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 16, fontWeight: 800 }}>{NOA_PROFILE.name}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", marginTop: 3 }}>
-              <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: C.purple, background: "#a78bfa18", border: `1px solid ${C.purple}55`, borderRadius: 4, padding: "1px 6px" }}>Case Zero</span>
-              <span style={{ fontSize: 11, color: C.borderSoft }}>{NOA_PROFILE.flag} {NOA_PROFILE.country} · {NOA_PROFILE.nameEn}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: C.purple, background: "#a78bfa18", border: `1px solid ${C.purple}55`, borderRadius: 4, padding: "1px 6px" }}>Case Zero</span>
+              <span style={{ fontSize: 13, color: C.borderSoft }}>{NOA_PROFILE.flag} {NOA_PROFILE.country} · {NOA_PROFILE.nameEn}</span>
             </div>
           </div>
         </div>
-        <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6, marginBottom: 10 }}>{NOA_PROFILE.statement}</div>
+        <div style={{ fontSize: 13, color: C.text, lineHeight: 1.6, marginBottom: 10 }}>{NOA_PROFILE.statement}</div>
 
-        <div style={{ fontSize: 9, color: C.borderSoft, textTransform: "uppercase", letterSpacing: 1, marginBottom: 5 }}>Core values · primary <b style={{ color: C.purple }}>{NOA_PROFILE.primaryValue}</b></div>
+        <div style={{ fontSize: 12, color: C.borderSoft, textTransform: "uppercase", letterSpacing: 1, marginBottom: 5 }}>Core values · primary <b style={{ color: C.purple }}>{NOA_PROFILE.primaryValue}</b></div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
           {NOA_PROFILE.coreValues.map(v => {
             const primary = v === NOA_PROFILE.primaryValue;
-            return <span key={v} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 12, background: primary ? "#a78bfa22" : C.bg, border: `1px solid ${primary ? C.purple : C.border}`, color: primary ? C.purple : C.text, fontWeight: primary ? 700 : 400 }}>{v}{primary ? " ★" : ""}</span>;
+            return <span key={v} style={{ fontSize: 13, padding: "3px 10px", borderRadius: 12, background: primary ? "#a78bfa22" : C.bg, border: `1px solid ${primary ? C.purple : C.border}`, color: primary ? C.purple : C.text, fontWeight: primary ? 700 : 400 }}>{v}{primary ? " ★" : ""}</span>;
           })}
         </div>
 
@@ -314,15 +314,15 @@ export default function NoaPanel() {
           <Stat label="Requests" value={`${queueItems.length}`} />
           <Stat label="Fulfilled support" value={`${fulfilledCount}`} color={C.green} />
         </div>
-        <div style={{ fontSize: 11, marginTop: 9 }}>Operational status: <b style={{ color: fulfilledCount === 0 ? C.borderSoft : C.green }}>{operationalStatus}</b></div>
-        <div style={{ fontSize: 9, color: C.borderSoft, marginTop: 9, letterSpacing: 0.3 }}>Noa Chain MVP 0.5 · value-based profile · demo</div>
+        <div style={{ fontSize: 13, marginTop: 9 }}>Operational status: <b style={{ color: fulfilledCount === 0 ? C.borderSoft : C.green }}>{operationalStatus}</b></div>
+        <div style={{ fontSize: 12, color: C.borderSoft, marginTop: 9, letterSpacing: 0.3 }}>Noa Chain MVP 0.5 · value-based profile · demo</div>
       </div>
       )}
 
       {/* Profile tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
         {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{ flex: 1, padding: "6px 4px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontWeight: 600, textTransform: "capitalize", border: `1px solid ${tab === t ? C.cyan : C.border}`, background: tab === t ? "#38bdf822" : "transparent", color: tab === t ? C.cyan : C.borderSoft }}>{t}</button>
+          <button key={t} onClick={() => setTab(t)} style={{ flex: 1, padding: "6px 4px", borderRadius: 6, fontSize: 13, cursor: "pointer", fontWeight: 600, textTransform: "capitalize", border: `1px solid ${tab === t ? C.cyan : C.border}`, background: tab === t ? "#38bdf822" : "transparent", color: tab === t ? C.cyan : C.borderSoft }}>{t}</button>
         ))}
       </div>
 
@@ -349,19 +349,19 @@ export default function NoaPanel() {
           {/* L1 · read-only current-person summary (shown only if one exists) */}
           {currentPerson && (
             <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderInlineStart: `3px solid ${C.green}`, borderRadius: 6, padding: "8px 11px", marginBottom: 10 }}>
-              <div style={{ fontSize: 9, color: C.borderSoft, letterSpacing: 1, textTransform: "uppercase", marginBottom: 3 }}>Current Person · stored locally</div>
-              <div style={{ fontSize: 13, fontWeight: 700 }}>{currentPerson.name} <span style={{ fontSize: 10, color: C.green }}>· {currentPerson.primaryValue}</span></div>
-              <div style={{ fontSize: 10, color: "#9fc7df", marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: C.borderSoft, letterSpacing: 1, textTransform: "uppercase", marginBottom: 3 }}>Current Person · stored locally</div>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>{currentPerson.name} <span style={{ fontSize: 12, color: C.green }}>· {currentPerson.primaryValue}</span></div>
+              <div style={{ fontSize: 12, color: "#9fc7df", marginTop: 2 }}>
                 values: {currentPerson.values.join(", ") || "—"}{currentPerson.needs.length ? ` · needs: ${currentPerson.needs.join(", ")}` : ""}
               </div>
-              <div style={{ fontSize: 8.5, color: C.borderSoft, marginTop: 2 }}>id {currentPerson.id} · created {new Date(currentPerson.createdAt).toLocaleString()}</div>
+              <div style={{ fontSize: 12, color: C.borderSoft, marginTop: 2 }}>id {currentPerson.id} · created {new Date(currentPerson.createdAt).toLocaleString()}</div>
             </div>
           )}
 
           {myProfile ? (
             <>
               <PersonalMap profile={myProfile} chain={personChain ?? undefined} />
-              <button onClick={() => setMyProfile(null)} style={{ marginTop: 8, padding: "7px 14px", borderRadius: 6, fontSize: 11, cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.borderSoft }}>↻ התחל מחדש</button>
+              <button onClick={() => setMyProfile(null)} style={{ marginTop: 8, padding: "7px 14px", borderRadius: 6, fontSize: 13, cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.borderSoft }}>↻ התחל מחדש</button>
             </>
           ) : (
             <div style={{ minHeight: 420 }}>
@@ -379,12 +379,12 @@ export default function NoaPanel() {
         {timeline.map((t, i) => (
           <div key={t.title} style={{ display: "flex", gap: 10 }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <span style={{ width: 14, height: 14, borderRadius: "50%", flexShrink: 0, border: `2px solid ${STATUS_C[t.status]}`, background: t.status === "completed" ? STATUS_C[t.status] : "transparent", color: "#03101e", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{t.status === "completed" ? "✓" : ""}</span>
+              <span style={{ width: 14, height: 14, borderRadius: "50%", flexShrink: 0, border: `2px solid ${STATUS_C[t.status]}`, background: t.status === "completed" ? STATUS_C[t.status] : "transparent", color: "#03101e", fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{t.status === "completed" ? "✓" : ""}</span>
               {i < timeline.length - 1 && <span style={{ width: 2, flex: 1, minHeight: 12, background: C.border }} />}
             </div>
             <div style={{ paddingBottom: i < timeline.length - 1 ? 10 : 0 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 600 }}>{t.title} <span style={{ fontSize: 9, color: STATUS_C[t.status], textTransform: "uppercase", letterSpacing: 0.5, marginInlineStart: 4 }}>{t.status}</span></div>
-              <div style={{ fontSize: 11, color: "#7fa6bd", lineHeight: 1.5, marginTop: 1 }}>{t.text}</div>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{t.title} <span style={{ fontSize: 12, color: STATUS_C[t.status], textTransform: "uppercase", letterSpacing: 0.5, marginInlineStart: 4 }}>{t.status}</span></div>
+              <div style={{ fontSize: 13, color: "#7fa6bd", lineHeight: 1.5, marginTop: 1 }}>{t.text}</div>
             </div>
           </div>
         ))}
@@ -398,14 +398,14 @@ export default function NoaPanel() {
           {/* Story */}
           <div style={sectionLabel}>Story</div>
           <div style={{ ...card, marginBottom: 8 }}>
-            <div style={{ fontSize: 11.5, color: C.text, lineHeight: 1.9 }}>
+            <div style={{ fontSize: 13, color: C.text, lineHeight: 1.9 }}>
               אירוע פגיעה יצר עומס גדול שנפל על אדם אחד. המערכת זיהתה מוקד מתח: <b style={{ color: C.cyan }}>{c.tension?.strongest.name ?? "Connection ↔ Disconnection"}</b>. המוקד הזה יצר קשב עודף, דליפת אנרגיה, עומס רגשי וירידת יציבות. Nexus חיברה בין נועה לאנשים שמחוברים לאותם ערכים. העומס חולק. האנרגיה החלה לחזור.
             </div>
           </div>
 
           {/* Current Need (from action) */}
           <div style={sectionLabel}>Current Need</div>
-          <div style={{ ...card, borderRight: `3px solid ${C.yellow}`, marginBottom: 8, fontSize: 12, color: C.text }}>
+          <div style={{ ...card, borderRight: `3px solid ${C.yellow}`, marginBottom: 8, fontSize: 13, color: C.text }}>
             {c.action ? `Strengthen ${c.action.targetDimension.toLowerCase()} stability.` : "—"}
           </div>
         </>
@@ -421,8 +421,8 @@ export default function NoaPanel() {
             return (
               <div key={h.role} style={{ ...card, display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
                 <span style={{ fontSize: 16 }}>{VALUE_ICON[val] ?? "•"}</span>
-                <span style={{ fontSize: 12.5, fontWeight: 600, flex: 1 }}>{h.name.split(" ")[0]}</span>
-                <span style={{ fontSize: 11, color: C.purple }}>{val}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>{h.name.split(" ")[0]}</span>
+                <span style={{ fontSize: 13, color: C.purple }}>{val}</span>
               </div>
             );
           })}
@@ -433,9 +433,9 @@ export default function NoaPanel() {
             <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
               {VALUE_NODES.map(n => <line key={n.v} x1="50" y1="50" x2={n.left} y2={n.top} stroke={C.border} strokeWidth="0.6" />)}
             </svg>
-            <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: 42, height: 42, borderRadius: "50%", background: `linear-gradient(135deg,${C.purple},${C.red} 52%,${C.green})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: "#fff", boxShadow: "0 0 0 2px rgba(255,255,255,0.25)" }}>Noa</div>
+            <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: 42, height: 42, borderRadius: "50%", background: `linear-gradient(135deg,${C.purple},${C.red} 52%,${C.green})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff", boxShadow: "0 0 0 2px rgba(255,255,255,0.25)" }}>Noa</div>
             {VALUE_NODES.map(n => (
-              <div key={n.v} style={{ position: "absolute", left: `${n.left}%`, top: `${n.top}%`, transform: "translate(-50%,-50%)", fontSize: 10, fontWeight: 600, color: C.purple, background: C.bg, border: `1px solid ${C.purple}66`, borderRadius: 10, padding: "2px 8px", whiteSpace: "nowrap" }}>{n.v}</div>
+              <div key={n.v} style={{ position: "absolute", left: `${n.left}%`, top: `${n.top}%`, transform: "translate(-50%,-50%)", fontSize: 12, fontWeight: 600, color: C.purple, background: C.bg, border: `1px solid ${C.purple}66`, borderRadius: 10, padding: "2px 8px", whiteSpace: "nowrap" }}>{n.v}</div>
             ))}
           </div>
 
@@ -443,7 +443,7 @@ export default function NoaPanel() {
           <div style={sectionLabel}>Resources</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
             {PROFILE_RESOURCES.map(r => (
-              <span key={r} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 12, background: C.bg, border: `1px solid ${C.border}`, color: C.text }}>{r}</span>
+              <span key={r} style={{ fontSize: 13, padding: "3px 10px", borderRadius: 12, background: C.bg, border: `1px solid ${C.border}`, color: C.text }}>{r}</span>
             ))}
           </div>
         </>
@@ -458,7 +458,7 @@ export default function NoaPanel() {
             {PROFILE_PHOTOS.map(p => (
               <div key={p.label} style={{ height: 68, background: C.bg, border: `1px dashed ${C.border}`, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
                 <span style={{ fontSize: 22 }}>{p.emoji}</span>
-                <span style={{ fontSize: 10, color: C.borderSoft }}>{p.label}</span>
+                <span style={{ fontSize: 12, color: C.borderSoft }}>{p.label}</span>
               </div>
             ))}
           </div>
@@ -467,8 +467,8 @@ export default function NoaPanel() {
           <div style={sectionLabel}>Posts</div>
           {PROFILE_POSTS.map((p, i) => (
             <div key={i} style={{ ...card, marginBottom: 6 }}>
-              <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6 }}>&quot;{p}&quot;</div>
-              <div style={{ fontSize: 9, color: C.borderSoft, marginTop: 5 }}>נועה · Case Zero</div>
+              <div style={{ fontSize: 13, color: C.text, lineHeight: 1.6 }}>&quot;{p}&quot;</div>
+              <div style={{ fontSize: 12, color: C.borderSoft, marginTop: 5 }}>נועה · Case Zero</div>
             </div>
           ))}
         </>
@@ -481,10 +481,10 @@ export default function NoaPanel() {
       {tab === "chain" && c.tension && (
         <>
           <div style={sectionLabel}>1 · Base Tension Field — origin: {c.tension.origin}</div>
-          <div style={{ fontSize: 10, color: C.borderSoft, marginBottom: 8 }}>{c.tension.origin} → base oppositions → 6 departments</div>
+          <div style={{ fontSize: 12, color: C.borderSoft, marginBottom: 8 }}>{c.tension.origin} → base oppositions → 6 departments</div>
           {c.tension.fields.map(f => (
             <div key={f.name} style={{ ...card, marginBottom: 6 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 600, marginBottom: 5 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600, marginBottom: 5 }}>
                 <span>{f.name}</span><span>{f.intensity}</span>
               </div>
               <Bar pct={f.intensity} color={`linear-gradient(90deg,${C.purple},${C.red})` as unknown as string} />
@@ -502,7 +502,7 @@ export default function NoaPanel() {
       <div style={{ display: "grid", gridTemplateColumns: "70px 1fr 1fr 1fr", gap: 4 }}>
         <div />
         {["Body", "Emotion", "Mind"].map(ch => (
-          <div key={ch} style={{ fontSize: 9.5, color: C.borderSoft, textAlign: "center" }}>{ch}</div>
+          <div key={ch} style={{ fontSize: 12, color: C.borderSoft, textAlign: "center" }}>{ch}</div>
         ))}
         {[...new Set(c.attention.cells.map(x => x.department))].map(dept => (
           <Cells key={dept} dept={dept} cells={c.attention.cells} strong={c.attention.strongest} />
@@ -520,8 +520,8 @@ export default function NoaPanel() {
           {c.collapse.departments.map(d => (
             <div key={d.name} style={{ ...card, marginBottom: 6 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                <span style={{ fontSize: 13, fontWeight: 700 }}>{deptLabel(d.name)}</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: C.red }}>{d.negativeDominance}%</span>
+                <span style={{ fontSize: 15, fontWeight: 700 }}>{deptLabel(d.name)}</span>
+                <span style={{ fontSize: 15, fontWeight: 700, color: C.red }}>{d.negativeDominance}%</span>
               </div>
               <Bar pct={d.negativeDominance} color={C.red} />
             </div>
@@ -547,7 +547,7 @@ export default function NoaPanel() {
         <>
           <div style={sectionLabel}>5 · Energy Leakage</div>
           <div style={{ ...card, borderRight: `3px solid ${C.red}` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15, fontWeight: 700, marginBottom: 6 }}>
               <span>total leakage</span>
               <span style={{ color: riskColor[c.leakage.leakageLevel === "high" ? "high" : c.leakage.leakageLevel === "critical" ? "critical" : "medium"] }}>{c.leakage.totalLeakage} / 100 · {c.leakage.leakageLevel}</span>
             </div>
@@ -562,23 +562,23 @@ export default function NoaPanel() {
       {tab === "community" && c.load && (
         <>
           <div style={sectionLabel}>Value Network · capacity</div>
-          <div style={{ fontSize: 10.5, color: C.borderSoft, lineHeight: 1.8, marginBottom: 8 }}>
+          <div style={{ fontSize: 13, color: C.borderSoft, lineHeight: 1.8, marginBottom: 8 }}>
             Noa → Shared Values → Value Network → Helpers → Load Distribution
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
             {SHARED_VALUES.map(v => (
-              <span key={v} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 12, background: C.bg, border: `1px solid ${C.purple}55`, color: C.purple }}>{v}</span>
+              <span key={v} style={{ fontSize: 13, padding: "3px 10px", borderRadius: 12, background: C.bg, border: `1px solid ${C.purple}55`, color: C.purple }}>{v}</span>
             ))}
           </div>
           {c.load.helpers.map(h => (
             <div key={h.role} style={{ ...card, display: "grid", gridTemplateColumns: "1fr auto auto", gap: 10, alignItems: "center", marginBottom: 6 }}>
-              <span style={{ fontSize: 12, fontWeight: 500 }}>{h.name}</span>
-              <span style={{ fontSize: 11, color: C.purple }}>{ROLE_VALUE[h.role] ?? "—"}</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: C.cyan, background: "#0a2a4a", borderRadius: 10, padding: "2px 8px" }}>{h.allocated}</span>
+              <span style={{ fontSize: 13, fontWeight: 500 }}>{h.name}</span>
+              <span style={{ fontSize: 13, color: C.purple }}>{ROLE_VALUE[h.role] ?? "—"}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: C.cyan, background: "#0a2a4a", borderRadius: 10, padding: "2px 8px" }}>{h.allocated}</span>
             </div>
           ))}
           <div style={{ ...line, marginTop: 4 }}>Total network capacity = <b style={{ color: C.cyan }}>{c.load.distributedLoad}</b></div>
-          <div style={{ fontSize: 11.5, color: C.text, lineHeight: 1.6, marginTop: 8 }}>
+          <div style={{ fontSize: 13, color: C.text, lineHeight: 1.6, marginTop: 8 }}>
             The Value Network transforms a private burden into a shared responsibility by connecting people through common values.
           </div>
         </>
@@ -595,18 +595,18 @@ export default function NoaPanel() {
             return (
               <div key={h.role} style={{ ...card, marginBottom: 8 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600 }}>{h.name} <span style={{ fontSize: 10, color: C.borderSoft }}>· {od.roleLabel}</span></span>
-                  <span style={{ fontSize: 11, color: C.purple }}>{ROLE_VALUE[h.role] ?? "—"}</span>
+                  <span style={{ fontSize: 15, fontWeight: 600 }}>{h.name} <span style={{ fontSize: 12, color: C.borderSoft }}>· {od.roleLabel}</span></span>
+                  <span style={{ fontSize: 13, color: C.purple }}>{ROLE_VALUE[h.role] ?? "—"}</span>
                 </div>
-                <ul style={{ margin: "4px 0 8px", paddingInlineStart: 16, fontSize: 11.5, color: C.text, lineHeight: 1.6 }}>
+                <ul style={{ margin: "4px 0 8px", paddingInlineStart: 16, fontSize: 13, color: C.text, lineHeight: 1.6 }}>
                   {od.offers.map(o => <li key={o}>{o}</li>)}
                 </ul>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 10, color: C.borderSoft }}>load handled <b style={{ color: C.cyan }}>{h.allocated}</b> · trust: {od.trust}</span>
+                  <span style={{ fontSize: 12, color: C.borderSoft }}>load handled <b style={{ color: C.cyan }}>{h.allocated}</b> · trust: {od.trust}</span>
                   {done ? (
-                    <span style={{ fontSize: 11, fontWeight: 700, color: C.green, whiteSpace: "nowrap" }}>✓ Request created</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: C.green, whiteSpace: "nowrap" }}>✓ Request created</span>
                   ) : (
-                    <button onClick={() => requestSupport(h.role)} style={{ padding: "5px 11px", borderRadius: 4, fontSize: 11, cursor: "pointer", fontWeight: 600, border: `1px solid ${C.green}`, background: "#34d39922", color: C.green, whiteSpace: "nowrap" }}>Request Support</button>
+                    <button onClick={() => requestSupport(h.role)} style={{ padding: "5px 11px", borderRadius: 4, fontSize: 13, cursor: "pointer", fontWeight: 600, border: `1px solid ${C.green}`, background: "#34d39922", color: C.green, whiteSpace: "nowrap" }}>Request Support</button>
                   )}
                 </div>
               </div>
@@ -640,7 +640,7 @@ export default function NoaPanel() {
             <div style={line}>Energy support: <b style={{ color: energySupport === "none" ? C.borderSoft : C.green }}>{energySupport}</b></div>
             <div style={line}>Values activated: <span style={{ color: C.purple }}>{valuesCovered}</span></div>
             <div style={line}>Main dimension supported: <b>{dimsActivated}</b></div>
-            <div style={{ fontSize: 11.5, color: C.text, lineHeight: 1.6, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}` }}>{impactNote}</div>
+            <div style={{ fontSize: 13, color: C.text, lineHeight: 1.6, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}` }}>{impactNote}</div>
           </div>
         </>
       )}
@@ -671,7 +671,7 @@ export default function NoaPanel() {
             <div style={line}>Fulfilled values: <span style={{ color: C.purple }}>{fulfilledValues}</span></div>
             <div style={line}>Active dimensions: <b>{fulfilledDims}</b></div>
             <div style={line}>Operational status: <b style={{ color: fulfilledCount === 0 ? C.borderSoft : C.green }}>{operationalStatus}</b></div>
-            <div style={{ fontSize: 11.5, color: C.text, lineHeight: 1.6, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}` }}>Fulfilled support converts requested help into active load handling.</div>
+            <div style={{ fontSize: 13, color: C.text, lineHeight: 1.6, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}` }}>Fulfilled support converts requested help into active load handling.</div>
           </div>
         </>
       )}
@@ -681,7 +681,7 @@ export default function NoaPanel() {
         <>
           <div style={sectionLabel}>Support Request Queue {queueItems.length > 0 ? `(${queueItems.length})` : ""}</div>
           {queueItems.length === 0 ? (
-            <div style={{ fontSize: 11.5, color: C.borderSoft, padding: "8px 0" }}>No support requests yet.</div>
+            <div style={{ fontSize: 13, color: C.borderSoft, padding: "8px 0" }}>No support requests yet.</div>
           ) : (
             queueItems.map(h => {
               const od = OFFER_DATA[h.role];
@@ -689,18 +689,18 @@ export default function NoaPanel() {
               return (
                 <div key={h.role} style={{ ...card, borderRight: `3px solid ${isFulfilled ? C.green : C.yellow}`, marginBottom: 8 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600 }}>{h.name} <span style={{ fontSize: 10, color: C.borderSoft }}>· {od?.roleLabel}</span></span>
-                    <span style={{ fontSize: 11, color: C.purple }}>{ROLE_VALUE[h.role] ?? "—"}</span>
+                    <span style={{ fontSize: 15, fontWeight: 600 }}>{h.name} <span style={{ fontSize: 12, color: C.borderSoft }}>· {od?.roleLabel}</span></span>
+                    <span style={{ fontSize: 13, color: C.purple }}>{ROLE_VALUE[h.role] ?? "—"}</span>
                   </div>
-                  <div style={{ fontSize: 11.5, color: C.text, lineHeight: 1.6 }}>Request: {od?.offers.join(", ")}</div>
-                  <div style={{ fontSize: 10, color: C.borderSoft, marginTop: 5, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                  <div style={{ fontSize: 13, color: C.text, lineHeight: 1.6 }}>Request: {od?.offers.join(", ")}</div>
+                  <div style={{ fontSize: 12, color: C.borderSoft, marginTop: 5, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                     <span>load handled <b style={{ color: C.cyan }}>{h.allocated}</b></span>
                     {isFulfilled ? (
-                      <span style={{ fontSize: 11, fontWeight: 700, color: C.green, whiteSpace: "nowrap" }}>✓ fulfilled demo support</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: C.green, whiteSpace: "nowrap" }}>✓ fulfilled demo support</span>
                     ) : (
                       <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ color: C.yellow, whiteSpace: "nowrap" }}>pending demo request</span>
-                        <button onClick={() => markFulfilled(h.role)} style={{ padding: "4px 9px", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600, border: `1px solid ${C.green}`, background: "#34d39922", color: C.green, whiteSpace: "nowrap" }}>Mark as fulfilled</button>
+                        <button onClick={() => markFulfilled(h.role)} style={{ padding: "4px 9px", borderRadius: 4, fontSize: 12, cursor: "pointer", fontWeight: 600, border: `1px solid ${C.green}`, background: "#34d39922", color: C.green, whiteSpace: "nowrap" }}>Mark as fulfilled</button>
                       </span>
                     )}
                   </div>
@@ -717,7 +717,7 @@ export default function NoaPanel() {
           <div style={sectionLabel}>6 · Harmonic Flow — resources → 3 dimensions</div>
           {c.flow.dimensions.map(d => (
             <div key={d.dimension} style={{ ...card, marginBottom: 6 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
                 <span>{d.dimension}</span>
                 <span>{d.dimensionPressure} → <b style={{ color: C.green }}>{d.dimensionDeficit}</b></span>
               </div>
@@ -728,7 +728,7 @@ export default function NoaPanel() {
           <div style={{ ...sectionLabel, margin: "10px 0 6px" }}>department rebalance</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
             {c.flow.departments.map(d => (
-              <div key={d.department} style={{ ...card, display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+              <div key={d.department} style={{ ...card, display: "flex", justifyContent: "space-between", fontSize: 13 }}>
                 <span>{deptLabel(d.department)}</span>
                 <span>{d.dominanceBefore} → <b style={{ color: C.green }}>{d.dominanceAfter}</b></span>
               </div>
@@ -743,13 +743,13 @@ export default function NoaPanel() {
           <div style={sectionLabel}>7 · Load Distribution + 8 · Energy Recovery</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
             <div style={{ ...card, borderRight: `3px solid ${C.red}` }}>
-              <div style={{ fontSize: 9, color: C.borderSoft, textTransform: "uppercase", marginBottom: 5 }}>Before</div>
+              <div style={{ fontSize: 12, color: C.borderSoft, textTransform: "uppercase", marginBottom: 5 }}>Before</div>
               <div style={line}>נועה <b>{c.load.beforePct}%</b></div>
               <div style={line}>אנרגיה <b>{c.load.beforeEnergy}</b></div>
               <div style={line}>סיכון: <span style={{ color: riskColor[c.load.collapseRiskBefore], fontWeight: 700 }}>{riskHe(c.load.collapseRiskBefore)}</span></div>
             </div>
             <div style={{ ...card, borderRight: `3px solid ${C.green}` }}>
-              <div style={{ fontSize: 9, color: C.borderSoft, textTransform: "uppercase", marginBottom: 5 }}>After</div>
+              <div style={{ fontSize: 12, color: C.borderSoft, textTransform: "uppercase", marginBottom: 5 }}>After</div>
               <div style={line}>נועה <b>{c.load.afterPct}%</b> · קהילה <b>{c.load.communityPct}%</b></div>
               <div style={line}>אנרגיה <span style={{ color: C.green, fontWeight: 700 }}>+{c.load.energyRecovered}</span> → <b>{c.load.afterEnergy}</b></div>
               <div style={line}>סיכון: <span style={{ color: riskColor[c.load.collapseRiskAfter], fontWeight: 700 }}>{riskHe(c.load.collapseRiskAfter)}</span></div>
@@ -757,9 +757,9 @@ export default function NoaPanel() {
           </div>
           {c.load.helpers.map(h => (
             <div key={h.role} style={{ ...card, display: "grid", gridTemplateColumns: "1fr auto auto", gap: 10, alignItems: "center", marginBottom: 6 }}>
-              <span style={{ fontSize: 12, fontWeight: 500 }}>{h.name}</span>
-              <span style={{ fontSize: 11, color: C.borderSoft }}>{h.loadType}</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: C.green, background: "#0c2a1e", borderRadius: 10, padding: "2px 8px" }}>{h.allocated}</span>
+              <span style={{ fontSize: 13, fontWeight: 500 }}>{h.name}</span>
+              <span style={{ fontSize: 13, color: C.borderSoft }}>{h.loadType}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: C.green, background: "#0c2a1e", borderRadius: 10, padding: "2px 8px" }}>{h.allocated}</span>
             </div>
           ))}
         </>
@@ -771,8 +771,8 @@ export default function NoaPanel() {
           <div style={sectionLabel}>9 · Orientation Score</div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 12 }}>
             <span style={{ fontSize: 34, fontWeight: 800, color: levelColor[c.orientation.level] ?? C.text }}>{c.orientation.score}</span>
-            <span style={{ fontSize: 12, color: C.borderSoft }}>/ 100</span>
-            <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: levelColor[c.orientation.level] ?? C.text, border: "1px solid currentColor", borderRadius: 10, padding: "2px 8px" }}>{c.orientation.level}</span>
+            <span style={{ fontSize: 13, color: C.borderSoft }}>/ 100</span>
+            <span style={{ fontSize: 13, fontWeight: 700, textTransform: "uppercase", color: levelColor[c.orientation.level] ?? C.text, border: "1px solid currentColor", borderRadius: 10, padding: "2px 8px" }}>{c.orientation.level}</span>
           </div>
           {[
             ["Balance gain", c.orientation.balanceGain],
@@ -781,7 +781,7 @@ export default function NoaPanel() {
             ["Leakage relief", c.orientation.leakageRelief],
           ].map(([label, v]) => (
             <div key={label as string} style={{ marginBottom: 7 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.borderSoft, marginBottom: 3 }}><span>{label}</span><span>{v}</span></div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.borderSoft, marginBottom: 3 }}><span>{label}</span><span>{v}</span></div>
               <Bar pct={v as number} color={`linear-gradient(90deg,${C.cyan},${C.green})` as unknown as string} />
             </div>
           ))}
@@ -789,8 +789,8 @@ export default function NoaPanel() {
 
           {/* Meaning — 45/Medium is not failure */}
           <div style={{ marginTop: 10, padding: "10px 12px", background: C.bg, border: `1px solid ${C.border}`, borderRight: `3px solid ${C.yellow}`, borderRadius: 6 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: C.yellow }}>{score} = {band.label}</div>
-            <div style={{ fontSize: 11.5, color: C.text, lineHeight: 1.7, marginTop: 6 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: C.yellow }}>{score} = {band.label}</div>
+            <div style={{ fontSize: 13, color: C.text, lineHeight: 1.7, marginTop: 6 }}>
               {score}/100 does not mean full recovery. It means first stabilization.<br />
               <b style={{ color: C.red }}>Before Nexus:</b> Noa was in critical collapse pressure.<br />
               <b style={{ color: C.green }}>After Nexus:</b> the burden is partly distributed, energy returns, and the system moves from collapse toward balance.<br />
@@ -804,7 +804,7 @@ export default function NoaPanel() {
             const cur = i === bandIndex(score);
             return (
               <div key={b.range} style={{
-                display: "flex", justifyContent: "space-between", fontSize: 11.5,
+                display: "flex", justifyContent: "space-between", fontSize: 13,
                 padding: "6px 10px", borderRadius: 6, marginBottom: 4,
                 background: cur ? "#fbbf2418" : C.bg,
                 border: `1px solid ${cur ? C.yellow : C.border}`,
@@ -822,10 +822,10 @@ export default function NoaPanel() {
         <>
           <div style={sectionLabel}>Tension Flow</div>
           <div style={{ ...card, marginBottom: 8 }}>
-            <div style={{ fontSize: 11.5, color: C.text, lineHeight: 1.7, marginBottom: 8, paddingBottom: 8, borderBottom: `1px solid ${C.border}` }}>
+            <div style={{ fontSize: 13, color: C.text, lineHeight: 1.7, marginBottom: 8, paddingBottom: 8, borderBottom: `1px solid ${C.border}` }}>
               Philos does not move a person through a simple ladder. It follows where tension appears, where attention is pulled, where energy leaks, and which value network can redistribute the load.
             </div>
-            <div style={{ fontSize: 10, color: C.borderSoft, marginBottom: 10 }}>The question is not &quot;what is the next stage?&quot; — it is &quot;where is the resistance?&quot;</div>
+            <div style={{ fontSize: 12, color: C.borderSoft, marginBottom: 10 }}>The question is not &quot;what is the next stage?&quot; — it is &quot;where is the resistance?&quot;</div>
             {tensionFlow.map((s, i) => (
               <div key={s.label} style={{ display: "flex", gap: 10 }}>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -833,8 +833,8 @@ export default function NoaPanel() {
                   {i < tensionFlow.length - 1 && <span style={{ width: 2, flex: 1, minHeight: 10, background: C.border }} />}
                 </div>
                 <div style={{ paddingBottom: i < tensionFlow.length - 1 ? 8 : 0 }}>
-                  <div style={{ fontSize: 9, color: C.borderSoft, textTransform: "uppercase", letterSpacing: 0.5 }}>{s.label}</div>
-                  <div style={{ fontSize: 12, color: C.text, lineHeight: 1.4 }}>{s.value}</div>
+                  <div style={{ fontSize: 12, color: C.borderSoft, textTransform: "uppercase", letterSpacing: 0.5 }}>{s.label}</div>
+                  <div style={{ fontSize: 13, color: C.text, lineHeight: 1.4 }}>{s.value}</div>
                 </div>
               </div>
             ))}
@@ -848,7 +848,7 @@ export default function NoaPanel() {
           <div style={sectionLabel}>10 · Action → Impact → Collective Impact</div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 10 }}>
             <span style={{ fontSize: 20, fontWeight: 800, color: C.green, textTransform: "capitalize" }}>{c.action.recommendedAction}</span>
-            <span style={{ fontSize: 11, color: C.borderSoft }}>→ {c.action.targetDimension} / {c.action.targetDepartment}</span>
+            <span style={{ fontSize: 13, color: C.borderSoft }}>→ {c.action.targetDimension} / {c.action.targetDepartment}</span>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             <Stat label="energy gain" value={`+${c.action.expectedEnergyGain}`} color={C.green} />
@@ -862,8 +862,8 @@ export default function NoaPanel() {
 
       {/* 11 — Copy Snapshot */}
       <div style={{ marginTop: 16, display: "flex", gap: 10, alignItems: "center" }}>
-        <button onClick={copy} style={{ padding: "6px 12px", borderRadius: 4, fontSize: 11, cursor: "pointer", fontWeight: 600, border: `1px solid ${C.cyan}`, background: "#38bdf822", color: C.cyan }}>⧉ Copy Snapshot</button>
-        {copied && <span style={{ fontSize: 11, color: C.green }}>הועתק ✓</span>}
+        <button onClick={copy} style={{ padding: "6px 12px", borderRadius: 4, fontSize: 13, cursor: "pointer", fontWeight: 600, border: `1px solid ${C.cyan}`, background: "#38bdf822", color: C.cyan }}>⧉ Copy Snapshot</button>
+        {copied && <span style={{ fontSize: 13, color: C.green }}>הועתק ✓</span>}
       </div>
     </div>
   );
@@ -873,13 +873,13 @@ function Cells({ dept, cells, strong }: { dept: string; cells: ReturnType<typeof
   const byCh = (ch: string) => cells.find(x => x.department === dept && x.channel === ch)!;
   return (
     <>
-      <div style={{ fontSize: 11, color: C.text, display: "flex", alignItems: "center" }}>{deptLabel(dept)}</div>
+      <div style={{ fontSize: 13, color: C.text, display: "flex", alignItems: "center" }}>{deptLabel(dept)}</div>
       {["Body", "Emotion", "Mind"].map(ch => {
         const cell = byCh(ch);
         const isStrong = cell.department === strong.department && cell.channel === strong.channel;
         return (
           <div key={ch} style={{
-            fontSize: 12, fontWeight: 600, textAlign: "center", padding: "7px 0", borderRadius: 6,
+            fontSize: 13, fontWeight: 600, textAlign: "center", padding: "7px 0", borderRadius: 6,
             border: `1px solid ${C.border}`, background: `rgba(239,68,68,${(cell.dominance / 100) * 0.45})`,
             outline: isStrong ? `2px solid ${C.red}` : "none", outlineOffset: -2,
           }}>{cell.dominance}</div>

@@ -115,7 +115,7 @@ function FilterBar({ filters, counts }: { filters: UniverseFilters; counts: { to
         {filters.familyId ? <input type="hidden" name="family" value={filters.familyId} /> : null}
         <input
           type="text" name="search" defaultValue={filters.search ?? ""} placeholder="חיפוש ערך…"
-          style={{ flex: 1, fontSize: 12, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(90,120,180,0.3)", background: "rgba(18,24,38,0.6)", color: "#e6ebf5" }}
+          style={{ flex: 1, fontSize: 13, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(90,120,180,0.3)", background: "rgba(18,24,38,0.6)", color: "#e6ebf5" }}
         />
         <button type="submit" style={{ ...S.actionBtn, border: "none", cursor: "pointer" }}>חיפוש</button>
       </form>
@@ -137,7 +137,7 @@ function FilterBar({ filters, counts }: { filters: UniverseFilters; counts: { to
         <span style={S.detailLabel}>PROVENANCE:</span>
         <a href={buildQuery(filters, { provenance: undefined })} style={{ ...S.groupChip, borderColor: !filters.provenance ? "#5b9cf6" : "rgba(90,120,180,0.3)", color: !filters.provenance ? "#5b9cf6" : "#8fa3c9" }}>ALL</a>
         <a href={buildQuery(filters, { provenance: filters.provenance === "RUNTIME" ? undefined : "RUNTIME" })} style={{ ...S.groupChip, borderColor: "#34d39966", color: filters.provenance === "RUNTIME" ? "#34d399" : "#8fa3c9" }}>RUNTIME (live Value)</a>
-        <a href={buildQuery(filters, { provenance: filters.provenance === "SOURCE_ONLY" ? undefined : "SOURCE_ONLY" })} style={{ ...S.groupChip, borderColor: "#8fa3c966", color: filters.provenance === "SOURCE_ONLY" ? "#8fa3c9" : "#5a76a3" }}>SOURCE-ONLY (328 doc)</a>
+        <a href={buildQuery(filters, { provenance: filters.provenance === "SOURCE_ONLY" ? undefined : "SOURCE_ONLY" })} style={{ ...S.groupChip, borderColor: "#8fa3c966", color: filters.provenance === "SOURCE_ONLY" ? "#8fa3c9" : "#6c86b5" }}>SOURCE-ONLY (328 doc)</a>
       </div>
       {filters.search || filters.scope || filters.status || filters.provenance ? (
         <div style={{ ...S.note, marginTop: 8, marginBottom: 0 }}>{counts.filtered} / {counts.total} תואמים לסינון</div>

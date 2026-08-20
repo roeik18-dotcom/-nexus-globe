@@ -48,7 +48,7 @@ export default function CreateActionForm({
         });
       }}
     >
-      <div style={{ fontSize: 11, letterSpacing: 0.5, color: "#8fa3c9" }}>פעולה חדשה · NEW ACTION (person_roei)</div>
+      <div style={{ fontSize: 13, letterSpacing: 0.5, color: "#8fa3c9" }}>פעולה חדשה · NEW ACTION (person_roei)</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <select name="type" required style={selectStyle}>{TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select>
         <select name="mechanism_scope" required style={selectStyle}>{SCOPES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</select>
@@ -58,8 +58,8 @@ export default function CreateActionForm({
         <input name="provenance" type="text" placeholder="provenance — מקור הפעולה" required style={inputStyle} />
       </div>
       {inputOptions.length > 0 ? (
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 11 }}>
-          <span style={{ color: "#5a76a3" }}>inputs (אופציונלי):</span>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 13 }}>
+          <span style={{ color: "#6c86b5" }}>inputs (אופציונלי):</span>
           {inputOptions.map((o) => (
             <label key={o.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <input type="checkbox" name="inputs" value={o.id} /> {o.label}
@@ -70,22 +70,22 @@ export default function CreateActionForm({
       {matchPermit ? (
         <>
           <input type="hidden" name="match_permit" value={JSON.stringify(matchPermit)} />
-          <div style={{ fontSize: 10.5, color: "#34d399" }}>
+          <div style={{ fontSize: 13, color: "#34d399" }}>
             MATCH PERMIT זמין ({matchPermit.need_id.slice(0, 10)}…↔{matchPermit.offer_id.slice(0, 10)}…) — יאומת אם תבחר גם Need וגם Offer זה למעלה ב-inputs.
           </div>
         </>
       ) : (
-        <div style={{ fontSize: 10, color: "#5a76a3" }}>
+        <div style={{ fontSize: 12, color: "#6c86b5" }}>
           אין MATCH PERMIT זמין — Action שבוחר גם Need וגם Offer יידחה ללא הערכת התאמה מותרת קודמת.
         </div>
       )}
-      <label style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 6 }}>
+      <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
         <input type="checkbox" name="consent" /> consent — אני מסכים/ה שפעולה זו תירשם (canon §10)
       </label>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <button type="submit" disabled={pending} style={btnStyle}>{pending ? "רושם…" : "רשום פעולה · RECORD ACTION"}</button>
         {result ? (
-          <span style={{ fontSize: 11, color: result.ok ? "#34d399" : "#f2635c" }}>
+          <span style={{ fontSize: 13, color: result.ok ? "#34d399" : "#f2635c" }}>
             {result.ok ? `נרשם · action_id: ${result.action_id.slice(0, 12)}…` : result.message}
           </span>
         ) : null}
@@ -94,6 +94,6 @@ export default function CreateActionForm({
   );
 }
 
-const selectStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 12, flex: 1, minWidth: 160 };
-const inputStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 12, flex: 1, minWidth: 160 };
-const btnStyle: React.CSSProperties = { background: "#5b9cf6", color: "#0b0f1a", fontWeight: 600, fontSize: 12, border: "none", borderRadius: 6, padding: "7px 14px", cursor: "pointer" };
+const selectStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 13, flex: 1, minWidth: 160 };
+const inputStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 13, flex: 1, minWidth: 160 };
+const btnStyle: React.CSSProperties = { background: "#5b9cf6", color: "#0b0f1a", fontWeight: 600, fontSize: 13, border: "none", borderRadius: 6, padding: "7px 14px", cursor: "pointer" };

@@ -386,7 +386,7 @@ const S: Record<string, React.CSSProperties> = {
   /* ── C. CONTEXT ── */
   context: { borderTop: `1px solid ${COLOR.border}`, background: "rgba(0,0,0,0.14)" },
   contextSummary: {
-    cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#5a76a3",
+    cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#6c86b5",
     padding: "8px 14px", display: "flex", alignItems: "center", gap: 10,
   },
   contextCount: { ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint, marginInlineStart: "auto" },

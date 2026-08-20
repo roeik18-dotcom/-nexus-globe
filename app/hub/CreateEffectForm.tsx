@@ -27,7 +27,7 @@ export default function CreateEffectForm({
 
   if (actionOptions.length === 0) {
     return (
-      <div dir="rtl" style={{ fontSize: 11, color: "#8fa3c9", background: "rgba(90,120,180,0.06)", borderRadius: 10, padding: 12, marginBottom: 12 }}>
+      <div dir="rtl" style={{ fontSize: 13, color: "#8fa3c9", background: "rgba(90,120,180,0.06)", borderRadius: 10, padding: 12, marginBottom: 12 }}>
         אפקט (canon) · EFFECT — דורש לפחות Action אמיתי אחד. רשמו Action למעלה כדי לרשום אפקט עבורה.
       </div>
     );
@@ -44,7 +44,7 @@ export default function CreateEffectForm({
         });
       }}
     >
-      <div style={{ fontSize: 11, letterSpacing: 0.5, color: "#8fa3c9" }}>אפקט חדש · NEW EFFECT (person_roei)</div>
+      <div style={{ fontSize: 13, letterSpacing: 0.5, color: "#8fa3c9" }}>אפקט חדש · NEW EFFECT (person_roei)</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <select name="action_ref" required style={selectStyle}>
           <option value="">— בחר Action —</option>
@@ -68,16 +68,16 @@ export default function CreateEffectForm({
         <input name="context" type="text" placeholder="context" required style={inputStyle} />
         <input name="provenance" type="text" placeholder="provenance" required style={inputStyle} />
       </div>
-      <label style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 6 }}>
+      <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
         <input type="checkbox" name="concerns_subject_internal_state" /> concerns_subject_internal_state — האפקט נוגע במצב הפנימי שלי
       </label>
-      <label style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 6 }}>
+      <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
         <input type="checkbox" name="self_verified" /> self_verified — אני מאשר/ת שהתוצאה אכן קרתה בפועל (canon §17: self תמיד מספיק)
       </label>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <button type="submit" disabled={pending} style={btnStyle}>{pending ? "רושם…" : "רשום אפקט · RECORD EFFECT"}</button>
         {result ? (
-          <span style={{ fontSize: 11, color: result.ok ? "#34d399" : "#f2635c" }}>
+          <span style={{ fontSize: 13, color: result.ok ? "#34d399" : "#f2635c" }}>
             {result.ok ? `נרשם · effect_id: ${result.effect_id.slice(0, 12)}…` : result.message}
           </span>
         ) : null}
@@ -86,6 +86,6 @@ export default function CreateEffectForm({
   );
 }
 
-const selectStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 12, flex: 1, minWidth: 160 };
-const inputStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 12, flex: 1, minWidth: 140 };
-const btnStyle: React.CSSProperties = { background: "#5b9cf6", color: "#0b0f1a", fontWeight: 600, fontSize: 12, border: "none", borderRadius: 6, padding: "7px 14px", cursor: "pointer" };
+const selectStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 13, flex: 1, minWidth: 160 };
+const inputStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 13, flex: 1, minWidth: 140 };
+const btnStyle: React.CSSProperties = { background: "#5b9cf6", color: "#0b0f1a", fontWeight: 600, fontSize: 13, border: "none", borderRadius: 6, padding: "7px 14px", cursor: "pointer" };

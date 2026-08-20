@@ -30,7 +30,7 @@ import type { OfferRecord } from "@/app/lib/philos/canon/offerStore";
 export default function OpportunityCandidates({ needs, offers }: { needs: NeedRecord[]; offers: OfferRecord[] }) {
   if (needs.length === 0 || offers.length === 0) {
     return (
-      <div dir="rtl" style={{ fontSize: 11, color: "#8fa3c9", background: "rgba(90,120,180,0.06)", borderRadius: 10, padding: 12, marginBottom: 12 }}>
+      <div dir="rtl" style={{ fontSize: 13, color: "#8fa3c9", background: "rgba(90,120,180,0.06)", borderRadius: 10, padding: 12, marginBottom: 12 }}>
         הזדמנויות (canon) · OPPORTUNITY CANDIDATES — דורש לפחות Need אמיתי אחד ו-Offer אמיתי אחד. אין עדיין. CAPABILITY/VALUE ALIGNMENT אינם קיימים כנתון אמיתי במערכת כרגע.
       </div>
     );
@@ -40,7 +40,7 @@ export default function OpportunityCandidates({ needs, offers }: { needs: NeedRe
 
   return (
     <div dir="rtl" style={{ background: "rgba(90,120,180,0.06)", borderRadius: 10, padding: 12, marginBottom: 12 }}>
-      <div style={{ fontSize: 11, letterSpacing: 0.5, color: "#8fa3c9", marginBottom: 8 }}>
+      <div style={{ fontSize: 13, letterSpacing: 0.5, color: "#8fa3c9", marginBottom: 8 }}>
         מועמדי הזדמנות · OPPORTUNITY CANDIDATES ({candidates.length}) — Need×Offer אמיתיים בלבד; CAPABILITY/VALUE ALIGNMENT: לא זמין כנתון אמיתי
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -48,10 +48,10 @@ export default function OpportunityCandidates({ needs, offers }: { needs: NeedRe
           <a
             key={`${n.need.need_id}::${o.offer.offer_id}`}
             href="#match-eval"
-            style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "6px 10px", borderRadius: 6, background: "rgba(90,120,180,0.05)", textDecoration: "none", color: "inherit", fontSize: 11.5 }}
+            style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "6px 10px", borderRadius: 6, background: "rgba(90,120,180,0.05)", textDecoration: "none", color: "inherit", fontSize: 13 }}
           >
             <span>{n.need.desired_change} ↔ {o.offer.available_resource}</span>
-            <span style={{ color: "#5a76a3", fontSize: 10 }}>הערך → HUMAN DECISION (6 שערים)</span>
+            <span style={{ color: "#6c86b5", fontSize: 12 }}>הערך → HUMAN DECISION (6 שערים)</span>
           </a>
         ))}
       </div>

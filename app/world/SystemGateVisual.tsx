@@ -129,7 +129,11 @@ export default function SystemGateVisual({ rows, observed, because }: {
       {/* THE RESULT — an empty right side, with the figure the whole terminal
           exists to report. */}
       <text x={X_OUT + 46} y={midY + 4} textAnchor="middle"
-            style={{ fontSize: 44, fontWeight: 700, fill: observed > 0 ? STATUS.real.text : COLOR.textFaint }}>
+            /* 26px, not 44. This figure is the answer to SYSTEM's question and
+               should dominate its own drawing — but it was the largest text on
+               the entire page, so the screen's primary anchor was a bare zero
+               rather than the terminal's name. It yields to the title. */
+            style={{ fontSize: 26, fontWeight: 700, fill: observed > 0 ? STATUS.real.text : COLOR.textFaint }}>
         {observed}
       </text>
       <text x={X_OUT + 46} y={midY + 24} textAnchor="middle"

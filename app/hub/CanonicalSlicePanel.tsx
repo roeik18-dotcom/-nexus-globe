@@ -290,14 +290,14 @@ function ActionChain({ instance, label }: { instance: { history: CanonicalStateS
 function FlowStep({ label, count }: { label: string; count: number }) {
   return (
     <div style={S.flowStep}>
-      <div style={{ fontSize: FS.head, fontWeight: 800, color: count > 0 ? "#34d399" : "#5a6f96" }}>{count}</div>
+      <div style={{ fontSize: FS.head, fontWeight: 800, color: count > 0 ? "#34d399" : "#6c86b5" }}>{count}</div>
       <div style={{ fontSize: FS.base, color: "#8fa3c9" }}>{label}</div>
     </div>
   );
 }
 
 function FlowArrow() {
-  return <div style={{ fontSize: FS.head, color: "#5a76a3", alignSelf: "center" }}>→</div>;
+  return <div style={{ fontSize: FS.head, color: "#6c86b5", alignSelf: "center" }}>→</div>;
 }
 
 function MasterCard({ label, meta, total, buckets }: { label: string; meta: { row_count: number; id_field: string }; total: number; buckets: Record<string, number> }) {
@@ -364,7 +364,7 @@ const S: Record<string, React.CSSProperties> = {
   chainRow: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 6, background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.2)", fontSize: FS.meta, marginBottom: 4 },
   chainLabel: { fontWeight: 800, color: "#34d399", fontSize: FS.meta },
   chainState: { color: "#dbe6f6" },
-  chainArrow: { color: "#5a76a3" },
+  chainArrow: { color: "#6c86b5" },
 
   flowRow: { display: "flex", alignItems: "center", gap: 8, padding: "8px 4px" },
   flowStep: { display: "flex", flexDirection: "column", alignItems: "center", minWidth: 64, border: "1px solid rgba(90,120,180,0.2)", borderRadius: 8, padding: "6px 8px" },

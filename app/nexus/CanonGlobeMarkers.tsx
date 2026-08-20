@@ -73,7 +73,7 @@ export default function CanonGlobeMarkers() {
     >
       <div
         style={{
-          fontSize: 8,
+          fontSize: 12,
           color: "#38bdf8",
           letterSpacing: 2,
           textTransform: "uppercase",
@@ -84,12 +84,12 @@ export default function CanonGlobeMarkers() {
       </div>
 
       {state.status === "error" ? (
-        <div style={{ fontSize: 10, color: "#8bb8cc" }}>read failed — canon store unavailable</div>
+        <div style={{ fontSize: 12, color: "#8bb8cc" }}>read failed — canon store unavailable</div>
       ) : state.graph.nodes.length === 0 ? (
-        <div style={{ fontSize: 10, color: "#8bb8cc" }}>no Observations in the canon store</div>
+        <div style={{ fontSize: 12, color: "#8bb8cc" }}>no Observations in the canon store</div>
       ) : (
         <>
-          <div style={{ fontSize: 9, color: "#8bb8cc", marginBottom: 6 }}>
+          <div style={{ fontSize: 12, color: "#8bb8cc", marginBottom: 6 }}>
             {state.graph.summary.node_count} persisted · physical {state.graph.summary.domains.G} ·
             emotional {state.graph.summary.domains.E} · cognitive {state.graph.summary.domains.C}
           </div>
@@ -98,7 +98,7 @@ export default function CanonGlobeMarkers() {
               <div
                 key={n.id}
                 style={{
-                  fontSize: 9,
+                  fontSize: 12,
                   color: "#caf0f8",
                   borderTop: "1px solid #0a2a4a",
                   paddingTop: 4,
@@ -122,7 +122,7 @@ export default function CanonGlobeMarkers() {
               </div>
             ))}
           </div>
-          <div style={{ fontSize: 8, color: "#5b7488", marginTop: 6 }}>
+          <div style={{ fontSize: 12, color: "#5b7488", marginTop: 6 }}>
             location: UNKNOWN — canon carries no location field, none is plotted here
           </div>
         </>

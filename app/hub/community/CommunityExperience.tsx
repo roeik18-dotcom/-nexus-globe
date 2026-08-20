@@ -314,33 +314,33 @@ function Empty({ children }: { children: React.ReactNode }) {
 const S: Record<string, React.CSSProperties> = {
   wrap: { fontFamily: "system-ui", color: "#e6ebf5", background: "#0b0f1a", minHeight: "100vh", paddingBottom: 40 },
   localNav: { display: "flex", alignItems: "center", gap: 6, padding: "12px 20px", borderBottom: "1px solid rgba(90,120,180,0.15)" },
-  navBtn: { fontSize: 11, fontWeight: 700, padding: "6px 14px", borderRadius: 12, border: "1px solid rgba(90,120,180,0.3)", background: "transparent", color: "#8fa3c9", cursor: "pointer" },
+  navBtn: { fontSize: 13, fontWeight: 700, padding: "6px 14px", borderRadius: 12, border: "1px solid rgba(90,120,180,0.3)", background: "transparent", color: "#8fa3c9", cursor: "pointer" },
   navBtnActive: { color: "#0b0f1a", background: "#5b9cf6", borderColor: "#5b9cf6" },
-  auditLink: { marginInlineStart: "auto", fontSize: 10.5, color: "#5a76a3", textDecoration: "none" },
+  auditLink: { marginInlineStart: "auto", fontSize: 13, color: "#6c86b5", textDecoration: "none" },
 
   hero: { textAlign: "center", padding: "28px 20px 10px" },
   heroTitle: { fontSize: 26, fontWeight: 800, letterSpacing: 2, color: "#f2f6fc" },
-  heroSub: { fontSize: 13, color: "#5b9cf6", marginTop: 6, fontWeight: 600 },
+  heroSub: { fontSize: 15, color: "#5b9cf6", marginTop: 6, fontWeight: 600 },
   searchRow: { display: "flex", justifyContent: "center", alignItems: "center", gap: 10, marginTop: 16, flexWrap: "wrap" },
-  searchInput: { fontSize: 13, padding: "9px 16px", borderRadius: 20, border: "1px solid rgba(90,120,180,0.3)", background: "rgba(18,24,38,0.6)", color: "#e6ebf5", width: 260, textAlign: "center" },
+  searchInput: { fontSize: 15, padding: "9px 16px", borderRadius: 20, border: "1px solid rgba(90,120,180,0.3)", background: "rgba(18,24,38,0.6)", color: "#e6ebf5", width: 260, textAlign: "center" },
   realDemoToggle: { display: "flex", borderRadius: 20, overflow: "hidden", border: "1px solid rgba(90,120,180,0.3)" },
-  toggleBtn: { fontSize: 10.5, fontWeight: 700, padding: "8px 14px", border: "none", background: "transparent", color: "#8fa3c9", cursor: "pointer" },
+  toggleBtn: { fontSize: 13, fontWeight: 700, padding: "8px 14px", border: "none", background: "transparent", color: "#8fa3c9", cursor: "pointer" },
   toggleBtnActive: { background: "#34d399", color: "#0b0f1a" },
   toggleBtnActiveDemo: { background: "#fbbf24", color: "#0b0f1a" },
 
   mapWrap: { display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "center", gap: 14, padding: "24px 20px", maxWidth: 1100, margin: "0 auto" },
   node: { borderRadius: "50%", border: "2px solid", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 8, textAlign: "center" },
-  nodeLabel: { fontSize: 11.5, fontWeight: 700, color: "#e6ebf5", lineHeight: 1.25 },
-  nodeMeta: { fontSize: 9.5, color: "#8aa0c8", marginTop: 4 },
+  nodeLabel: { fontSize: 13, fontWeight: 700, color: "#e6ebf5", lineHeight: 1.25 },
+  nodeMeta: { fontSize: 12, color: "#8aa0c8", marginTop: 4 },
 
   networkStrip: { display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap", padding: "16px 20px", maxWidth: 900, margin: "0 auto" },
   netStat: { textAlign: "center", background: "rgba(18,24,38,0.6)", border: "1px solid rgba(90,120,180,0.16)", borderRadius: 12, padding: "10px 16px", minWidth: 90 },
   netStatValue: { fontSize: 20, fontWeight: 800 },
-  netStatLabel: { fontSize: 9.5, color: "#8fa3c9", marginTop: 3 },
+  netStatLabel: { fontSize: 12, color: "#8fa3c9", marginTop: 3 },
 
   panel: { maxWidth: 700, margin: "16px auto", padding: "14px 18px", background: "rgba(18,24,38,0.6)", border: "1px solid rgba(90,120,180,0.16)", borderRadius: 14 },
-  panelTitle: { fontSize: 12.5, fontWeight: 700, color: "#5aa6ff", marginBottom: 10 },
-  linkOut: { display: "inline-block", marginTop: 8, fontSize: 11.5, color: "#5b9cf6", textDecoration: "none" },
+  panelTitle: { fontSize: 13, fontWeight: 700, color: "#5aa6ff", marginBottom: 10 },
+  linkOut: { display: "inline-block", marginTop: 8, fontSize: 13, color: "#5b9cf6", textDecoration: "none" },
 
   /* DELIBERATELY viewport-owned, and the only two left in the social family.
      A modal scrim and its drawer are not PRIMARY_STAGE content: their whole
@@ -350,24 +350,24 @@ const S: Record<string, React.CSSProperties> = {
      nothing here, on purpose. */
   scrim: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 40 },
   drawer: { position: "fixed", top: 0, bottom: 0, insetInlineEnd: 0, width: "min(420px, 92vw)", background: "#0f1522", borderInlineStart: "1px solid rgba(90,120,180,0.25)", zIndex: 41, overflowY: "auto", padding: 20 },
-  drawerClose: { fontSize: 11, color: "#8fa3c9", background: "transparent", border: "none", cursor: "pointer", padding: 0, marginBottom: 12 },
+  drawerClose: { fontSize: 13, color: "#8fa3c9", background: "transparent", border: "none", cursor: "pointer", padding: 0, marginBottom: 12 },
   drawerTitle: { fontSize: 18, fontWeight: 800, color: "#f2f6fc" },
-  drawerDef: { fontSize: 12, color: "#9fb0d0", marginTop: 6, lineHeight: 1.6 },
+  drawerDef: { fontSize: 13, color: "#9fb0d0", marginTop: 6, lineHeight: 1.6 },
   drawerSection: { marginTop: 18 },
-  drawerSectionTitle: { fontSize: 10.5, fontWeight: 700, letterSpacing: 0.5, color: "#5a76a3", marginBottom: 6 },
+  drawerSectionTitle: { fontSize: 13, fontWeight: 700, letterSpacing: 0.5, color: "#6c86b5", marginBottom: 6 },
 
   chipRow: { display: "flex", flexWrap: "wrap", gap: 6 },
-  chip: { fontSize: 10.5, padding: "4px 10px", borderRadius: 10, border: "1px solid" },
-  chipMore: { fontSize: 10.5, padding: "4px 10px", color: "#5a76a3" },
+  chip: { fontSize: 13, padding: "4px 10px", borderRadius: 10, border: "1px solid" },
+  chipMore: { fontSize: 13, padding: "4px 10px", color: "#6c86b5" },
 
   list: { display: "flex", flexDirection: "column", gap: 4 },
-  listRow: { display: "flex", justifyContent: "space-between", gap: 8, padding: "6px 8px", borderRadius: 6, background: "rgba(90,120,180,0.06)", fontSize: 11.5, color: "#dbe6f6", flexWrap: "wrap" },
-  listMeta: { fontSize: 10, color: "#8aa0c8" },
+  listRow: { display: "flex", justifyContent: "space-between", gap: 8, padding: "6px 8px", borderRadius: 6, background: "rgba(90,120,180,0.06)", fontSize: 13, color: "#dbe6f6", flexWrap: "wrap" },
+  listMeta: { fontSize: 12, color: "#8aa0c8" },
 
   actionRow: { display: "flex", gap: 8, flexWrap: "wrap" },
-  actionBtn: { fontSize: 11.5, fontWeight: 600, color: "#0b0f1a", background: "#5b9cf6", padding: "8px 14px", borderRadius: 8, textDecoration: "none" },
-  actionDisabled: { fontSize: 11, color: "#5a76a3", padding: "8px 14px", borderRadius: 8, border: "1px dashed rgba(90,120,180,0.3)" },
+  actionBtn: { fontSize: 13, fontWeight: 600, color: "#0b0f1a", background: "#5b9cf6", padding: "8px 14px", borderRadius: 8, textDecoration: "none" },
+  actionDisabled: { fontSize: 13, color: "#6c86b5", padding: "8px 14px", borderRadius: 8, border: "1px dashed rgba(90,120,180,0.3)" },
 
-  note: { fontSize: 11, color: "#8fa3c9", lineHeight: 1.6 },
-  empty: { fontSize: 11.5, color: "#7b8ca6", fontStyle: "italic" },
+  note: { fontSize: 13, color: "#8fa3c9", lineHeight: 1.6 },
+  empty: { fontSize: 13, color: "#7b8ca6", fontStyle: "italic" },
 };

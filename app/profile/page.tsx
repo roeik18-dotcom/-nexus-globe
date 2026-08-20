@@ -87,7 +87,7 @@ export default function Page() {
       }}
     >
       <div style={{ maxWidth: 620, margin: "0 auto" }}>
-        <div style={{ fontSize: 11, letterSpacing: 6, color: "#38bdf8", marginBottom: 10, textAlign: "center" }}>
+        <div style={{ fontSize: 13, letterSpacing: 6, color: "#38bdf8", marginBottom: 10, textAlign: "center" }}>
           PHILOS · PROFILE
         </div>
         <h1
@@ -103,7 +103,7 @@ export default function Page() {
         >
           מי אתה בבסיס.
         </h1>
-        <p style={{ color: "#8bb8cc", marginTop: 8, marginBottom: 28, fontSize: 13, textAlign: "center" }}>
+        <p style={{ color: "#8bb8cc", marginTop: 8, marginBottom: 28, fontSize: 15, textAlign: "center" }}>
           הפרופיל מעגן אותך בגלובוס. כל ניתוח חדש נמדד מולו.
         </p>
 
@@ -161,7 +161,7 @@ export default function Page() {
         <Section title="ערכי בסיס — מהו הכוח הדומיננטי שלך באופן טבעי">
           {(Object.keys(p.baseValues) as (keyof BaseValues)[]).map(k => (
             <div key={k} style={{ marginBottom: 10 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
                 <span style={{ color: FORCE_COLOR[k as DominantForce] }}>
                   {FORCE_LABEL[k as DominantForce]}
                 </span>
@@ -179,7 +179,7 @@ export default function Page() {
 
         {/* AXIS */}
         <Section title="ציר יחידני ↔ קולקטיבי">
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#1e4060", marginBottom: 4 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#1e4060", marginBottom: 4 }}>
             <span>יחידני −10</span><span>0</span><span>+10 קולקטיבי</span>
           </div>
           <input
@@ -188,7 +188,7 @@ export default function Page() {
             onChange={e => update("personalVsSocial", Number(e.target.value))}
             style={{ width: "100%", accentColor: "#a78bfa" }}
           />
-          <div style={{ textAlign: "center", fontSize: 12, marginTop: 4, color: "#a78bfa" }}>
+          <div style={{ textAlign: "center", fontSize: 13, marginTop: 4, color: "#a78bfa" }}>
             {p.personalVsSocial > 2 ? "נוטה לקולקטיבי" :
              p.personalVsSocial < -2 ? "נוטה ליחידני" : "מאוזן"}
             {" · "}
@@ -198,7 +198,7 @@ export default function Page() {
 
         {/* COEFFICIENT */}
         <Section title="מקדם — שלב בחיים">
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#1e4060", marginBottom: 4 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#1e4060", marginBottom: 4 }}>
             <span>רגרסיה −1</span><span>יציבות 0</span><span>+1 צמיחה</span>
           </div>
           <input
@@ -207,7 +207,7 @@ export default function Page() {
             onChange={e => update("growthCoefficient", Number(e.target.value))}
             style={{ width: "100%", accentColor: "#00f5d4" }}
           />
-          <div style={{ textAlign: "center", fontSize: 12, marginTop: 4, color: "#00f5d4" }}>
+          <div style={{ textAlign: "center", fontSize: 13, marginTop: 4, color: "#00f5d4" }}>
             <b>{p.growthCoefficient > 0 ? "+" : ""}{p.growthCoefficient.toFixed(2)}</b>
           </div>
         </Section>
@@ -245,7 +245,7 @@ export default function Page() {
             const v = p.conflictBars?.[k] ?? 0.5;
             return (
               <div key={k} style={{ marginBottom: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#8bb8cc", marginBottom: 4 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#8bb8cc", marginBottom: 4 }}>
                   <span>{left}</span>
                   <b style={{ color: col }}>{(v * 100).toFixed(0)}%</b>
                   <span>{right}</span>
@@ -280,7 +280,7 @@ export default function Page() {
                   key={tag}
                   onClick={() => removeConflict(tag)}
                   style={{
-                    padding: "4px 10px", fontSize: 11,
+                    padding: "4px 10px", fontSize: 13,
                     border: "1px solid #ef444466", background: "#ef444422",
                     color: "#fecaca", borderRadius: 12, cursor: "pointer",
                   }}
@@ -308,11 +308,11 @@ export default function Page() {
         </button>
 
         <div style={{ textAlign: "center", marginTop: 12 }}>
-          <a href="/" style={{ fontSize: 11, color: "#38bdf8", textDecoration: "none" }}>
+          <a href="/" style={{ fontSize: 13, color: "#38bdf8", textDecoration: "none" }}>
             → חזור לטופס
           </a>
           {" · "}
-          <a href="/nexus" style={{ fontSize: 11, color: "#38bdf8", textDecoration: "none" }}>
+          <a href="/nexus" style={{ fontSize: 13, color: "#38bdf8", textDecoration: "none" }}>
             → לגלובוס
           </a>
         </div>
@@ -329,7 +329,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       border: "1px solid #0a2a4a", borderRadius: 8,
       padding: 16, marginBottom: 14, background: "#030f1eAA",
     }}>
-      <div style={{ fontSize: 10, letterSpacing: 2, color: "#38bdf8", textTransform: "uppercase", marginBottom: 12 }}>
+      <div style={{ fontSize: 12, letterSpacing: 2, color: "#38bdf8", textTransform: "uppercase", marginBottom: 12 }}>
         {title}
       </div>
       {children}
@@ -340,7 +340,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Field({ label, children, flex }: { label: string; children: React.ReactNode; flex?: number }) {
   return (
     <div style={{ marginBottom: 10, flex: flex ?? 1 }}>
-      <div style={{ fontSize: 10, color: "#8bb8cc", letterSpacing: 1, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 12, color: "#8bb8cc", letterSpacing: 1, marginBottom: 4 }}>{label}</div>
       {children}
     </div>
   );
@@ -358,7 +358,7 @@ function Chip({
       type="button"
       onClick={onClick}
       style={{
-        padding: "8px 10px", fontSize: 11, borderRadius: 6,
+        padding: "8px 10px", fontSize: 13, borderRadius: 6,
         border: `1px solid ${active ? color : "#0a2a4a"}`,
         background: active ? `${color}22` : "#030f1e",
         color: active ? color : "#8bb8cc",
@@ -371,14 +371,14 @@ function Chip({
 }
 
 const input: React.CSSProperties = {
-  width: "100%", padding: "10px 12px", fontSize: 13,
+  width: "100%", padding: "10px 12px", fontSize: 15,
   background: "#030f1e", color: "#e0f2fe",
   border: "1px solid #0a2a4a", borderRadius: 6, outline: "none",
   direction: "rtl",
 };
 
 const ghostBtn: React.CSSProperties = {
-  padding: "10px 14px", fontSize: 11,
+  padding: "10px 14px", fontSize: 13,
   background: "transparent", color: "#38bdf8",
   border: "1px solid #0a2a4a", borderRadius: 6,
   cursor: "pointer", whiteSpace: "nowrap",

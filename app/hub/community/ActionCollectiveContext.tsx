@@ -52,9 +52,9 @@ export default function ActionCollectiveContext({
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 10 }}>
         <Metric label="פעולה אישית (individual)" value={`${actions.length} Actions`} color="#f2635c" note="כל Action קנוני הוא אישי — owner יחיד, אין group_id" />
-        <Metric label="פעולה קבוצתית (group)" value="לא ידוע" color="#5a76a3" note="Action קנוני אינו נושא group_id — אין קישור אמיתי לקבוצה" />
-        <Metric label="השפעה קהילתית (community)" value="לא ידוע" color="#5a76a3" note="אין נתון אמיתי המקשר Effect לקהילה" />
-        <Metric label="השפעה קולקטיבית (collective)" value="לא ידוע" color="#5a76a3" note="אין נתון אמיתי המקשר Effect לקבוצה" />
+        <Metric label="פעולה קבוצתית (group)" value="לא ידוע" color="#6c86b5" note="Action קנוני אינו נושא group_id — אין קישור אמיתי לקבוצה" />
+        <Metric label="השפעה קהילתית (community)" value="לא ידוע" color="#6c86b5" note="אין נתון אמיתי המקשר Effect לקהילה" />
+        <Metric label="השפעה קולקטיבית (collective)" value="לא ידוע" color="#6c86b5" note="אין נתון אמיתי המקשר Effect לקבוצה" />
       </div>
 
       {linked ? (
@@ -79,16 +79,16 @@ export default function ActionCollectiveContext({
 function Metric({ label, value, color, note }: { label: string; value: string; color: string; note: string }) {
   return (
     <div style={{ minWidth: 150 }}>
-      <div style={{ fontSize: 9, letterSpacing: 1, color: "#5a76a3", textTransform: "uppercase" }}>{label}</div>
+      <div style={{ fontSize: 12, letterSpacing: 1, color: "#6c86b5", textTransform: "uppercase" }}>{label}</div>
       <div style={{ fontSize: 15, fontWeight: 700, color }}>{value}</div>
-      <div style={{ fontSize: 10, color: "#7b8ca6", marginTop: 2 }}>{note}</div>
+      <div style={{ fontSize: 12, color: "#7b8ca6", marginTop: 2 }}>{note}</div>
     </div>
   );
 }
 
 const S: Record<string, React.CSSProperties> = {
   card: { fontFamily: "system-ui", background: "#0f1a2e", border: "1px solid #2a3f66", borderRadius: 8, padding: "14px 18px", margin: "12px 20px 0", color: "#e6ebf5" },
-  head: { fontSize: 10, letterSpacing: 1, color: "#5aa6ff" },
-  note: { fontSize: 10, color: "#5a76a3", marginTop: 10 },
-  linkedRow: { fontSize: 11, color: "#8fa3c9", marginTop: 10, padding: "6px 10px", borderRadius: 6, background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.2)" },
+  head: { fontSize: 12, letterSpacing: 1, color: "#5aa6ff" },
+  note: { fontSize: 12, color: "#6c86b5", marginTop: 10 },
+  linkedRow: { fontSize: 13, color: "#8fa3c9", marginTop: 10, padding: "6px 10px", borderRadius: 6, background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.2)" },
 };

@@ -108,7 +108,7 @@ export default function HubCommandCenter({
                   <span style={statusBadgeStyle("unknown")}>UNKNOWN</span>
                 )}
                 {delta !== null ? (
-                  <span style={{ fontSize: 10.5, color: delta >= 0 ? STATUS.verified.text : STATUS.blocked.text }}>
+                  <span style={{ fontSize: 13, color: delta >= 0 ? STATUS.verified.text : STATUS.blocked.text }}>
                     {delta >= 0 ? "▲" : "▼"} {delta.toFixed(2)}
                   </span>
                 ) : null}
@@ -246,28 +246,28 @@ const S: Record<string, React.CSSProperties> = {
   card: { ...cardStyle("primary"), marginTop: SPACE.lg },
   head: { display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginBottom: SPACE.md },
   title: { ...TYPE.display, margin: 0, color: COLOR.text },
-  subject: { fontSize: 11, color: COLOR.textFaint },
-  time: { fontSize: 11, color: COLOR.textFaint, fontVariantNumeric: "tabular-nums" },
-  dynamicsBadge: { fontSize: 10.5, fontWeight: 700, color: "#a78bfa", textDecoration: "none", padding: "3px 10px", borderRadius: RADIUS.pill, border: "1px solid rgba(167,139,250,0.35)", marginRight: "auto" },
+  subject: { fontSize: 13, color: COLOR.textFaint },
+  time: { fontSize: 13, color: COLOR.textFaint, fontVariantNumeric: "tabular-nums" },
+  dynamicsBadge: { fontSize: 13, fontWeight: 700, color: "#a78bfa", textDecoration: "none", padding: "3px 10px", borderRadius: RADIUS.pill, border: "1px solid rgba(167,139,250,0.35)", marginRight: "auto" },
 
   panel: { borderTop: "2px solid", borderRadius: RADIUS.sm, background: COLOR.bgRaised, padding: `${SPACE.sm}px ${SPACE.md}px`, marginBottom: SPACE.sm },
   panelBody: { display: "flex", flexDirection: "column", gap: 4 },
 
   row: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: RADIUS.sm, background: "rgba(90,120,180,0.05)" },
   rowLink: { textDecoration: "none", color: "inherit", display: "block" },
-  rowLabel: { fontSize: 12.5, color: COLOR.text },
-  rowValue: { fontSize: 12.5, fontWeight: 600 },
-  emptyRow: { fontSize: 11.5, color: COLOR.textFaint, fontStyle: "italic", padding: "4px 2px" },
+  rowLabel: { fontSize: 13, color: COLOR.text },
+  rowValue: { fontSize: 13, fontWeight: 600 },
+  emptyRow: { fontSize: 13, color: COLOR.textFaint, fontStyle: "italic", padding: "4px 2px" },
 
   ctaWrap: { margin: "6px 0 10px" },
   ctaButton: { display: "block", textAlign: "center", fontSize: 14.5, fontWeight: 700, color: "#02101f", background: `linear-gradient(135deg, ${COLOR.accent}, #34d399)`, textDecoration: "none", borderRadius: RADIUS.md, padding: "13px 16px" },
-  ctaNone: { textAlign: "center", fontSize: 12, color: COLOR.textFaint, fontStyle: "italic", padding: "10px 16px", border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.md },
+  ctaNone: { textAlign: "center", fontSize: 13, color: COLOR.textFaint, fontStyle: "italic", padding: "10px 16px", border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.md },
 
   recentResult: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, textDecoration: "none", padding: "8px 12px", borderRadius: RADIUS.sm, background: STATUS.verified.bg, border: `1px solid ${STATUS.verified.border}`, marginBottom: SPACE.sm },
   recentResultLabel: { ...TYPE.micro, color: COLOR.textFaint },
-  recentResultBody: { fontSize: 11.5, color: COLOR.text },
+  recentResultBody: { fontSize: 13, color: COLOR.text },
 
   nextHead: { ...TYPE.micro, color: COLOR.textFaint, marginTop: 6, marginBottom: 6 },
   nextRow: { display: "flex", flexWrap: "wrap", gap: 6 },
-  nextLink: { fontSize: 11, textDecoration: "none", color: COLOR.textDim, padding: "5px 10px", borderRadius: RADIUS.sm, border: `1px solid ${COLOR.border}`, background: COLOR.bgRaised },
+  nextLink: { fontSize: 13, textDecoration: "none", color: COLOR.textDim, padding: "5px 10px", borderRadius: RADIUS.sm, border: `1px solid ${COLOR.border}`, background: COLOR.bgRaised },
 };

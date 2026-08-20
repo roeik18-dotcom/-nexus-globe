@@ -90,7 +90,7 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
   });
 
   return (
-    <div dir="ltr" style={{ padding: 14, color: C.text, display: "flex", flexDirection: "column", height: "100%", fontSize: 12 }}>
+    <div dir="ltr" style={{ padding: 14, color: C.text, display: "flex", flexDirection: "column", height: "100%", fontSize: 13 }}>
       {!analysis ? (
         /* ── STORY (Event Zero V2) — a human poster, understood in ~3s with ZERO
            numbers. Ask "what is she experiencing?" before "what are the metrics?".
@@ -102,7 +102,7 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
             <div style={{ width: 44, height: 44, borderRadius: "50%", background: `linear-gradient(135deg, ${C.purple}, ${C.red} 55%, ${C.green})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 800, color: "#fff", boxShadow: "0 0 0 2px rgba(255,255,255,0.22)" }}>N</div>
             <div>
               <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 0.3, lineHeight: 1 }}>{narrative.person}</div>
-              <div style={{ fontSize: 9, letterSpacing: 2, color: C.purple, textTransform: "uppercase", marginTop: 4 }}>{narrative.title}</div>
+              <div style={{ fontSize: 12, letterSpacing: 2, color: C.purple, textTransform: "uppercase", marginTop: 4 }}>{narrative.title}</div>
             </div>
           </div>
 
@@ -117,19 +117,19 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
             {narrative.classification.classified && narrative.classification.statusHe && (
               <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 6, padding: "2px 9px", borderRadius: 999, background: `${C.green}1a`, border: `1px solid ${C.green}66` }}>
                 <span style={{ width: 5, height: 5, borderRadius: "50%", background: C.green, display: "inline-block" }} />
-                <span style={{ fontSize: 10, fontWeight: 700, color: C.green }}>{narrative.classification.statusHe} · {narrative.classification.statusEn}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: C.green }}>{narrative.classification.statusHe} · {narrative.classification.statusEn}</span>
               </div>
             )}
           </div>
 
           {/* 3 · BURDEN — what accumulated, then concentrated */}
-          <div style={{ fontSize: 12.5, color: "#9fc7df", lineHeight: 1.6 }}>{narrative.burdenAccumulation}</div>
-          <div style={{ fontSize: 13, color: "#cfe6f5", lineHeight: 1.65 }}>
+          <div style={{ fontSize: 13, color: "#9fc7df", lineHeight: 1.6 }}>{narrative.burdenAccumulation}</div>
+          <div style={{ fontSize: 15, color: "#cfe6f5", lineHeight: 1.65 }}>
             {narrative.concentrationLines.map((l, i) => <div key={i}>{l}</div>)}
           </div>
 
           {/* 4 · CONSEQUENCE — what deteriorated as the burden concentrated */}
-          <div style={{ fontSize: 12.5, lineHeight: 1.7 }}>
+          <div style={{ fontSize: 13, lineHeight: 1.7 }}>
             <div style={{ color: "#9fc7df" }}>{narrative.consequenceLead}</div>
             {narrative.consequenceItems.map((l, i) => (
               <div key={i} style={{ color: C.orange, fontWeight: 600 }}>
@@ -140,24 +140,24 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
 
           {/* 5 · PRINCIPLE — not Noa, but burden concentration (the emphasized core) */}
           <div style={{ borderInlineStart: `4px solid ${C.cyan}`, background: "#06223a", borderRadius: 8, padding: "11px 13px" }}>
-            <div style={{ fontSize: 11.5, color: C.borderSoft, marginBottom: 5 }}>{narrative.principleIntro}</div>
+            <div style={{ fontSize: 13, color: C.borderSoft, marginBottom: 5 }}>{narrative.principleIntro}</div>
             <div style={{ fontSize: 15, fontWeight: 800, color: C.cyan, lineHeight: 1.4 }}>{narrative.principle}</div>
           </div>
 
           {/* 6 · REDISTRIBUTION — what Nexus analyzes around the case */}
-          <div style={{ fontSize: 12.5, color: "#cfe6f5", lineHeight: 1.6 }}>
+          <div style={{ fontSize: 13, color: "#cfe6f5", lineHeight: 1.6 }}>
             <div style={{ color: C.borderSoft, marginBottom: 4 }}>{narrative.analyzesIntro}</div>
             {narrative.analyzes.map((l, i) => <div key={i}>• {l}</div>)}
           </div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: C.green, lineHeight: 1.5 }}>{narrative.stabilization}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: C.green, lineHeight: 1.5 }}>{narrative.stabilization}</div>
 
           {/* Reveal — the only path to the numbers (7 · Measurement) */}
           <div style={{ display: "flex", flexDirection: "column", gap: 9, marginTop: 4 }}>
-            <button onClick={openAnalysis} style={{ alignSelf: "flex-start", padding: "9px 18px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.text }}>
+            <button onClick={openAnalysis} style={{ alignSelf: "flex-start", padding: "9px 18px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.text }}>
               See Analysis →
             </button>
             {onContinue && (
-              <button onClick={() => onContinue()} style={{ alignSelf: "flex-start", padding: "2px 2px", fontSize: 11, cursor: "pointer", border: "none", background: "transparent", color: C.borderSoft, textDecoration: "underline" }}>
+              <button onClick={() => onContinue()} style={{ alignSelf: "flex-start", padding: "2px 2px", fontSize: 13, cursor: "pointer", border: "none", background: "transparent", color: C.borderSoft, textDecoration: "underline" }}>
                 Continue to your map →
               </button>
             )}
@@ -166,7 +166,7 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
       ) : (
         /* ── ANALYSIS — the diagnostic evidence (numbers), revealed on demand ── */
         <>
-          <button onClick={() => setAnalysis(false)} style={{ alignSelf: "flex-start", marginBottom: 12, padding: "5px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.borderSoft }}>← Noa&apos;s story</button>
+          <button onClick={() => setAnalysis(false)} style={{ alignSelf: "flex-start", marginBottom: 12, padding: "5px 12px", borderRadius: 6, fontSize: 13, cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.borderSoft }}>← Noa&apos;s story</button>
 
       {/* ── OPM — Operational Process Map: the full burden flow across departments,
            before the Burden Flow summary and the diagnostic beats. ── */}
@@ -175,23 +175,23 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
       {/* ── BURDEN FLOW — proves the law (capacity < burden) BEFORE any score.
            Renderer over existing chain outputs; the diagnostic beats follow below. ── */}
       <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 9, letterSpacing: 2, color: C.borderSoft, textTransform: "uppercase", marginBottom: 8 }}>Burden Flow — before the numbers</div>
+        <div style={{ fontSize: 12, letterSpacing: 2, color: C.borderSoft, textTransform: "uppercase", marginBottom: 8 }}>Burden Flow — before the numbers</div>
         {burdenFlow.maps.map((m) => (
           <div key={m.key} style={{ background: C.card, border: `1px solid ${C.border}`, borderInlineStart: `3px solid ${m.key === "capacity" ? C.orange : C.cyan}`, borderRadius: 8, padding: "9px 11px", marginBottom: 8 }}>
-            <div style={{ fontSize: 9, letterSpacing: 1, color: C.purple, textTransform: "uppercase" }}>{m.title}</div>
-            <div style={{ fontSize: 10.5, color: C.borderSoft, marginTop: 1, marginBottom: 6 }}>{m.question}</div>
+            <div style={{ fontSize: 12, letterSpacing: 1, color: C.purple, textTransform: "uppercase" }}>{m.title}</div>
+            <div style={{ fontSize: 13, color: C.borderSoft, marginTop: 1, marginBottom: 6 }}>{m.question}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
               {m.rows.map((r, i) => (
-                <div key={i} style={{ display: "flex", gap: 6, alignItems: "baseline", fontSize: 11, padding: "3px 8px", borderRadius: 6, background: C.bg, border: `1px solid ${r.accent ? (m.key === "capacity" ? C.orange : C.cyan) : C.border}` }}>
+                <div key={i} style={{ display: "flex", gap: 6, alignItems: "baseline", fontSize: 13, padding: "3px 8px", borderRadius: 6, background: C.bg, border: `1px solid ${r.accent ? (m.key === "capacity" ? C.orange : C.cyan) : C.border}` }}>
                   <span style={{ color: r.accent ? (m.key === "capacity" ? C.orange : C.cyan) : C.text, fontWeight: r.accent ? 700 : 500 }}>{r.label}</span>
                   {r.value && <span style={{ color: C.borderSoft }}>{r.value}</span>}
                 </div>
               ))}
             </div>
-            <div style={{ fontSize: 11.5, color: m.key === "capacity" ? C.orange : "#9fc7df", fontWeight: m.key === "capacity" ? 700 : 400, lineHeight: 1.5 }}>{m.statement}</div>
+            <div style={{ fontSize: 13, color: m.key === "capacity" ? C.orange : "#9fc7df", fontWeight: m.key === "capacity" ? 700 : 400, lineHeight: 1.5 }}>{m.statement}</div>
           </div>
         ))}
-        <div style={{ fontSize: 9, color: C.borderSoft, letterSpacing: 0.5 }}>↓ The diagnostic beats below show the same flow as measured signals.</div>
+        <div style={{ fontSize: 12, color: C.borderSoft, letterSpacing: 0.5 }}>↓ The diagnostic beats below show the same flow as measured signals.</div>
       </div>
 
       {/* Tracker */}
@@ -207,7 +207,7 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
                 boxShadow: active ? `0 0 8px ${ACCENT[i]}` : "none",
                 transition: "background .4s",
               }} />
-              <div style={{ fontSize: 8, letterSpacing: 0.5, color: filled ? C.text : C.borderSoft }}>{label}</div>
+              <div style={{ fontSize: 12, letterSpacing: 0.5, color: filled ? C.text : C.borderSoft }}>{label}</div>
             </div>
           );
         })}
@@ -219,17 +219,17 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
           <div style={{ fontSize: 18, fontWeight: 800, color: C.green }}>
             That was one orientation, located.
           </div>
-          <div style={{ fontSize: 12, color: "#9fc7df", lineHeight: 1.6 }}>
+          <div style={{ fontSize: 13, color: "#9fc7df", lineHeight: 1.6 }}>
             Nexus began with the resistance — not a score.
           </div>
-          <div style={{ fontSize: 10, color: C.borderSoft, letterSpacing: 1 }}>
+          <div style={{ fontSize: 12, color: C.borderSoft, letterSpacing: 1 }}>
             Resistance → Leakage → Support → Action → Orientation
           </div>
-          <button onClick={() => onContinue?.()} style={{ alignSelf: "center", marginTop: 6, padding: "10px 28px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1px solid ${C.green}`, background: "#0c3a2c", color: C.green }}>
+          <button onClick={() => onContinue?.()} style={{ alignSelf: "center", marginTop: 6, padding: "10px 28px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", border: `1px solid ${C.green}`, background: "#0c3a2c", color: C.green }}>
             Continue
           </button>
-          <div style={{ fontSize: 10, color: C.borderSoft }}>This was Noa. Next, Nexus will map you.</div>
-          <button onClick={replay} style={{ alignSelf: "center", marginTop: 4, padding: "5px 14px", borderRadius: 6, fontSize: 10, cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.text }}>↻ Replay</button>
+          <div style={{ fontSize: 12, color: C.borderSoft }}>This was Noa. Next, Nexus will map you.</div>
+          <button onClick={replay} style={{ alignSelf: "center", marginTop: 4, padding: "5px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.text }}>↻ Replay</button>
         </div>
       ) : (
         <>
@@ -246,11 +246,11 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
                   const isMax = f.name === resistanceName;
                   return (
                     <div key={f.name} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ width: 150, fontSize: 9, color: isMax ? C.red : C.borderSoft, textAlign: "right", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.name}</div>
+                      <div style={{ width: 150, fontSize: 12, color: isMax ? C.red : C.borderSoft, textAlign: "right", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.name}</div>
                       <div style={{ flex: 1, height: 8, background: "#0a1a2e", borderRadius: 4, overflow: "hidden" }}>
                         <div style={{ width: `${f.intensity}%`, height: "100%", background: isMax ? C.red : C.borderSoft, borderRadius: 4, animation: isMax ? "pulse 1.1s ease-in-out infinite" : "none" }} />
                       </div>
-                      <div style={{ width: 22, fontSize: 9, fontWeight: 700, color: isMax ? C.red : C.borderSoft }}>{f.intensity}</div>
+                      <div style={{ width: 22, fontSize: 12, fontWeight: 700, color: isMax ? C.red : C.borderSoft }}>{f.intensity}</div>
                     </div>
                   );
                 })}
@@ -259,7 +259,7 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
             {beat === 1 && (
               <div style={{ width: "100%", textAlign: "center" }}>
                 <div style={{ fontSize: 42, fontWeight: 800, color: C.orange }}>{leakage}</div>
-                <div style={{ fontSize: 9, color: C.borderSoft, letterSpacing: 2, marginBottom: 12 }}>ENERGY LEAKAGE</div>
+                <div style={{ fontSize: 12, color: C.borderSoft, letterSpacing: 2, marginBottom: 12 }}>ENERGY LEAKAGE</div>
                 <div style={{ height: 12, background: "#0a1a2e", borderRadius: 6, overflow: "hidden" }}>
                   <div style={{ width: `${leakage}%`, height: "100%", background: `linear-gradient(90deg, ${C.red}, ${C.orange})`, borderRadius: 6, transition: "width 1s ease" }} />
                 </div>
@@ -271,16 +271,16 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
                   {positioned.map((p, i) => <line key={i} x1="50%" y1="50%" x2={`${p.x}%`} y2={`${p.y}%`} stroke={C.cyan} strokeWidth="1" />)}
                 </svg>
                 {positioned.map((p, i) => (
-                  <div key={i} title={p.name} style={{ position: "absolute", left: `${p.x}%`, top: `${p.y}%`, transform: "translate(-50%,-50%)", width: 30, height: 30, borderRadius: "50%", background: "#06223a", border: `1px solid ${C.cyan}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 7, color: C.text, textAlign: "center", animation: `fadeIn .5s ${i * 0.12}s both` }}>{p.name.split(" ")[0]}</div>
+                  <div key={i} title={p.name} style={{ position: "absolute", left: `${p.x}%`, top: `${p.y}%`, transform: "translate(-50%,-50%)", width: 30, height: 30, borderRadius: "50%", background: "#06223a", border: `1px solid ${C.cyan}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: C.text, textAlign: "center", animation: `fadeIn .5s ${i * 0.12}s both` }}>{p.name.split(" ")[0]}</div>
                 ))}
-                <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: 50, height: 50, borderRadius: "50%", background: "#0c2c3a", border: `2px solid ${C.cyan}`, boxShadow: `0 0 16px ${C.cyan}66`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800 }}>Noa</div>
+                <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: 50, height: 50, borderRadius: "50%", background: "#0c2c3a", border: `2px solid ${C.cyan}`, boxShadow: `0 0 16px ${C.cyan}66`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800 }}>Noa</div>
               </div>
             )}
             {beat === 3 && (
               <div style={{ width: "90%", border: `1px solid ${C.cyan}`, borderRadius: 10, padding: 14, background: "#06223a" }}>
-                <div style={{ fontSize: 9, color: C.borderSoft, letterSpacing: 2 }}>RECOMMENDED ACTION</div>
+                <div style={{ fontSize: 12, color: C.borderSoft, letterSpacing: 2 }}>RECOMMENDED ACTION</div>
                 <div style={{ fontSize: 22, fontWeight: 800, color: C.cyan, margin: "4px 0 10px" }}>{cap(actName)} → {actDim}</div>
-                <div style={{ display: "flex", gap: 14, fontSize: 12 }}>
+                <div style={{ display: "flex", gap: 14, fontSize: 13 }}>
                   <span style={{ color: C.green }}>+{dE} Energy</span>
                   <span style={{ color: C.green }}>−{dL} Load</span>
                   <span style={{ color: C.green }}>+{dO} Orientation</span>
@@ -290,13 +290,13 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
             {beat === 4 && (
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 52, fontWeight: 800, color: C.green }}>{orientation}<span style={{ fontSize: 18, color: C.borderSoft }}>/100</span></div>
-                <div style={{ fontSize: 13, color: C.green, fontWeight: 700, letterSpacing: 1 }}>First Stabilization</div>
+                <div style={{ fontSize: 15, color: C.green, fontWeight: 700, letterSpacing: 1 }}>First Stabilization</div>
               </div>
             )}
           </div>
 
           {/* Copy */}
-          <div style={{ flex: 1, fontSize: 12.5, lineHeight: 1.6, background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: "10px 12px" }}>
+          <div style={{ flex: 1, fontSize: 13, lineHeight: 1.6, background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: "10px 12px" }}>
             {COPY[beat]}
           </div>
 
@@ -321,5 +321,5 @@ export default function NoaTransformation({ onContinue }: { onContinue?: () => v
 
 function cap(s: string): string { return s.charAt(0).toUpperCase() + s.slice(1); }
 function ctrlBtn(): React.CSSProperties {
-  return { flex: 1, padding: "8px 0", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.text };
+  return { flex: 1, padding: "8px 0", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${C.borderSoft}`, background: "transparent", color: C.text };
 }

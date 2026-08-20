@@ -94,7 +94,7 @@ export default function ContradictionProvenancePanel() {
       <div style={S.subHead}>יחסי צמיחת-ערך · VALUE-EMERGENCE RELATIONS ({DIRECT_CONTRADICTION_VALUE_RELATIONS.length})</div>
       {DIRECT_CONTRADICTION_VALUE_RELATIONS.map((r) => (
         <div key={`${r.pole_a}|${r.pole_b}`} style={S.rel}>
-          <span style={{ fontSize: 11.5, color: COLOR.text, fontWeight: 700, minWidth: 150 }}>
+          <span style={{ fontSize: 13, color: COLOR.text, fontWeight: 700, minWidth: 150 }}>
             {r.pole_a} ↔ {r.pole_b}
           </span>
           <span style={{ ...TYPE.micro, fontSize: FS.tag, color: "#a78bfa" }}>{r.relation}</span>
