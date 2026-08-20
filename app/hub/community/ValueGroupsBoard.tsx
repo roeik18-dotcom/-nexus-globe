@@ -32,7 +32,7 @@
 import type { ValueGroupView } from "@/app/lib/philos/projectValueGroup";
 import type { GroupRelation } from "@/app/lib/philos/valueSystem/groupResolver";
 import { QUALITY_GROUP_MODEL } from "@/app/lib/philos/community/sourceValueModel";
-import { ProvenanceBadge, type Provenance } from "@/app/lib/philos/shell/provenance";
+import { PROVENANCE_STYLE, ProvenanceBadge, type Provenance } from "@/app/lib/philos/shell/provenance";
 import { COLOR, FS, RADIUS, SPACE, STATUS, TYPE } from "@/app/lib/philos/shell/designTokens";
 
 export interface ValueGroupCardData {
@@ -107,9 +107,13 @@ function GroupCard({ data }: { data: ValueGroupCardData }) {
          near-equals (0.82 opacity, comparable borders), so the one real
          group on this board did not stand out among three columns. */
       opacity: provenance === "DEMO" ? 0.62 : 1,
-      borderColor: provenance === "REAL" ? "rgba(52,211,153,0.55)" : "rgba(251,191,36,0.22)",
+      /* Card chrome comes from the SHARED provenance vocabulary rather than
+         two hand-picked rgba values. A card is a claim about where its
+         contents came from, and that claim should look the same here as it
+         does on every other surface. */
+      borderColor: PROVENANCE_STYLE[prov].border,
       borderWidth: provenance === "REAL" ? 2 : 1,
-      background: provenance === "REAL" ? "rgba(52,211,153,0.045)" : undefined,
+      background: provenance === "REAL" ? PROVENANCE_STYLE.REAL.bg : undefined,
     }}>
       <div style={S.cardHead}>
         <a href={detailHref} style={S.cardTitle}>{view.name}</a>
@@ -125,13 +129,20 @@ function GroupCard({ data }: { data: ValueGroupCardData }) {
         meta={data.leadingFamily ? `via ${data.leadingFamily.via_base_value} · CANDIDATE_VALUE_FAMILY / REVIEW_REQUIRED` : undefined}
         italic={!data.leadingFamily} />
 
-      <FieldRow label="MEMBERS" provenance={prov}
-        value={`${view.members.length} חברים`}
-        meta={view.members.slice(0, 3).map((m) => m.display_name).join(", ") + (view.members.length > 3 ? "…" : "")} />
-
-      <FieldRow label="BUDGET / RESOURCES" provenance={prov}
-        value={`${view.budget.available} ${view.budget.currency} זמין`}
-        meta={`התקבל ${view.budget.received} · הוצא ${view.budget.spent} · הוקצה ${view.budget.committed}`} />
+      {/* VITALS — the four numbers a person actually scans, as numbers.
+          These were four `label: value` rows, which reads as a database
+          record: to compare two groups you had to read eight lines instead
+          of glancing at eight figures. Detail that was in the `meta` line
+          moves to the title attribute and to the DETAILS disclosure — it is
+          still here, it just no longer costs a row each. */}
+      <div style={S.vitals}>
+        <Vital n={view.members.length} label="חברים"
+               title={view.members.slice(0, 5).map((m) => m.display_name).join(", ")} />
+        <Vital n={view.budget.available} label={`${view.budget.currency} זמין`}
+               title={`התקבל ${view.budget.received} · הוצא ${view.budget.spent} · הוקצה ${view.budget.committed}`} />
+        <Vital n={view.today.length} label="פעיל היום" />
+        <Vital n={verified.length} label="מאומת" accent={verified.length > 0} />
+      </div>
 
       <FieldRow label="NEEDS" provenance={data.linkedSubjectNeeds !== null ? "CANON" : "UNKNOWN"}
         value={data.linkedSubjectNeeds !== null ? `${data.linkedSubjectNeeds} Need פתוח` : "UNKNOWN"}
@@ -203,6 +214,16 @@ function GroupCard({ data }: { data: ValueGroupCardData }) {
   );
 }
 
+/** One scannable figure. The number leads; the word explains it. */
+function Vital({ n, label, title, accent = false }: { n: number; label: string; title?: string; accent?: boolean }) {
+  return (
+    <span style={S.vital} title={title}>
+      <b style={{ ...S.vitalN, color: accent ? "#34d399" : n > 0 ? COLOR.text : COLOR.textFaint }}>{n}</b>
+      <span style={S.vitalLabel}>{label}</span>
+    </span>
+  );
+}
+
 function FieldRow({ label, value, meta, provenance, italic }: { label: string; value: string; meta?: string; provenance: Provenance; italic?: boolean }) {
   return (
     <div style={S.fieldRow}>
@@ -217,6 +238,10 @@ function FieldRow({ label, value, meta, provenance, italic }: { label: string; v
 }
 
 const S: Record<string, React.CSSProperties> = {
+  vitals: { display: "flex", gap: SPACE.sm, flexWrap: "wrap", margin: "8px 0 6px", paddingBottom: 8, borderBottom: `1px solid ${COLOR.border}` },
+  vital: { display: "inline-flex", flexDirection: "column", gap: 0, minWidth: 58 },
+  vitalN: { fontSize: FS.head, fontWeight: 700, fontFamily: "ui-monospace, monospace", lineHeight: 1.1 },
+  vitalLabel: { fontSize: FS.base, color: COLOR.textDim, lineHeight: 1.3 },
   cardAudit: { marginTop: 6, borderTop: `1px solid ${COLOR.border}`, paddingTop: 4 },
   cardAuditSummary: { cursor: "pointer", fontSize: FS.base, letterSpacing: 1.1, color: COLOR.textFaint, padding: "2px 0" },
   band: {
