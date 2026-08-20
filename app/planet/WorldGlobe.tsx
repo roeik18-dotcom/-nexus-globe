@@ -647,7 +647,7 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
           <Globe
             ref={globeRef} width={size.w} height={size.h}
             backgroundColor="rgba(0,0,0,0)"
-            globeImageUrl="https://unpkg.com/three-globe/example/img/earth-night.jpg"
+            globeImageUrl="/globe/earth-night.jpg"
             atmosphereColor="#5aa6ff" atmosphereAltitude={0.3}
             onGlobeReady={onReady}
             pointsData={points}

@@ -40,7 +40,6 @@ import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel"
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
 import { projectSocialSystem } from "@/app/lib/philos/social/socialSystemProjection";
 import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection";
-import GlobeWarmup from "@/app/lib/philos/shell/GlobeWarmup";
 import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
 import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
@@ -469,8 +468,6 @@ export default async function CommunityPage({
             bands; now one structure with lanes on a shared column grid, the
             same one Globe and World render. The source spine moves inside it
             as the collapsed AUDIT lane rather than a seventh box. */}
-        {/* Warm the globe at idle so changing scale does not pay ~1s. */}
-        <GlobeWarmup />
         <SocialFrame
           surface="community"
           spine={buildSocialValueSpine({

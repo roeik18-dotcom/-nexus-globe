@@ -712,7 +712,7 @@ export default function Page() {
             ref={globeRef}
             width={size.w}
             height={size.h}
-            globeImageUrl="https://unpkg.com/three-globe/example/img/earth-dark.jpg"
+            globeImageUrl="/globe/earth-dark.jpg"
             backgroundColor="#020d1a"
             atmosphereColor="#38bdf8"
             atmosphereAltitude={0.18}
