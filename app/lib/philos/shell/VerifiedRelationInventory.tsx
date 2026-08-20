@@ -22,7 +22,7 @@
  * nothing more.
  */
 import { VERIFIED_STATUSES } from "../events";
-import { COLOR, COLOR_ROLE, RADIUS, SPACE, TYPE } from "./designTokens";
+import { FS, COLOR, COLOR_ROLE, RADIUS, SPACE, TYPE } from "./designTokens";
 
 export interface RelationArc {
   relation: string;
@@ -150,19 +150,19 @@ const S: Record<string, React.CSSProperties> = {
      legend read straight through it and the two texts interleaved. */
   box: { border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.md, padding: "8px 11px", background: "rgba(4,10,22,0.97)", backdropFilter: "blur(10px)", marginTop: 6 },
   head: { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 5 },
-  eyebrow: { ...TYPE.micro, fontSize: 8.5, letterSpacing: 1.1, color: COLOR_ROLE.green },
-  count: { ...TYPE.micro, fontSize: 8, color: COLOR.textFaint },
+  eyebrow: { ...TYPE.micro, fontSize: FS.base, letterSpacing: 1.1, color: COLOR_ROLE.green },
+  count: { ...TYPE.micro, fontSize: FS.base, color: COLOR.textFaint },
   row: { display: "flex", alignItems: "baseline", gap: 7, padding: "2px 0", borderTop: `1px solid ${COLOR.border}` },
-  type: { fontSize: 10, fontFamily: "ui-monospace, monospace", color: COLOR.textDim, minWidth: 118 },
-  n: { fontSize: 11, fontWeight: 700, color: COLOR.text, minWidth: 18 },
-  badge: { ...TYPE.micro, fontSize: 7.5, letterSpacing: 0.8 },
-  ids: { fontSize: 8, fontFamily: "ui-monospace, monospace", color: COLOR.textFaint, marginInlineStart: "auto" },
-  gateRow: { display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", padding: "2px 0", fontSize: 9.5, color: COLOR.textDim },
-  gateStat: { ...TYPE.micro, fontSize: 8.5 },
-  gateReason: { display: "flex", alignItems: "baseline", gap: 6, fontSize: 8.5, color: "#fbbf24", padding: "1px 0" },
-  reasonName: { fontFamily: "ui-monospace, monospace", fontSize: 8 },
-  sub: { ...TYPE.micro, fontSize: 8, color: COLOR.textFaint, margin: "6px 0 2px", borderTop: `1px solid ${COLOR.border}`, paddingTop: 4 },
-  derived: { ...TYPE.micro, fontSize: 7, letterSpacing: 0.6, color: COLOR.textFaint, border: `1px solid ${COLOR.border}`, borderRadius: 3, padding: "0 3px" },
-  empty: { fontSize: 10, color: COLOR.textFaint, fontStyle: "italic", padding: "3px 0" },
-  rule: { fontSize: 8.5, color: COLOR.textFaint, lineHeight: 1.55, marginTop: 5, borderTop: `1px solid ${COLOR.border}`, paddingTop: 4 },
+  type: { fontSize: FS.meta, fontFamily: "ui-monospace, monospace", color: COLOR.textDim, minWidth: 118 },
+  n: { fontSize: FS.meta, fontWeight: 700, color: COLOR.text, minWidth: 18 },
+  badge: { ...TYPE.micro, fontSize: FS.base, letterSpacing: 0.8 },
+  ids: { fontSize: FS.base, fontFamily: "ui-monospace, monospace", color: COLOR.textFaint, marginInlineStart: "auto" },
+  gateRow: { display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", padding: "2px 0", fontSize: FS.base, color: COLOR.textDim },
+  gateStat: { ...TYPE.micro, fontSize: FS.base },
+  gateReason: { display: "flex", alignItems: "baseline", gap: 6, fontSize: FS.base, color: "#fbbf24", padding: "1px 0" },
+  reasonName: { fontFamily: "ui-monospace, monospace", fontSize: FS.base },
+  sub: { ...TYPE.micro, fontSize: FS.base, color: COLOR.textFaint, margin: "6px 0 2px", borderTop: `1px solid ${COLOR.border}`, paddingTop: 4 },
+  derived: { ...TYPE.micro, fontSize: FS.base, letterSpacing: 0.6, color: COLOR.textFaint, border: `1px solid ${COLOR.border}`, borderRadius: 3, padding: "0 3px" },
+  empty: { fontSize: FS.meta, color: COLOR.textFaint, fontStyle: "italic", padding: "3px 0" },
+  rule: { fontSize: FS.base, color: COLOR.textFaint, lineHeight: 1.55, marginTop: 5, borderTop: `1px solid ${COLOR.border}`, paddingTop: 4 },
 };

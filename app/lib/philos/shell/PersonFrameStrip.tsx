@@ -20,7 +20,7 @@
  * the contamination the architecture forbids.
  */
 import type { PersonInContext } from "../person/personInContext";
-import { COLOR, RADIUS, SPACE, TYPE } from "./designTokens";
+import { FS, COLOR, RADIUS, SPACE, TYPE } from "./designTokens";
 import { ProvenanceBadge } from "./provenance";
 
 export default function PersonFrameStrip({
@@ -104,12 +104,12 @@ function Axis({ label, gloss, provenance, lines, foot }: {
   return (
     <div style={S.axis}>
       <div style={S.axisHead}>
-        <span style={{ ...TYPE.micro, fontSize: 8.5, color: provenance === "CANON" ? COLOR.accent : COLOR.textFaint }}>{label}</span>
+        <span style={{ ...TYPE.micro, fontSize: FS.base, color: provenance === "CANON" ? COLOR.accent : COLOR.textFaint }}>{label}</span>
         <ProvenanceBadge p={provenance} />
       </div>
-      <div style={{ fontSize: 9, color: COLOR.textFaint, marginBottom: 3 }}>{gloss}</div>
+      <div style={{ fontSize: FS.base, color: COLOR.textFaint, marginBottom: 3 }}>{gloss}</div>
       {lines.map((l, i) => (
-        <div key={i} style={{ fontSize: 11, color: COLOR.textDim, lineHeight: 1.45 }}>{l}</div>
+        <div key={i} style={{ fontSize: FS.meta, color: COLOR.textDim, lineHeight: 1.45 }}>{l}</div>
       ))}
       {foot ? <div style={S.axisFoot}>{foot}</div> : null}
     </div>
@@ -127,14 +127,14 @@ function Chip({ k, v }: { k: string; v: number }) {
 const S: Record<string, React.CSSProperties> = {
   band: { background: "rgba(90,120,180,0.05)", border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.md}px`, marginBottom: SPACE.md },
   head: { display: "flex", flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 6 },
-  eyebrow: { ...TYPE.micro, fontSize: 8.5, color: COLOR.accent },
-  note: { fontSize: 9.5, color: COLOR.textFaint },
+  eyebrow: { ...TYPE.micro, fontSize: FS.base, color: COLOR.accent },
+  note: { fontSize: FS.base, color: COLOR.textFaint },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 8 },
   axis: { background: "rgba(20,28,48,0.5)", border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.sm, padding: "7px 9px" },
   axisHead: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 },
-  axisFoot: { fontSize: 9, color: COLOR.textFaint, marginTop: 4, lineHeight: 1.4 },
+  axisFoot: { fontSize: FS.base, color: COLOR.textFaint, marginTop: 4, lineHeight: 1.4 },
   possible: { marginTop: SPACE.sm, paddingTop: SPACE.sm, borderTop: `1px solid ${COLOR.border}` },
   possibleRow: { display: "flex", flexWrap: "wrap", gap: 6, margin: "5px 0" },
-  chip: { fontSize: 10, color: COLOR.textDim, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 9px" },
-  rule: { fontSize: 9.5, color: COLOR.textFaint, lineHeight: 1.55, background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: RADIUS.sm, padding: "5px 8px" },
+  chip: { fontSize: FS.meta, color: COLOR.textDim, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 9px" },
+  rule: { fontSize: FS.base, color: COLOR.textFaint, lineHeight: 1.55, background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: RADIUS.sm, padding: "5px 8px" },
 };

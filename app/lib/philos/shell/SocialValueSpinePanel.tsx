@@ -11,7 +11,7 @@
  * that are real.
  */
 import { buildSocialValueSpine, type SpineLink } from "../valueSystem/socialValueSpine";
-import { COLOR, RADIUS, SPACE, TYPE } from "./designTokens";
+import { FS, COLOR, RADIUS, SPACE, TYPE } from "./designTokens";
 
 const TONE: Record<string, string> = {
   SOURCE_SUPPORTED_CONCEPTUAL: "#a78bfa",
@@ -71,14 +71,14 @@ function Step({ link, index }: { link: SpineLink; index: number }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-        <span style={{ ...TYPE.micro, fontSize: 7.5, color: COLOR.textFaint }}>{index}</span>
-        <span style={{ ...TYPE.micro, fontSize: 8, color: tone, letterSpacing: 0.3 }}>{link.label}</span>
+        <span style={{ ...TYPE.micro, fontSize: FS.base, color: COLOR.textFaint }}>{index}</span>
+        <span style={{ ...TYPE.micro, fontSize: FS.base, color: tone, letterSpacing: 0.3 }}>{link.label}</span>
       </div>
-      <div dir="rtl" style={{ fontSize: 9.5, color: COLOR.textFaint }}>{link.gloss}</div>
-      <div style={{ fontSize: 15, fontWeight: 800, color: has ? COLOR.text : "#8798b8", fontFamily: "ui-monospace, monospace" }}>
+      <div dir="rtl" style={{ fontSize: FS.base, color: COLOR.textFaint }}>{link.gloss}</div>
+      <div style={{ fontSize: FS.head, fontWeight: 800, color: has ? COLOR.text : "#8798b8", fontFamily: "ui-monospace, monospace" }}>
         {link.count === null ? "—" : link.count}
       </div>
-      <div dir="rtl" style={{ ...TYPE.micro, fontSize: 7, color: tone, letterSpacing: 0.2, lineHeight: 1.3 }}>
+      <div dir="rtl" style={{ ...TYPE.micro, fontSize: FS.base, color: tone, letterSpacing: 0.2, lineHeight: 1.3 }}>
         {link.status.replace(/SOURCE_SUPPORTED_CONCEPTUAL_?/, "CONCEPTUAL ").trim()}
       </div>
     </div>
@@ -88,10 +88,10 @@ function Step({ link, index }: { link: SpineLink; index: number }) {
 const S: Record<string, React.CSSProperties> = {
   band: { background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.20)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.md}px`, marginBottom: SPACE.md },
   head: { display: "flex", flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 6 },
-  eyebrow: { ...TYPE.micro, fontSize: 8.5, color: "#a78bfa" },
-  note: { fontSize: 9.5, color: COLOR.textFaint },
+  eyebrow: { ...TYPE.micro, fontSize: FS.base, color: "#a78bfa" },
+  note: { fontSize: FS.base, color: COLOR.textFaint },
   rail: { display: "flex", alignItems: "stretch", gap: 2, overflowX: "auto", paddingBottom: 4 },
   stepWrap: { display: "flex", alignItems: "center", gap: 2 },
-  arrow: { color: COLOR.textFaint, fontSize: 12, padding: "0 1px" },
-  rule: { marginTop: SPACE.sm, fontSize: 9.5, color: COLOR.textDim, lineHeight: 1.6, background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: RADIUS.sm, padding: "6px 9px" },
+  arrow: { color: COLOR.textFaint, fontSize: FS.read, padding: "0 1px" },
+  rule: { marginTop: SPACE.sm, fontSize: FS.base, color: COLOR.textDim, lineHeight: 1.6, background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: RADIUS.sm, padding: "6px 9px" },
 };

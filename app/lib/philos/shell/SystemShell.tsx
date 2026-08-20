@@ -29,7 +29,7 @@ import Link from "next/link";
 
 import SocialScaleNav from "./SocialScaleNav";
 
-import { COLOR, PRODUCT_FAMILY_CUE, RADIUS, SPACE, STATUS, TERMINAL, TYPE } from "./designTokens";
+import { COLOR, FS, PRODUCT_FAMILY_CUE, RADIUS, SPACE, STATUS, TERMINAL, TYPE } from "./designTokens";
 import type { PersonContext } from "../person/personContext";
 
 export interface ShellCommunity {
@@ -132,8 +132,8 @@ function StatusPill({ label, value, kind }: { label: string; value: string; kind
   return (
     <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 12px", borderRadius: 8, background: COLOR.bgRaised, border: `1px solid ${COLOR.border}` }}>
       <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>{label}</span>
-      <span style={{ fontSize: 12, fontWeight: 600, color: COLOR.text }}>{value}</span>
-      <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 0.6, padding: "1px 6px", borderRadius: 999, background: s.bg, border: `1px solid ${s.border}`, color: s.text, fontFamily: "ui-monospace, monospace" }}>
+      <span style={{ fontSize: FS.read, fontWeight: 600, color: COLOR.text }}>{value}</span>
+      <span style={{ fontSize: FS.tag, fontWeight: 800, letterSpacing: 0.6, padding: "1px 6px", borderRadius: 999, background: s.bg, border: `1px solid ${s.border}`, color: s.text, fontFamily: "ui-monospace, monospace" }}>
         {s.label}
       </span>
     </div>
@@ -176,7 +176,7 @@ function ContextStrip({ person, domain, value, project, personContext, observedC
           <span key={s.label} style={{ display: "inline-flex", alignItems: "center", gap: 6 }} title={s.title}>
             {i > 0 ? <span style={{ color: COLOR.textFaint, marginInlineEnd: 4 }}>·</span> : null}
             <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>{s.label}</span>
-            <span style={{ fontSize: 11.5, fontWeight: 600, color: s.value ? COLOR.text : STATUS.unknown.text }}>
+            <span style={{ fontSize: FS.meta, fontWeight: 600, color: s.value ? COLOR.text : STATUS.unknown.text }}>
               {s.value ?? "UNKNOWN"}
             </span>
           </span>
@@ -195,7 +195,7 @@ function ContextStrip({ person, domain, value, project, personContext, observedC
             title="כמה מתוך 9 תאי המדידה (Domain × Frame) נשאים תצפית אמיתית"
           >
             <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>כיסוי</span>
-            <span style={{ fontSize: 11.5, fontWeight: 800, color: accent, fontFamily: "ui-monospace, monospace", direction: "ltr", unicodeBidi: "isolate" }}>
+            <span style={{ fontSize: FS.meta, fontWeight: 800, color: accent, fontFamily: "ui-monospace, monospace", direction: "ltr", unicodeBidi: "isolate" }}>
               {observedCount}/9
             </span>
             <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>תאים נמדדו</span>
@@ -212,17 +212,17 @@ function ContextStrip({ person, domain, value, project, personContext, observedC
           <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>מסגרת היחוס</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
             <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>REFERENCE</span>
-            <span style={{ fontSize: 11, fontWeight: 600, color: personContext.reference ? COLOR.textDim : STATUS.unknown.text, fontFamily: "ui-monospace, monospace" }}>
+            <span style={{ fontSize: FS.meta, fontWeight: 600, color: personContext.reference ? COLOR.textDim : STATUS.unknown.text, fontFamily: "ui-monospace, monospace" }}>
               {personContext.reference ?? "UNKNOWN"}
             </span>
           </span>
           <span style={{ color: COLOR.textFaint }}>·</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }} title="קנון §20/§21 — קבוצת יחוס חייבת להיות מפורשת וניתנת לערעור; אסור להמציא ברירת מחדל">
             <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>REFERENCE GROUP</span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: STATUS.unknown.text, fontFamily: "ui-monospace, monospace" }}>
+            <span style={{ fontSize: FS.meta, fontWeight: 700, color: STATUS.unknown.text, fontFamily: "ui-monospace, monospace" }}>
               {personContext.reference_group ?? "UNKNOWN"}
             </span>
-            <span style={{ fontSize: 9, color: COLOR.textFaint }}>אין מאגר — לא מומצאת</span>
+            <span style={{ fontSize: FS.tag, color: COLOR.textFaint }}>אין מאגר — לא מומצאת</span>
           </span>
         </div>
       ) : null}
@@ -319,7 +319,7 @@ export function SystemShell({
           <div
             style={{
               width: 26, height: 26, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
-              background: `linear-gradient(135deg, ${terminal.accent}, ${terminal.support})`, color: "#02101f", fontWeight: 900, fontSize: 14,
+              background: `linear-gradient(135deg, ${terminal.accent}, ${terminal.support})`, color: "#02101f", fontWeight: 900, fontSize: FS.head,
             }}
           >
             Φ
@@ -338,7 +338,7 @@ export function SystemShell({
               return here ? (
                 <span
                   key={item.label}
-                  style={{ fontSize: 11.5, fontWeight: 700, padding: "6px 14px", borderRadius: 8, color: "#02101f", background: terminal.accent }}
+                  style={{ fontSize: FS.meta, fontWeight: 700, padding: "6px 14px", borderRadius: 8, color: "#02101f", background: terminal.accent }}
                 >
                   {item.label}
                 </span>
@@ -346,7 +346,7 @@ export function SystemShell({
                 <Link
                   key={item.label}
                   href={hrefFor(item)}
-                  style={{ fontSize: 11.5, fontWeight: 500, padding: "6px 14px", borderRadius: 8, color: COLOR.textDim, textDecoration: "none" }}
+                  style={{ fontSize: FS.meta, fontWeight: 500, padding: "6px 14px", borderRadius: 8, color: COLOR.textDim, textDecoration: "none" }}
                 >
                   {item.label}
                 </Link>

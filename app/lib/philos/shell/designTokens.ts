@@ -13,8 +13,37 @@ export const TYPE = {
   title: { fontSize: 17, fontWeight: 700, letterSpacing: -0.1, lineHeight: 1.25 },
   subtitle: { fontSize: 13, fontWeight: 600, letterSpacing: 0.1, lineHeight: 1.35 },
   body: { fontSize: 13, fontWeight: 500, lineHeight: 1.55 },
-  meta: { fontSize: 10.5, fontWeight: 700, letterSpacing: 1.1, textTransform: "uppercase" as const },
-  micro: { fontSize: 9.5, fontWeight: 600, letterSpacing: 0.6, textTransform: "uppercase" as const },
+  meta: { fontSize: 11, fontWeight: 700, letterSpacing: 1.1, textTransform: "uppercase" as const },
+  /* Raised to the 10px floor. `micro` was the single biggest source of
+     sub-floor text: it is spread into dozens of styles across every surface,
+     so one number here fixed more than any per-component edit could. */
+  micro: { fontSize: 10, fontWeight: 600, letterSpacing: 0.6, textTransform: "uppercase" as const },
+} as const;
+
+/**
+ * THE SOCIAL SCALE — five steps, and a hard floor.
+ *
+ * An audit of one social surface found EIGHTEEN distinct font sizes and 259
+ * elements rendering text below 10px. That is not a hierarchy: a reader
+ * cannot rank eighteen levels, so nothing reads as more important than
+ * anything else, and text under 10px — especially Hebrew, whose letterforms
+ * carry more detail per glyph than Latin — is not "small", it is unread.
+ *
+ * Every size in the social family comes from here. The floor is 10px and it
+ * is not negotiable: if something does not fit at 10px, the answer is less
+ * content, not smaller text.
+ */
+export const FS = {
+  /** Section and card titles. */
+  head: 15,
+  /** The thing a person came to read. */
+  read: 12,
+  /** Supporting detail beside the thing they read. */
+  meta: 11,
+  /** The floor. Epistemic sentences, provenance notes, ids. */
+  base: 10,
+  /** Uppercase micro-labels ONLY — simple letterforms, never a sentence. */
+  tag: 10,
 } as const;
 
 /** 4px base unit — every margin/padding in the redesign is a multiple. */

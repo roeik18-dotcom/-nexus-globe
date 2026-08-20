@@ -46,7 +46,7 @@ import { noRoleReason, PURPLE_NEVER_ACTIVATED, roleTouchOf, type InternalRole } 
 import type { FlowStage } from "../social/socialFlowStages";
 import SocialFlowRail from "./SocialFlowRail";
 import type { SpineLink } from "../valueSystem/socialValueSpine";
-import { COLOR, COLOR_ROLE, PRODUCT_FAMILY_CUE, RADIUS, SPACE, TYPE } from "./designTokens";
+import { COLOR, COLOR_ROLE, FS, PRODUCT_FAMILY_CUE, RADIUS, SPACE, TYPE } from "./designTokens";
 
 export type SocialSurface = "community" | "globe" | "world";
 
@@ -391,7 +391,8 @@ const RAIL = 84;
  * Monospace ids sit at META: they are scanned, not read, but they are also
  * the thing a reader copies to go check a record, so they cannot be 7.5px.
  */
-const FS = { read: 12, meta: 10.5, note: 10, tag: 9 } as const;
+/* Type scale now lives in designTokens as the ONE social scale — a
+   per-component scale is how eighteen sizes happened in the first place. */
 
 /* ONE COLUMN GRID for every lane: a fixed left gutter for the lane name, a
    flexible body, a fixed right rail for provenance/scope. This is what makes
@@ -436,7 +437,7 @@ const S: Record<string, React.CSSProperties> = {
   /* The epistemic sentences. These carry the actual discipline of the system
      — "similarity is not a relation", "UNKNOWN != 0" — so they are readable
      text at the floor size, not decoration at 8px. */
-  note: { fontSize: FS.note, color: COLOR.textDim, lineHeight: 1.6, marginTop: 5 },
+  note: { fontSize: FS.base, color: COLOR.textDim, lineHeight: 1.6, marginTop: 5 },
 
   zoomRow: { display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap" },
   zoomCell: { display: "flex", alignItems: "center", gap: 3 },
@@ -454,7 +455,7 @@ const S: Record<string, React.CSSProperties> = {
     minWidth: 72,
   },
   spineItemHit: { border: `1px solid ${COLOR_ROLE.green}`, background: "rgba(52,211,153,0.14)" },
-  spineN: { fontSize: 15, fontWeight: 700, fontFamily: "ui-monospace, monospace", lineHeight: 1.1 },
+  spineN: { fontSize: FS.head, fontWeight: 700, fontFamily: "ui-monospace, monospace", lineHeight: 1.1 },
   spineLabel: { fontSize: FS.tag, color: COLOR.textDim, letterSpacing: 0.3, lineHeight: 1.3 },
   spineStatus: { fontSize: FS.tag, color: COLOR.textFaint, letterSpacing: 0.3, transform: "scale(0.88)", transformOrigin: "right top" },
 
@@ -465,19 +466,19 @@ const S: Record<string, React.CSSProperties> = {
      and real row height rather than being compressed to fit more in. */
   tRow: { display: "flex", alignItems: "center", gap: SPACE.sm, fontSize: FS.meta, padding: "3px 6px", textDecoration: "none", color: "inherit", borderRadius: RADIUS.sm },
   tRowHere: { background: PRODUCT_FAMILY_CUE.bgActive, boxShadow: `inset 0 0 0 1px ${PRODUCT_FAMILY_CUE.borderActive}` },
-  tAt: { fontFamily: "ui-monospace, monospace", fontSize: FS.note, color: COLOR.textDim, minWidth: 78 },
+  tAt: { fontFamily: "ui-monospace, monospace", fontSize: FS.base, color: COLOR.textDim, minWidth: 78 },
   tDot: { width: 7, height: 7, borderRadius: "50%", flexShrink: 0 },
   tKind: { fontFamily: "ui-monospace, monospace", fontSize: FS.meta, color: COLOR.textDim, minWidth: 118 },
   tLabel: { color: COLOR.text, fontSize: FS.read, flex: 1, minWidth: 70, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-  tRef: { fontSize: FS.note, color: COLOR_ROLE.blue },
+  tRef: { fontSize: FS.base, color: COLOR_ROLE.blue },
   tVerif: { fontSize: FS.tag, fontWeight: 700, letterSpacing: 0.5, minWidth: 54 },
-  tId: { fontFamily: "ui-monospace, monospace", fontSize: FS.note, color: COLOR.textFaint },
+  tId: { fontFamily: "ui-monospace, monospace", fontSize: FS.base, color: COLOR.textFaint },
 
   selHead: { display: "flex", alignItems: "center", gap: SPACE.sm, fontSize: FS.meta, flexWrap: "wrap" },
   scaleRow: { display: "flex", alignItems: "stretch", gap: 6, flexWrap: "wrap", marginTop: 6 },
   scaleCell: { display: "inline-flex", flexDirection: "column", gap: 2, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.sm, padding: "5px 10px", maxWidth: 260 },
-  scaleAs: { fontSize: FS.note, color: COLOR.textDim, lineHeight: 1.5 },
+  scaleAs: { fontSize: FS.base, color: COLOR.textDim, lineHeight: 1.5 },
 
-  empty: { fontSize: FS.note, color: COLOR.textDim, fontStyle: "italic", lineHeight: 1.65 },
+  empty: { fontSize: FS.base, color: COLOR.textDim, fontStyle: "italic", lineHeight: 1.65 },
   auditSummary: { cursor: "pointer", fontSize: FS.tag, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: COLOR.textFaint, padding: "3px 0" },
 };

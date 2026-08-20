@@ -25,7 +25,7 @@
  * This is PRODUCT ORGANIZATION. It is not a canonical causal colour flow —
  * the Source Lock defines no relation between colours at all.
  */
-import { COLOR, COLOR_ROLE, RADIUS, SPACE, TYPE } from "./designTokens";
+import { FS, COLOR, COLOR_ROLE, RADIUS, SPACE, TYPE } from "./designTokens";
 
 export interface SocialRoleCounts {
   /** RED — real Actions/Effects at this surface's scope. `null` = not resolved. */
@@ -106,19 +106,19 @@ function Role({ glyph, name, canonical, meaning, value, hex }: {
       background: has ? `${hex}12` : "transparent",
       opacity: has ? 1 : 0.7,
     }}>
-      <span style={{ fontSize: 11 }}>{glyph}</span>
-      <span style={{ ...TYPE.micro, fontSize: 8, color: has ? hex : COLOR.textFaint }}>{name}</span>
-      <b style={{ fontSize: 12, fontFamily: "ui-monospace, monospace", color: has ? COLOR.text : "#8798b8" }}>
+      <span style={{ fontSize: FS.meta }}>{glyph}</span>
+      <span style={{ ...TYPE.micro, fontSize: FS.base, color: has ? hex : COLOR.textFaint }}>{name}</span>
+      <b style={{ fontSize: FS.read, fontFamily: "ui-monospace, monospace", color: has ? COLOR.text : "#8798b8" }}>
         {value === null ? "UNKNOWN" : value}
       </b>
-      <span style={{ fontSize: 8.5, color: COLOR.textFaint }}>{meaning}</span>
+      <span style={{ fontSize: FS.base, color: COLOR.textFaint }}>{meaning}</span>
     </span>
   );
 }
 
 const S: Record<string, React.CSSProperties> = {
   strip: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 7, background: "rgba(90,120,180,0.04)", border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.md}px`, marginBottom: SPACE.md },
-  eyebrow: { ...TYPE.micro, fontSize: 8.5, color: COLOR.textFaint },
+  eyebrow: { ...TYPE.micro, fontSize: FS.base, color: COLOR.textFaint },
   role: { display: "inline-flex", alignItems: "center", gap: 5, border: "1px solid", borderRadius: RADIUS.sm, padding: "4px 9px" },
-  note: { fontSize: 9, color: COLOR.textFaint, flex: 1, minWidth: 220, lineHeight: 1.5 },
+  note: { fontSize: FS.base, color: COLOR.textFaint, flex: 1, minWidth: 220, lineHeight: 1.5 },
 };

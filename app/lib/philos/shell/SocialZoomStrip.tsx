@@ -26,7 +26,7 @@
  * Colour discipline: the strip uses the neutral/product tint, never a member's
  * canonical role — `PRODUCT_FAMILY_CUE ≠ CANONICAL_COLOR_ROLE`.
  */
-import { COLOR, PRODUCT_FAMILY_CUE, RADIUS, SPACE, TYPE } from "./designTokens";
+import { FS, COLOR, PRODUCT_FAMILY_CUE, RADIUS, SPACE, TYPE } from "./designTokens";
 
 export type SocialSurface = "community" | "globe" | "world";
 
@@ -76,7 +76,7 @@ const S = {
   cellHere: { background: PRODUCT_FAMILY_CUE.bgActive, border: `1px solid ${PRODUCT_FAMILY_CUE.borderActive}` },
   level: { ...TYPE.micro, letterSpacing: 1.2, color: COLOR.textFaint },
   levelHere: { color: PRODUCT_FAMILY_CUE.labelActive, fontWeight: 700 },
-  label: { fontSize: 10.5, color: COLOR.textFaint },
+  label: { fontSize: FS.meta, color: COLOR.textFaint },
   labelHere: { color: COLOR.text, fontWeight: 600 },
-  note: { ...TYPE.micro, fontSize: 8.5, color: COLOR.textFaint, marginInlineStart: "auto", maxWidth: 420, textAlign: "start" as const },
+  note: { ...TYPE.micro, fontSize: FS.base, color: COLOR.textFaint, marginInlineStart: "auto", maxWidth: 420, textAlign: "start" as const },
 } as const;

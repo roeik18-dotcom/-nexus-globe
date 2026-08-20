@@ -25,7 +25,7 @@
  * render and impossible to style away: every surface that shows a value
  * shows where it came from, or shows UNKNOWN.
  */
-import { RADIUS } from "./designTokens";
+import { FS, RADIUS } from "./designTokens";
 
 export type Provenance = "CANON" | "REAL" | "LEGACY" | "DEMO" | "STATIC" | "UNKNOWN";
 
@@ -44,7 +44,7 @@ export function ProvenanceBadge({ p, title }: { p: Provenance; title?: string })
     <span
       title={title}
       style={{
-        fontSize: 8.5, fontWeight: 800, letterSpacing: 0.7,
+        fontSize: FS.base, fontWeight: 800, letterSpacing: 0.7,
         padding: "1px 6px", borderRadius: RADIUS.pill,
         background: s.bg, border: `1px solid ${s.border}`, color: s.text,
         fontFamily: "ui-monospace, monospace", whiteSpace: "nowrap",

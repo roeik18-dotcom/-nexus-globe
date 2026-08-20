@@ -33,7 +33,7 @@ import type { ValueGroupView } from "@/app/lib/philos/projectValueGroup";
 import type { GroupRelation } from "@/app/lib/philos/valueSystem/groupResolver";
 import { QUALITY_GROUP_MODEL } from "@/app/lib/philos/community/sourceValueModel";
 import { ProvenanceBadge, type Provenance } from "@/app/lib/philos/shell/provenance";
-import { COLOR, RADIUS, SPACE, STATUS, TYPE } from "@/app/lib/philos/shell/designTokens";
+import { COLOR, FS, RADIUS, SPACE, STATUS, TYPE } from "@/app/lib/philos/shell/designTokens";
 
 export interface ValueGroupCardData {
   view: ValueGroupView;
@@ -218,7 +218,7 @@ function FieldRow({ label, value, meta, provenance, italic }: { label: string; v
 
 const S: Record<string, React.CSSProperties> = {
   cardAudit: { marginTop: 6, borderTop: `1px solid ${COLOR.border}`, paddingTop: 4 },
-  cardAuditSummary: { cursor: "pointer", fontSize: 8.5, letterSpacing: 1.1, color: COLOR.textFaint, padding: "2px 0" },
+  cardAuditSummary: { cursor: "pointer", fontSize: FS.base, letterSpacing: 1.1, color: COLOR.textFaint, padding: "2px 0" },
   band: {
     background: "linear-gradient(180deg, rgba(91,156,246,0.07), rgba(11,15,26,0.9))",
     border: `1px solid ${COLOR.borderStrong}`,
@@ -228,21 +228,21 @@ const S: Record<string, React.CSSProperties> = {
   },
   head: { display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: SPACE.sm, marginBottom: SPACE.md },
   eyebrow: { ...TYPE.micro, color: COLOR.accent, marginBottom: 4 },
-  title: { fontSize: 13, fontWeight: 800, margin: 0, color: COLOR.text, direction: "ltr", textAlign: "right" },
+  title: { fontSize: FS.read, fontWeight: 800, margin: 0, color: COLOR.text, direction: "ltr", textAlign: "right" },
   headMeta: { display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" },
-  chip: { fontSize: 9.5, fontWeight: 700, color: COLOR.textDim, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 9px", fontFamily: "ui-monospace, monospace" },
+  chip: { fontSize: FS.base, fontWeight: 700, color: COLOR.textDim, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 9px", fontFamily: "ui-monospace, monospace" },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(330px, 1fr))", gap: SPACE.md },
   card: { border: "1px solid", borderRadius: RADIUS.lg, padding: `${SPACE.md}px ${SPACE.lg}px`, background: "rgba(10,14,23,0.5)", display: "flex", flexDirection: "column", gap: 6 },
   cardHead: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  cardTitle: { fontSize: 15.5, fontWeight: 800, color: COLOR.text, textDecoration: "none" },
+  cardTitle: { fontSize: FS.head, fontWeight: 800, color: COLOR.text, textDecoration: "none" },
   valueLine: { display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 8, marginBottom: 2 },
-  valueWord: { fontSize: 12.5, fontWeight: 700, color: STATUS.real.text },
-  metaFaint: { fontSize: 9.5, color: COLOR.textFaint },
+  valueWord: { fontSize: FS.read, fontWeight: 700, color: STATUS.real.text },
+  metaFaint: { fontSize: FS.base, color: COLOR.textFaint },
   fieldRow: { borderTop: `1px solid ${COLOR.border}`, paddingTop: 5 },
   fieldHead: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 },
   fieldLabel: { ...TYPE.micro, color: "#8fa3c9", letterSpacing: 0.9 },
-  fieldValue: { fontSize: 12, fontWeight: 600, lineHeight: 1.4, marginTop: 1 },
-  fieldMeta: { fontSize: 10, color: COLOR.textDim, lineHeight: 1.35, marginTop: 1 },
-  detailLink: { marginTop: 6, fontSize: 11, color: COLOR.accent, textDecoration: "none", fontWeight: 700 },
-  empty: { fontSize: 11.5, fontStyle: "italic", color: "#8798b8", padding: "8px 0" },
+  fieldValue: { fontSize: FS.read, fontWeight: 600, lineHeight: 1.4, marginTop: 1 },
+  fieldMeta: { fontSize: FS.base, color: COLOR.textDim, lineHeight: 1.35, marginTop: 1 },
+  detailLink: { marginTop: 6, fontSize: FS.meta, color: COLOR.accent, textDecoration: "none", fontWeight: 700 },
+  empty: { fontSize: FS.meta, fontStyle: "italic", color: "#8798b8", padding: "8px 0" },
 };

@@ -31,7 +31,7 @@
  */
 import { SOURCE_CONCEPTS, type SourceConcept } from "../community/sourceValueModel";
 import { detectBaseOppositions } from "../valueSystem/baseOppositionDetector";
-import { COLOR, RADIUS, SPACE, TYPE } from "./designTokens";
+import { FS, COLOR, RADIUS, SPACE, TYPE } from "./designTokens";
 import { ProvenanceBadge } from "./provenance";
 
 const LAYER_OF_SURFACE: Record<"community" | "globe" | "world", { layer: string; question: string }> = {
@@ -123,7 +123,7 @@ export default function SocialSourceSpinePanel({
 
       {/* the aggregate, and why it is absent */}
       <div style={S.gap}>
-        <div style={{ ...TYPE.micro, fontSize: 8.5, color: "#fbbf24", marginBottom: 3 }}>
+        <div style={{ ...TYPE.micro, fontSize: FS.base, color: "#fbbf24", marginBottom: 3 }}>
           חישוב כולל · AGGREGATE — לא מחושב, וזה מכוון
         </div>
         <div style={S.gapLine}>
@@ -159,7 +159,7 @@ function Row({ c, mono = false, named = false, mention }: {
     <div style={{ ...S.row, ...(named ? { background: "rgba(251,191,36,0.10)", border: "1px solid rgba(251,191,36,0.3)" } : null) }}>
       {named ? (
         <span title="אזכור בלבד. אזכור קוטב — ואף אזכור של שני הקטבים — אינו קובע שהניגוד מתקיים. לא מדידה, ולא מקושר ל-5 מחלקות ה-runtime."
-              style={{ ...TYPE.micro, fontSize: 7.5, color: "#fbbf24", whiteSpace: "nowrap" }}>
+              style={{ ...TYPE.micro, fontSize: FS.base, color: "#fbbf24", whiteSpace: "nowrap" }}>
           אזכור {kind}{mention ? ` · ${mention.mentioned_poles.map((m) => m.pole).join(" + ")}` : ""}
         </span>
       ) : null}
@@ -176,27 +176,27 @@ function Row({ c, mono = false, named = false, mention }: {
 const S: Record<string, React.CSSProperties> = {
   band: { background: "rgba(52,211,153,0.04)", border: "1px solid rgba(52,211,153,0.18)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.md}px`, marginBottom: SPACE.md },
   head: { display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 },
-  eyebrow: { ...TYPE.micro, fontSize: 8.5, color: "#6fe3b4" },
+  eyebrow: { ...TYPE.micro, fontSize: FS.base, color: "#6fe3b4" },
   layerRow: { display: "flex", flexDirection: "column", gap: 2, background: "rgba(20,28,48,0.5)", border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.sm, padding: "6px 9px", marginBottom: 6 },
-  layerHere: { fontSize: 11.5, fontWeight: 700, color: COLOR.text },
-  layerGloss: { fontSize: 10, color: COLOR.textDim },
-  layerNote: { fontSize: 9, color: COLOR.textFaint, lineHeight: 1.5, marginTop: 2 },
-  subHead: { ...TYPE.micro, fontSize: 8, color: COLOR.textFaint, margin: "7px 0 3px" },
+  layerHere: { fontSize: FS.read, fontWeight: 700, color: COLOR.text },
+  layerGloss: { fontSize: FS.meta, color: COLOR.textDim },
+  layerNote: { fontSize: FS.base, color: COLOR.textFaint, lineHeight: 1.5, marginTop: 2 },
+  subHead: { ...TYPE.micro, fontSize: FS.base, color: COLOR.textFaint, margin: "7px 0 3px" },
   summary: {
     display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" as const,
-    margin: "7px 0 2px", fontSize: 10, color: COLOR.textDim, lineHeight: 1.5,
+    margin: "7px 0 2px", fontSize: FS.meta, color: COLOR.textDim, lineHeight: 1.5,
   },
   summaryStat: { color: COLOR.textDim },
   summarySep: { color: COLOR.textFaint },
   audit: { marginTop: 4 },
   auditSummary: {
-    cursor: "pointer", ...TYPE.micro, fontSize: 8.5, letterSpacing: 1.1,
+    cursor: "pointer", ...TYPE.micro, fontSize: FS.base, letterSpacing: 1.1,
     color: COLOR.textFaint, padding: "3px 0",
   },
   row: { display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 7, padding: "3px 8px", background: "rgba(90,120,180,0.05)", borderRadius: RADIUS.sm, marginBottom: 2 },
   rowLabel: { color: COLOR.text, flex: 1, minWidth: 170 },
-  rowMeta: { fontSize: 8.5, color: COLOR.textFaint, fontFamily: "ui-monospace, monospace" },
-  more: { fontSize: 9, color: COLOR.textFaint, padding: "2px 8px" },
+  rowMeta: { fontSize: FS.base, color: COLOR.textFaint, fontFamily: "ui-monospace, monospace" },
+  more: { fontSize: FS.base, color: COLOR.textFaint, padding: "2px 8px" },
   gap: { marginTop: SPACE.sm, paddingTop: SPACE.sm, borderTop: `1px solid ${COLOR.border}` },
-  gapLine: { fontSize: 10, color: COLOR.textDim, lineHeight: 1.6, marginBottom: 4 },
+  gapLine: { fontSize: FS.meta, color: COLOR.textDim, lineHeight: 1.6, marginBottom: 4 },
 };

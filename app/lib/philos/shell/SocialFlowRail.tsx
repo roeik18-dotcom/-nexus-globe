@@ -32,7 +32,7 @@ import {
   CONNECTOR_META, STATUS_META,
   type ConnectorKind, type FlowStage, type StageStatus,
 } from "../social/socialFlowStages";
-import { COLOR, COLOR_ROLE, RADIUS, SPACE } from "./designTokens";
+import { COLOR, COLOR_ROLE, FS, RADIUS, SPACE } from "./designTokens";
 
 const STATUS_STYLE: Record<StageStatus, { border: string; bg: string; fg: string; dashed?: boolean }> = {
   SOURCE:       { border: "rgba(120,150,220,0.45)", bg: "transparent",              fg: COLOR.textDim },
@@ -134,8 +134,8 @@ const S: Record<string, React.CSSProperties> = {
     padding: "5px 9px", borderRadius: RADIUS.sm, minWidth: 70,
   },
   count: { fontFamily: "ui-monospace, monospace", fontWeight: 700, lineHeight: 1.15, letterSpacing: 0.3 },
-  label: { fontSize: 8.5, fontWeight: 700, letterSpacing: 0.2, color: COLOR.textDim, whiteSpace: "nowrap" },
-  status: { fontSize: 9, fontWeight: 600, letterSpacing: 0.6 },
+  label: { fontSize: FS.tag, fontWeight: 700, letterSpacing: 0.2, color: COLOR.textDim, whiteSpace: "nowrap" },
+  status: { fontSize: FS.tag, fontWeight: 600, letterSpacing: 0.6 },
 
   conn: { display: "inline-flex", alignItems: "center", width: 18, position: "relative", justifyContent: "center" },
   line: { display: "block", width: "100%" },

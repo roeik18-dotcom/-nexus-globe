@@ -26,7 +26,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 
-import { COLOR, PRODUCT_FAMILY_CUE, RADIUS, TYPE } from "./designTokens";
+import { FS, COLOR, PRODUCT_FAMILY_CUE, RADIUS, TYPE } from "./designTokens";
 
 const SCALES = [
   { key: "community", label: "Community", level: "GROUP", href: "/hub/community" },
@@ -75,13 +75,13 @@ const S: Record<string, React.CSSProperties> = {
     background: PRODUCT_FAMILY_CUE.bgActive,
     borderRadius: 11, padding: "3px 7px 3px 8px",
   },
-  label: { ...TYPE.micro, fontSize: 8, letterSpacing: 1.4, color: PRODUCT_FAMILY_CUE.labelActive, whiteSpace: "nowrap" },
+  label: { ...TYPE.micro, fontSize: FS.base, letterSpacing: 1.4, color: PRODUCT_FAMILY_CUE.labelActive, whiteSpace: "nowrap" },
   item: {
     display: "inline-flex", alignItems: "baseline", gap: 5,
-    fontSize: 11, color: COLOR.textDim, textDecoration: "none",
+    fontSize: FS.meta, color: COLOR.textDim, textDecoration: "none",
     padding: "4px 10px", borderRadius: RADIUS.sm,
   },
   itemHere: { background: PRODUCT_FAMILY_CUE.labelActive, color: "#02101f", fontWeight: 700 },
-  level: { ...TYPE.micro, fontSize: 7.5, letterSpacing: 1 },
-  sel: { ...TYPE.micro, fontSize: 7.5, color: COLOR.textFaint, marginInlineStart: 4 },
+  level: { ...TYPE.micro, fontSize: FS.base, letterSpacing: 1 },
+  sel: { ...TYPE.micro, fontSize: FS.base, color: COLOR.textFaint, marginInlineStart: 4 },
 };
