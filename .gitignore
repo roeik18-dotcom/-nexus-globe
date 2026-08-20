@@ -197,3 +197,6 @@ corpus/*/*
 # voice-gateway/app/memory/ and must stay trackable. Only the data store here
 # is excluded.
 voice-gateway/memory/relationship/
+
+# Session log — operational state, never committed.
+.philos-session-data/

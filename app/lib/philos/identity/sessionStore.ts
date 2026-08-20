@@ -1,66 +1,29 @@
 /**
- * SESSION STORE — server-owned, opaque-token sessions.
+ * SESSION LIFECYCLE — issue, resolve, revoke — over a DURABLE log.
  *
- * The previous seam mapped a cookie value straight to a viewer through a
- * literal table: `sess_a` meant person_roei. That is not authentication, it is
- * a NAME. Anyone who could set a cookie could set `sess_b` and become the
- * other user, and the identity was legible in the browser.
+ * The store used to be a Map, so a restart forgot every session AND every
+ * revocation. Both halves matter. Losing issuance is an annoyance; losing
+ * revocation would be a hole the moment issuance became durable, because a
+ * revoked token would come back as merely unknown and then, once the log
+ * remembered issuance, as VALID. Persisting one without the other is the
+ * dangerous half-fix, so both are entries in the same append-only log.
  *
- * What changes here, and only this:
+ * THE TOKEN IS 32 RANDOM BYTES and is never written down: the log stores
+ * sha256(token). Reading the file yields digests, and a digest cannot be
+ * presented as a bearer token.
  *
- *   THE TOKEN CARRIES NO IDENTITY. It is 32 random bytes. It is not derived
- *   from the viewer, it does not encode them, and reading it tells an
- *   attacker nothing about who it belongs to or what another valid token
- *   would look like. Guessing one is guessing 256 bits.
- *
- *   THE SERVER OWNS THE MAPPING. token -> { viewer, issued, expires, revoked }
- *   lives here. The client holds a bearer string and nothing else.
- *
- *   FAILURE IS NOBODY. Unknown, expired and revoked all resolve to null — the
- *   same answer, so a caller cannot distinguish "wrong token" from "expired
- *   token" and learn which half to attack.
- *
- * WHAT THIS STILL IS NOT. There is no credential check: `issue()` is called by
- * trusted code that has already decided who this is. A real sign-in replaces
- * `issue()`'s caller, not this file. Sessions live in memory, so a restart
- * logs everyone out — correct for a store with no persistence, and the reason
- * `SessionRepository` is an interface rather than a module-level Map.
+ * ONE ANSWER FOR EVERY FAILURE. Unknown, expired and revoked all return null.
+ * Returning different results would let a caller learn which of the three it
+ * hit, which is a probe: "this token was valid once" is information.
  */
 import { randomBytes, timingSafeEqual } from "crypto";
 
 import type { ViewerContext } from "./viewerContext";
-
-export interface SessionRecord {
-  /** The identity this token stands for. Never sent to the client. */
-  viewer: Omit<ViewerContext, "source">;
-  issued_at: string;
-  expires_at: string;
-  revoked_at?: string;
-}
-
-export interface SessionRepository {
-  get(token: string): Promise<SessionRecord | null>;
-  put(token: string, record: SessionRecord): Promise<void>;
-  delete(token: string): Promise<void>;
-  /** Every live token — for revoke-all and for tests. Never for lookup. */
-  tokens(): Promise<string[]>;
-}
-
-class InMemorySessionRepository implements SessionRepository {
-  private readonly rows = new Map<string, SessionRecord>();
-  async get(token: string) { return this.rows.get(token) ?? null; }
-  async put(token: string, record: SessionRecord) { this.rows.set(token, record); }
-  async delete(token: string) { this.rows.delete(token); }
-  async tokens() { return [...this.rows.keys()]; }
-}
-
-let _repo: SessionRepository = new InMemorySessionRepository();
-
-/** Swap the store (a real one in production, a fixture in tests). */
-export function setSessionRepository(repo: SessionRepository): void { _repo = repo; }
-export function sessionRepository(): SessionRepository { return _repo; }
+import { sessionLog, tokenDigest, type SessionState } from "./sessionLog";
 
 export const DEFAULT_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+
+export type SessionRecord = SessionState;
 
 /** 32 random bytes, base64url. No structure, no prefix, no identity. */
 export function mintSessionToken(): string {
@@ -68,12 +31,12 @@ export function mintSessionToken(): string {
 }
 
 /**
- * Issue a session for an already-established identity.
+ * Issue a session for an ALREADY-VERIFIED identity.
  *
- * The caller is responsible for having verified who this is. That is the line
- * a real sign-in sits on, and it is deliberately OUTSIDE this module: mixing
- * credential checking into session storage is how a session store becomes an
- * auth product nobody can audit.
+ * The credential check is deliberately outside this module — see
+ * `auth/credentialVerifier.ts`. Mixing verification into session storage is
+ * how a session store becomes an auth product nobody can audit, and it is why
+ * this function takes a viewer rather than a credential.
  */
 export async function issueSession(
   viewer: Omit<ViewerContext, "source">,
@@ -81,7 +44,9 @@ export async function issueSession(
 ): Promise<string> {
   const now = opts?.now ?? Date.now();
   const token = mintSessionToken();
-  await _repo.put(token, {
+  await sessionLog().append({
+    type: "issued",
+    token_digest: tokenDigest(token),
     viewer,
     issued_at: new Date(now).toISOString(),
     expires_at: new Date(now + (opts?.ttlMs ?? DEFAULT_SESSION_TTL_MS)).toISOString(),
@@ -89,35 +54,35 @@ export async function issueSession(
   return token;
 }
 
-/**
- * Resolve a bearer token to a viewer, or to NOBODY.
- *
- * Unknown, expired and revoked are one answer on purpose. Returning different
- * results would tell a caller which of the three it hit, which is a probe.
- */
+/** Resolve a bearer token to a viewer, or to NOBODY. */
 export async function resolveSession(
   token: string | undefined,
   now: number = Date.now(),
 ): Promise<Omit<ViewerContext, "source"> | null> {
   if (!token) return null;
-  const record = await _repo.get(token);
-  if (!record) return null;
-  if (record.revoked_at) return null;
-  if (Date.parse(record.expires_at) <= now) return null;
-  return record.viewer;
+  const state = await sessionLog().read(tokenDigest(token));
+  if (!state) return null;
+  if (state.revoked_at) return null;
+  if (Date.parse(state.expires_at) <= now) return null;
+  return state.viewer;
 }
 
-/** Log out. Idempotent — revoking an unknown token is not an error and is not
- *  distinguishable from revoking a real one. */
+/**
+ * Log out. Idempotent, and indistinguishable from revoking a token that never
+ * existed — an attacker probing revocation learns nothing about which tokens
+ * are real.
+ */
 export async function revokeSession(token: string | undefined, now: number = Date.now()): Promise<void> {
   if (!token) return;
-  const record = await _repo.get(token);
-  if (!record) return;
-  await _repo.put(token, { ...record, revoked_at: new Date(now).toISOString() });
+  await sessionLog().append({
+    type: "revoked",
+    token_digest: tokenDigest(token),
+    revoked_at: new Date(now).toISOString(),
+  });
 }
 
-/** Whether two tokens are the same, without leaking length-prefix timing.
- *  Used by tests and by any caller comparing a presented token to a known one. */
+/** Constant-time token comparison, for any caller matching a presented token
+ *  against a known one. */
 export function sameToken(a: string, b: string): boolean {
   const x = Buffer.from(a), y = Buffer.from(b);
   return x.length === y.length && timingSafeEqual(x, y);

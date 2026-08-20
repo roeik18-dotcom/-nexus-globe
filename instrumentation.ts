@@ -20,7 +20,16 @@ export async function register(): Promise<void> {
        A missing variable must not open the dev door. */
     const { activateViewerProvider } = await import('./app/lib/philos/identity/viewerMode');
     const mode = activateViewerProvider();
-    console.log(`[philos] viewer provider: ${mode}`);
+
+    /* THE PRODUCTION GUARD, at the earliest possible moment.
+       `activateAuth` calls `assertRuntimeSafe` before installing anything, so
+       a production-like runtime carrying PHILOS_DEV_SIGNIN=1 throws HERE —
+       during startup, with nothing installed — rather than serving an
+       identity selector. This is deliberately NOT caught: a boot that cannot
+       be made safe must not become a boot that continues. */
+    const { activateAuth } = await import('./app/lib/philos/auth/bootstrap');
+    const auth = await activateAuth();
+    console.log(`[philos] viewer provider: ${mode} · auth: ${auth}`);
 
     const { runStartupRecovery } = await import('./app/lib/essence/startup-recovery');
     try {

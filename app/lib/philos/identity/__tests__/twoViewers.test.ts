@@ -14,7 +14,8 @@ import { resolveGroupContext } from "../../community/groupContext";
 import { loadPhilosEvents } from "@/app/lib/philos-event-store";
 import { resolveViewerContext, tryResolveViewerContext, setViewerProvider, LOCAL_SINGLE_USER } from "../viewerContext";
 import { SESSION_VIEWER, setSessionReader } from "../sessionViewer";
-import { issueSession, resolveSession, revokeSession, setSessionRepository, type SessionRecord } from "../sessionStore";
+import { issueSession, resolveSession, revokeSession } from "../sessionStore";
+import { InMemorySessionLog, setSessionLog } from "../sessionLog";
 import { providerForMode, resolveViewerMode } from "../viewerMode";
 import { USER_A, USER_B } from "./viewerFixtures";
 
@@ -109,7 +110,7 @@ describe("TWO VIEWERS — authenticated sessions", () => {
      and could not forge a second one if it tried. That is the property being
      tested, so faking it here would test nothing. */
   async function twoSessions() {
-    setSessionRepository(new Map0());
+    setSessionLog(new InMemorySessionLog());
     const a = await issueSession({ viewer_id: "person_roei", subject_id: "person_roei", person_id: "p_you" });
     const b = await issueSession({ viewer_id: "person_bet", subject_id: "person_bet", person_id: "p_bet" });
     return { a, b };
@@ -148,7 +149,7 @@ describe("TWO VIEWERS — authenticated sessions", () => {
   });
 
   it("an EXPIRED token resolves to nobody", async () => {
-    setSessionRepository(new Map0());
+    setSessionLog(new InMemorySessionLog());
     const t = await issueSession({ viewer_id: "x", subject_id: "x", person_id: "px" }, { ttlMs: 1000, now: 0 });
     expect(await resolveSession(t, 999)).not.toBeNull();
     expect(await resolveSession(t, 1000)).toBeNull();
@@ -196,15 +197,6 @@ describe("TWO VIEWERS — authenticated sessions", () => {
   });
 });
 
-/** A SessionRepository backed by a fresh Map — one per test, so no test can
- *  see a token another test issued. */
-class Map0 {
-  private rows = new Map<string, SessionRecord>();
-  async get(t: string) { return this.rows.get(t) ?? null; }
-  async put(t: string, r: SessionRecord) { this.rows.set(t, r); }
-  async delete(t: string) { this.rows.delete(t); }
-  async tokens() { return [...this.rows.keys()]; }
-}
 
 /* ──────────────────────────────────────────────────────────────────────────
    USER #2 READINESS — through the ACTUAL runtime provider.
@@ -223,7 +215,7 @@ describe("USER #2 READINESS — live provider, no fixture viewer passed", () => 
   }
 
   it("A logs in and gets A's scoped SOCIAL; B logs in and gets a separate empty one", async () => {
-    setSessionRepository(new Map0());
+    setSessionLog(new InMemorySessionLog());
     const tokenA = await sessionFor({ viewer_id: "person_roei", subject_id: "person_roei", person_id: "p_you" });
     const tokenB = await sessionFor({ viewer_id: "person_bet", subject_id: "person_bet", person_id: "p_bet" });
     setViewerProvider(SESSION_VIEWER);
@@ -248,7 +240,7 @@ describe("USER #2 READINESS — live provider, no fixture viewer passed", () => 
   });
 
   it("with no session, the loader is never reached — there is no viewer to load for", async () => {
-    setSessionRepository(new Map0());
+    setSessionLog(new InMemorySessionLog());
     setViewerProvider(SESSION_VIEWER);
     try {
       setSessionReader(async () => undefined);
@@ -258,7 +250,7 @@ describe("USER #2 READINESS — live provider, no fixture viewer passed", () => 
   });
 
   it("DEMO is absent from personal analysis for a session-resolved viewer", async () => {
-    setSessionRepository(new Map0());
+    setSessionLog(new InMemorySessionLog());
     const t = await sessionFor({ viewer_id: "person_roei", subject_id: "person_roei", person_id: "p_you" });
     setViewerProvider(SESSION_VIEWER);
     try {

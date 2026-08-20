@@ -88,6 +88,10 @@ export const LOCAL_SINGLE_USER: ViewerProvider = {
  * including inside client boundaries. A static import would drag a
  * server-only API across that line.
  */
+/** Exposed so a test can assert the DEFAULT is the session-mode provider —
+ *  i.e. that a runtime whose boot hook never ran still fails closed. */
+export const MODE_PROVIDER_KIND = "SESSION" as const;
+
 const MODE_PROVIDER: ViewerProvider = {
   kind: "SESSION",
   async resolve() {

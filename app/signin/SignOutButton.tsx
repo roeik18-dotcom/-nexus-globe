@@ -1,4 +1,3 @@
-import { devSignInEnabled } from "@/app/lib/philos/identity/devIdentities";
 import { resolveViewerMode } from "@/app/lib/philos/identity/viewerMode";
 import { COLOR, FS, RADIUS, TYPE } from "@/app/lib/philos/shell/designTokens";
 import { signOut } from "./actions";
@@ -12,7 +11,7 @@ export default async function SignOutButton() {
   if (resolveViewerMode() !== "SESSION") return null;
   return (
     <form action={signOut} style={{ display: "inline-flex" }}>
-      <button type="submit" style={S.button} title={devSignInEnabled() ? "כניסת פיתוח פעילה" : undefined}>
+      <button type="submit" style={S.button}>
         יציאה
       </button>
     </form>
