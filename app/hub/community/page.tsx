@@ -1,4 +1,5 @@
 import path from "path";
+import { resolveViewerContextSemantics } from "@/app/lib/philos/context/resolveViewerContextSemantics";
 import SignOutButton from "@/app/signin/SignOutButton";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import { connection } from "next/server";
@@ -482,6 +483,10 @@ export default async function CommunityPage({
     };
   });
 
+  /* THE ONE semantic context. Resolved from viewer-scoped evidence, not from
+     this page — see `resolveViewerContextSemantics`. */
+  const semanticContext = await resolveViewerContextSemantics(socialViewer);
+
   return (
     // One page-level surface: the blocks below each paint their own
     // background, so the area under the last one fell through to the white
@@ -490,12 +495,11 @@ export default async function CommunityPage({
       <div style={{ padding: "12px 20px 0", background: "#0b0f1a" }}>
         <SystemShell
           signOut={<SignOutButton />}
+          viewerContext={semanticContext}
           surface="community"
-          personContext={personContext}
           purpose="עולם הערכים והקבוצות של PHILOS — לא קבוצה אחת בלבד."
           community={showingGroupDetail && terminalGroup ? { group_id: terminalGroup.group_id, label: terminalGroup.name, provenance: terminalProvenance } : undefined}
           subject={personRef.person_id}
-          valueLabel={showingGroupDetail && terminalGroup ? terminalGroup.central_value : undefined}
           identityLink={identityLink}
         />
       </div>

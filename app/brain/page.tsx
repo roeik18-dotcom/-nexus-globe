@@ -1,4 +1,5 @@
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
+import { resolveViewerContextSemantics } from "@/app/lib/philos/context/resolveViewerContextSemantics";
 import SignOutButton from "@/app/signin/SignOutButton";
 import { buildViewerLinkRegistry } from "@/app/lib/philos/bridge/viewerLinkRegistry";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
@@ -161,13 +162,17 @@ export default async function BrainPage({
   const ctxRaw = typeof params.ctx === "string" ? params.ctx : undefined;
   const entityContext = await resolveSharedContext(parseSystemContextRef(ctxRaw));
 
+  /* THE ONE semantic context. Resolved from viewer-scoped evidence, not from
+     this page — see `resolveViewerContextSemantics`. */
+  const semanticContext = await resolveViewerContextSemantics(await resolveViewerContext());
+
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#080b13" }}>
       <div style={{ padding: "12px 20px 0", background: "#080b13" }}>
         <SystemShell
           signOut={<SignOutButton />}
+          viewerContext={semanticContext}
           surface="brain"
-          personContext={personContext}
           purpose="אדם אחד, בין מציאות לאפשרות — לולאת Action/Effect/Learning משולבת מרחבית, לא כתוספת בתחתית."
           subject={subject}
           identityLink={identityLink}

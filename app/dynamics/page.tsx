@@ -50,6 +50,7 @@
  * that explicitly, rendered as "UNRESOLVED — no verified relationship".
  */
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
+import { resolveViewerContextSemantics } from "@/app/lib/philos/context/resolveViewerContextSemantics";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import { connection } from "next/server";
 
@@ -155,6 +156,10 @@ export default async function DynamicsPage({
   const params = await searchParams;
   // STEP 1 — the ONE shared identity reference.
   const personRef = resolvePersonRef(await resolveViewerContext(), params.subject);
+  /* THE ONE semantic context — at component scope so every render branch of
+     this surface uses the same result. Resolved server-side and passed into
+     the client component; a client may never resolve context of its own. */
+  const semanticContext = await resolveViewerContextSemantics(await resolveViewerContext());
   // STEP 2 — the frame this screen's readings are relative to (canon §19).
   const personContext = resolvePersonContext({ person: personRef, asOf: systemClock.now() });
   // SAME shared accessor as every other surface.
@@ -254,6 +259,7 @@ export default async function DynamicsPage({
   })();
 
   return <DynamicsView
+      semanticContext={semanticContext}
       viewerSubject={personRef.person_id} personFrameSlot={
       <>
         {personFrame ? <PersonFrameStrip frame={personFrame} compact /> : null}

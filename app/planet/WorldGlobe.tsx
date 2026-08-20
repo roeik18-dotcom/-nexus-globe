@@ -42,6 +42,7 @@ import type { OfferRecord } from "@/app/lib/philos/canon/offerStore";
 import { isEffectVerified } from "@/app/lib/philos/canon/effect";
 import { COLOR, FS, RADIUS, STATUS, TYPE } from "@/app/lib/philos/shell/designTokens";
 import SocialPrimaryStage, { type SocialPrimaryContext } from "@/app/lib/philos/shell/SocialPrimaryStage";
+import type { ResolvedViewerContext } from "@/app/lib/philos/context/resolvedViewerContext";
 import {
   buildContextActions,
   claimedVerifiedColor,
@@ -478,7 +479,7 @@ function starShadows(n: number, seed: number) {
   return out.join(",");
 }
 
-export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry, identityLink, personContext, canonActions, canonEffects, canonNeeds, canonOffers, canonicalSlice, observationStrip, personFrameSlot, bridgeLinks, gate, socialSelection, primaryCtx, viewerSubject }: {
+export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry, identityLink, personContext, canonActions, canonEffects, canonNeeds, canonOffers, canonicalSlice, observationStrip, personFrameSlot, bridgeLinks, gate, socialSelection, primaryCtx, viewerSubject, semanticContext }: {
   nodes: GlobeNode[]; arcs: GlobeArc[]; selected?: SelectedContext; registry?: EntityLink[]; identityLink?: ShellIdentityLink;
   /** STEP 2 — the frame this screen's readings are relative to (canon §19). */
   personContext?: PersonContext;
@@ -525,6 +526,9 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
    *  component used to fall back to `REAL_CURRENT_SUBJECT` when no `?ctx=`
    *  named a subject — a client choosing a person by importing a constant. */
   viewerSubject: string;
+  /** The ONE canonical semantic context, resolved server-side in page.tsx.
+   *  A client component can neither resolve it nor influence it. */
+  semanticContext: ResolvedViewerContext;
   /** Verdict from the network truth gate over every candidate edge. */
   gate?: {
     candidates: number; passed: number; rejected: number;
@@ -778,10 +782,10 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
       >
         <div style={{ pointerEvents: "auto" }}>
         <SystemShell
+          viewerContext={semanticContext}
           surface="globe"
           purpose="Where this exists in the system, and what flows between whom — layout, not geography, until location is real."
           selected={selected}
-          personContext={personContext}
           subject={selected?.status === "found" && selected.subject ? selected.subject : viewerSubject}
           identityLink={identityLink}
         />

@@ -1,4 +1,5 @@
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
+import { resolveViewerContextSemantics } from "@/app/lib/philos/context/resolveViewerContextSemantics";
 import SignOutButton from "@/app/signin/SignOutButton";
 import { buildViewerLinkRegistry } from "@/app/lib/philos/bridge/viewerLinkRegistry";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
@@ -407,6 +408,10 @@ export default async function HubPage({
     asOf: systemClock.now(),
   });
 
+  /* THE ONE semantic context. Resolved from viewer-scoped evidence, not from
+     this page — see `resolveViewerContextSemantics`. */
+  const semanticContext = await resolveViewerContextSemantics(await resolveViewerContext());
+
   return (
     // One page-level surface: the two content blocks below each painted
     // their own background, so the area under them fell through to the
@@ -416,12 +421,11 @@ export default async function HubPage({
       <div style={{ padding: "12px 20px 0" }}>
         <SystemShell
           signOut={<SignOutButton />}
+          viewerContext={semanticContext}
           surface="hub"
-          personContext={personContext}
           observedCount={nowInputs?.core.observed_count}
           purpose="מה חשוב עכשיו, מה השתנה, ולאן ללכת משם."
           subject={resolvedSubject ?? personRef.person_id}
-          valueLabel={hubRealGroup?.central_value}
           identityLink={identityLink}
         />
       </div>

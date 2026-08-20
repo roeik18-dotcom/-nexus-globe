@@ -1,4 +1,5 @@
 import path from "path";
+import { resolveViewerContextSemantics } from "@/app/lib/philos/context/resolveViewerContextSemantics";
 import SignOutButton from "@/app/signin/SignOutButton";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import { readJsonStore } from "@/app/lib/json-store";
@@ -130,6 +131,10 @@ export default async function WorldPage({ searchParams }: {
     audit: <SocialSourceSpinePanel surface="world" />,
   });
 
+  /* THE ONE semantic context. Resolved from viewer-scoped evidence, not from
+     this page — see `resolveViewerContextSemantics`. */
+  const semanticContext = await resolveViewerContextSemantics(viewer);
+
   return (
     <div style={{ background: COLOR.bg, minHeight: "100vh" }}>
       {/* BATCH 4 — `/world` previously mounted no shared shell at all (the
@@ -150,8 +155,8 @@ export default async function WorldPage({ searchParams }: {
       <div style={{ padding: "12px 20px 0", position: "relative", zIndex: 1 }}>
         <SystemShell
           signOut={<SignOutButton />}
+          viewerContext={semanticContext}
           surface="world"
-          personContext={personContext}
           purpose="ארכיטקטורת ייחוס — משימות/פערים/יכולות/ספקים לדוגמה, לא מציאות קנונית נצפית."
           subject={personRef.person_id}
         />

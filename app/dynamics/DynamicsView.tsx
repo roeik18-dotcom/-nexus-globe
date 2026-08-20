@@ -69,6 +69,7 @@ import ObservationReadingPanel from "@/app/lib/philos/shell/ObservationReadingPa
 import GroupOpsPanel from "@/app/lib/philos/shell/GroupOpsPanel";
 import { COLOR, TYPE } from "@/app/lib/philos/shell/designTokens";
 import { isNormalModeSubject } from "@/app/lib/philos/subjectRegistry";
+import type { ResolvedViewerContext } from "@/app/lib/philos/context/resolvedViewerContext";
 
 export type { SelectedContext };
 
@@ -1128,6 +1129,7 @@ const EMPTY_LIFECYCLE_DV: ActionLifecycleSummary = { subject: "", actions: [], c
 const EMPTY_KNOWN_NEEDS_DV: KnownNeedResult = { needs: [], checked: false, reason: "not computed" };
 
 export default function DynamicsView({
+  semanticContext,
   viewerSubject,
   view,
   canon,
@@ -1141,6 +1143,8 @@ export default function DynamicsView({
   domainStates,
   personFrameSlot,
 }: {
+  /** The ONE canonical semantic context, resolved server-side. */
+  semanticContext: ResolvedViewerContext;
   /** The VIEWER's own canon subject, resolved server-side — never a
    *  constant imported by a client component. */
   viewerSubject: string;
@@ -1228,8 +1232,8 @@ export default function DynamicsView({
   return (
     <div style={{ fontFamily: "system-ui", background: "#0b0f1a", color: "#e6ebf5", minHeight: "100vh", padding: 20 }}>
       <SystemShell
+          viewerContext={semanticContext}
         surface="dynamics"
-        personContext={personContext}
         purpose="What changed, when, and what do we know about why — a time/causality view of the system."
         selected={selected}
         subject={selected?.status === "found" && selected.subject ? selected.subject : viewerSubject}

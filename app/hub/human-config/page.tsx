@@ -21,6 +21,7 @@
  * parameter that has never had a real reading recorded.
  */
 import { connection } from "next/server";
+import { resolveViewerContextSemantics } from "@/app/lib/philos/context/resolveViewerContextSemantics";
 import SignOutButton from "@/app/signin/SignOutButton";
 import { loadHumanConfigSource } from "@/app/lib/philos/humanConfig/masterUnitsSource";
 import {
@@ -55,6 +56,9 @@ export default async function HumanConfigPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const viewer = await resolveViewerContext();
+  /* THE ONE semantic context — at component scope so both render branches
+     use the same result. */
+  const semanticContext = await resolveViewerContextSemantics(viewer);
   await connection();
   const params = await searchParams;
   const section = typeof params.section === "string" ? params.section : undefined;
@@ -76,10 +80,11 @@ export default async function HumanConfigPage({
       const evidenceCount = timeline.filter((t) => t.evidence && t.evidence.trim().length > 0).length;
       return { dimension, latest, evidenceCount, changed: timeline.length > 1 };
     });
-    return (
+  return (
       <div style={{ minHeight: "100vh", background: "#0b0f1a" }}>
         <div style={{ padding: "12px 20px 0" }}>
           <SystemShell
+          viewerContext={semanticContext}
           signOut={<SignOutButton />} surface="hub" purpose="Human Config — prototype תצוגה ראשונה" subject={viewer.subject_id} identityLink={identityLink} />
         </div>
         <HumanConfigPrototype subjectId={viewer.subject_id} parameters={parameters} />
@@ -123,6 +128,7 @@ export default async function HumanConfigPage({
     <div style={{ minHeight: "100vh", background: "#0b0f1a" }}>
       <div style={{ padding: "12px 20px 0" }}>
         <SystemShell
+          viewerContext={semanticContext}
           signOut={<SignOutButton />} surface="hub" purpose="Human Config אמיתי — מבנה מקור, לא מצב חי." subject={viewer.subject_id} identityLink={identityLink} />
       </div>
       <div dir="rtl" style={{ padding: "0 20px" }}>

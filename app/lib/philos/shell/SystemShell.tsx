@@ -30,8 +30,8 @@ import Link from "next/link";
 import SocialScaleNav from "./SocialScaleNav";
 
 import type { ReactNode } from "react";
+import type { ContextField, ResolvedViewerContext } from "../context/resolvedViewerContext";
 import { COLOR, FS, PRODUCT_FAMILY_CUE, RADIUS, SPACE, STATUS, TERMINAL, TYPE } from "./designTokens";
-import type { PersonContext } from "../person/personContext";
 
 export interface ShellCommunity {
   group_id: string;
@@ -180,40 +180,43 @@ function StatusPill({ label, value, kind }: { label: string; value: string; kind
  *                     a current project, and inferring one is explicitly
  *                     out of bounds.
  */
-function ContextStrip({ person, domain, value, project, personContext, observedCount, accent }: {
-  person?: string; domain?: string; value?: string; project?: string;
-  personContext?: PersonContext; observedCount?: number; accent: string;
+function ContextStrip({ ctx, accent, observedCount }: {
+  ctx: ResolvedViewerContext; accent: string; observedCount?: number;
 }) {
-  const slots: { label: string; value: string | undefined; title?: string }[] = [
-    { label: "PERSON", value: person },
-    { label: "ACTIVE DOMAIN", value: domain },
-    { label: "VALUE", value: value },
-    { label: "PROJECT", value: project, title: "אין מקור שרושם פרויקט נוכחי — לא נגזר מדומיין, מערך או מקבוצה" },
+  /* Every slot is a ContextField carrying its own epistemic state. The strip
+     performs no reads and makes no decisions — it renders what the one
+     resolver returned, including its reason, which lands in `title` so an
+     UNKNOWN can always explain itself. */
+  const slots: { label: string; field: ContextField }[] = [
+    { label: "ACTIVE DOMAIN", field: ctx.active_domain },
+    { label: "VALUE", field: ctx.personal_value },
+    { label: "PROJECT", field: ctx.project },
   ];
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: SPACE.sm }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        {slots.map((s, i) => (
-          <span key={s.label} style={{ display: "inline-flex", alignItems: "center", gap: 6 }} title={s.title}>
-            {i > 0 ? <span style={{ color: COLOR.textFaint, marginInlineEnd: 4 }}>·</span> : null}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>PERSON</span>
+          <span style={{ fontSize: FS.meta, fontWeight: 600, color: COLOR.text }}>{ctx.subject_id}</span>
+        </span>
+        {slots.map((s) => (
+          <span key={s.label} style={{ display: "inline-flex", alignItems: "center", gap: 6 }} title={s.field.because}>
+            <span style={{ color: COLOR.textFaint, marginInlineEnd: 4 }}>·</span>
             <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>{s.label}</span>
-            <span style={{ fontSize: FS.meta, fontWeight: 600, color: s.value ? COLOR.text : STATUS.unknown.text }}>
-              {s.value ?? "UNKNOWN"}
-            </span>
+            <span style={{
+              fontSize: FS.meta, fontWeight: 600,
+              color: s.field.value ? COLOR.text : STATUS.unknown.text,
+            }}>{s.field.value ?? s.field.status}</span>
           </span>
         ))}
-
-        {/* COVERAGE — the honesty anchor. Canon§6: an Observation measures a
-            CELL, never a person; so how many of the nine cells are actually
-            measured is the single most load-bearing number on the screen. */}
         {observedCount !== undefined ? (
           <span
             style={{
               display: "inline-flex", alignItems: "center", gap: 6, marginInlineStart: 4,
-              padding: "2px 10px", borderRadius: RADIUS.pill,
+              padding: "2px 8px", borderRadius: RADIUS.pill,
               background: `${accent}14`, border: `1px solid ${accent}44`,
             }}
-            title="כמה מתוך 9 תאי המדידה (Domain × Frame) נשאים תצפית אמיתית"
+            title="כמה מתוך 9 תאי המדידה (Domain × Frame) נושאים תצפית אמיתית"
           >
             <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>כיסוי</span>
             <span style={{ fontSize: FS.meta, fontWeight: 800, color: accent, fontFamily: "ui-monospace, monospace", direction: "ltr", unicodeBidi: "isolate" }}>
@@ -224,43 +227,44 @@ function ContextStrip({ person, domain, value, project, personContext, observedC
         ) : null}
       </div>
 
-      {/* FRAME (canon §19: P = P(person, reference_group, context, time)).
-          A Level without a stated reference is not interpretable. Showing the
-          frame as UNKNOWN is honest; omitting it lets a signed difference read
-          as an absolute fact about a person. */}
-      {personContext ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>מסגרת היחוס</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-            <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>REFERENCE</span>
-            <span style={{ fontSize: FS.meta, fontWeight: 600, color: personContext.reference ? COLOR.textDim : STATUS.unknown.text }}>
-              {personContext.reference ?? "UNKNOWN"}
-            </span>
+      {/* FRAME (canon §19). Same resolver, same epistemic state. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>מסגרת היחוס</span>
+        {([["REFERENCE", ctx.reference], ["REFERENCE GROUP", ctx.reference_group]] as const).map(([label, field], i) => (
+          <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 5 }} title={field.because}>
+            {i > 0 ? <span style={{ color: COLOR.textFaint }}>·</span> : null}
+            <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>{label}</span>
+            <span style={{
+              fontSize: FS.meta, fontWeight: 600,
+              color: field.value ? COLOR.textDim : STATUS.unknown.text,
+            }}>{field.value ?? field.status}</span>
           </span>
-          <span style={{ color: COLOR.textFaint }}>·</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }} title="קנון §20/§21 — קבוצת יחוס חייבת להיות מפורשת וניתנת לערעור; אסור להמציא ברירת מחדל">
-            <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>REFERENCE GROUP</span>
-            <span style={{ fontSize: FS.meta, fontWeight: 700, color: STATUS.unknown.text }}>
-              {personContext.reference_group ?? "UNKNOWN"}
-            </span>
-            <span style={{ fontSize: FS.tag, color: COLOR.textFaint }}>אין מאגר — לא מומצאת</span>
+        ))}
+        {/* A value held by a group the viewer belongs to. Rendered BESIDE the
+            person's own value and never inside it — the whole point of the
+            split. */}
+        {ctx.group_values.map((g) => (
+          <span key={g.group_id} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
+                title={`ערך שהקבוצה מחזיקה · הוצהר על ידי ${g.declared_by} · ${g.declaration_status}`}>
+            <span style={{ color: COLOR.textFaint }}>·</span>
+            <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>GROUP VALUE</span>
+            <span style={{ fontSize: FS.meta, fontWeight: 600, color: COLOR.textDim }}>{g.label}</span>
           </span>
-        </div>
-      ) : null}
+        ))}
+      </div>
     </div>
   );
 }
 
 export function SystemShell({
+  viewerContext,
   signOut,
   surface,
   purpose,
   selected,
   community,
   subject,
-  personContext,
   observedCount,
-  valueLabel,
   identityLink,
 }: {
   surface: ShellSurfaceKey;
@@ -280,7 +284,6 @@ export function SystemShell({
    *  `P = P(person, reference_group, context, time)`). `undefined` = the page
    *  did not resolve one. A stated UNKNOWN frame is honest; an absent frame
    *  reads as an absolute fact, which it never is. */
-  personContext?: PersonContext;
   /** How many of the nine canon cells have a real Observation
    *  (`buildMeasuredStateSpace().observed_count`). The honesty anchor: it is
    *  what stops a partially-measured space from reading as a whole person.
@@ -290,11 +293,13 @@ export function SystemShell({
    *  `central_value`, for instance) for the context strip's VALUE slot.
    *  `undefined` renders UNKNOWN — never inferred from the presence of a
    *  config. */
-  valueLabel?: string;
   /** Real, checked (`resolveRealPersonCommunityLink`) — the ONE shared
    *  insertion point that propagates the Person↔Community-Member link
    *  status across every surface that mounts this shell. */
   identityLink?: ShellIdentityLink;
+  /** The ONE canonical semantic context. Replaces `valueLabel`,
+   *  `personContext` and the `selected.domain` read. */
+  viewerContext: ResolvedViewerContext;
   /** Server-rendered sign-out control, passed as a slot — see the note at the
    *  render site for why this cannot be an import. */
   signOut?: ReactNode;
@@ -416,15 +421,17 @@ export function SystemShell({
 
       <p style={{ ...TYPE.body, color: COLOR.textDim, margin: `0 0 ${SPACE.sm}px`, maxWidth: 640 }}>{purpose}</p>
 
-      <ContextStrip
-        person={subjectValue}
-        domain={selected?.status === "found" ? selected.domain : undefined}
-        value={valueLabel}
-        project={undefined}
-        personContext={personContext}
-        observedCount={observedCount}
-        accent={terminal.accent}
-      />
+      {/* ONE CANONICAL CONTEXT. The strip used to be handed four separately
+          decided props — `valueLabel` from whatever the page had lying
+          around, `domain` from `selected.domain` (a property of a CLICKED
+          RECORD, i.e. navigation state), and `personContext` from a resolver
+          six of seven pages passed nothing to. Three different answers for
+          one session followed directly from that.
+
+          It now receives the resolver's single result. There is no
+          `valueLabel` prop any more, and no `selected.domain` read, because a
+          prop a page can fill is a decision a page can make. */}
+      <ContextStrip ctx={viewerContext} accent={terminal.accent} observedCount={observedCount} />
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: SPACE.sm }}>
         {selected?.status === "found" ? (

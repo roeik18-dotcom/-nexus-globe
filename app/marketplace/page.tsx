@@ -1,4 +1,5 @@
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
+import { resolveViewerContextSemantics } from "@/app/lib/philos/context/resolveViewerContextSemantics";
 import SignOutButton from "@/app/signin/SignOutButton";
 import { buildViewerLinkRegistry } from "@/app/lib/philos/bridge/viewerLinkRegistry";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
@@ -127,6 +128,9 @@ export default async function MarketplacePage({
   const params = await searchParams;
   // STEP 1 — the ONE shared identity reference.
   const personRef = resolvePersonRef(await resolveViewerContext(), params.subject);
+  /* THE ONE semantic context — hoisted to the component scope so BOTH render
+     branches use the same result rather than one branch resolving its own. */
+  const semanticContext = await resolveViewerContextSemantics(await resolveViewerContext());
   // STEP 2 — the frame this screen's readings are relative to (canon §19).
   const personContext = resolvePersonContext({ person: personRef, asOf: systemClock.now() });
   // SAME shared accessor as Hub/Brain — this surface resolves no
@@ -163,7 +167,7 @@ export default async function MarketplacePage({
       .map((n) => ({ need_id: n.need.need_id, desired_change: n.need.desired_change, domain: n.need.scope.kind === "domain" ? n.need.scope.domain : "—", subject: n.need.subject }));
     const myOffers = offers.filter((o) => o.offer.source === personRef.person_id)
       .map((o) => ({ offer_id: o.offer.offer_id, available_resource: o.offer.available_resource, resource_type: o.offer.resource_type, amount_or_capacity: o.offer.amount_or_capacity, source: o.offer.source }));
-    return (
+  return (
       <MarketplacePrototype
         needs={myNeeds} offers={myOffers} actionsCount={actions.length} effectsCount={effects.length}
         identityLinked={identityLink.status === "VERIFIED_SAME_PERSON"}
@@ -181,12 +185,11 @@ export default async function MarketplacePage({
       <div style={{ padding: "20px 20px 0", background: "#0b0f1a" }}>
         <SystemShell
           signOut={<SignOutButton />}
+          viewerContext={semanticContext}
           surface="marketplace"
-          personContext={personContext}
           purpose="מה אני צריך? מי יכול לעזור? למה אפשר או אי אפשר לפעול כרגע?"
           selected={selected}
           subject={personRef.person_id}
-          valueLabel={philosGroupsRealView?.central_value}
           identityLink={identityLink}
         />
       </div>
