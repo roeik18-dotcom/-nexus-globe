@@ -449,7 +449,7 @@ function starShadows(n: number, seed: number) {
   return out.join(",");
 }
 
-export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry, identityLink, personContext, canonActions, canonEffects, canonNeeds, canonOffers, canonicalSlice, observationStrip, personFrameSlot, bridgeLinks }: {
+export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry, identityLink, personContext, canonActions, canonEffects, canonNeeds, canonOffers, canonicalSlice, observationStrip, personFrameSlot, bridgeLinks, gate }: {
   nodes: GlobeNode[]; arcs: GlobeArc[]; selected?: SelectedContext; registry?: EntityLink[]; identityLink?: ShellIdentityLink;
   /** STEP 2 — the frame this screen's readings are relative to (canon §19). */
   personContext?: PersonContext;
@@ -474,6 +474,13 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
   personFrameSlot?: ReactNode;
   /** EntityLink rows surfaced beside the drawn arcs — provenance preserved. */
   bridgeLinks?: { relation: string; link_id: string; provenance: "REAL" | "DEMO"; derived?: boolean }[];
+  /** Verdict from the network truth gate over every candidate edge. */
+  gate?: {
+    candidates: number; passed: number; rejected: number;
+    real: number; derived: number; demo: number;
+    verified: number; claimed: number; unknown: number;
+    reasons: { reason: string; count: number }[];
+  };
   canonicalSlice?: ReactNode;
   /** 7-terminal propagation — a compact, always-VISIBLE strip for the
    *  latest real Observation's value/group relation, server-rendered in
@@ -742,7 +749,7 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
             <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>
               קשרים מאומתים · VERIFIED RELATIONS ({eventArcs.length} + {(bridgeLinks ?? []).length} גשר)
             </summary>
-            <VerifiedRelationInventory arcs={eventArcs} bridgeLinks={bridgeLinks ?? []} />
+            <VerifiedRelationInventory arcs={eventArcs} bridgeLinks={bridgeLinks ?? []} gate={gate} />
           </details>
           <details>
             <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>

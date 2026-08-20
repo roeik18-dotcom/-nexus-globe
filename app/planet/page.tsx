@@ -54,6 +54,9 @@ import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePane
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
 import SocialZoomStrip from "@/app/lib/philos/shell/SocialZoomStrip";
+import SocialChronologyPanel from "@/app/lib/philos/shell/SocialChronologyPanel";
+import { runNetworkTruthGate, type EdgeCandidate } from "@/app/lib/philos/social/networkTruthGate";
+import { loadSocialChronology } from "@/app/lib/philos/social/loadSocialChronology";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import CanonicalSlicePanel from "@/app/hub/CanonicalSlicePanel";
@@ -63,6 +66,7 @@ import { deriveObservationReading } from "@/app/lib/philos/canon/observationRead
 import { RAW_FAMILIES, SUBVALUES } from "@/app/lib/philos/community/valueUniverse328";
 import { resolveValueGroups } from "@/app/lib/philos/valueSystem/groupResolver";
 import { linksByRelation } from "@/app/lib/philos/bridge/entityLink";
+import { VERIFIED_STATUSES } from "@/app/lib/philos/events";
 import { projectValueGroup } from "@/app/lib/philos/projectValueGroup";
 import WorldGlobe from "./WorldGlobe";
 
@@ -87,6 +91,7 @@ export default async function PlanetPage({
   // needed here. Passed to the inspector drawer only — the sphere's own
   // node population and layout (`nodes`/`arcs` above) are unchanged.
   const needGroupDeclarations = await loadNeedGroupLinks().catch(() => []);
+  const chronology = await loadSocialChronology().catch(() => []);
   const canonActions = await loadActions().catch(() => []);
   const canonEffects = await loadEffects().catch(() => []);
   const canonNeeds = await loadNeeds().catch(() => []);
@@ -213,6 +218,53 @@ export default async function PlanetPage({
       arcs={arcs}
       selected={selected}
       registry={registry}
+      gate={(() => {
+        // EVERY candidate edge — drawn arcs and bridge links alike — is run
+        // through the gate. Nothing reaches the sphere on the strength of
+        // "it was already there".
+        const candidates: EdgeCandidate[] = [
+          ...arcs.map((a) => ({
+            from_entity_id: a.source_id,
+            to_entity_id: a.target_id,
+            relation_type: a.relation,
+            source_record_id: a.event_id,
+            provenance: "REAL" as const,
+            // Status is read from the record, never assumed. VERIFIED_STATUSES
+            // is the codebase's own definition of verified.
+            epistemic_status: (a.verification_status && VERIFIED_STATUSES.includes(a.verification_status)
+              ? "VERIFIED" : a.verification_status ? "CLAIMED" : "UNKNOWN") as "VERIFIED" | "CLAIMED" | "UNKNOWN",
+            // A membership arc is backed by exactly one thing: the membership.
+            backed_only_by_membership: a.relation === "member.joined",
+          })),
+          ...registry
+            .filter((l) => l.relation === "ACTION_AFFECTS_COMMUNITY" || l.relation === "EFFECT_AFFECTS_COMMUNITY" || l.relation === "COMMUNITY_HAS_NEED")
+            .map((l) => ({
+              from_entity_id: l.source.canonical_id,
+              to_entity_id: l.target.canonical_id,
+              relation_type: l.relation,
+              source_record_id: l.link_id,
+              provenance: (l.relation === "EFFECT_AFFECTS_COMMUNITY" ? "DERIVED_REAL" : l.provenance) as EdgeCandidate["provenance"],
+              epistemic_status: "CLAIMED" as const,
+              derivation_steps: l.relation === "EFFECT_AFFECTS_COMMUNITY"
+                ? [{ rule: "Effect.action_ref", backed_by: l.link_id },
+                   { rule: "ACTION_AFFECTS_COMMUNITY", backed_by: l.link_id }]
+                : undefined,
+            })),
+        ];
+        const rep = runNetworkTruthGate(candidates);
+        return {
+          candidates: rep.candidates,
+          passed: rep.passed.length,
+          rejected: rep.rejected.length,
+          real: rep.byProvenance.REAL,
+          derived: rep.byProvenance.DERIVED_REAL,
+          demo: rep.byProvenance.DEMO,
+          verified: rep.byStatus.VERIFIED,
+          claimed: rep.byStatus.CLAIMED,
+          unknown: rep.byStatus.UNKNOWN,
+          reasons: Object.entries(rep.byReason).map(([reason, count]) => ({ reason, count })),
+        };
+      })()}
       bridgeLinks={registry
         .filter((l) => l.relation === "ACTION_AFFECTS_COMMUNITY" || l.relation === "EFFECT_AFFECTS_COMMUNITY" || l.relation === "COMMUNITY_HAS_NEED")
         .map((l) => ({
@@ -237,6 +289,7 @@ export default async function PlanetPage({
               content is the sphere itself. The nav capsule already shows Globe
               as the active family member above the fold. */}
           <SocialZoomStrip surface="globe" />
+          <SocialChronologyPanel entries={chronology} surface="globe" limit={6} />
           {/* Globe is L4 of the shared social spine — same source model as
               Community (L3) and World (L5). Server-rendered and passed as a
               slot for the same client-boundary reason as the frame. */}

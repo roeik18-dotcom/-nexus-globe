@@ -21,6 +21,8 @@ import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePane
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
 import SocialZoomStrip from "@/app/lib/philos/shell/SocialZoomStrip";
+import SocialChronologyPanel from "@/app/lib/philos/shell/SocialChronologyPanel";
+import { loadSocialChronology } from "@/app/lib/philos/social/loadSocialChronology";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import CanonicalSlicePanel from "@/app/hub/CanonicalSlicePanel";
@@ -59,6 +61,7 @@ export default async function WorldPage() {
   // B6 established, reused here (World shares the exact same PUDM Value
   // dataset with Marketplace).
   const worldPhilosEvents = await loadPhilosEvents();
+  const chronology = await loadSocialChronology().catch(() => []);
   const worldToday = todayIn(systemClock);
   const worldRealGroup = projectValueGroup(worldPhilosEvents, COMMUNITY_GROUP_ID, worldToday);
   const worldDemoViews = DEMO_COMMUNITIES
@@ -119,6 +122,7 @@ export default async function WorldPage() {
             </details>
           </div>
         ) : null}
+        <SocialChronologyPanel entries={chronology} surface="world" />
         <SocialValueSpinePanel surface="world" />
         {/* No store records a verified EXTERNAL/system event, so both roles are
             honestly UNKNOWN rather than 0 — nothing was checked and found empty. */}

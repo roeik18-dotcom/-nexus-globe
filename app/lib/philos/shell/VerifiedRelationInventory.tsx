@@ -21,6 +21,7 @@
  * confidence number and no aggregate — a count of edges is a count of records,
  * nothing more.
  */
+import { VERIFIED_STATUSES } from "../events";
 import { COLOR, COLOR_ROLE, RADIUS, SPACE, TYPE } from "./designTokens";
 
 export interface RelationArc {
@@ -39,7 +40,17 @@ export interface BridgeLinkRow {
 }
 
 export default function VerifiedRelationInventory(
-  { arcs, bridgeLinks = [] }: { arcs: RelationArc[]; bridgeLinks?: BridgeLinkRow[] },
+  { arcs, bridgeLinks = [], gate }: {
+    arcs: RelationArc[];
+    bridgeLinks?: BridgeLinkRow[];
+    /** Verdict from `networkTruthGate` over every candidate edge. */
+    gate?: {
+      candidates: number; passed: number; rejected: number;
+      real: number; derived: number; demo: number;
+      verified: number; claimed: number; unknown: number;
+      reasons: { reason: string; count: number }[];
+    };
+  },
 ) {
   const byType = new Map<string, RelationArc[]>();
   for (const a of arcs) {
@@ -57,7 +68,13 @@ export default function VerifiedRelationInventory(
       </div>
 
       {rows.map(([type, list]) => {
-        const verified = list.filter((a) => a.verification_status === "verified").length;
+        // Must test against VERIFIED_STATUSES, the codebase's own definition
+        // ("community_verified" / "external_verified"). No status is literally
+        // named "verified", so an equality test against that string labels
+        // every arc CLAIMED whether or not it is verified.
+        const verified = list.filter(
+          (a) => !!a.verification_status && (VERIFIED_STATUSES as readonly string[]).includes(a.verification_status),
+        ).length;
         return (
           <div key={type} style={S.row}>
             <span style={S.type}>{type}</span>
@@ -72,6 +89,31 @@ export default function VerifiedRelationInventory(
       })}
 
       {rows.length === 0 ? <div style={S.empty}>אין קשת מתועדת — לא מומצאת</div> : null}
+
+      {/* THE GATE'S OWN VERDICT. Every candidate ran through
+          `networkTruthGate`; this reports how many were drawn and how many
+          were refused, by reason. A refusal that leaves no trace is
+          indistinguishable from missing data, so refusals are shown. */}
+      {gate ? (
+        <>
+          <div style={S.sub}>שער אמת רשתי · NETWORK TRUTH GATE</div>
+          <div style={S.gateRow}>
+            <span style={S.gateStat}>{gate.candidates} מועמדים</span>
+            <span style={{ ...S.gateStat, color: COLOR_ROLE.green }}>{gate.passed} עברו</span>
+            <span style={{ ...S.gateStat, color: gate.rejected > 0 ? "#fbbf24" : COLOR.textFaint }}>{gate.rejected} נדחו</span>
+            <span style={S.gateStat}>REAL {gate.real} · DERIVED {gate.derived} · DEMO {gate.demo}</span>
+            <span style={S.gateStat}>
+              VERIFIED {gate.verified} · CLAIMED {gate.claimed} · UNKNOWN {gate.unknown}
+            </span>
+          </div>
+          {gate.reasons.map((r) => (
+            <div key={r.reason} style={S.gateReason}>
+              <span style={S.reasonName}>{r.reason}</span>
+              <span style={S.n}>{r.count}</span>
+            </div>
+          ))}
+        </>
+      ) : null}
 
       {/* BRIDGE LAYER — relations that exist as EntityLink records rather than
           as drawn arcs. Kept in a separate block, and each row states its own
@@ -115,6 +157,10 @@ const S: Record<string, React.CSSProperties> = {
   n: { fontSize: 11, fontWeight: 700, color: COLOR.text, minWidth: 18 },
   badge: { ...TYPE.micro, fontSize: 7.5, letterSpacing: 0.8 },
   ids: { fontSize: 8, fontFamily: "ui-monospace, monospace", color: COLOR.textFaint, marginInlineStart: "auto" },
+  gateRow: { display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", padding: "2px 0", fontSize: 9.5, color: COLOR.textDim },
+  gateStat: { ...TYPE.micro, fontSize: 8.5 },
+  gateReason: { display: "flex", alignItems: "baseline", gap: 6, fontSize: 8.5, color: "#fbbf24", padding: "1px 0" },
+  reasonName: { fontFamily: "ui-monospace, monospace", fontSize: 8 },
   sub: { ...TYPE.micro, fontSize: 8, color: COLOR.textFaint, margin: "6px 0 2px", borderTop: `1px solid ${COLOR.border}`, paddingTop: 4 },
   derived: { ...TYPE.micro, fontSize: 7, letterSpacing: 0.6, color: COLOR.textFaint, border: `1px solid ${COLOR.border}`, borderRadius: 3, padding: "0 3px" },
   empty: { fontSize: 10, color: COLOR.textFaint, fontStyle: "italic", padding: "3px 0" },

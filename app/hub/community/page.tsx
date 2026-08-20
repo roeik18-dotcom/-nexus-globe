@@ -32,6 +32,8 @@ import { findNeedsForSubject } from "@/app/lib/philos/canon/needStoreAccessor";
 import { findOffersForSource } from "@/app/lib/philos/canon/offerStoreAccessor";
 import { resolvePersonRef } from "@/app/lib/philos/person/personRef";
 import { loadNeedGroupLinks } from "@/app/lib/philos/community/needGroupLinkStoreAccessor";
+import { loadSocialChronology } from "@/app/lib/philos/social/loadSocialChronology";
+import SocialChronologyPanel from "@/app/lib/philos/shell/SocialChronologyPanel";
 import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
 import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePanel";
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
@@ -117,6 +119,7 @@ export default async function CommunityPage({
   }
 
   const needGroupDeclarations = await loadNeedGroupLinks().catch(() => []);
+  const chronology = await loadSocialChronology().catch(() => []);
   const bridgeLinks = buildDefaultLinkRegistry(events, today, undefined, {
     needGroupDeclarations: needGroupDeclarations.map((d) => ({
       need_id: d.need_id, group_id: d.group_id, link_id: d.link_id, created_at: d.created_at,
@@ -480,6 +483,7 @@ export default async function CommunityPage({
                 && g.view.members.some((m) => m.person_id === identityLink.community_member_id)).length
             : 0}
         />
+        <SocialChronologyPanel entries={chronology} surface="community" />
         <SocialRoleStrip
           surface="community"
           counts={{
