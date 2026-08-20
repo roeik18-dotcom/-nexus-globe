@@ -50,6 +50,8 @@ export interface ValueGroupCardData {
   /** Canon Need/Offer counts for the identity-linked subject — only
    *  attached to the REAL group; `null` = no honest way to scope them. */
   linkedSubjectNeeds: number | null;
+  /** Needs attached to THIS group by COMMUNITY_HAS_NEED — explicit only. */
+  groupNeedLinks: number;
   linkedSubjectOffers: number | null;
   /** Person↔group relations from the ONE shared Value Group resolver
    *  (`valueSystem/groupResolver.ts`) — real records only, membership
@@ -144,9 +146,19 @@ function GroupCard({ data }: { data: ValueGroupCardData }) {
         <Vital n={verified.length} label="מאומת" accent={verified.length > 0} />
       </div>
 
-      <FieldRow label="NEEDS" provenance={data.linkedSubjectNeeds !== null ? "CANON" : "UNKNOWN"}
-        value={data.linkedSubjectNeeds !== null ? `${data.linkedSubjectNeeds} Need פתוח` : "UNKNOWN"}
-        meta={data.linkedSubjectNeeds !== null ? "רשומות קנוניות של האדם המקושר — אין שיוך Need↔קבוצה בסכימה" : "אין קישור קנוני בין Need לקבוצה זו"}
+      {/* Two DIFFERENT facts, never merged: Needs the linked subject owns, and
+          Needs actually attached to THIS group by an explicit write or
+          declaration. The old copy claimed no Need↔group attachment exists in
+          the schema — true when written, false since the bridge layer, and it
+          contradicted the flow rail in the same viewport. It now reads the
+          real link count. */}
+      <FieldRow label="NEEDS" provenance={data.groupNeedLinks > 0 ? "CANON" : data.linkedSubjectNeeds !== null ? "CANON" : "UNKNOWN"}
+        value={data.groupNeedLinks > 0
+          ? `${data.groupNeedLinks} Need משויך לקבוצה`
+          : data.linkedSubjectNeeds !== null ? `${data.linkedSubjectNeeds} Need של האדם · 0 משויכים לקבוצה` : "UNKNOWN"}
+        meta={data.groupNeedLinks > 0
+          ? "COMMUNITY_HAS_NEED — שיוך מפורש (כתיבה או הצהרה), לא הסקה"
+          : data.linkedSubjectNeeds !== null ? "רשומות קנוניות של האדם המקושר — אף אחת לא שויכה לקבוצה הזאת" : "אין קישור קנוני בין Need לקבוצה זו"}
         italic={data.linkedSubjectNeeds === null} />
 
       <FieldRow label="OFFERS" provenance={data.linkedSubjectOffers !== null ? "CANON" : "UNKNOWN"}

@@ -53,7 +53,7 @@ import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
 import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePanel";
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
-import { projectSocialSystem } from "@/app/lib/philos/social/socialSystemProjection";
+import { loadSocialSystem } from "@/app/lib/philos/social/loadSocialSystem";
 import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection";
 import { ABSENCE_TEXT } from "@/app/lib/philos/social/socialSystemProjection";
 import { roleTouchOf } from "@/app/lib/philos/social/roleTouch";
@@ -110,33 +110,11 @@ export default async function PlanetPage({
     loadOffers().catch(() => []),
   ]);
 
-  // The chronology is built from the records ALREADY loaded above rather than
-  // by `loadSocialChronology()`, which would re-read needs, offers, actions
-  // and effects a second time. Same projection, same result, four fewer store
-  // reads per request.
-  const chronology = buildSocialChronology({
-    events,
-    needs: canonNeeds.map((n) => ({
-      need_id: n.need.need_id, desired_change: n.need.desired_change,
-      recorded_at: n.recorded_at, origin_group_id: n.origin_group_id,
-    })),
-    offers: canonOffers.map((o) => ({
-      offer_id: o.offer.offer_id, available_resource: o.offer.available_resource, recorded_at: o.recorded_at,
-    })),
-    actions: canonActions.map((a) => ({
-      action_id: a.action.action_id, inputs: a.action.inputs, recorded_at: a.recorded_at,
-    })),
-    effects: canonEffects.map((e) => ({
-      effect_id: e.effect.effect_id, action_ref: e.effect.action_ref,
-      verified: isEffectVerified(e.effect), recorded_at: e.recorded_at,
-    })),
-    observations: [],
-  });
 
-  const socialObjects = projectSocialSystem({
-    chronology,
-    needGroups: new Map(needGroupDeclarations.map((d) => [d.need_id, d.group_id] as const)),
-  });
+  // ONE authority, same as Community and World.
+  const social = await loadSocialSystem();
+  const chronology = social.chronology;
+  const socialObjects = social.objects;
 
   // Effects are loaded BEFORE the registry so EFFECT_AFFECTS_COMMUNITY can be
   // derived from (existing ACTION_AFFECTS_COMMUNITY link) + Effect.action_ref.
@@ -355,15 +333,9 @@ export default async function PlanetPage({
               relations: arcs.length,
               meaning: nodes.filter((n) => n.type === "value").length,
             }}
-            flow={buildSocialFlow({
-              contradictions: 110, emergentValues: 4,
-              personalValues: null, groupValues: null,
+            flow={social.flow({
               valueGroups: nodes.filter((n) => n.type === "value_group").length || null,
               memberships: arcs.filter((a) => a.relation === "member.joined").length || null,
-              needs: canonNeeds.length || null,
-              actions: canonActions.length || null,
-              effects: canonEffects.length || null,
-              evidence: canonEffects.filter((e) => !!e.effect.verified_outcome).length || null,
             })}
             chronology={chronology}
             objects={socialObjects}

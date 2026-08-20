@@ -38,7 +38,7 @@ import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
 import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePanel";
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
-import { projectSocialSystem } from "@/app/lib/philos/social/socialSystemProjection";
+import { loadSocialSystem } from "@/app/lib/philos/social/loadSocialSystem";
 import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection";
 import { buildSocialFlow } from "@/app/lib/philos/social/socialFlowStages";
 import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
@@ -122,20 +122,14 @@ export default async function CommunityPage({
     effects = [];
   }
 
-  const needGroupDeclarations = await loadNeedGroupLinks().catch(() => []);
-  const chronology = await loadSocialChronology().catch(() => []);
-  // ONE projection, shared by all three scales. Need->group comes only from an
-  // explicit write or an explicit declaration; never from text or membership.
-  const needGroups = new Map<string, string>(
-    needGroupDeclarations.map((d) => [d.need_id, d.group_id] as const),
-  );
-  const socialObjects = projectSocialSystem({ chronology, needGroups });
+  // ONE authority for every social fact this page shows. The registry used to
+  // be built here WITHOUT needs or actions, so it produced no real links and
+  // the group card contradicted the flow rail in the same viewport.
+  const social = await loadSocialSystem();
+  const chronology = social.chronology;
+  const socialObjects = social.objects;
+  const bridgeLinks = social.bridgeLinks;
   const socialSelection = resolveSocialSelection(params.sel, socialObjects);
-  const bridgeLinks = buildDefaultLinkRegistry(events, today, undefined, {
-    needGroupDeclarations: needGroupDeclarations.map((d) => ({
-      need_id: d.need_id, group_id: d.group_id, link_id: d.link_id, created_at: d.created_at,
-    })),
-  });
   const identityLink = await resolveShellIdentityLink();
 
   const activityFeed = group ? buildActivityFeed(events, GROUP_ID, 15) : [];
@@ -149,9 +143,10 @@ export default async function CommunityPage({
     const linked = identityLink.status === "VERIFIED_SAME_PERSON" ? await findNeedsForSubject(identityLink.community_member_id) : [];
     realNeedsCount = new Set([...own, ...linked].map((n) => n.need.need_id)).size;
 
-    const declaredIds = new Set(needGroupDeclarations.map((d) => d.need_id));
+    // "Ungrouped" is decided by the ONE map that knows both sources: an
+    // origin group written at creation, and an explicit later declaration.
     declarableNeeds = own
-      .filter((n) => !n.origin_group_id && !declaredIds.has(n.need.need_id))
+      .filter((n) => !social.needGroups.has(n.need.need_id))
       .map((n) => ({ need_id: n.need.need_id, desired_change: n.need.desired_change }));
   } catch {
     realNeedsCount = 0;
@@ -437,6 +432,9 @@ export default async function CommunityPage({
       // Canon Needs/Offers are subject-owned with no group key — honestly
       // attachable only to the REAL group via the verified identity link.
       linkedSubjectNeeds: provenance === "REAL" && identityLink.status === "VERIFIED_SAME_PERSON" ? realNeedsCount : null,
+      // From the ONE registry, same source the flow rail reads.
+      groupNeedLinks: linksByRelation(bridgeLinks, "COMMUNITY_HAS_NEED")
+        .filter((l) => l.source.canonical_id === view.group_id || l.target.canonical_id === view.group_id).length,
       linkedSubjectOffers: provenance === "REAL" && identityLink.status === "VERIFIED_SAME_PERSON" ? realOffersCount : null,
       resolvedRelations: boardResolution.groups.find((g) => g.group_id === view.group_id)?.subject_relations ?? [],
       observationState: boardResolution.groups.find((g) => g.group_id === view.group_id)?.observation_state ?? "UNRESOLVED",
@@ -487,21 +485,12 @@ export default async function CommunityPage({
               .reduce((n, g) => n + g.view.members.length + g.resolvedRelations.length, 0),
             meaning: groupCards.filter((g) => g.provenance === "REAL" && g.leadingFamily).length,
           }}
-          flow={buildSocialFlow({
-            contradictions: 110,
-            emergentValues: 4,
-            personalValues: null,
-            groupValues: null,
-            valueGroups: groupsWithProvenance.filter((g) => g.provenance === "REAL").length,
+          // Same flow builder and the SAME canon totals as Globe and World.
+          // Only the two value-model stages are scale-specific.
+          flow={social.flow({
+            valueGroups: groupsWithProvenance.filter((g) => g.provenance === "REAL").length || null,
             memberships: groupCards.filter((g) => g.provenance === "REAL")
-              .reduce((n, g) => n + g.view.members.length, 0),
-            needs: realNeedsCount || null,
-            // Canon pipeline counts, from the records this page already has.
-            actions: actions.length || null,
-            effects: groupsWithProvenance.filter((g) => g.provenance === "REAL")
-              .reduce((n, g) => n + g.view.impact.length, 0) || null,
-            evidence: groupsWithProvenance.filter((g) => g.provenance === "REAL")
-              .reduce((n, g) => n + g.view.impact.filter((i) => i.verified).length, 0) || null,
+              .reduce((n, g) => n + g.view.members.length, 0) || null,
           })}
           chronology={chronology}
           objects={socialObjects}

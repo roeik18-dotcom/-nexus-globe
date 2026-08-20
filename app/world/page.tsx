@@ -20,7 +20,7 @@ import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
 import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePanel";
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
-import { projectSocialSystem } from "@/app/lib/philos/social/socialSystemProjection";
+import { loadSocialSystem } from "@/app/lib/philos/social/loadSocialSystem";
 import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection";
 import { buildSocialFlow } from "@/app/lib/philos/social/socialFlowStages";
 import { primaryStage } from "@/app/lib/philos/shell/primaryStage";
@@ -71,8 +71,12 @@ export default async function WorldPage({ searchParams }: {
   // B6 established, reused here (World shares the exact same PUDM Value
   // dataset with Marketplace).
   const worldPhilosEvents = await loadPhilosEvents();
-  const chronology = await loadSocialChronology().catch(() => []);
-  const socialObjects = projectSocialSystem({ chronology, needGroups: new Map() });
+  // ONE authority. World previously built the projection with an EMPTY
+  // needGroups map, which is why it reported NETWORK = 10 while the other two
+  // reported 11 from the same records.
+  const social = await loadSocialSystem();
+  const chronology = social.chronology;
+  const socialObjects = social.objects;
   const worldToday = todayIn(systemClock);
   const worldRealGroup = projectValueGroup(worldPhilosEvents, COMMUNITY_GROUP_ID, worldToday);
   const worldDemoViews = DEMO_COMMUNITIES
@@ -127,12 +131,9 @@ export default async function WorldPage({ searchParams }: {
           // At SYSTEM scale every stage past the source inventory is UNKNOWN:
           // no record carries verified wider-system relevance, and network
           // presence is never accepted as a substitute. UNKNOWN != 0.
-          flow={buildSocialFlow({
-            contradictions: 110, emergentValues: 4,
-            personalValues: null, groupValues: null,
-            valueGroups: null, memberships: null,
-            needs: null, actions: null, effects: null, evidence: null,
-          })}
+          // Same flow builder, same totals, as every other scale. SYSTEM sees
+          // no groups of its own, so only those two stages differ.
+          flow={social.flow()}
           chronology={chronology}
           objects={socialObjects}
           selection={resolveSocialSelection(params?.sel, socialObjects)}
