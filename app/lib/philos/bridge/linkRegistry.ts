@@ -128,11 +128,20 @@ export function buildDemoMarketplaceLinks(): EntityLink[] {
 export function buildRealNeedCommunityLinks(
   needs: { need_id: string; origin_group_id?: string; recorded_at?: string }[],
   knownCommunityIds: Set<string>,
+  /**
+   * Explicit declarations for Needs that carry no `origin_group_id` — the
+   * only way a historical Need acquires a group. A declaration NEVER
+   * overrides an origin group written at the time of the Need itself: what
+   * the write recorded outranks what was said about it later.
+   */
+  declarations: Map<string, { group_id: string; link_id: string; created_at: string }> = new Map(),
 ): EntityLink[] {
   const out: EntityLink[] = [];
   for (const n of needs) {
-    const gid = n.origin_group_id?.trim();
+    const declared = declarations.get(n.need_id);
+    const gid = n.origin_group_id?.trim() || declared?.group_id?.trim();
     if (!gid) continue;
+    const viaDeclaration = !n.origin_group_id?.trim() && !!declared;
     // The group must be one this registry actually knows. A reference to an
     // unknown group is dropped rather than materialising a phantom community.
     if (!knownCommunityIds.has(gid)) continue;
@@ -143,8 +152,10 @@ export function buildRealNeedCommunityLinks(
       target: { type: "need", canonical_id: n.need_id, source_system: "canon_need_store", source_local_id: n.need_id },
       provenance: "REAL",
       confidence: 1,
-      valid_from: n.recorded_at,
-      note: "explicit origin_group_id on the Need store record — the write itself named this group; not inferred from membership, value or text",
+      valid_from: viaDeclaration ? declared?.created_at : n.recorded_at,
+      note: viaDeclaration
+        ? `explicit declaration ${declared?.link_id} by the Need's own subject — a stated attachment, not a backfill and not inferred from the Need's text, values, timing or memberships`
+        : "explicit origin_group_id on the Need store record — the write itself named this group; not inferred from membership, value or text",
     });
   }
   return out;
@@ -299,6 +310,8 @@ export function buildDefaultLinkRegistry(
   canon?: {
     needs?: { need_id: string; origin_group_id?: string; recorded_at?: string }[];
     actions?: { action_id: string; inputs: string[] }[];
+    /** Explicit Need->group declarations, latest per need_id. */
+    needGroupDeclarations?: { need_id: string; group_id: string; link_id: string; created_at: string }[];
   },
 ): EntityLink[] {
   const realGroup = projectValueGroup(realEvents, GROUP_ID, today);
@@ -314,7 +327,13 @@ export function buildDefaultLinkRegistry(
   // what the stage before it produced, so nothing downstream can invent a
   // community that no explicit write named.
   const knownCommunityIds = new Set(communities.map((c) => c.group.group_id));
-  const needLinks = buildRealNeedCommunityLinks(canon?.needs ?? [], knownCommunityIds);
+  const declarationsByNeed = new Map<string, { group_id: string; link_id: string; created_at: string }>();
+  for (const d of canon?.needGroupDeclarations ?? []) {
+    // Append-only log: a later record for the same Need is a correction, so
+    // last write wins. Nothing is mutated to achieve that.
+    declarationsByNeed.set(d.need_id, { group_id: d.group_id, link_id: d.link_id, created_at: d.created_at });
+  }
+  const needLinks = buildRealNeedCommunityLinks(canon?.needs ?? [], knownCommunityIds, declarationsByNeed);
 
   // need_id -> origin group, for the Action stage. Only needs that actually
   // carry an origin group and resolved to a known community appear here.

@@ -37,6 +37,7 @@ import {
 } from "@/app/lib/philos/community/sourceValueModel";
 import type { GroupRegistryEntry, PossibleGroup } from "@/app/lib/philos/community/groupRegistry";
 import CreateNeedForm from "../CreateNeedForm";
+import DeclareNeedGroup from "./DeclareNeedGroup";
 import CreateOfferForm from "../CreateOfferForm";
 import CommunityFlow from "./CommunityFlow";
 import type { ActivityFeedItem, ImpactView, PersonView, ValueGroupView } from "@/app/lib/philos/projectValueGroup";
@@ -99,6 +100,8 @@ export default function CommunityUniverse({
   groupRegistry,
   possibleGroups,
   people,
+  declarableNeeds,
+  subjectId,
   realNeedsCount,
   realOffersCount,
   realActionsCount,
@@ -126,6 +129,8 @@ export default function CommunityUniverse({
   possibleGroups: PossibleGroup[];
   people: PersonRow[];
   realNeedsCount: number;
+  declarableNeeds?: { need_id: string; desired_change: string }[];
+  subjectId?: string;
   realOffersCount: number;
   realActionsCount: number;
   activity: ActivityRow[];
@@ -213,7 +218,7 @@ export default function CommunityUniverse({
       ) : mode === "people" ? (
         <PeopleGraph people={people} identityLink={identityLink} />
       ) : mode === "needs" ? (
-        <NeedsMode realNeedsCount={realNeedsCount} realGroups={realGroups} />
+        <NeedsMode realNeedsCount={realNeedsCount} realGroups={realGroups} declarableNeeds={declarableNeeds ?? []} subjectId={subjectId} />
       ) : mode === "resources" ? (
         <ResourcesMode realOffersCount={realOffersCount} realGroups={realGroups} />
       ) : mode === "activity" ? (
@@ -901,7 +906,10 @@ function PeopleGraph({ people, identityLink }: { people: PersonRow[]; identityLi
 
 // ── NEEDS / RESOURCES ────────────────────────────────────────────────────
 
-function NeedsMode({ realNeedsCount, realGroups }: { realNeedsCount: number; realGroups: GroupRegistryEntry[] }) {
+function NeedsMode({ realNeedsCount, realGroups, declarableNeeds, subjectId }: {
+  realNeedsCount: number; realGroups: GroupRegistryEntry[];
+  declarableNeeds: { need_id: string; desired_change: string }[]; subjectId?: string;
+}) {
   // ORIGIN GROUP for the write. Passed ONLY when exactly one real group is in
   // scope: with several, "the group" would be a guess, and this path exists
   // precisely because a guessed group is not allowed to create a real link.
@@ -914,6 +922,21 @@ function NeedsMode({ realNeedsCount, realGroups }: { realNeedsCount: number; rea
     <Section title={`צרכים פתוחים · OPEN NEEDS (${realNeedsCount})`}>
       <CreateNeedForm community={originGroup} />
       {realNeedsCount === 0 ? <Empty>0 Need קנוני אמיתי כרגע — השתמש בטופס למעלה כדי לרשום אחד.</Empty> : <div style={S.note}>{realNeedsCount} Need קנוני אמיתי רשום.</div>}
+
+      {/* HISTORICAL NEEDS WITH NO GROUP. Needs written before the group was
+          ever captured carry none, and it is never guessed for them — not
+          even when the Need's own text names a group. The only way one
+          acquires a group is the subject declaring it, in their own words. */}
+      {originGroup && subjectId && declarableNeeds.length > 0 ? (
+        <div style={{ marginTop: 10 }}>
+          <div style={{ ...S.note, marginBottom: 6 }}>
+            {declarableNeeds.length} Need ללא שיוך לקבוצה — שיוך נוצר בהצהרה מפורשת בלבד
+          </div>
+          {declarableNeeds.map((n) => (
+            <DeclareNeedGroup key={n.need_id} need={n} group={originGroup} subject={subjectId} />
+          ))}
+        </div>
+      ) : null}
     </Section>
   );
 }

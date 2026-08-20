@@ -46,6 +46,7 @@ import { resolveShellIdentityLink } from "@/app/lib/philos/community/resolveShel
 import { loadActions } from "@/app/lib/philos/canon/actionStoreAccessor";
 import { loadEffects } from "@/app/lib/philos/canon/effectStoreAccessor";
 import { loadNeeds } from "@/app/lib/philos/canon/needStoreAccessor";
+import { loadNeedGroupLinks } from "@/app/lib/philos/community/needGroupLinkStoreAccessor";
 import { loadOffers } from "@/app/lib/philos/canon/offerStoreAccessor";
 import { resolvePersonRef } from "@/app/lib/philos/person/personRef";
 import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
@@ -85,6 +86,7 @@ export default async function PlanetPage({
   // space `PERSON_MEMBER_OF_COMMUNITY` links use, so no id translation is
   // needed here. Passed to the inspector drawer only — the sphere's own
   // node population and layout (`nodes`/`arcs` above) are unchanged.
+  const needGroupDeclarations = await loadNeedGroupLinks().catch(() => []);
   const canonActions = await loadActions().catch(() => []);
   const canonEffects = await loadEffects().catch(() => []);
   const canonNeeds = await loadNeeds().catch(() => []);
@@ -107,6 +109,9 @@ export default async function PlanetPage({
         recorded_at: n.recorded_at,
       })),
       actions: canonActions.map((a) => ({ action_id: a.action.action_id, inputs: a.action.inputs })),
+      needGroupDeclarations: needGroupDeclarations.map((d) => ({
+        need_id: d.need_id, group_id: d.group_id, link_id: d.link_id, created_at: d.created_at,
+      })),
     },
   );
 

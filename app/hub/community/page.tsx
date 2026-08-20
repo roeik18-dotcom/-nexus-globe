@@ -31,6 +31,7 @@ import { isEffectVerified } from "@/app/lib/philos/canon/effect";
 import { findNeedsForSubject } from "@/app/lib/philos/canon/needStoreAccessor";
 import { findOffersForSource } from "@/app/lib/philos/canon/offerStoreAccessor";
 import { resolvePersonRef } from "@/app/lib/philos/person/personRef";
+import { loadNeedGroupLinks } from "@/app/lib/philos/community/needGroupLinkStoreAccessor";
 import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
 import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePanel";
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
@@ -115,15 +116,29 @@ export default async function CommunityPage({
     effects = [];
   }
 
-  const bridgeLinks = buildDefaultLinkRegistry(events, today);
+  const needGroupDeclarations = await loadNeedGroupLinks().catch(() => []);
+  const bridgeLinks = buildDefaultLinkRegistry(events, today, undefined, {
+    needGroupDeclarations: needGroupDeclarations.map((d) => ({
+      need_id: d.need_id, group_id: d.group_id, link_id: d.link_id, created_at: d.created_at,
+    })),
+  });
   const identityLink = await resolveShellIdentityLink();
 
   const activityFeed = group ? buildActivityFeed(events, GROUP_ID, 15) : [];
   let realNeedsCount = 0;
+  // Needs this subject may declare a group for: their own, carrying no group
+  // yet. Nothing here reads the Need text to guess a group — the list is
+  // "ungrouped", the choice is the person's.
+  let declarableNeeds: { need_id: string; desired_change: string }[] = [];
   try {
     const own = await findNeedsForSubject(personRef.person_id);
     const linked = identityLink.status === "VERIFIED_SAME_PERSON" ? await findNeedsForSubject(identityLink.community_member_id) : [];
     realNeedsCount = new Set([...own, ...linked].map((n) => n.need.need_id)).size;
+
+    const declaredIds = new Set(needGroupDeclarations.map((d) => d.need_id));
+    declarableNeeds = own
+      .filter((n) => !n.origin_group_id && !declaredIds.has(n.need.need_id))
+      .map((n) => ({ need_id: n.need.need_id, desired_change: n.need.desired_change }));
   } catch {
     realNeedsCount = 0;
   }
@@ -553,6 +568,8 @@ export default async function CommunityPage({
           possibleGroups={possibleGroups}
           people={people}
           realNeedsCount={realNeedsCount}
+          declarableNeeds={declarableNeeds}
+          subjectId={personRef.person_id}
           realOffersCount={realOffersCount}
           realActionsCount={actions.length}
           activity={activityAll}
