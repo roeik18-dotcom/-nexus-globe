@@ -57,6 +57,7 @@ import { projectSocialSystem } from "@/app/lib/philos/social/socialSystemProject
 import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection";
 import { ABSENCE_TEXT } from "@/app/lib/philos/social/socialSystemProjection";
 import { roleTouchOf } from "@/app/lib/philos/social/roleTouch";
+import { buildSocialFlow } from "@/app/lib/philos/social/socialFlowStages";
 import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
 import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import SocialChronologyPanel from "@/app/lib/philos/shell/SocialChronologyPanel";
@@ -354,6 +355,16 @@ export default async function PlanetPage({
               relations: arcs.length,
               meaning: nodes.filter((n) => n.type === "value").length,
             }}
+            flow={buildSocialFlow({
+              contradictions: 110, emergentValues: 4,
+              personalValues: null, groupValues: null,
+              valueGroups: nodes.filter((n) => n.type === "value_group").length || null,
+              memberships: arcs.filter((a) => a.relation === "member.joined").length || null,
+              needs: canonNeeds.length || null,
+              actions: canonActions.length || null,
+              effects: canonEffects.length || null,
+              evidence: canonEffects.filter((e) => !!e.effect.verified_outcome).length || null,
+            })}
             chronology={chronology}
             objects={socialObjects}
             selection={resolveSocialSelection(params.sel, socialObjects)}

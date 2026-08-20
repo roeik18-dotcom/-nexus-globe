@@ -22,6 +22,7 @@ import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel"
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
 import { projectSocialSystem } from "@/app/lib/philos/social/socialSystemProjection";
 import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection";
+import { buildSocialFlow } from "@/app/lib/philos/social/socialFlowStages";
 import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
 import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import SocialChronologyPanel from "@/app/lib/philos/shell/SocialChronologyPanel";
@@ -122,6 +123,15 @@ export default async function WorldPage({ searchParams }: {
           surface="world"
           spine={buildSocialValueSpine({}).links}
           roles={{ action: null, evidence: null, relations: null, meaning: null }}
+          // At SYSTEM scale every stage past the source inventory is UNKNOWN:
+          // no record carries verified wider-system relevance, and network
+          // presence is never accepted as a substitute. UNKNOWN != 0.
+          flow={buildSocialFlow({
+            contradictions: 110, emergentValues: 4,
+            personalValues: null, groupValues: null,
+            valueGroups: null, memberships: null,
+            needs: null, actions: null, effects: null, evidence: null,
+          })}
           chronology={chronology}
           objects={socialObjects}
           selection={resolveSocialSelection(params?.sel, socialObjects)}

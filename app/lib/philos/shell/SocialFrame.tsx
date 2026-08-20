@@ -43,6 +43,8 @@ import { ABSENCE_TEXT, type Scale, type SocialObject } from "../social/socialSys
 import { withSelection, type SocialSelection } from "../social/socialSelection";
 import { spineTouchOf } from "../social/spineTouch";
 import { noRoleReason, PURPLE_NEVER_ACTIVATED, roleTouchOf, type InternalRole } from "../social/roleTouch";
+import type { FlowStage } from "../social/socialFlowStages";
+import SocialFlowRail from "./SocialFlowRail";
 import type { SpineLink } from "../valueSystem/socialValueSpine";
 import { COLOR, COLOR_ROLE, PRODUCT_FAMILY_CUE, RADIUS, SPACE, TYPE } from "./designTokens";
 
@@ -67,10 +69,12 @@ export interface SocialRoles {
 }
 
 export default function SocialFrame({
-  surface, spine, roles, chronology, chronoLimit = 6, audit, primary, selection, objects = [],
+  surface, spine, flow, roles, chronology, chronoLimit = 6, audit, primary, selection, objects = [],
 }: {
   surface: SocialSurface;
   spine: SpineLink[];
+  /** The ten-stage flow. When supplied it replaces the chip row entirely. */
+  flow?: FlowStage[];
   roles: SocialRoles;
   chronology: ChronoEntry[];
   chronoLimit?: number;
@@ -150,7 +154,7 @@ export default function SocialFrame({
 
       {/* SELECTED — the SAME object at all three scales ───────────── */}
       {selection && selection.status !== "none" ? (
-        <div style={S.lane}>
+        <div style={{ ...S.lane, ...S.lanePrimary }}>
           <span style={S.gutter}>OBJECT</span>
           <div style={S.body}>
             {selection.status === "unresolved" ? (
@@ -204,26 +208,27 @@ export default function SocialFrame({
       <div style={S.lane}>
         <span style={S.gutter}>VALUE</span>
         <div style={S.body}>
-          <div style={S.spineRow}>
-            {spine.map((l, i) => (
-              <span key={l.key} style={S.spineCell}>
-                {i > 0 ? <span style={S.arrow} aria-hidden>→</span> : null}
-                <span
-                  style={{
-                    ...S.spineItem,
-                    ...(touch?.touches && touch.key === l.key ? S.spineItemHit : null),
-                  }}
-                  title={`${l.gloss}\n${l.basis}\nלא נובע: ${l.not_implied}`}
-                >
-                  <b style={{ ...S.spineN, color: l.count === null ? COLOR.textFaint : COLOR.text }}>
-                    {l.count === null ? "—" : l.count}
-                  </b>
-                  <span style={S.spineLabel}>{l.label}</span>
-                  <span style={S.spineStatus}>{l.status}</span>
+          {flow && flow.length > 0 ? (
+            <SocialFlowRail stages={flow} litKey={touch?.touches ? touch.key : undefined} />
+          ) : (
+            <div style={S.spineRow}>
+              {spine.map((l, i) => (
+                <span key={l.key} style={S.spineCell}>
+                  {i > 0 ? <span style={S.arrow} aria-hidden>→</span> : null}
+                  <span
+                    style={{ ...S.spineItem, ...(touch?.touches && touch.key === l.key ? S.spineItemHit : null) }}
+                    title={`${l.gloss}\n${l.basis}\nלא נובע: ${l.not_implied}`}
+                  >
+                    <b style={{ ...S.spineN, color: l.count === null ? COLOR.textFaint : COLOR.text }}>
+                      {l.count === null ? "—" : l.count}
+                    </b>
+                    <span style={S.spineLabel}>{l.label}</span>
+                    <span style={S.spineStatus}>{l.status}</span>
+                  </span>
                 </span>
-              </span>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
           <div style={S.note}>
             ארגון מוצר של מושגים קיימים. <b>SOURCE ≠ REAL</b> — מספר גדול מציין מלאי מקור, לא ישויות אמיתיות.
           </div>
@@ -302,7 +307,7 @@ export default function SocialFrame({
 
       {/* PRIMARY — this surface's own content, inside the frame ─────── */}
       {primary ? (
-        <div style={S.lane}>
+        <div style={{ ...S.lane, ...S.lanePrimary }}>
           <span style={S.gutter}>NOW</span>
           <div style={S.body}>{primary}</div>
           <span style={S.rail}>{scope}</span>
@@ -311,7 +316,7 @@ export default function SocialFrame({
 
       {/* SOURCE ────────────────────────────────────────────────────── */}
       {audit ? (
-        <div style={{ ...S.lane, borderBottom: "none" }}>
+        <div style={{ ...S.lane, ...S.laneAudit, borderBottom: "none" }}>
           <span style={S.gutter}>SOURCE</span>
           <div style={S.body}>
             <details>
@@ -404,6 +409,18 @@ const S: Record<string, React.CSSProperties> = {
     padding: "9px 14px",
     borderBottom: `1px solid ${COLOR.border}`,
   },
+  /* PRIMARY — the selected object and the current operational truth. Given a
+     raised surface and a coloured edge so it is found without reading. */
+  lanePrimary: {
+    background: "rgba(120,150,220,0.06)",
+    borderInlineStart: `2px solid ${PRODUCT_FAMILY_CUE.borderActive}`,
+  },
+  /* SECONDARY — the model and the flow. Default weight, no treatment. */
+  /* AUDIT — provenance and formulas. Recessed, and collapsed by default, so
+     it is present without competing. The tiering is expressed in WEIGHT
+     rather than only in order, because order alone put three equal-looking
+     bands next to each other and let the audit read as primary. */
+  laneAudit: { background: "rgba(0,0,0,0.16)", opacity: 0.9 },
   gutter: {
     fontSize: FS.tag, fontWeight: 700, letterSpacing: 1.4, textTransform: "uppercase",
     color: PRODUCT_FAMILY_CUE.label,

@@ -40,6 +40,7 @@ import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel"
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
 import { projectSocialSystem } from "@/app/lib/philos/social/socialSystemProjection";
 import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection";
+import { buildSocialFlow } from "@/app/lib/philos/social/socialFlowStages";
 import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
 import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
@@ -486,6 +487,22 @@ export default async function CommunityPage({
               .reduce((n, g) => n + g.view.members.length + g.resolvedRelations.length, 0),
             meaning: groupCards.filter((g) => g.provenance === "REAL" && g.leadingFamily).length,
           }}
+          flow={buildSocialFlow({
+            contradictions: 110,
+            emergentValues: 4,
+            personalValues: null,
+            groupValues: null,
+            valueGroups: groupsWithProvenance.filter((g) => g.provenance === "REAL").length,
+            memberships: groupCards.filter((g) => g.provenance === "REAL")
+              .reduce((n, g) => n + g.view.members.length, 0),
+            needs: realNeedsCount || null,
+            // Canon pipeline counts, from the records this page already has.
+            actions: actions.length || null,
+            effects: groupsWithProvenance.filter((g) => g.provenance === "REAL")
+              .reduce((n, g) => n + g.view.impact.length, 0) || null,
+            evidence: groupsWithProvenance.filter((g) => g.provenance === "REAL")
+              .reduce((n, g) => n + g.view.impact.filter((i) => i.verified).length, 0) || null,
+          })}
           chronology={chronology}
           objects={socialObjects}
           selection={socialSelection}
