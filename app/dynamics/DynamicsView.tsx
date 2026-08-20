@@ -35,6 +35,8 @@
  * in `systemContext.ts`).
  */
 import { DOMAIN_COLOR, type DynamicsViewModel } from "@/app/lib/philos/dynamicsView";
+import SurfaceEmptyState from "@/app/lib/philos/shell/SurfaceEmptyState";
+import DynamicsCausalView, { type DynamicsCausalInput } from "./DynamicsCausalView";
 import type { Domain } from "@/app/lib/philos/projectDynamics";
 import type { CanonDynamicsGraph } from "@/app/lib/philos/canon/projectCanonDynamics";
 import type { CapitalTimelinePoint, MembershipTimelinePoint, ValueGroupView } from "@/app/lib/philos/projectValueGroup";
@@ -1063,6 +1065,15 @@ function DynamicsDayClosingSection({
 
   return (
     <div style={{ marginBottom: 16 }}>
+      {/* CausalChainFlow, DEMOTED — `DynamicsCausalView` now draws this chain
+          with the breaks visible. This band remains as the per-stage detail
+          view (each stage's own confidence, config axis and next action),
+          which the drawing does not carry. Same records, reference tier. */}
+      <details style={{ background: "rgba(0,0,0,0.22)", borderRadius: 10, padding: "6px 12px", opacity: 0.85 }}>
+        <summary style={{ cursor: "pointer", fontSize: 13, letterSpacing: 1, color: "#6c86b5" }}>
+          שלבי השרשרת, כרטיס לכל שלב · PER-STAGE DETAIL
+        </summary>
+        <div style={{ marginTop: 10 }}>
       <CausalChainFlow
         core={core} lifecycle={effectiveLifecycle} nextAction={nextAction}
         subject={subject} today={today}
@@ -1078,6 +1089,8 @@ function DynamicsDayClosingSection({
           selection: resolveSelectedDomain(undefined),
         }}
       />
+        </div>
+      </details>
 
       {/* 7-terminal propagation — the SAME shared Observation reading Hub/
           Brain/Community/World/Planet render; here it sits directly under
@@ -1137,6 +1150,7 @@ const EMPTY_LIFECYCLE_DV: ActionLifecycleSummary = { subject: "", actions: [], c
 const EMPTY_KNOWN_NEEDS_DV: KnownNeedResult = { needs: [], checked: false, reason: "not computed" };
 
 export default function DynamicsView({
+  causal,
   semanticContext,
   viewerSubject,
   view,
@@ -1153,6 +1167,9 @@ export default function DynamicsView({
 }: {
   /** The ONE canonical semantic context, resolved server-side. */
   semanticContext: ResolvedViewerContext;
+  /** The causal reading — counts, window and trace edges from the SAME
+   *  viewer-scoped records, so the drawing cannot disagree with the table. */
+  causal: DynamicsCausalInput | null;
   /** The VIEWER's own canon subject, resolved server-side — never a
    *  constant imported by a client component. */
   viewerSubject: string;
@@ -1247,6 +1264,28 @@ export default function DynamicsView({
         subject={selected?.status === "found" && selected.subject ? selected.subject : viewerSubject}
         identityLink={identityLink}
       />
+
+      {/* ── PRIMARY · the causal reading ─────────────────────────────────
+          Replaces a 15-row `from → to · linkage · status · ids · basis`
+          table as this surface's lead. Every one of those rows is still
+          rendered, inside the causal view's audit disclosure. */}
+      <div style={{ marginTop: 18 }}>
+        {causal && causal.counts.observations + causal.counts.needs + causal.counts.actions > 0 ? (
+          <DynamicsCausalView input={causal} />
+        ) : (
+          <SurfaceEmptyState
+            surface="דינמיקה"
+            does="קורא את שרשרת הסיבתיות של הרשומות שלך: מה נצפה, מה השתנה בעקבותיו, ומה מוכיח את השינוי."
+            why="אין לך עדיין אף תצפית, צורך או פעולה רשומים. שרשרת סיבתית נבנית מרשומות אמיתיות בלבד — היא לא נגזרת מזמן ולא מדמיון."
+            fills={[
+              "תצפית — נרשמת ב-Hub, והיא תחילת כל שרשרת",
+              "צורך והצעה — נרשמים ב-Marketplace",
+              "פעולה שה-inputs שלה נושאים צורך והצעה",
+              "אפקט עם verified_outcome — זה מה שהופך טענה לראיה",
+            ]}
+          />
+        )}
+      </div>
 
       {/* PERSON-IN-CONTEXT frame — ABOVE the chronology, because it is the
           frame the chronology is OF. Reference only: it never enters the

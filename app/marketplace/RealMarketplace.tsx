@@ -145,11 +145,30 @@ export default function RealMarketplace({
 
   return (
     <div dir="rtl" style={S.wrap}>
-      <MarketplaceFlow
-        stages={flowStages}
-        person={identityLink.status === "VERIFIED_SAME_PERSON" ? identityLink.person_id : undefined}
-        valueGroup={identityLink.status === "VERIFIED_SAME_PERSON" && realGroup ? { ...realGroup, provenance: "REAL" } : undefined}
-      />
+      {/* THE SEVEN-CARD FLOW BAND, DEMOTED — not deleted.
+          `MarketMatchView` above this component now draws the same pipeline
+          as a sized chain, where the asymmetry (one Need, nine members, zero
+          verified evidence) is the visible thing. Seven equal-width cards
+          erased exactly that, and clipped horizontally at 1440px.
+
+          It stays one disclosure down because it carries per-stage detail the
+          drawing deliberately does not: each stage's own id, timestamp and
+          provenance chip. That is a REFERENCE view of the same records, and
+          it is the right form for checking one stage — just not for reading
+          the pipeline. */}
+      <details style={S.flowDetails}>
+        <summary style={S.flowSummary}>
+          שלבי הזרימה, כרטיס לכל שלב · PER-STAGE DETAIL
+          <span style={S.flowCount}>{flowStages.length} שלבים</span>
+        </summary>
+        <div style={{ marginTop: 10 }}>
+          <MarketplaceFlow
+            stages={flowStages}
+            person={identityLink.status === "VERIFIED_SAME_PERSON" ? identityLink.person_id : undefined}
+            valueGroup={identityLink.status === "VERIFIED_SAME_PERSON" && realGroup ? { ...realGroup, provenance: "REAL" } : undefined}
+          />
+        </div>
+      </details>
       {groupRelations && groupRelations.length > 0 ? (
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, margin: "0 0 10px", fontSize: 12 }}>
           <span style={{ fontWeight: 800, letterSpacing: 0.6, color: "#8fa3c9" }}>PERSON↔GROUP (הקשר אישי — לא רלוונטיות עסקה):</span>
@@ -346,6 +365,9 @@ function Empty({ children }: { children: React.ReactNode }) {
 const KIND_COLOR: Record<ActivityItem["kind"], string> = { need: "#f2635c", offer: "#34d399", action: "#5b9cf6", effect: "#a78bfa" };
 
 const S: Record<string, React.CSSProperties> = {
+  flowDetails: { background: "rgba(0,0,0,0.22)", borderRadius: 10, padding: "6px 12px", marginBottom: 12, opacity: 0.85 },
+  flowSummary: { cursor: "pointer", fontSize: 13, letterSpacing: 1, color: "#6c86b5", display: "flex", gap: 12, alignItems: "baseline" },
+  flowCount: { fontSize: 12, color: "#6c86b5", marginInlineStart: "auto" },
   wrap: { fontFamily: "system-ui", color: "#e6ebf5" },
   compactHero: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", margin: "16px 20px 0", padding: "10px 16px", background: "rgba(91,156,246,0.06)", border: "1px solid rgba(91,156,246,0.2)", borderRadius: 10 },
   badge: { fontSize: 12, fontWeight: 800, padding: "2px 8px", borderRadius: 6, border: "1px solid #34d39955", color: "#34d399", fontFamily: "ui-monospace, monospace" },

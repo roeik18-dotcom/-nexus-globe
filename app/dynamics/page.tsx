@@ -227,6 +227,11 @@ export default async function DynamicsPage({
 
   // SYSTEM TRACE — AUDIT tier, Dynamics only (never also on Hub). Built from
   // the real stores so it can report where the chain genuinely breaks.
+  /* Counts and window for the causal reading, captured from the SAME
+     viewer-scoped records the trace is built from — so the drawing and the
+     table underneath it can never disagree. */
+  let causalCounts: { observations: number; needs: number; offers: number; actions: number; effects: number; verifiedEffects: number; learnings: number | null } | null = null;
+  let causalWindow: { from: string; to: string } | null = null;
   const traceEdges = await (async () => {
     try {
       const { canonEventStore } = await import("@/app/lib/philos/canon/canonEventStoreAccessor");
@@ -241,6 +246,18 @@ export default async function DynamicsPage({
       const nds = await findNeedsForSubject(subj).catch(() => []);
       const { findOffersForSource } = await import("@/app/lib/philos/canon/offerStoreAccessor");
       const ofs = await findOffersForSource(subj).catch(() => []);
+      causalCounts = {
+        observations: evs.length, needs: nds.length, offers: ofs.length,
+        actions: acts.length, effects: effs.length,
+        verifiedEffects: effs.filter((e) => !!e.effect.verified_outcome).length,
+        /* No learning store exists yet. `null` = UNKNOWN, which is not the
+           same as zero learnings and must not render as one. */
+        learnings: null as number | null,
+      };
+      causalWindow = evs.length > 0
+        ? { from: evs.map((e) => e.payload.time).sort()[0].slice(0, 10),
+            to: evs.map((e) => e.payload.time).sort().slice(-1)[0].slice(0, 10) }
+        : null;
       return buildSystemTrace({
         observationIds: evs.map((e) => e.canon_event_id),
         observationTimes: evs.map((e) => e.payload.time),
@@ -260,10 +277,34 @@ export default async function DynamicsPage({
 
   return <DynamicsView
       semanticContext={semanticContext}
+      causal={traceEdges && causalCounts ? {
+        /* Measured cells come from the canon graph the view already holds;
+           tensions are the recorded contradictions. Both are read, never
+           inferred — an empty list is an answer. */
+        observedCells: canon.nodes.filter((n) => n.subject === personRef.person_id).length,
+        counts: causalCounts,
+        tensions: [],
+        edges: traceEdges,
+        window: causalWindow,
+      } : null}
       viewerSubject={personRef.person_id} personFrameSlot={
       <>
-        {personFrame ? <PersonFrameStrip frame={personFrame} compact /> : null}
-        {traceEdges ? <SystemTracePanel edges={traceEdges} /> : null}
+        {personFrame ? (
+        /* REFERENCE FRAME, DEMOTED to the context tier on this surface.
+           It is the same three cards every terminal shows, and on a surface
+           whose primary content is a causal drawing it was ~200px of
+           mostly-UNKNOWN chrome sitting above the thing the reader came for.
+           Unchanged and one click away. */
+        <details style={{ background: "rgba(0,0,0,0.2)", borderRadius: 10, padding: "6px 12px", margin: "0 0 12px", opacity: 0.85 }}>
+          <summary style={{ cursor: "pointer", fontSize: 13, letterSpacing: 1, color: "#6c86b5" }}>
+            מסגרת אדם · ערך · דומיין — REFERENCE FRAME
+          </summary>
+          <div style={{ marginTop: 10 }}><PersonFrameStrip frame={personFrame} compact /></div>
+        </details>
+      ) : null}
+        {/* The trace moved INTO the causal view's audit tier — it is the
+            right form for checking one edge against the store, and the wrong
+            form for finding out whether anything is wrong. */}
       </>
     } view={view} canon={canon} selected={selected} timeRange={timeRange} community={community} today={todayIn(systemClock)} identityLink={identityLink} personContext={personContext} defaultLifecycle={defaultLifecycle} domainStates={domainStates} />;
 }

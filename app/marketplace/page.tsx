@@ -1,4 +1,6 @@
 import { mayReadSubject, resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
+import SurfaceEmptyState from "@/app/lib/philos/shell/SurfaceEmptyState";
+import MarketMatchView from "./MarketMatchView";
 import { resolveViewerContextSemantics } from "@/app/lib/philos/context/resolveViewerContextSemantics";
 import SignOutButton from "@/app/signin/SignOutButton";
 import { buildViewerLinkRegistry } from "@/app/lib/philos/bridge/viewerLinkRegistry";
@@ -215,7 +217,57 @@ export default async function MarketplacePage({
 
       {/* PRIMARY — real PHILOS canonical graph (Marketplace Legacy
           Convergence pass). Leads every normal visit, `?ctx=` or not. */}
-      {personFrame ? <PersonFrameStrip frame={personFrame} compact /> : null}
+      {personFrame ? (
+        /* REFERENCE FRAME, DEMOTED to the context tier on this surface.
+           It is the same three cards every terminal shows, and on a surface
+           whose primary content is a causal drawing it was ~200px of
+           mostly-UNKNOWN chrome sitting above the thing the reader came for.
+           Unchanged and one click away. */
+        <details style={{ background: "rgba(0,0,0,0.2)", borderRadius: 10, padding: "6px 12px", margin: "0 20px 12px", opacity: 0.85 }}>
+          <summary style={{ cursor: "pointer", fontSize: 13, letterSpacing: 1, color: "#6c86b5" }}>
+            מסגרת אדם · ערך · דומיין — REFERENCE FRAME
+          </summary>
+          <div style={{ marginTop: 10 }}><PersonFrameStrip frame={personFrame} compact /></div>
+        </details>
+      ) : null}
+      {/* ── PRIMARY · the match model ───────────────────────────────────
+          Replaces a seven-card equal-width row for a pipeline whose point is
+          asymmetry. `RealMarketplace` stays below it, unchanged, holding the
+          forms and the detail; it is no longer what the surface leads with. */}
+      <div dir="rtl" style={{ padding: "0 20px 24px" }}>
+        {mineNeeds.length + mineOffers.length + mineActions.length === 0 ? (
+          <SurfaceEmptyState
+            surface="שוק"
+            does="מחבר בין מה שאתה צריך למה שזמין: צורך ↔ הצעה → התאמה → פעולה → אפקט → ראיה."
+            why="אין לך עדיין צורך או הצעה רשומים. התאמה נוצרת רק מהיתר של המעריך הקנוני על צמד אמיתי — קיומו של צמד אינו התאמה, ושום התאמה לא נוצרת מדמיון בין טקסטים."
+            fills={[
+              "צורך — מה נדרש, ובאיזה היקף",
+              "הצעה — משאב שאתה יכול להעמיד",
+              "הערכת התאמה — נותנת היתר לצמד מסוים",
+              "פעולה שה-inputs שלה נושאים את הצמד המאושר",
+            ]}
+          />
+        ) : (
+        <MarketMatchView input={{
+          needs: mineNeeds.map((n) => ({ id: n.need.need_id, text: n.need.desired_change, at: n.recorded_at })),
+          offers: mineOffers.map((o) => ({ id: o.offer.offer_id, text: o.offer.available_resource, at: o.recorded_at })),
+          /* A match is EXECUTED only when an Action's inputs name both a Need
+             and an Offer. A pair existing is not a match, and this is the one
+             place that distinction is computed. */
+          executedMatches: mineActions.filter((a) =>
+            a.action.inputs.some((x) => mineNeeds.some((n) => n.need.need_id === x)) &&
+            a.action.inputs.some((x) => mineOffers.some((o) => o.offer.offer_id === x))).length,
+          actions: mineActions.map((a) => ({ id: a.action.action_id, text: a.action.mechanism_scope, at: a.recorded_at, type: a.action.type })),
+          effects: mineEffects.map((e) => ({ id: e.effect.effect_id, text: e.effect.context, at: e.recorded_at, verified: !!e.effect.verified_outcome })),
+          group: philosGroupsRealView ? {
+            name: philosGroupsRealView.name,
+            central_value: philosGroupsRealView.central_value,
+            members: philosGroupsRealView.members.length,
+          } : null,
+        }} />
+        )}
+      </div>
+
       <RealMarketplace
         needs={mineNeeds} offers={mineOffers} actions={mineActions} effects={mineEffects} identityLink={identityLink}
         realGroup={philosGroupsRealView ? { name: philosGroupsRealView.name, central_value: philosGroupsRealView.central_value } : undefined}
