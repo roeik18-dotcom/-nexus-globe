@@ -34,12 +34,12 @@ import {
 } from "../social/socialFlowStages";
 import { COLOR, COLOR_ROLE, FS, RADIUS, SPACE } from "./designTokens";
 
-const STATUS_STYLE: Record<StageStatus, { border: string; bg: string; fg: string; dashed?: boolean }> = {
-  SOURCE:       { border: "rgba(120,150,220,0.45)", bg: "transparent",              fg: COLOR.textDim },
-  REAL:         { border: COLOR_ROLE.green,        bg: "rgba(52,211,153,0.16)",     fg: COLOR.text },
-  DERIVED_REAL: { border: COLOR_ROLE.green,        bg: "rgba(52,211,153,0.07)",     fg: COLOR.text, dashed: true },
-  DEMO:         { border: "rgba(251,191,36,0.5)",  bg: "rgba(251,191,36,0.08)",     fg: COLOR.textDim },
-  UNKNOWN:      { border: COLOR.border,            bg: "transparent",               fg: COLOR.textFaint },
+const STATUS_STYLE: Record<StageStatus, { dot: string; fg: string; dashed?: boolean }> = {
+  SOURCE:       { dot: "rgba(120,150,220,0.7)", fg: COLOR.textDim },
+  REAL:         { dot: COLOR_ROLE.green,        fg: COLOR.text },
+  DERIVED_REAL: { dot: "rgba(52,211,153,0.55)", fg: COLOR.text, dashed: true },
+  DEMO:         { dot: "rgba(251,191,36,0.8)",  fg: COLOR.textDim },
+  UNKNOWN:      { dot: "transparent",           fg: COLOR.textFaint },
 };
 
 export default function SocialFlowRail({
@@ -69,35 +69,35 @@ export default function SocialFlowRail({
 
 function Node({ stage, lit }: { stage: FlowStage; lit: boolean }) {
   const st = STATUS_STYLE[stage.status];
+  const empty = stage.count === null;
+  const notHere = stage.eligible !== undefined && stage.eligible !== stage.count;
   return (
     <div
       title={`${stage.label_he} — ${stage.basis}\n${STATUS_META[stage.status].note}`}
-      style={{
-        ...S.node,
-        border: `${lit ? 2 : 1}px ${st.dashed ? "dashed" : "solid"} ${lit ? COLOR_ROLE.green : st.border}`,
-        background: lit ? "rgba(52,211,153,0.2)" : st.bg,
-        // Records exist but reach nothing here: keep the real count legible
-        // and dim the node, rather than recolouring it as if it were absent.
-        opacity: stage.eligible !== undefined && stage.eligible !== stage.count ? 0.62 : 1,
-      }}
+      style={{ ...S.node, opacity: notHere ? 0.7 : 1 }}
     >
-      <b style={{ ...S.count, color: stage.count === null ? COLOR.textFaint : st.fg,
-                  fontSize: stage.count === null ? FS.tag : FS.head }}>
-        {stage.count === null ? "UNKNOWN" : stage.count}
+      {/* COUNT above the track */}
+      <b style={{
+        ...S.count,
+        color: empty ? COLOR.textFaint : lit ? COLOR_ROLE.green : st.fg,
+        fontSize: empty ? FS.tag : 17,
+      }}>
+        {empty ? "—" : stage.count}
       </b>
-      {/* ELIGIBLE_AT_CURRENT_SCALE, shown only when it differs from
-          EXISTS_IN_SOCIAL_MODEL. The real count stays visible above it, so the
-          node states both facts at once: the record exists, and it does not
-          reach this scale. Blanking the count would claim the record does not
-          exist; showing only the count would imply it is system-relevant. */}
-      {stage.eligible !== undefined && stage.eligible !== stage.count ? (
-        <span style={S.notEligible} title={stage.not_eligible_because}>
-          {stage.eligible ?? 0} בהיקף זה
-        </span>
-      ) : null}
-      <span style={S.label}>{stage.label}</span>
-      <span style={{ ...S.status, color: stage.status === "REAL" ? COLOR_ROLE.green : COLOR.textFaint }}>
-        {STATUS_META[stage.status].label}
+
+      {/* The MARKER sits ON the track. Fill carries status; a ring marks the
+          stage the selected record instantiates. Chips-in-a-row read as a
+          list of things; a marker on a line reads as a position in a flow. */}
+      <span style={{
+        ...S.marker,
+        background: empty ? "transparent" : lit ? COLOR_ROLE.green : st.dot,
+        border: `${empty ? 1 : 0}px dashed ${COLOR.border}`,
+        boxShadow: lit ? `0 0 0 3px rgba(52,211,153,0.28)` : undefined,
+      }} />
+
+      <span style={{ ...S.label, color: empty ? COLOR.textFaint : COLOR.textDim }}>{stage.label}</span>
+      <span style={{ ...S.status, color: st.fg === COLOR.text ? COLOR_ROLE.green : COLOR.textFaint }}>
+        {notHere ? `0 ${STATUS_META[stage.status].label}` : STATUS_META[stage.status].label}
       </span>
     </div>
   );
@@ -105,7 +105,8 @@ function Node({ stage, lit }: { stage: FlowStage; lit: boolean }) {
 
 function Connector({ kind }: { kind: ConnectorKind }) {
   if (kind === "MODEL_BOUNDARY") {
-    // Not a connector: a seam. The gap is the message.
+    // A BREAK in the track, not a link across it. The gap is the message: a
+    // Need is not produced by a membership, and no line should suggest it is.
     return (
       <span style={S.seam} title={CONNECTOR_META.MODEL_BOUNDARY.note} aria-label="model boundary">
         <span style={S.seamBar} />
@@ -113,17 +114,17 @@ function Connector({ kind }: { kind: ConnectorKind }) {
       </span>
     );
   }
-  if (kind === "RECORDED_REFERENCE") {
-    return (
-      <span style={S.conn} title={CONNECTOR_META.RECORDED_REFERENCE.note}>
-        <span style={{ ...S.line, borderTop: `1.5px solid ${COLOR_ROLE.blue}` }} />
-        <span style={S.head}>◄</span>
-      </span>
-    );
-  }
+  const recorded = kind === "RECORDED_REFERENCE";
   return (
-    <span style={S.conn} title={CONNECTOR_META.CONCEPTUAL.note}>
-      <span style={{ ...S.line, borderTop: `1px dashed ${COLOR.textFaint}` }} />
+    <span style={S.conn} title={CONNECTOR_META[kind].note}>
+      <span style={{
+        ...S.track,
+        // Solid where a real field points backwards; dashed where the order is
+        // only a reading order. The arrowhead is withheld from CONCEPTUAL on
+        // purpose — it would claim a direction of production that nothing has.
+        borderTop: recorded ? `2px solid ${COLOR_ROLE.blue}` : `1px dashed rgba(120,150,220,0.4)`,
+      }} />
+      {recorded ? <span style={S.head}>◄</span> : null}
     </span>
   );
 }
@@ -138,29 +139,33 @@ function LegendItem({ swatch, text }: { swatch: React.ReactNode; text: string })
 }
 
 const S: Record<string, React.CSSProperties> = {
-  wrap: { display: "flex", flexDirection: "column", gap: 6 },
-  rail: { display: "flex", alignItems: "stretch", flexWrap: "wrap", rowGap: SPACE.sm },
-  unit: { display: "flex", alignItems: "center" },
+  wrap: { display: "flex", flexDirection: "column", gap: 8 },
+  /* One row, baseline-aligned, so every marker sits on the same invisible
+     line and the connectors between them read as one continuous track. */
+  rail: { display: "flex", alignItems: "flex-start", flexWrap: "wrap", rowGap: 14 },
+  unit: { display: "flex", alignItems: "flex-start" },
 
   node: {
-    display: "inline-flex", flexDirection: "column", alignItems: "flex-start", gap: 1,
-    padding: "5px 9px", borderRadius: RADIUS.sm, minWidth: 70,
+    display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+    minWidth: 74, padding: "0 4px",
   },
-  count: { fontFamily: "ui-monospace, monospace", fontWeight: 700, lineHeight: 1.15, letterSpacing: 0.3 },
-  label: { fontSize: FS.tag, fontWeight: 700, letterSpacing: 0.2, color: COLOR.textDim, whiteSpace: "nowrap" },
+  count: { fontFamily: "ui-monospace, monospace", fontWeight: 700, lineHeight: 1, letterSpacing: 0.2 },
+  marker: { width: 11, height: 11, borderRadius: "50%", flexShrink: 0, boxSizing: "border-box" },
+  label: { fontSize: FS.tag, fontWeight: 700, letterSpacing: 0.2, textAlign: "center", lineHeight: 1.25, whiteSpace: "nowrap" },
+  status: { fontSize: FS.tag, fontWeight: 600, letterSpacing: 0.3, transform: "scale(0.9)" },
+
+  /* Connectors align to the marker's vertical centre: count line (~17px) plus
+     the gap, so the track meets the markers rather than floating above them. */
+  conn: { display: "inline-flex", alignItems: "center", width: 22, position: "relative", justifyContent: "center", height: 11, marginTop: 20 },
+  track: { display: "block", width: "100%" },
+  head: { position: "absolute", insetInlineStart: -2, fontSize: 9, color: COLOR_ROLE.blue, lineHeight: 1 },
+
+  seam: { display: "inline-flex", alignItems: "center", gap: 3, width: 22, justifyContent: "center", height: 11, marginTop: 20 },
+  seamBar: { display: "block", width: 2, height: 16, background: "rgba(251,191,36,0.65)", borderRadius: 1 },
+
   notEligible: { fontSize: FS.tag, color: "#fbbf24", letterSpacing: 0.2, lineHeight: 1.3 },
-  status: { fontSize: FS.tag, fontWeight: 600, letterSpacing: 0.6 },
-
-  conn: { display: "inline-flex", alignItems: "center", width: 18, position: "relative", justifyContent: "center" },
-  line: { display: "block", width: "100%" },
-  head: { position: "absolute", insetInlineStart: -1, fontSize: 8, color: COLOR_ROLE.blue, lineHeight: 1 },
-
-  /* The seam reads as a break, deliberately unlike either connector. */
-  seam: { display: "inline-flex", alignItems: "center", gap: 3, width: 20, justifyContent: "center" },
-  seamBar: { display: "block", width: 2, height: 26, background: "rgba(251,191,36,0.55)", borderRadius: 1 },
-
-  legend: { display: "flex", gap: SPACE.md, flexWrap: "wrap", fontSize: 10, color: COLOR.textDim, lineHeight: 1.5 },
+  legend: { display: "flex", gap: SPACE.md, flexWrap: "wrap", fontSize: FS.base, color: COLOR.textFaint, lineHeight: 1.5 },
   legendItem: { display: "inline-flex", alignItems: "center", gap: 6 },
   lineSample: { display: "inline-block", width: 20 },
-  seamSample: { display: "inline-block", width: 6, height: 12, borderInline: "2px solid rgba(251,191,36,0.55)" },
+  seamSample: { display: "inline-block", width: 6, height: 12, borderInline: "2px solid rgba(251,191,36,0.65)" },
 };

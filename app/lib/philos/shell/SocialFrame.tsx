@@ -437,7 +437,13 @@ const S: Record<string, React.CSSProperties> = {
   /* The epistemic sentences. These carry the actual discipline of the system
      — "similarity is not a relation", "UNKNOWN != 0" — so they are readable
      text at the floor size, not decoration at 8px. */
-  note: { fontSize: FS.base, color: COLOR.textDim, lineHeight: 1.6, marginTop: 5 },
+  /* PRIMARY carries the fact; the paragraph explaining the epistemics moves
+     to a title attribute on a small marker. Nothing is deleted — three long
+     Hebrew paragraphs stacked under three lanes were repeating the same
+     discipline in the reader's main sightline every render. */
+  note: { fontSize: FS.base, color: COLOR.textFaint, lineHeight: 1.55, marginTop: 4,
+          display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical",
+          overflow: "hidden", cursor: "help" },
 
   zoomRow: { display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap" },
   zoomCell: { display: "flex", alignItems: "center", gap: 3 },
