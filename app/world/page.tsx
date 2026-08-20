@@ -1,4 +1,5 @@
 import path from "path";
+import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import { readJsonStore } from "@/app/lib/json-store";
 import type { Mission } from "@/app/lib/mission/schema";
 import type { Gap } from "@/app/lib/gap/schema";
@@ -83,7 +84,7 @@ export default async function WorldPage({ searchParams }: {
   const chronology = social.chronology;
   const socialObjects = social.objects;
   const worldToday = todayIn(systemClock);
-  const worldRealGroup = projectValueGroup(worldPhilosEvents, COMMUNITY_GROUP_ID, worldToday);
+  const worldRealGroup = (await resolveViewerGroupView({ events: worldPhilosEvents, today: worldToday })).view;
   const worldDemoViews = DEMO_COMMUNITIES
     .map((c) => projectValueGroup(c.events, c.group_id, c.today))
     .filter((v): v is ValueGroupView => v !== null);

@@ -1,4 +1,5 @@
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
+import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import path from "path";
 import { readJsonStore } from "@/app/lib/json-store";
 import type { Mission } from "@/app/lib/mission/schema";
@@ -103,7 +104,7 @@ export default async function MarketplacePage({
   // value (English labels vs Hebrew central_values) — never forced.
   const marketplacePhilosEvents = await loadPhilosEvents();
   const marketplaceToday = todayIn(systemClock);
-  const philosGroupsRealView = projectValueGroup(marketplacePhilosEvents, COMMUNITY_GROUP_ID, marketplaceToday);
+  const philosGroupsRealView = (await resolveViewerGroupView({ events: marketplacePhilosEvents, today: marketplaceToday })).view;
   const communityDemoViews = DEMO_COMMUNITIES
     .map((c) => projectValueGroup(c.events, c.group_id, c.today))
     .filter((v): v is ValueGroupView => v !== null);

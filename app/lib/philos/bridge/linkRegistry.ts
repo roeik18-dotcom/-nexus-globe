@@ -312,12 +312,30 @@ export function buildDefaultLinkRegistry(
     actions?: { action_id: string; inputs: string[] }[];
     /** Explicit Need->group declarations, latest per need_id. */
     needGroupDeclarations?: { need_id: string; group_id: string; link_id: string; created_at: string }[];
+    /** The REAL groups to build links for. Omitted = the historical single
+     *  group, for reference/audit surfaces that are not viewer-scoped. */
+    realGroupIds?: readonly string[];
+    /** `false` excludes DEMO communities — personal analysis passes this. */
+    includeDemo?: boolean;
   },
 ): EntityLink[] {
-  const realGroup = projectValueGroup(realEvents, GROUP_ID, today);
+  /* WHICH REAL GROUPS. `GROUP_ID` was hardcoded here, so the registry built
+     the same real-group links for every viewer. `realGroupIds` lets the
+     PERSONAL-ANALYSIS caller (`loadSocialSystem`) pass the viewer's own
+     recorded memberships; reference and audit surfaces that pass nothing keep
+     the historical single-group behaviour and are labelled as reference tier.
+     The constant is now a documented default for those, not an assumption
+     buried in a projection call. */
+  const groupIds = canon?.realGroupIds ?? [GROUP_ID];
   const communities: { group: ValueGroupView; provenance: LinkProvenance }[] = [];
-  if (realGroup) communities.push({ group: realGroup, provenance: "REAL" });
-  for (const c of DEMO_COMMUNITIES) {
+  for (const gid of groupIds) {
+    const realGroup = projectValueGroup(realEvents, gid, today);
+    if (realGroup) communities.push({ group: realGroup, provenance: "REAL" });
+  }
+  /* DEMO communities are REFERENCE fixtures: every link they produce names
+     only `demo_*` / `dg_*` / `region_*` entities, never a real person. They
+     are excluded when the caller asks for personal analysis. */
+  for (const c of (canon?.includeDemo === false ? [] : DEMO_COMMUNITIES)) {
     const demoGroup = projectValueGroup(c.events, c.group_id, c.today);
     if (demoGroup) communities.push({ group: demoGroup, provenance: "DEMO" });
   }

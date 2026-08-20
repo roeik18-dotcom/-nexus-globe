@@ -34,6 +34,7 @@
  */
 
 import { connection } from "next/server";
+import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 
 import { projectGlobeGraph } from "@/app/lib/philos/projectGlobeGraph";
 import { GROUP_ID } from "@/app/lib/philos/valueGroupLog";
@@ -189,7 +190,7 @@ export default async function PlanetPage({
     if (latest) {
       // The ONE shared Value Group resolver — person↔group relations for
       // the REAL group, shown on the HUD strip (relations, not geography).
-      const realView = projectValueGroup(events, GROUP_ID, todayIn(systemClock));
+      const realView = (await resolveViewerGroupView({ events })).view;
       let relationsLine = "אין קבוצה תפעולית";
       if (realView && identityLink.status === "VERIFIED_SAME_PERSON") {
         const res = resolveValueGroups({

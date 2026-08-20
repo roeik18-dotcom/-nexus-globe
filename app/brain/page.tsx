@@ -1,4 +1,5 @@
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
+import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import { connection } from "next/server";
 
 import { projectCanonDynamics, type CanonDynamicsGraph } from "@/app/lib/philos/canon/projectCanonDynamics";
@@ -123,7 +124,7 @@ export default async function BrainPage({
   if (identityLink.status === "VERIFIED_SAME_PERSON") {
     const philosEvents = await loadPhilosEvents();
     const today = todayIn(systemClock);
-    const realGroupView = projectValueGroup(philosEvents, GROUP_ID, today);
+    const realGroupView = (await resolveViewerGroupView({ events: philosEvents, today })).view;
     const demoViews = DEMO_COMMUNITIES
       .map((c) => projectValueGroup(c.events, c.group_id, c.today))
       .filter((v): v is ValueGroupView => v !== null);

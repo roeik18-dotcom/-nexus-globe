@@ -1,4 +1,5 @@
 import path from "path";
+import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import { connection } from "next/server";
 
 import ValueHub from "../ValueHub";
@@ -81,9 +82,13 @@ export default async function CommunityPage({
   const events = await loadPhilosEvents();
   const viewer = await resolveViewer();
   const today = todayIn(systemClock);
-  const group = projectValueGroup(events, GROUP_ID, today);
-
   const params = await searchParams;
+  /* Group context, from the viewer's own recorded membership — or from an
+     explicit `?community=` the viewer has a relation to. This was
+     `projectValueGroup(events, GROUP_ID, today)`: the one real group, shown
+     to anyone, as though it were theirs. */
+  const groupCtx = await resolveViewerGroupView({ events, today, requested: params.community });
+  const group = groupCtx.view;
   // STEP 1 — the ONE shared identity reference.
   const personRef = resolvePersonRef(await resolveViewerContext(), params.subject);
   // STEP 2 — the frame this screen's readings are relative to (canon §19).

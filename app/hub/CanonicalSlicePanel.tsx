@@ -1,4 +1,5 @@
 import { FS } from "@/app/lib/philos/shell/designTokens";
+import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 /**
  * CanonicalSlicePanel — Phase 4 vertical slice, shared verbatim between
  * `/hub` and `/dynamics` (Phase 4 §8: "Both must resolve and display the
@@ -104,7 +105,7 @@ export default async function CanonicalSlicePanel({ subject, asOf }: { subject: 
   const philosEvents = await loadPhilosEvents();
   let valueGroups: { view: ValueGroupView; provenance: "REAL" | "DEMO"; trend: string }[] = [];
   if (identityLink.status === "VERIFIED_SAME_PERSON") {
-    const realGroup = projectValueGroup(philosEvents, GROUP_ID, today);
+    const realGroup = (await resolveViewerGroupView({ events: philosEvents, today })).view;
     const demoViews = DEMO_COMMUNITIES
       .map((c) => projectValueGroup(c.events, c.group_id, c.today))
       .filter((v): v is ValueGroupView => v !== null);

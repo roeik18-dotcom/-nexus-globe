@@ -213,6 +213,21 @@ export async function loadSocialSystem(viewer: ViewerContext): Promise<SocialSys
       needGroupDeclarations: declarations.filter((d) => visibleNeedIds.has(d.need_id)).map((d) => ({
         need_id: d.need_id, group_id: d.group_id, link_id: d.link_id, created_at: d.created_at,
       })),
+      /* PERSONAL ANALYSIS. The registry built links for `GROUP_ID` regardless
+         of viewer, and always included the DEMO communities — so a viewer who
+         owns nothing still received 25 demo links inside their own social
+         state. Both are now the caller's choice, and this caller is the
+         personal one, so it passes the viewer's OWN groups.
+
+         `includeDemo: false` is deliberately NOT set here, and the parameter
+         exists so the choice is visible rather than absent. Setting it moved
+         DEMO_RELATIONS from 25 to 5 in the stage's PROVENANCE cell — and 25
+         is a figure Roei ratified as baseline, on a cell that is explicitly
+         labelled `· כל המאגר` (registry-wide), not personal analysis. What the
+         DEMO ruling actually protects is already true and asserted: DEMO
+         enters chronology 0, objects 0 and values 0 for both viewers. Flipping
+         this flag is a baseline decision, not an implementation detail. */
+      realGroupIds: [...viewerGroups],
     },
   );
 

@@ -1,4 +1,5 @@
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
+import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import { connection } from "next/server";
 import type { ReactNode } from "react";
 
@@ -139,7 +140,7 @@ export default async function HubPage({
   if (hubIdentityLink.status === "VERIFIED_SAME_PERSON") {
     const hubEvents = await loadPhilosEvents();
     const hubToday = todayIn(systemClock);
-    const hubRealGroup = projectValueGroup(hubEvents, GROUP_ID, hubToday);
+    const hubRealGroup = (await resolveViewerGroupView({ events: hubEvents, today: hubToday })).view;
     const hubDemoViews = DEMO_COMMUNITIES
       .map((c) => projectValueGroup(c.events, c.group_id, c.today))
       .filter((v): v is ValueGroupView => v !== null);
@@ -349,7 +350,7 @@ export default async function HubPage({
   // the product has recorded since. `today` comes from the same clock that
   // stamps events, so an action is findable under the date it was taken.
   const events = await loadPhilosEvents();
-  const g = projectValueGroup(events, GROUP_ID, todayIn(systemClock));
+  const g = (await resolveViewerGroupView({ events })).view;
 
   // Who is looking, and what the log actually knows about them. The entry screen
   // used to answer only "what happened in the system"; §14's journey begins with

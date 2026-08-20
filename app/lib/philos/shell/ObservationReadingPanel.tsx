@@ -23,6 +23,7 @@
  * Learning is invented anywhere here.
  */
 import { projectCanonDynamics } from "@/app/lib/philos/canon/projectCanonDynamics";
+import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import { deriveObservationReading, type ObservationReading } from "@/app/lib/philos/canon/observationReading";
 import { classifyObservationText, type ObservationClassification, type OperationalGroupInput } from "@/app/lib/philos/valueSystem/classifier";
 import { resolveValueGroups, type ValueGroupResolverResult, type ResolverGroupInput } from "@/app/lib/philos/valueSystem/groupResolver";
@@ -87,7 +88,7 @@ export default async function ObservationReadingPanel({
         }
       }
       const events = await loadPhilosEvents();
-      const real = projectValueGroup(events, GROUP_ID, todayIn(systemClock));
+      const real = (await resolveViewerGroupView({ events })).view;
       const demos = DEMO_COMMUNITIES
         .map((c) => projectValueGroup(c.events, c.group_id, c.today))
         .filter((v): v is ValueGroupView => v !== null);

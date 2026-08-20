@@ -35,6 +35,7 @@
  * reference the trace stops there and says so.
  */
 import { loadPhilosEvents } from "@/app/lib/philos-event-store";
+import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import { systemClock, todayIn } from "@/app/lib/philos/eventStore";
 import { buildCapitalTimeline, buildMembershipTimeline, projectValueGroup, type ValueGroupView } from "@/app/lib/philos/projectValueGroup";
 import { GROUP_ID } from "@/app/lib/philos/valueGroupLog";
@@ -113,7 +114,7 @@ export async function buildOperationalGroupProfile(): Promise<OperationalGroupPr
   const viewer = await resolveViewerContext();
   const events = await loadPhilosEvents();
   const today = todayIn(systemClock);
-  const view = projectValueGroup(events, GROUP_ID, today);
+  const view = (await resolveViewerGroupView({ events, today })).view;
   if (!view) return null;
 
   const identityLink = await resolveShellIdentityLink();
