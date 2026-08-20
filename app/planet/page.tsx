@@ -61,6 +61,7 @@ import { roleTouchOf } from "@/app/lib/philos/social/roleTouch";
 import { buildSocialFlow } from "@/app/lib/philos/social/socialFlowStages";
 import VerifiedRelationInventory from "@/app/lib/philos/shell/VerifiedRelationInventory";
 import { FS } from "@/app/lib/philos/shell/designTokens";
+import { buildSocialPrimaryContext } from "@/app/lib/philos/social/socialPrimaryContext";
 import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
 import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import SocialChronologyPanel from "@/app/lib/philos/shell/SocialChronologyPanel";
@@ -115,7 +116,8 @@ export default async function PlanetPage({
 
 
   // ONE authority, same as Community and World.
-  const social = await loadSocialSystem(await resolveViewerContext());
+  const viewer = await resolveViewerContext();
+  const social = await loadSocialSystem(viewer);
   const chronology = social.chronology;
   const socialObjects = social.objects;
 
@@ -267,6 +269,38 @@ export default async function PlanetPage({
     reasons: Object.entries(accounting.gate.byReason).map(([reason, count]) => ({ reason, count })),
   };
 
+  /* SHARED PRIMARY CONTEXT — the SAME builder GROUP and SYSTEM call, with the
+     same inputs from the same loader. Globe supplies only its title, the arcs
+     IT draws, and its audit node. The hand-rolled `socialSelection` object
+     below stays because `WorldGlobe` still resolves it against real geometry
+     (that is a NETWORK-only question), but it is no longer the source of the
+     OBJECT / STATUS / ROLES / PROVENANCE readout — the stage is, identically
+     to the other two scales. */
+  const primaryCtx = buildSocialPrimaryContext({
+    scale: "NETWORK",
+    viewer,
+    title: "הרשת · NETWORK",
+    subtitle: "איך הישויות והקשרים פרוסים — פריסה, לא גאוגרפיה, עד שמיקום יהיה אמיתי.",
+    objects: socialObjects,
+    chronology,
+    bridgeLinks: registry,
+    selection: resolveSocialSelection(params.sel, socialObjects),
+    arcs,
+    density: "hud",
+    audit: (
+      <>
+        <VerifiedRelationInventory arcs={arcs} bridgeLinks={bridgeRows} gate={gateReport} />
+        <div style={{ marginTop: 8 }}>
+          <CanonActivityPanel canonActions={canonActions} canonEffects={canonEffects}
+                              canonNeeds={canonNeeds} canonOffers={canonOffers} />
+        </div>
+        <div style={{ marginTop: 8 }}>
+          <RegionLayerPanel registry={registry} />
+        </div>
+      </>
+    ),
+  });
+
   return (
     <WorldGlobe
       nodes={nodes}
@@ -274,6 +308,7 @@ export default async function PlanetPage({
       selected={selected}
       registry={registry}
       gate={gateReport}
+      primaryCtx={primaryCtx}
       socialSelection={(() => {
         const sel = resolveSocialSelection(params.sel, socialObjects);
         if (sel.status !== "resolved") return undefined;

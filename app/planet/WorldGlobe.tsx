@@ -41,6 +41,7 @@ import type { NeedRecord } from "@/app/lib/philos/canon/needStore";
 import type { OfferRecord } from "@/app/lib/philos/canon/offerStore";
 import { isEffectVerified } from "@/app/lib/philos/canon/effect";
 import { COLOR, FS, RADIUS, STATUS, TYPE } from "@/app/lib/philos/shell/designTokens";
+import SocialPrimaryStage, { type SocialPrimaryContext } from "@/app/lib/philos/shell/SocialPrimaryStage";
 import {
   buildContextActions,
   claimedVerifiedColor,
@@ -307,47 +308,11 @@ function Row({ k, v, mono = false }: { k: string; v: string; mono?: boolean }) {
   );
 }
 
-/* ── HUD LANE — the ONE shape every floating panel on this globe takes ────
-   Before this pass the corner held three unrelated shapes: a bordered box
-   for the selected object, two bare <details>, and a legend anchored 12px
-   further in than the stack above it. Same corner, three grammars, two
-   left edges. `HudLane` is the SocialFrame lane translated to a surface
-   that floats over a moving canvas: same 58px label gutter, same FS scale,
-   same accent-edge-marks-primary rule. The only thing it adds is an opaque
-   backdrop, which it needs because there is a rotating globe behind it. */
-function HudLane({ label, accent, children }: { label: string; accent?: string; children: ReactNode }) {
-  return (
-    <div dir="rtl" style={{
-      display: "flex", alignItems: "flex-start", gap: 12,
-      borderInlineStart: `2px solid ${accent ?? COLOR.border}`,
-      border: `1px solid ${COLOR.border}`,
-      borderRadius: RADIUS.md, padding: "9px 12px",
-      background: "rgba(4,10,22,0.97)", backdropFilter: "blur(10px)",
-    }}>
-      <span style={{
-        ...TYPE.micro, fontSize: FS.tag, letterSpacing: 1.4,
-        color: accent ?? COLOR.textFaint,
-        width: 58, flexShrink: 0, paddingTop: 2,
-      }}>{label}</span>
-      <div style={{ flex: 1, minWidth: 0 }}>{children}</div>
-    </div>
-  );
-}
-
-/* A count that carries its own provenance colour, so the HUD never states a
-   number without stating what kind of number it is. */
-function Tally({ items }: { items: { n: number; label: string; color: string }[] }) {
-  return (
-    <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "baseline" }}>
-      {items.map((it) => (
-        <span key={it.label} style={{ display: "inline-flex", alignItems: "baseline", gap: 5 }}>
-          <span style={{ fontSize: FS.read, fontWeight: 700, color: it.color, fontVariantNumeric: "tabular-nums" }}>{it.n}</span>
-          <span style={{ ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint }}>{it.label}</span>
-        </span>
-      ))}
-    </div>
-  );
-}
+/* `HudLane` and `Tally` stood here. They were this surface's own answer to
+   "what is selected / what is its provenance" — a good answer, and the third
+   one in the product. `SocialPrimaryStage` answers it for all three scales
+   now, so they are DELETED rather than left as a second way to say the same
+   thing. Dead shared-looking code is how duplicated grammar grows back. */
 
 export function CanonActivityPanel({ canonActions, canonEffects, canonNeeds, canonOffers }: { canonActions: ActionRecord[]; canonEffects: EffectRecord[]; canonNeeds: NeedRecord[]; canonOffers: OfferRecord[] }) {
   const box = {
@@ -505,7 +470,7 @@ function starShadows(n: number, seed: number) {
   return out.join(",");
 }
 
-export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry, identityLink, personContext, canonActions, canonEffects, canonNeeds, canonOffers, canonicalSlice, observationStrip, personFrameSlot, bridgeLinks, gate, socialSelection }: {
+export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry, identityLink, personContext, canonActions, canonEffects, canonNeeds, canonOffers, canonicalSlice, observationStrip, personFrameSlot, bridgeLinks, gate, socialSelection, primaryCtx }: {
   nodes: GlobeNode[]; arcs: GlobeArc[]; selected?: SelectedContext; registry?: EntityLink[]; identityLink?: ShellIdentityLink;
   /** STEP 2 — the frame this screen's readings are relative to (canon §19). */
   personContext?: PersonContext;
@@ -544,6 +509,10 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
     roles: { role: string; because: string }[];
     source_record_ids: string[];
   };
+  /** The SHARED primary composition context — built by
+   *  `buildSocialPrimaryContext` in `page.tsx`, identical in shape and
+   *  derivation to the one GROUP and SYSTEM pass. */
+  primaryCtx: SocialPrimaryContext;
   /** Verdict from the network truth gate over every candidate edge. */
   gate?: {
     candidates: number; passed: number; rejected: number;
@@ -820,136 +789,83 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
       {selected && selected.status !== "none" ? (
         <ContextInspector selected={selected} registry={registry ?? []} />
       ) : null}
-      {/* ── HUD COLUMN — ONE anchor, one gutter, one grammar ───────────────
-            This corner used to hold two independently positioned stacks: the
-            overlay stack at (left 12, bottom 48) and the legend at (left 24,
-            bottom 26). Their heights were unrelated, so they collided — a bug
-            chased three times, each time with a new bottom offset. They are
-            now ONE flow-laid column: the legend cannot collide with the stack
-            above it because it is IN it. The column is height-capped and
-            scrolls itself, so it can never grow over the sphere.
 
-            Order is hierarchy, top to bottom: what the network IS (always
-            visible) → what is SELECTED (when something is) → AUDIT
-            (collapsed) → how to read the picture (collapsed). */}
+      {/* ── SHARED PRIMARY COMPOSITION CONTRACT, hud density ───────────────
+            NETWORK renders the SAME `SocialPrimaryStage` as GROUP and SYSTEM:
+            the same header, the same six context cells in the same fixed
+            order, the same audit entry, fed from the same
+            `buildSocialPrimaryContext`. `density: "hud"` gives it an opaque
+            backdrop and a two-column rail because it floats over a moving
+            canvas — it does not change which primitives render or what they
+            are called.
+
+            DELETED, not restyled: the bespoke NETWORK lane, the bespoke
+            OBJECT lane, the bottom-centre stats block and the two loose
+            <details>. Every one of them answered a question the stage now
+            answers for all three scales. That is what
+            `DUPLICATED_PRIMARY_GRAMMAR = 0` costs.
+
+            The sphere is NETWORK's representation medium — it is the canvas
+            this column floats on, not a child of it — so the stage's
+            representation slot carries the readout OF that drawing plus the
+            legend that decodes it. Both are facts about the picture, and
+            neither exists at the other two scales. */}
       <div style={S.hudColumn}>
-        {/* NETWORK — the always-on readout. Before this pass provenance and
-            verification existed on this surface only after a selection, so
-            the default view of the globe showed lines whose epistemic status
-            was invisible. These are gate figures over the CANDIDATE EDGES,
-            not over the drawing: the drawing's own counts live under the
-            sphere and are not repeated here. */}
-        {gate ? (
-          <HudLane label="NETWORK" accent={STATUS.real.text}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-              <Tally items={[
-                { n: gate.real, label: "REAL", color: STATUS.real.text },
-                { n: gate.derived, label: "DERIVED", color: persistedDerivedColor("derived") },
-                { n: gate.demo, label: "DEMO", color: STATUS.demo.text },
-              ]} />
-              <Tally items={[
-                { n: gate.verified, label: "VERIFIED", color: STATUS.verified.text },
-                { n: gate.claimed, label: "CLAIMED", color: STATUS.claimed.text },
-                { n: gate.unknown, label: "UNKNOWN", color: STATUS.unknown.text },
-              ]} />
-              <div style={{ ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint }}>
-                {gate.passed}/{gate.candidates} עברו את שער האמת · {gate.rejected} נדחו
+        <SocialPrimaryStage ctx={primaryCtx}>
+          {/* NETWORK_UNIQUE_ONLY — what the sphere actually drew, measured off
+              the render arrays rather than the inputs. The bar once reported
+              61 ontology entities and 147 PUDM relations while 8 lines were on
+              screen: figures describing a data set the viewer was not
+              looking at. */}
+          <div style={S.drawn}>
+            {drawn.map(([l, v]) => (
+              <span key={l} style={S.drawnItem}>
+                <span style={S.drawnNum}>{v}</span>
+                <span style={S.drawnLabel}>{l}</span>
+              </span>
+            ))}
+          </div>
+
+          {/* NETWORK_UNIQUE_ONLY — blueprint §13: a line the viewer cannot
+              decode is not information. */}
+          <details>
+            <summary style={{ ...S.hudSummary, listStyle: "none" }}>LEGEND</summary>
+            <div style={S.legend}>
+              <div style={S.legendRow}>
+                <span style={{ ...S.legendLine, background: "linear-gradient(90deg,rgba(255,206,138,0.1),#ffce8a)", height: 2 }} />
+                <span style={S.legendText}>resource transfer — amount · value · event</span>
+              </div>
+              <div style={S.legendRow}>
+                <span style={{ ...S.legendLine, background: "linear-gradient(90deg,rgba(150,210,255,0.1),#96d2ff)" }} />
+                <span style={S.legendText}>membership / appointment — from the event log</span>
+              </div>
+              <div style={S.legendRow}>
+                <span style={{ ...S.legendLine, background: "#fff", height: 2 }} />
+                <span style={S.legendText}>selected context — from a real ?ctx=</span>
+              </div>
+              <div style={S.legendRow}>
+                <span style={{ ...S.legendDot, background: GROUP }} />
+                <span style={S.legendText}>value group</span>
+              </div>
+              <div style={S.legendRow}>
+                <span style={{ ...S.legendDot, background: VALUE }} />
+                <span style={S.legendText}>value — the group&apos;s own real central_value</span>
+              </div>
+              <div style={S.legendRow}>
+                <span style={{ ...S.legendDot, background: PERSON }} />
+                <span style={S.legendText}>person — registered in the log</span>
+              </div>
+              <div style={S.legendRow}>
+                <span style={{ ...S.legendDot, background: RECIPIENT }} />
+                <span style={S.legendText}>recipient — named by an approved transfer</span>
+              </div>
+              <div style={S.legendNote}>
+                Every point and line comes from an event and names it on hover.
+                Point positions are layout, not geography.
               </div>
             </div>
-          </HudLane>
-        ) : null}
-
-        {/* SELECTED OBJECT — the same record Community and World have
-            selected, resolved against geometry that ALREADY EXISTS. When no
-            arc carries this event_id the projection is NOT_APPLICABLE and
-            says why; no node, coordinate or edge is created to satisfy a
-            selection. ROLES / TIME / PROVENANCE sit here, one lane below the
-            network's own provenance, in the same gutter — the two read as
-            one instrument reporting at two scales. */}
-        {socialSelection ? (
-          <HudLane label="OBJECT" accent={socialSelection.network_present ? "#ffd88a" : undefined}>
-            <Row k="OBJECT" v={`${socialSelection.kind} · ${socialSelection.record_id}`} mono />
-            <Row
-              k="RELATION"
-              v={socialSelection.network_present
-                ? "קשת מודגשת + שני קצותיה"
-                : `NOT_APPLICABLE — ${socialSelection.absent_reason ?? "אין ייצוג רשתי"}`}
-            />
-            <Row k="TIME" v={socialSelection.at.slice(0, 16).replace("T", " ")} mono />
-            <Row
-              k="ROLES"
-              v={socialSelection.roles.length > 0
-                ? socialSelection.roles.map((r) => r.role).join(" · ")
-                : "אף תפקיד פנימי לא מופעל"}
-            />
-            <Row
-              k="EVIDENCE"
-              v={socialSelection.source_record_ids.length > 0
-                ? socialSelection.source_record_ids.join(" · ")
-                : "אין הפניה מתועדת"}
-              mono
-            />
-            <Row k="PROVENANCE" v={socialSelection.provenance} />
-            <Row k="STATUS" v={socialSelection.verification} />
-          </HudLane>
-        ) : null}
-
-        {/* AUDIT — collapsed by default, same as the frame's audit lane. */}
-        {!selected || selected.status === "none" ? (
-          <div dir="rtl">
-            <details>
-              <summary style={S.hudSummary}>תצפית אחרונה · LATEST OBSERVATION (CANON)</summary>
-              {observationStrip}
-            </details>
-            <details>
-              <summary style={S.hudSummary}>Person / Value State (Phase 4, זהה ל-Hub/Dynamics/Brain) · CANON + קריאת התצפית האחרונה</summary>
-              {canonicalSlice}
-            </details>
-          </div>
-        ) : null}
-
-        {/* Legend — blueprint §13: a line the viewer cannot decode is not
-            information. Lists exactly what is drawn, node types included,
-            since every one of them now comes from the projection. Collapsed
-            by default; it is the last thing in the column because it is the
-            reference for everything above it. */}
-        <details>
-          <summary style={{ ...S.hudSummary, listStyle: "none" }}>LEGEND</summary>
-          <div style={S.legend}>
-            <div style={S.legendRow}>
-              <span style={{ ...S.legendLine, background: "linear-gradient(90deg,rgba(255,206,138,0.1),#ffce8a)", height: 2 }} />
-              <span style={S.legendText}>resource transfer — amount · value · event</span>
-            </div>
-            <div style={S.legendRow}>
-              <span style={{ ...S.legendLine, background: "linear-gradient(90deg,rgba(150,210,255,0.1),#96d2ff)" }} />
-              <span style={S.legendText}>membership / appointment — from the event log</span>
-            </div>
-            <div style={S.legendRow}>
-              <span style={{ ...S.legendLine, background: "#fff", height: 2 }} />
-              <span style={S.legendText}>selected context — from a real ?ctx=</span>
-            </div>
-            <div style={S.legendRow}>
-              <span style={{ ...S.legendDot, background: GROUP }} />
-              <span style={S.legendText}>value group</span>
-            </div>
-            <div style={S.legendRow}>
-              <span style={{ ...S.legendDot, background: VALUE }} />
-              <span style={S.legendText}>value — the group's own real central_value</span>
-            </div>
-            <div style={S.legendRow}>
-              <span style={{ ...S.legendDot, background: PERSON }} />
-              <span style={S.legendText}>person — registered in the log</span>
-            </div>
-            <div style={S.legendRow}>
-              <span style={{ ...S.legendDot, background: RECIPIENT }} />
-              <span style={S.legendText}>recipient — named by an approved transfer</span>
-            </div>
-            <div style={S.legendNote}>
-              Every point and line comes from an event and names it on hover.
-              Point positions are layout, not geography.
-            </div>
-          </div>
-        </details>
+          </details>
+        </SocialPrimaryStage>
       </div>
 
       {/* EVENTS ON SCREEN removed: it listed the same records the shared
@@ -963,18 +879,10 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
       {/* Scale note moved out of PRIMARY: explanatory prose belongs in
           SECONDARY/AUDIT, not floating over the sphere. */}
 
-      <div style={S.bottom}>
-        <div style={S.stats}>
-          {drawn.map(([l, v], i) => (
-            <div key={l} style={S.stat}>
-              <span style={S.statNum}>{v}</span>
-              <span style={S.statLabel}>{l}</span>
-              {i < drawn.length - 1 && <span style={S.statSep} />}
-            </div>
-          ))}
-        </div>
-        <div style={S.statsNote}>drawn on this screen, from the event log</div>
-      </div>
+      {/* The bottom-centre stats block that stood here is DELETED. Its three
+          figures are the stage's representation slot now — one readout, in the
+          shared column, instead of a second HUD grammar parked under the
+          sphere. */}
     </div>
   );
 }
@@ -1027,6 +935,17 @@ const S: Record<string, React.CSSProperties> = {
      legend used `railHead`, the audit stack used two inline objects. */
   hudSummary: { cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#5a76a3", padding: "4px 2px" },
 
+  /* NETWORK_UNIQUE_ONLY — the drawing's own counts, inside the shared stage's
+     representation slot. */
+  drawn: {
+    display: "flex", alignItems: "baseline", gap: 18, flexWrap: "wrap",
+    padding: "8px 11px", border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.md,
+    background: "rgba(4,10,22,0.97)", backdropFilter: "blur(10px)",
+  },
+  drawnItem: { display: "inline-flex", alignItems: "baseline", gap: 6 },
+  drawnNum: { fontSize: 18, fontWeight: 700, color: "#eaf1ff", lineHeight: 1, fontVariantNumeric: "tabular-nums" },
+  drawnLabel: { fontSize: FS.tag, textTransform: "uppercase", letterSpacing: 1.4, color: "#5a76a3" },
+
   legend: { display: "flex", flexDirection: "column", gap: 5, maxWidth: 260, padding: "4px 2px 2px" },
   legendRow: { display: "flex", alignItems: "center", gap: 9 },
   legendLine: { width: 26, height: 1.5, borderRadius: 2, flexShrink: 0 },
@@ -1043,11 +962,4 @@ const S: Record<string, React.CSSProperties> = {
   streamRow: { fontSize: 10, lineHeight: 1.5, color: "#7f97c2", textAlign: "right" },
   streamId: { color: "#3e587f" },
 
-  bottom: { position: "absolute", left: "50%", bottom: 26, transform: "translateX(-50%)", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 },
-  stats: { display: "flex", alignItems: "center", gap: 22 },
-  stat: { display: "flex", flexDirection: "column", alignItems: "center", position: "relative" },
-  statNum: { fontSize: 22, fontWeight: 700, color: "#eaf1ff", lineHeight: 1, fontVariantNumeric: "tabular-nums" },
-  statLabel: { fontSize: FS.tag, textTransform: "uppercase", letterSpacing: "1.5px", color: "#43608a", marginTop: 4 },
-  statSep: { position: "absolute", right: -11, top: 2, width: 1, height: 22, background: "rgba(90,130,190,0.18)" },
-  statsNote: { fontSize: FS.tag, letterSpacing: "1px", color: "#3e587f" },
 };

@@ -26,6 +26,8 @@ import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection"
 import { buildSocialFlow } from "@/app/lib/philos/social/socialFlowStages";
 import { primaryStage } from "@/app/lib/philos/shell/primaryStage";
 import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
+import SocialPrimaryStage from "@/app/lib/philos/shell/SocialPrimaryStage";
+import { buildSocialPrimaryContext } from "@/app/lib/philos/social/socialPrimaryContext";
 import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import SocialChronologyPanel from "@/app/lib/philos/shell/SocialChronologyPanel";
 import { loadSocialChronology } from "@/app/lib/philos/social/loadSocialChronology";
@@ -75,7 +77,8 @@ export default async function WorldPage({ searchParams }: {
   // ONE authority. World previously built the projection with an EMPTY
   // needGroups map, which is why it reported NETWORK = 10 while the other two
   // reported 11 from the same records.
-  const social = await loadSocialSystem(await resolveViewerContext());
+  const viewer = await resolveViewerContext();
+  const social = await loadSocialSystem(viewer);
   const chronology = social.chronology;
   const socialObjects = social.objects;
   const worldToday = todayIn(systemClock);
@@ -101,25 +104,24 @@ export default async function WorldPage({ searchParams }: {
      records. The reason string comes from the flow builder itself, so this
      strip cannot drift from the lane above it. */
   const systemFlow = social.flow({ scale: "SYSTEM" });
-  /* ONE source for the scale figure. An earlier version of this strip summed
-     the flow's stages and reported 115/119 — it had added the 110 base
-     CONTRADICTIONS and 4 VALUE EMERGENCE relations, which are SOURCE
-     INVENTORY, into a count of entities (SOURCE != REAL). A second version
-     summed only the REAL stages and reported 1, which contradicted the WHERE
-     lane's own "0 World SYSTEM" three rows above it, because the flow gates
-     eligibility on the canon tail only and GROUP VALUE carries no scale gate.
-
-     Both were second derivations of a number the frame already computes. This
-     reads the SAME expression `SocialFrame` reads, off the SAME objects array
-     passed to it, so the two cannot disagree. */
-  const systemPresent = socialObjects.filter((o) => o.scales.SYSTEM.present).length;
-  /* What EXISTS but does not reach this scale — the canon tail, which is the
-     only part of the flow the builder actually gates. Reported separately and
-     never added to the figure above: "0 at SYSTEM" and "these records exist"
-     are both true at once, and UNKNOWN is not 0. */
-  const systemGated = systemFlow.filter((st) => st.eligible === 0 && (st.count ?? 0) > 0);
-  const systemExists = systemGated.reduce((n, st) => n + (st.count ?? 0), 0);
-  const systemReason = systemGated[0]?.not_eligible_because ?? "אין ראיה מערכתית רחבה משלו";
+  const systemSelection = resolveSocialSelection(params?.sel, socialObjects);
+  /* SHARED PRIMARY CONTEXT — built by the ONE builder, from the ONE loader.
+     World supplies only what is genuinely its own: its title, its audit node,
+     and the fact that it draws no arcs. Every figure on the stage (headline,
+     scope, relation accounting, provenance) is derived in
+     `buildSocialPrimaryContext`, identically to GROUP and NETWORK, so no two
+     scales can disagree about a number they both display. */
+  const primaryCtx = buildSocialPrimaryContext({
+    scale: "SYSTEM",
+    viewer,
+    title: "המערכת הרחבה · WIDER SYSTEM",
+    subtitle: "מה נצפה בקנה־מידה מערכתי, ומה קיים אך אינו מגיע לכאן. UNKNOWN ≠ 0.",
+    objects: socialObjects,
+    chronology,
+    bridgeLinks: social.bridgeLinks,
+    selection: systemSelection,
+    audit: <SocialSourceSpinePanel surface="world" />,
+  });
 
   return (
     <div style={{ background: COLOR.bg, minHeight: "100vh" }}>
@@ -165,64 +167,48 @@ export default async function WorldPage({ searchParams }: {
           flow={systemFlow}
           chronology={chronology}
           objects={socialObjects}
-          selection={resolveSocialSelection(params?.sel, socialObjects)}
+          selection={systemSelection}
           // NOW — World's primary content, INSIDE a PRIMARY_STAGE.
           // `CinematicBackground` is now `position: absolute` and measures its
           // parent, so it fills this stage instead of escaping to the
           // viewport. The stage's `isolation: isolate` seals its z-order, so
           // nothing inside it can sort above the navigation.
           primary={
-            <>
-              {/* ── OBSERVED / REFERENCE — the SYSTEM scale's whole hierarchy
-                  ────────────────────────────────────────────────────────────
-                  World is the one surface whose visible content is almost
-                  entirely REFERENCE. Until this pass that fact was carried by
-                  a single pill at the top, which scrolled away after ~40px
-                  and left 560px of large, bright, confidently-laid-out
-                  architecture reading as observed reality.
-
-                  Two tiers now, stated in this order because it is the honest
-                  order: what is OBSERVED at this scale comes first even
-                  though it is empty, and the reference material is wrapped
-                  for its ENTIRE extent rather than introduced once. A badge
-                  labels a moment; a container labels a region. */}
-              <div style={S.observed}>
-                <span style={{ ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint, width: 74, flexShrink: 0, paddingTop: 2 }}>OBSERVED</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 20, fontWeight: 700, color: COLOR.textDim, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{systemPresent}</span>
-                    <span style={{ ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint }}>RECORDS AT SYSTEM SCALE</span>
-                    <span style={{ ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint, opacity: 0.5 }}>·</span>
-                    <span style={{ fontSize: FS.read, fontWeight: 700, color: STATUS.real.text, fontVariantNumeric: "tabular-nums" }}>{systemExists}</span>
-                    <span style={{ ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint }}>EXIST, GATED OUT</span>
-                  </div>
-                  <div style={{ fontSize: FS.tag, color: COLOR.textFaint, lineHeight: 1.6, marginTop: 4 }}>
-                    {systemReason} · UNKNOWN ≠ 0 — הרשומות קיימות, הן פשוט אינן מגיעות לקנה־המידה הזה.
-                  </div>
-                </div>
-              </div>
-
+            /* SHARED PRIMARY COMPOSITION CONTRACT.
+               World owns exactly ONE thing on this stage: the representation
+               below. The header, the six context cells (OBJECT / STATUS /
+               TIME / ROLES / RELATIONS / PROVENANCE) and the audit entry are
+               `SocialPrimaryStage`, identical to GROUP and NETWORK, fed from
+               the same `loadSocialSystem(viewer)` result. The bespoke
+               OBSERVED lane that used to live here is gone: its two figures
+               are the stage's headline and RELATIONS cell now, so no scale
+               states them in a grammar of its own. */
+            <SocialPrimaryStage ctx={primaryCtx}>
+              {/* SYSTEM_UNIQUE_ONLY — the reference-architecture region.
+                  A badge labels a moment; a container labels a region, so the
+                  demotion is carried for WorldView's entire extent. */}
               <div style={S.reference}>
                 <div style={S.referenceTag}>
                   <span style={{ ...TYPE.micro, color: STATUS.demo.text }}>REFERENCE ARCHITECTURE</span>
                   <span style={{ fontSize: FS.tag, color: COLOR.textDim }}>— PUDM legacy dataset, לא Observation/Action/Effect קנוני אמיתי</span>
                 </div>
-              <div style={{ ...primaryStage({ minHeight: 560, scroll: true }), marginTop: 6 }}>
-            <WorldView
-              missions={missions}
-              gaps={gaps}
-              values={values}
-              capabilities={capabilities}
-              vcRelations={vcRelations}
-              providers={providers}
-              pcRelations={pcRelations}
-              communityGroupsByValueId={communityGroupsByValueId}
-            />
+                <div style={{ ...primaryStage({ minHeight: 560, scroll: true }), marginTop: 6 }}>
+                  <WorldView
+                    missions={missions}
+                    gaps={gaps}
+                    values={values}
+                    capabilities={capabilities}
+                    vcRelations={vcRelations}
+                    providers={providers}
+                    pcRelations={pcRelations}
+                    communityGroupsByValueId={communityGroupsByValueId}
+                  />
+                </div>
               </div>
-              </div>
-            </>
+            </SocialPrimaryStage>
           }
-          audit={<SocialSourceSpinePanel surface="world" />}
+          // AUDIT — passed to the shared stage as its AUDIT ENTRY primitive,
+          // not rendered a second time here. One audit node per scale.
         />
         {/* PRIMARY / AUDIT ORDER — World's primary question is "what is
             happening at the wider system level", and its answer is the map
@@ -284,16 +270,10 @@ export default async function WorldPage({ searchParams }: {
 }
 
 const S: Record<string, React.CSSProperties> = {
-  /* OBSERVED — a lane, not a card: same label gutter and same type scale the
-     shared frame uses, so the first thing on the stage reads as part of the
-     frame above it rather than as a new component. */
-  observed: {
-    display: "flex", alignItems: "flex-start", gap: 12,
-    borderInlineStart: `2px solid ${COLOR.border}`,
-    border: `1px solid ${COLOR.border}`,
-    borderRadius: RADIUS.md, padding: "10px 14px", marginBottom: 10,
-    background: "rgba(11,15,26,0.55)",
-  },
+  /* The bespoke OBSERVED lane that lived here is DELETED, not restyled. Its
+     two figures are now the shared stage's headline and RELATIONS cell —
+     `DUPLICATED_PRIMARY_GRAMMAR = 0` means the per-scale version has to go,
+     not merely look like the others. */
   /* REFERENCE — the container that holds the demotion for the whole region.
      Dashed, because a dashed edge is the one border grammar this product
      already uses for "not recorded" (the spine's CONCEPTUAL connector), and

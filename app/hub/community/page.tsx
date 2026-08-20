@@ -39,6 +39,8 @@ import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePane
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
 import { loadSocialSystem } from "@/app/lib/philos/social/loadSocialSystem";
+import SocialPrimaryStage from "@/app/lib/philos/shell/SocialPrimaryStage";
+import { buildSocialPrimaryContext } from "@/app/lib/philos/social/socialPrimaryContext";
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection";
 import { buildSocialFlow } from "@/app/lib/philos/social/socialFlowStages";
@@ -126,12 +128,14 @@ export default async function CommunityPage({
   // ONE authority for every social fact this page shows. The registry used to
   // be built here WITHOUT needs or actions, so it produced no real links and
   // the group card contradicted the flow rail in the same viewport.
-  const social = await loadSocialSystem(await resolveViewerContext());
+  const socialViewer = await resolveViewerContext();
+  const social = await loadSocialSystem(socialViewer);
   const chronology = social.chronology;
   const socialObjects = social.objects;
   const bridgeLinks = social.bridgeLinks;
   const socialSelection = resolveSocialSelection(params.sel, socialObjects);
   const identityLink = await resolveShellIdentityLink();
+
 
   const activityFeed = group ? buildActivityFeed(events, GROUP_ID, 15) : [];
   let realNeedsCount = 0;
@@ -187,6 +191,30 @@ export default async function CommunityPage({
       return latest ? String(latest.payload.context ?? "") : undefined;
     } catch { return undefined; }
   })();
+
+  /* SHARED PRIMARY CONTEXT — same builder, same loader, same derivations as
+     NETWORK and SYSTEM. Community supplies only its title and its audit node;
+     it draws no arcs, and 0 there is a measured fact about the drawing. */
+  const primaryCtx = buildSocialPrimaryContext({
+    scale: "GROUP",
+    viewer: socialViewer,
+    title: "קבוצות ערך · VALUE GROUPS",
+    subtitle: "מי מחובר סביב איזה ערך, ומה הקבוצה עושה בפועל.",
+    objects: socialObjects,
+    chronology,
+    bridgeLinks,
+    selection: socialSelection,
+    audit: (
+      <>
+        <SocialSourceSpinePanel surface="community" observationText={latestObservationText} />
+        <div style={{ marginTop: 8 }}>
+          <AuditSection title="מצב אדם / ערך · PERSON / VALUE STATE" note="Phase 4 · CANON — זהה לכל שאר המסופים">
+            <CanonicalSlicePanel subject={personRef.person_id} asOf={systemClock.now()} />
+          </AuditSection>
+        </div>
+      </>
+    ),
+  });
 
   const personFrame = await resolvePersonFrame({
     subject: personRef.person_id,
@@ -501,23 +529,20 @@ export default async function CommunityPage({
           // board used to sit below it, which made the frame a header rather
           // than the surface. One object on screen, not a header plus a page.
           primary={!showingGroupDetail ? (
-            <ValueGroupsBoard
-              groups={groupCards}
-              linkedSubject={identityLink.status === "VERIFIED_SAME_PERSON" ? personRef.person_id : undefined}
-            />
+            /* SHARED PRIMARY COMPOSITION CONTRACT — identical stage, identical
+               six context cells, identical audit entry as NETWORK and SYSTEM.
+               Community owns ONLY the board below. The vitals it used to head
+               itself with are the stage's headline and context rail now. */
+            <SocialPrimaryStage ctx={primaryCtx}>
+              {/* GROUP_UNIQUE_ONLY — the operational community board. */}
+              <ValueGroupsBoard
+                groups={groupCards}
+                linkedSubject={identityLink.status === "VERIFIED_SAME_PERSON" ? personRef.person_id : undefined}
+              />
+            </SocialPrimaryStage>
           ) : undefined}
-          // AUDIT — the source spine and the shared person/value state, both
-          // collapsed in the one SOURCE lane instead of two separate bands.
-          audit={
-            <>
-              <SocialSourceSpinePanel surface="community" observationText={latestObservationText} />
-              <div style={{ marginTop: 8 }}>
-                <AuditSection title="מצב אדם / ערך · PERSON / VALUE STATE" note="Phase 4 · CANON — זהה לכל שאר המסופים">
-                  <CanonicalSlicePanel subject={personRef.person_id} asOf={systemClock.now()} />
-                </AuditSection>
-              </div>
-            </>
-          }
+          // AUDIT — passed to the shared stage as its AUDIT ENTRY primitive,
+          // not rendered a second time here. One audit node per scale.
         />
       </div>
 

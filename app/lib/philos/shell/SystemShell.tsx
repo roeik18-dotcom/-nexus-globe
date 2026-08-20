@@ -104,10 +104,16 @@ export type ShellSurfaceKey = "hub" | "brain" | "dynamics" | "globe" | "communit
 const NAV: { label: string; href: string; key: ShellSurfaceKey; carriesCtx?: boolean; carriesSubject?: boolean; carriesCommunity?: boolean; family?: "social" }[] = [
   { label: "Hub", href: "/hub", key: "hub", carriesSubject: true },
   { label: "Brain", href: "/brain", key: "brain", carriesSubject: true },
-  { label: "Dynamics", href: "/dynamics", key: "dynamics", carriesCtx: true, carriesCommunity: true },
+  // ROLE-BAND ORDER (ruled by Roei): GREEN sits next to BLUE, and YELLOW sits
+  // between GREEN and ORANGE. Reading left to right the header is therefore
+  // PURPLE · BLUE · GREEN · YELLOW · ORANGE. Dynamics moved AFTER the social
+  // family to make that true; its route, colour and behaviour are unchanged,
+  // and the family stays three consecutive `family: "social"` entries so the
+  // capsule still collapses them into one control.
   { label: "Community", href: "/hub/community", key: "community", carriesCommunity: true, family: "social" },
   { label: "Globe", href: "/planet", key: "globe", carriesCtx: true, family: "social" },
   { label: "World", href: "/world", key: "world", family: "social" },
+  { label: "Dynamics", href: "/dynamics", key: "dynamics", carriesCtx: true, carriesCommunity: true },
   { label: "Marketplace", href: "/marketplace", key: "marketplace", carriesCtx: true },
 ];
 
@@ -352,8 +358,8 @@ export function SystemShell({
                  structure at all. Each item now shows its own accent as a
                  2px seat under the label, dim when elsewhere and solid when
                  here. Read left to right the band is the role sequence the
-                 nav order encodes: Hub PURPLE, then BLUE -> YELLOW -> GREEN
-                 (the social capsule) -> ORANGE.
+                 nav order encodes: Hub PURPLE, then BLUE -> GREEN
+                 (the social capsule) -> YELLOW -> ORANGE.
 
                  A seat rather than a fill: seven filled pills would make the
                  header a colour chart and destroy the one thing the active
