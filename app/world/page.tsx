@@ -148,6 +148,14 @@ export default async function WorldPage({ searchParams }: {
             used to render BEFORE the visualization and pushed it past the
             fold. They now follow it. Nothing was removed. */}
       </div>
+      {/* NOT folded into SocialFrame's NOW lane, unlike Community's board.
+          WorldView renders CinematicBackground as `position: fixed; inset: 0`,
+          which escapes any ancestor and painted over the entire shell when it
+          was nested inside the frame — the surface rendered as a starfield
+          with no navigation at all. A fixed full-viewport child cannot be
+          contained by a flow layout, so the map stays a sibling and the frame
+          stays above it via the stacking context the header div already
+          establishes. Tried, measured, reverted. */}
       <WorldView
         missions={missions}
         gaps={gaps}

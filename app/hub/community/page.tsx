@@ -506,7 +506,27 @@ export default async function CommunityPage({
           chronology={chronology}
           objects={socialObjects}
           selection={socialSelection}
-          audit={<SocialSourceSpinePanel surface="community" observationText={latestObservationText} />}
+          // NOW — this surface's own primary content, INSIDE the frame. The
+          // board used to sit below it, which made the frame a header rather
+          // than the surface. One object on screen, not a header plus a page.
+          primary={!showingGroupDetail ? (
+            <ValueGroupsBoard
+              groups={groupCards}
+              linkedSubject={identityLink.status === "VERIFIED_SAME_PERSON" ? personRef.person_id : undefined}
+            />
+          ) : undefined}
+          // AUDIT — the source spine and the shared person/value state, both
+          // collapsed in the one SOURCE lane instead of two separate bands.
+          audit={
+            <>
+              <SocialSourceSpinePanel surface="community" observationText={latestObservationText} />
+              <div style={{ marginTop: 8 }}>
+                <AuditSection title="מצב אדם / ערך · PERSON / VALUE STATE" note="Phase 4 · CANON — זהה לכל שאר המסופים">
+                  <CanonicalSlicePanel subject={personRef.person_id} asOf={systemClock.now()} />
+                </AuditSection>
+              </div>
+            </>
+          }
         />
       </div>
 
@@ -527,18 +547,12 @@ export default async function CommunityPage({
           etc.) — this adds the Phase 4 Human/Music/Color source_refs +
           current_state/history/evidence layer Community did not read
           before. Collapsed — not primary flow content. */}
-      <div dir="rtl" style={{ margin: "0 20px 12px" }}>
-        <AuditSection title="מצב אדם / ערך · PERSON / VALUE STATE" note="Phase 4 · CANON — זהה לכל שאר המסופים">
-          <CanonicalSlicePanel subject={personRef.person_id} asOf={systemClock.now()} />
-        </AuditSection>
-      </div>
 
       {/* PRIMARY — the Value Groups board. Everything on it is a fold over
           data this page already loaded; the universe explorer below keeps
           every capability it had, one fold down. */}
       {!showingGroupDetail ? (
         <>
-          <ValueGroupsBoard groups={groupCards} linkedSubject={identityLink.status === "VERIFIED_SAME_PERSON" ? personRef.person_id : undefined} />
           {/* 7-terminal propagation — the SAME shared Observation reading;
               on Community the VALUE GROUP relation row is the point: a real
               join or UNRESOLVED, never an invented membership. */}
