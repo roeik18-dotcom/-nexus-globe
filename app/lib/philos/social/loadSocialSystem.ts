@@ -31,6 +31,8 @@ import { loadEffects } from "../canon/effectStoreAccessor";
 import { isEffectVerified } from "../canon/effect";
 import { loadNeedGroupLinks } from "../community/needGroupLinkStoreAccessor";
 import { loadCanonEvents } from "../canon/canonEventStoreAccessor";
+import { loadValueDeclarations } from "../community/valueDeclarationStoreAccessor";
+import type { ValueDeclaration } from "../community/valueDeclaration";
 import { buildDefaultLinkRegistry } from "../bridge/linkRegistry";
 import type { EntityLink } from "../bridge/entityLink";
 import { buildSocialChronology, type ChronoEntry } from "./socialChronology";
@@ -47,6 +49,15 @@ export interface SocialSystemState {
   counts: Record<Scale, number>;
   /** Canon totals, so no surface counts records for itself. */
   totals: { needs: number; offers: number; actions: number; effects: number; verifiedEffects: number };
+  /** Materialized values. `null` counts mean UNKNOWN — never rendered as 0. */
+  values: {
+    all: ValueDeclaration[];
+    personal: number | null;
+    group: number | null;
+    /** Verified subsets, so DECLARED is never shown as VERIFIED. */
+    personalVerified: number;
+    groupVerified: number;
+  };
   /** The ten-stage flow, built once from the same numbers. */
   flow: (over?: { valueGroups?: number | null; memberships?: number | null }) => FlowStage[];
 }
@@ -54,7 +65,7 @@ export interface SocialSystemState {
 export async function loadSocialSystem(): Promise<SocialSystemState> {
   const today = todayIn(systemClock);
 
-  const [events, needs, offers, actions, effects, declarations, canonEvents] = await Promise.all([
+  const [events, needs, offers, actions, effects, declarations, canonEvents, valueDeclarations] = await Promise.all([
     loadPhilosEvents().catch(() => []),
     loadNeeds().catch(() => []),
     loadOffers().catch(() => []),
@@ -66,6 +77,8 @@ export async function loadSocialSystem(): Promise<SocialSystemState> {
     // and reached no surface at all — not a gap in the data, a gap in the
     // wiring.
     loadCanonEvents().catch(() => []),
+    // Materialized values — the only source for the spine's middle two links.
+    loadValueDeclarations().catch(() => []),
   ]);
 
   const chronology = buildSocialChronology({
@@ -121,6 +134,21 @@ export async function loadSocialSystem(): Promise<SocialSystemState> {
     SYSTEM: objects.filter((o) => o.scales.SYSTEM.present).length,
   };
 
+  // Personal and Group values are counted SEPARATELY and never merged: one
+  // person's value is not the group's, and the spine shows them as two links
+  // precisely because they are two different facts.
+  const personalDecls = valueDeclarations.filter((v) => v.scope === "PERSONAL");
+  const groupDecls = valueDeclarations.filter((v) => v.scope === "GROUP");
+  const values = {
+    all: valueDeclarations,
+    // UNKNOWN until one exists — an empty store means nobody has declared,
+    // which is not the same as "zero values exist".
+    personal: personalDecls.length > 0 ? personalDecls.length : null,
+    group: groupDecls.length > 0 ? groupDecls.length : null,
+    personalVerified: personalDecls.filter((v) => v.status === "VERIFIED").length,
+    groupVerified: groupDecls.filter((v) => v.status === "VERIFIED").length,
+  };
+
   const verifiedEffects = effects.filter((e) => isEffectVerified(e.effect)).length;
   const totals = {
     needs: needs.length, offers: offers.length, actions: actions.length,
@@ -128,14 +156,14 @@ export async function loadSocialSystem(): Promise<SocialSystemState> {
   };
 
   return {
-    chronology, objects, bridgeLinks, needGroups, counts, totals,
+    chronology, objects, bridgeLinks, needGroups, counts, totals, values,
     // Only the two value-model stages differ by scale (a scale may see no
     // groups); every canon stage comes from the SAME totals everywhere.
     flow: (over) => buildSocialFlow({
       contradictions: 110,
       emergentValues: 4,
-      personalValues: null,
-      groupValues: null,
+      personalValues: values.personal,
+      groupValues: values.group,
       valueGroups: over?.valueGroups ?? null,
       memberships: over?.memberships ?? null,
       needs: totals.needs || null,

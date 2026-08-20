@@ -39,6 +39,7 @@ import {
 import type { GroupRegistryEntry, PossibleGroup } from "@/app/lib/philos/community/groupRegistry";
 import CreateNeedForm from "../CreateNeedForm";
 import DeclareNeedGroup from "./DeclareNeedGroup";
+import DeclareValue from "./DeclareValue";
 import CreateOfferForm from "../CreateOfferForm";
 import CommunityFlow from "./CommunityFlow";
 import type { ActivityFeedItem, ImpactView, PersonView, ValueGroupView } from "@/app/lib/philos/projectValueGroup";
@@ -921,6 +922,17 @@ function NeedsMode({ realNeedsCount, realGroups, declarableNeeds, subjectId }: {
     : undefined;
   return (
     <Section title={`צרכים פתוחים · OPEN NEEDS (${realNeedsCount})`}>
+      {/* Materialize a value — the ONLY path by which Personal/Group values
+          come into existence. Nothing here proposes one from the contradiction
+          inventory or from the group's central value. */}
+      {subjectId ? (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+          <DeclareValue scope="PERSONAL" holderId={subjectId} holderLabel={subjectId} declaredBy={subjectId} />
+          {originGroup ? (
+            <DeclareValue scope="GROUP" holderId={originGroup.group_id} holderLabel={originGroup.label} declaredBy={subjectId} />
+          ) : null}
+        </div>
+      ) : null}
       <CreateNeedForm community={originGroup} />
       {realNeedsCount === 0 ? <Empty>0 Need קנוני אמיתי כרגע — השתמש בטופס למעלה כדי לרשום אחד.</Empty> : <div style={S.note}>{realNeedsCount} Need קנוני אמיתי רשום.</div>}
 
