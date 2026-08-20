@@ -900,27 +900,16 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
         </div>
       </details>
 
-      <div style={S.rightRail}>
-        <div style={{ ...S.railHead, textAlign: "right" }}>EVENTS ON SCREEN</div>
-        {recentArcs.map(a => (
-          <div key={a.event_id} style={S.streamRow}>
-            {a.relation} · {a.timestamp.slice(0, 10)}
-            <span style={S.streamId}> {a.event_id}</span>
-          </div>
-        ))}
-        {recentArcs.length === 0 && <div style={S.streamRow}>no event-backed lines</div>}
-      </div>
+      {/* EVENTS ON SCREEN removed: it listed the same records the shared
+          TIME lane already lists, in Globe's own layout. One timeline, one
+          place. The graph's own readout (nodes/arcs/relation types) stays,
+          because that is a fact about the DRAWING, not about the records. */}
 
       {/* SCALE — real semantic zoom: what's real at each level on THIS
           globe, stated honestly rather than fabricating Community/System/
           World entities that don't exist as real data here. */}
-      <div dir="rtl" style={{ position: "absolute", bottom: 46, right: 16, zIndex: 10, background: "rgba(4,10,22,0.7)", backdropFilter: "blur(6px)", borderRadius: 8, padding: "8px 10px", fontSize: 10, color: "#7f97c2", maxWidth: 180 }}>
-        <div style={{ letterSpacing: 1, color: "#5aa6ff", marginBottom: 4 }}>קנה מידה מערכתי</div>
-        <div>אדם — נקודות person</div>
-        <div>יחסים — קווי transfer/membership</div>
-        <div>קבוצה — נקודת value_group</div>
-        <div style={{ color: "#5a76a3", marginTop: 4 }}>קהילה · מערכת · עולם — לא ידוע, אין ישויות אמיתיות נפרדות בגלובוס הזה</div>
-      </div>
+      {/* Scale note moved out of PRIMARY: explanatory prose belongs in
+          SECONDARY/AUDIT, not floating over the sphere. */}
 
       <div style={S.bottom}>
         <div style={S.stats}>
