@@ -85,11 +85,30 @@ export default function SocialFrame({
   objects?: SocialObject[];
 }) {
   const scope = SCOPE_OF_SURFACE[surface];
-  const here = atScope(chronology, scope);
+
+  // ONE SOURCE FOR SCOPE. `objects` is the unified projection and is the only
+  // thing that knows about explicit Need->group declarations; the raw
+  // chronology only sees `origin_group_id`. Counting from the chronology
+  // therefore disagreed with the OBJECT lane the moment a declaration existed
+  // — the header said NETWORK 10 while the selected object plainly showed
+  // itself present at NETWORK. Both answers came from real code; they just
+  // came from two places. Scope is now read from the projection whenever it
+  // is supplied, and the chronology is used only as a fallback.
+  const scopeSource: { present: (s: ChronoScope) => number } = objects.length > 0
+    ? { present: (sc) => objects.filter((o) => o.scales[sc].present).length }
+    : { present: (sc) => atScope(chronology, sc).length };
+
+  const presentIds = objects.length > 0
+    ? new Set(objects.filter((o) => o.scales[scope].present).map((o) => o.record_id))
+    : null;
+  const here = presentIds
+    ? chronology.filter((e) => presentIds.has(e.record_id))
+    : atScope(chronology, scope);
+
   const counts: Record<ChronoScope, number> = {
-    GROUP: atScope(chronology, "GROUP").length,
-    NETWORK: atScope(chronology, "NETWORK").length,
-    SYSTEM: atScope(chronology, "SYSTEM").length,
+    GROUP: scopeSource.present("GROUP"),
+    NETWORK: scopeSource.present("NETWORK"),
+    SYSTEM: scopeSource.present("SYSTEM"),
   };
   const shown = [...here].reverse().slice(0, chronoLimit);
   // FLOW: OBJECT -> VALUE. Which spine link the selected record actually
@@ -325,9 +344,14 @@ function Role({ glyph, name, v, hex, what, lit = false }: {
       background: lit ? `${hex}26` : has ? `${hex}10` : "transparent",
       boxShadow: lit ? `0 0 0 1px ${hex}55` : undefined,
     }}>
-      <span style={{ fontSize: 9 }}>{glyph}</span>
-      <span style={{ ...TYPE.micro, fontSize: 7.5, color: has ? hex : COLOR.textFaint }}>{name}</span>
-      <b style={{ fontSize: 11, fontFamily: "ui-monospace, monospace", color: has ? COLOR.text : "#8798b8" }}>
+      <span style={{ fontSize: FS.meta }}>{glyph}</span>
+      <span style={{ fontSize: FS.tag, fontWeight: 700, letterSpacing: 0.8, color: has ? hex : COLOR.textFaint }}>{name}</span>
+      <b style={{
+        fontSize: v === null ? FS.tag : FS.read,
+        fontFamily: "ui-monospace, monospace",
+        letterSpacing: v === null ? 0.5 : 0,
+        color: has ? COLOR.text : COLOR.textDim,
+      }}>
         {v === null ? "UNKNOWN" : v}
       </b>
     </span>
@@ -341,9 +365,32 @@ function surfaceHref(s: SocialSurface): string {
   return s === "community" ? "/hub/community" : s === "globe" ? "/planet" : "/world";
 }
 
-const GUTTER = 52;
-const RAIL = 78;
+const GUTTER = 58;
+const RAIL = 84;
 
+/**
+ * TYPE SCALE — four sizes, not ten.
+ *
+ * This component had accumulated TEN distinct font sizes between 6.5px and
+ * 12px, chosen one at a time to make something fit. 6.5px Hebrew is not small
+ * text, it is unreadable text, and ten sizes is not a hierarchy — a reader
+ * cannot rank ten levels, so nothing reads as more important than anything
+ * else. The frame was structurally unified but typographically flat.
+ *
+ * Four roles, and every value below uses one of them:
+ *   READ   12    content a person actually reads — labels, timeline rows
+ *   META   10.5  supporting detail — kinds, counts, provenance
+ *   NOTE   10    the epistemic sentences; the floor, never smaller
+ *   TAG     9    uppercase micro-labels only, where letterforms are simple
+ *
+ * Monospace ids sit at META: they are scanned, not read, but they are also
+ * the thing a reader copies to go check a record, so they cannot be 7.5px.
+ */
+const FS = { read: 12, meta: 10.5, note: 10, tag: 9 } as const;
+
+/* ONE COLUMN GRID for every lane: a fixed left gutter for the lane name, a
+   flexible body, a fixed right rail for provenance/scope. This is what makes
+   the frame read as one object rather than stacked boxes. */
 const S: Record<string, React.CSSProperties> = {
   frame: {
     border: `1px solid ${PRODUCT_FAMILY_CUE.borderIdle}`,
@@ -353,56 +400,67 @@ const S: Record<string, React.CSSProperties> = {
     overflow: "hidden",
   },
   lane: {
-    display: "flex", alignItems: "flex-start", gap: 10,
-    padding: "7px 12px",
+    display: "flex", alignItems: "flex-start", gap: SPACE.md,
+    padding: "9px 14px",
     borderBottom: `1px solid ${COLOR.border}`,
   },
   gutter: {
-    ...TYPE.micro, fontSize: 8, letterSpacing: 1.3, color: PRODUCT_FAMILY_CUE.label,
-    width: GUTTER, flexShrink: 0, paddingTop: 3,
+    fontSize: FS.tag, fontWeight: 700, letterSpacing: 1.4, textTransform: "uppercase",
+    color: PRODUCT_FAMILY_CUE.label,
+    width: GUTTER, flexShrink: 0, paddingTop: 4,
   },
   body: { flex: 1, minWidth: 0 },
   rail: {
-    ...TYPE.micro, fontSize: 7.5, color: COLOR.textFaint,
-    width: RAIL, flexShrink: 0, textAlign: "start", paddingTop: 3,
+    fontSize: FS.tag, fontWeight: 600, letterSpacing: 0.4,
+    color: COLOR.textFaint,
+    width: RAIL, flexShrink: 0, textAlign: "start", paddingTop: 4,
     fontFamily: "ui-monospace, monospace",
   },
-  note: { fontSize: 8.5, color: COLOR.textFaint, lineHeight: 1.55, marginTop: 3 },
+  /* The epistemic sentences. These carry the actual discipline of the system
+     — "similarity is not a relation", "UNKNOWN != 0" — so they are readable
+     text at the floor size, not decoration at 8px. */
+  note: { fontSize: FS.note, color: COLOR.textDim, lineHeight: 1.6, marginTop: 5 },
 
-  zoomRow: { display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" },
-  zoomCell: { display: "flex", alignItems: "center", gap: 2 },
-  arrow: { fontSize: 9, color: COLOR.textFaint, padding: "0 3px" },
-  zoom: { display: "inline-flex", alignItems: "baseline", gap: 5, padding: "2px 8px", borderRadius: RADIUS.sm, border: "1px solid transparent", fontSize: 10, color: COLOR.textFaint },
-  zoomHere: { background: PRODUCT_FAMILY_CUE.bgActive, border: `1px solid ${PRODUCT_FAMILY_CUE.borderActive}`, color: COLOR.text },
-  zoomLevel: { ...TYPE.micro, fontSize: 7.5, letterSpacing: 1 },
-  zoomN: { fontFamily: "ui-monospace, monospace", fontSize: 10, color: COLOR.textDim },
+  zoomRow: { display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap" },
+  zoomCell: { display: "flex", alignItems: "center", gap: 3 },
+  arrow: { fontSize: FS.meta, color: COLOR.textFaint, padding: "0 4px" },
+  zoom: { display: "inline-flex", alignItems: "baseline", gap: 6, padding: "3px 10px", borderRadius: RADIUS.sm, border: "1px solid transparent", fontSize: FS.meta, color: COLOR.textDim },
+  zoomHere: { background: PRODUCT_FAMILY_CUE.bgActive, border: `1px solid ${PRODUCT_FAMILY_CUE.borderActive}`, color: COLOR.text, fontWeight: 600 },
+  zoomLevel: { fontSize: FS.tag, fontWeight: 700, letterSpacing: 1 },
+  zoomN: { fontFamily: "ui-monospace, monospace", fontSize: FS.read, color: COLOR.text },
 
-  spineRow: { display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" },
-  spineCell: { display: "flex", alignItems: "center", gap: 2 },
-  spineItem: { display: "inline-flex", alignItems: "baseline", gap: 4, padding: "2px 7px", borderRadius: RADIUS.sm, border: `1px solid ${COLOR.border}` },
-  /* Lit only when the SELECTED record genuinely instantiates this link. */
+  spineRow: { display: "flex", alignItems: "stretch", gap: 3, flexWrap: "wrap" },
+  spineCell: { display: "flex", alignItems: "center", gap: 3 },
+  spineItem: {
+    display: "inline-flex", flexDirection: "column", gap: 1,
+    padding: "4px 10px", borderRadius: RADIUS.sm, border: `1px solid ${COLOR.border}`,
+    minWidth: 72,
+  },
   spineItemHit: { border: `1px solid ${COLOR_ROLE.green}`, background: "rgba(52,211,153,0.14)" },
-  spineN: { fontSize: 12, fontFamily: "ui-monospace, monospace" },
-  spineLabel: { fontSize: 8.5, color: COLOR.textDim },
-  spineStatus: { ...TYPE.micro, fontSize: 6.5, color: COLOR.textFaint },
+  spineN: { fontSize: 15, fontWeight: 700, fontFamily: "ui-monospace, monospace", lineHeight: 1.1 },
+  spineLabel: { fontSize: FS.tag, color: COLOR.textDim, letterSpacing: 0.3, lineHeight: 1.3 },
+  spineStatus: { fontSize: FS.tag, color: COLOR.textFaint, letterSpacing: 0.3, transform: "scale(0.88)", transformOrigin: "right top" },
 
-  roleRow: { display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" },
-  role: { display: "inline-flex", alignItems: "baseline", gap: 4, border: "1px solid", borderRadius: RADIUS.sm, padding: "2px 8px" },
+  roleRow: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
+  role: { display: "inline-flex", alignItems: "baseline", gap: 6, border: "1px solid", borderRadius: RADIUS.sm, padding: "4px 11px" },
 
-  tRow: { display: "flex", alignItems: "center", gap: 7, fontSize: 9.5, padding: "1px 4px", textDecoration: "none", color: "inherit" },
-  tAt: { fontFamily: "ui-monospace, monospace", fontSize: 8.5, color: COLOR.textFaint, minWidth: 70 },
-  tDot: { width: 5, height: 5, borderRadius: "50%", flexShrink: 0 },
-  tKind: { fontFamily: "ui-monospace, monospace", fontSize: 9, color: COLOR.textDim, minWidth: 104 },
-  tLabel: { color: COLOR.text, flex: 1, minWidth: 60, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-  tRef: { fontSize: 8, color: COLOR_ROLE.blue },
-  tVerif: { ...TYPE.micro, fontSize: 7, minWidth: 46 },
-  tId: { fontFamily: "ui-monospace, monospace", fontSize: 7.5, color: COLOR.textFaint },
+  /* TIME is the lane with the most to say, so its rows get the reading size
+     and real row height rather than being compressed to fit more in. */
+  tRow: { display: "flex", alignItems: "center", gap: SPACE.sm, fontSize: FS.meta, padding: "3px 6px", textDecoration: "none", color: "inherit", borderRadius: RADIUS.sm },
+  tRowHere: { background: PRODUCT_FAMILY_CUE.bgActive, boxShadow: `inset 0 0 0 1px ${PRODUCT_FAMILY_CUE.borderActive}` },
+  tAt: { fontFamily: "ui-monospace, monospace", fontSize: FS.note, color: COLOR.textDim, minWidth: 78 },
+  tDot: { width: 7, height: 7, borderRadius: "50%", flexShrink: 0 },
+  tKind: { fontFamily: "ui-monospace, monospace", fontSize: FS.meta, color: COLOR.textDim, minWidth: 118 },
+  tLabel: { color: COLOR.text, fontSize: FS.read, flex: 1, minWidth: 70, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  tRef: { fontSize: FS.note, color: COLOR_ROLE.blue },
+  tVerif: { fontSize: FS.tag, fontWeight: 700, letterSpacing: 0.5, minWidth: 54 },
+  tId: { fontFamily: "ui-monospace, monospace", fontSize: FS.note, color: COLOR.textFaint },
 
-  empty: { fontSize: 9.5, color: COLOR.textFaint, fontStyle: "italic", lineHeight: 1.6 },
-  selHead: { display: "flex", alignItems: "center", gap: 7, fontSize: 10 },
-  scaleRow: { display: "flex", alignItems: "stretch", gap: 5, flexWrap: "wrap", marginTop: 4 },
-  scaleCell: { display: "inline-flex", flexDirection: "column", gap: 1, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.sm, padding: "3px 8px", maxWidth: 240 },
-  scaleAs: { fontSize: 8, color: COLOR.textFaint, lineHeight: 1.4 },
-  tRowHere: { background: PRODUCT_FAMILY_CUE.bgActive, borderRadius: RADIUS.sm },
-  auditSummary: { cursor: "pointer", ...TYPE.micro, fontSize: 8, letterSpacing: 1, color: COLOR.textFaint, padding: "2px 0" },
+  selHead: { display: "flex", alignItems: "center", gap: SPACE.sm, fontSize: FS.meta, flexWrap: "wrap" },
+  scaleRow: { display: "flex", alignItems: "stretch", gap: 6, flexWrap: "wrap", marginTop: 6 },
+  scaleCell: { display: "inline-flex", flexDirection: "column", gap: 2, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.sm, padding: "5px 10px", maxWidth: 260 },
+  scaleAs: { fontSize: FS.note, color: COLOR.textDim, lineHeight: 1.5 },
+
+  empty: { fontSize: FS.note, color: COLOR.textDim, fontStyle: "italic", lineHeight: 1.65 },
+  auditSummary: { cursor: "pointer", fontSize: FS.tag, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: COLOR.textFaint, padding: "3px 0" },
 };
