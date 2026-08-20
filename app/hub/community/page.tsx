@@ -493,6 +493,7 @@ export default async function CommunityPage({
               .reduce((n, g) => n + g.view.members.length, 0) || null,
           })}
           chronology={chronology}
+          chronoLimit={12}
           objects={socialObjects}
           selection={socialSelection}
           // NOW — this surface's own primary content, INSIDE the frame. The

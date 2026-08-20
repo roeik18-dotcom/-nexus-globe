@@ -30,6 +30,7 @@ import { loadActions } from "../canon/actionStoreAccessor";
 import { loadEffects } from "../canon/effectStoreAccessor";
 import { isEffectVerified } from "../canon/effect";
 import { loadNeedGroupLinks } from "../community/needGroupLinkStoreAccessor";
+import { loadCanonEvents } from "../canon/canonEventStoreAccessor";
 import { buildDefaultLinkRegistry } from "../bridge/linkRegistry";
 import type { EntityLink } from "../bridge/entityLink";
 import { buildSocialChronology, type ChronoEntry } from "./socialChronology";
@@ -53,13 +54,18 @@ export interface SocialSystemState {
 export async function loadSocialSystem(): Promise<SocialSystemState> {
   const today = todayIn(systemClock);
 
-  const [events, needs, offers, actions, effects, declarations] = await Promise.all([
+  const [events, needs, offers, actions, effects, declarations, canonEvents] = await Promise.all([
     loadPhilosEvents().catch(() => []),
     loadNeeds().catch(() => []),
     loadOffers().catch(() => []),
     loadActions().catch(() => []),
     loadEffects().catch(() => []),
     loadNeedGroupLinks().catch(() => []),
+    // Canon Observations. The chronology passed `observations: []` from the
+    // day it was written, so five real recorded Observations existed on disk
+    // and reached no surface at all — not a gap in the data, a gap in the
+    // wiring.
+    loadCanonEvents().catch(() => []),
   ]);
 
   const chronology = buildSocialChronology({
@@ -78,7 +84,9 @@ export async function loadSocialSystem(): Promise<SocialSystemState> {
       effect_id: e.effect.effect_id, action_ref: e.effect.action_ref,
       verified: isEffectVerified(e.effect), recorded_at: e.recorded_at,
     })),
-    observations: [],
+    observations: canonEvents
+      .filter((e) => e.canon_type === "observation")
+      .map((e) => ({ canon_event_id: e.canon_event_id, at: e.recorded_at })),
   });
 
   // Need -> group from BOTH sources, in one map, so no surface can see only
