@@ -6,7 +6,7 @@ import type { ChronoEntry } from "../socialChronology";
 
 const entry = (o: Partial<ChronoEntry>): ChronoEntry => ({
   record_id: "r1", layer: "CANON", kind: "effect", at: "2026-08-16T18:30:00+03:00",
-  label: "x", scopes: ["GROUP"], references: [], verification: "CLAIMED", ...o,
+  label: "x", scopes: ["GROUP"], references: [], verification: "CLAIMED", provenance: "REAL", ...o,
 });
 
 describe("SOCIAL_SYSTEM_PROJECTION — one identity, three representations", () => {
@@ -111,5 +111,51 @@ describe("provenance and verification survive projection unchanged", () => {
     });
     expect(findObject(objs, "a")!.source_record_ids).toEqual([]);
     expect(findObject(objs, "b")!.source_record_ids).toEqual(["a"]);
+  });
+});
+
+
+describe("PROVENANCE IS PRESERVED, NEVER PROMOTED", () => {
+  // Regression for a dead ternary: `e.layer === "CANON" ? "REAL" : "REAL"`.
+  // Both branches were identical, so every object became REAL no matter its
+  // source. It read like a decision, which is why review never caught it.
+  const project = (over: Partial<ChronoEntry>) =>
+    projectSocialSystem({ chronology: [entry(over)], needGroups: new Map() })[0];
+
+  it("DEMO never becomes REAL", () => {
+    expect(project({ provenance: "DEMO" }).provenance).toBe("DEMO");
+    expect(project({ provenance: "DEMO", layer: "CANON" }).provenance).toBe("DEMO");
+  });
+
+  it("REFERENCE never becomes REAL", () => {
+    expect(project({ provenance: "REFERENCE" }).provenance).toBe("REFERENCE");
+    expect(project({ provenance: "REFERENCE", layer: "CANON" }).provenance).toBe("REFERENCE");
+  });
+
+  it("UNKNOWN never becomes REAL", () => {
+    expect(project({ provenance: "UNKNOWN" }).provenance).toBe("UNKNOWN");
+    expect(project({ provenance: "UNKNOWN", layer: "CANON" }).provenance).toBe("UNKNOWN");
+  });
+
+  it("REAL remains REAL", () => {
+    expect(project({ provenance: "REAL" }).provenance).toBe("REAL");
+  });
+
+  it("the LAYER never decides provenance — same layer, four different results", () => {
+    const layer = "CANON" as const;
+    expect(project({ layer, provenance: "REAL" }).provenance).toBe("REAL");
+    expect(project({ layer, provenance: "DEMO" }).provenance).toBe("DEMO");
+    expect(project({ layer, provenance: "REFERENCE" }).provenance).toBe("REFERENCE");
+    expect(project({ layer, provenance: "UNKNOWN" }).provenance).toBe("UNKNOWN");
+  });
+
+  it("no input yields a provenance the record did not carry", () => {
+    for (const p of ["REAL", "DEMO", "REFERENCE", "UNKNOWN"] as const) {
+      for (const layer of ["CANON", "EVENT_LOG"] as const) {
+        for (const kind of ["need", "effect", "member.joined"]) {
+          expect(project({ provenance: p, layer, kind }).provenance).toBe(p);
+        }
+      }
+    }
   });
 });

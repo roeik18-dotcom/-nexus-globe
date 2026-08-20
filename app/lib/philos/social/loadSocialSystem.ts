@@ -38,6 +38,12 @@ import type { EntityLink } from "../bridge/entityLink";
 import { buildSocialChronology, type ChronoEntry } from "./socialChronology";
 import { projectSocialSystem, type SocialObject, type Scale } from "./socialSystemProjection";
 import { buildSocialFlow, type FlowStage } from "./socialFlowStages";
+// The two SOURCE counts come from the authoritative collections themselves,
+// never from a literal. They were hardcoded as 110 and 4 — correct at the time
+// and silently wrong the moment either collection changed, with nothing to
+// catch it.
+import { CONTRADICTION_MASTER } from "../valueSystem/contradictionMaster";
+import { DIRECT_CONTRADICTION_VALUE_RELATIONS } from "../valueSystem/socialValueSpine";
 
 export interface SocialSystemState {
   chronology: ChronoEntry[];
@@ -160,8 +166,8 @@ export async function loadSocialSystem(): Promise<SocialSystemState> {
     // Only the two value-model stages differ by scale (a scale may see no
     // groups); every canon stage comes from the SAME totals everywhere.
     flow: (over) => buildSocialFlow({
-      contradictions: 110,
-      emergentValues: 4,
+      contradictions: CONTRADICTION_MASTER.length,
+      emergentValues: DIRECT_CONTRADICTION_VALUE_RELATIONS.length,
       personalValues: values.personal,
       groupValues: values.group,
       valueGroups: over?.valueGroups ?? null,

@@ -95,3 +95,23 @@ describe("socialChronology — verification", () => {
     expect(by("c")).toBe("UNKNOWN");
   });
 });
+
+describe("SOURCE COUNTS come from the collections, not from literals", () => {
+  it("contradictions and emergent values are sourced, so a literal cannot drift", async () => {
+    const { CONTRADICTION_MASTER } = await import("../../valueSystem/contradictionMaster");
+    const { DIRECT_CONTRADICTION_VALUE_RELATIONS } = await import("../../valueSystem/socialValueSpine");
+    const { buildSocialFlow } = await import("../socialFlowStages");
+
+    const flow = buildSocialFlow({
+      contradictions: CONTRADICTION_MASTER.length,
+      emergentValues: DIRECT_CONTRADICTION_VALUE_RELATIONS.length,
+      personalValues: null, groupValues: null, valueGroups: null,
+      memberships: null, needs: null, actions: null, effects: null, evidence: null,
+    });
+
+    // Asserts the WIRING, not the numbers: if either collection changes, this
+    // still passes and the UI follows. A literal would have silently drifted.
+    expect(flow.find((s) => s.key === "contradiction")?.count).toBe(CONTRADICTION_MASTER.length);
+    expect(flow.find((s) => s.key === "emergent_value")?.count).toBe(DIRECT_CONTRADICTION_VALUE_RELATIONS.length);
+  });
+});

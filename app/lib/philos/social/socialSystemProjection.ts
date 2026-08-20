@@ -34,7 +34,7 @@
 import type { ChronoEntry } from "./socialChronology";
 
 export type Scale = "GROUP" | "NETWORK" | "SYSTEM";
-export type Provenance = "REAL" | "DERIVED_REAL" | "DEMO";
+export type Provenance = "REAL" | "DERIVED_REAL" | "DEMO" | "REFERENCE" | "UNKNOWN";
 export type Verification = "VERIFIED" | "CLAIMED" | "UNKNOWN";
 
 export type AbsenceReason =
@@ -116,7 +116,14 @@ export function projectSocialSystem(input: ProjectionInput): SocialObject[] {
       at: e.at,
       label: e.label,
       source_record_ids: [...e.references],
-      provenance: e.layer === "CANON" ? "REAL" : "REAL",
+      // PRESERVED, never derived. This line was
+      //   `e.layer === "CANON" ? "REAL" : "REAL"`
+      // — a dead ternary whose branches were identical, so every object was
+      // promoted to REAL regardless of where it came from. A DEMO record would
+      // have rendered as REAL and no test would have caught it, because the
+      // expression looked like a decision. Provenance now travels on the
+      // record and is copied, never recomputed. There is no default branch.
+      provenance: e.provenance,
       verification: e.verification,
       scales: {
         GROUP: { present: true, as: e.kind },

@@ -35,6 +35,10 @@ import { VERIFIED_STATUSES, type PhilosEvent } from "../events";
 export type SourceLayer = "EVENT_LOG" | "CANON";
 export type ChronoScope = "GROUP" | "NETWORK" | "SYSTEM";
 
+/** Where a record actually came from. Carried from the source, never guessed
+ *  from which layer read it. */
+export type RecordProvenance = "REAL" | "DEMO" | "REFERENCE" | "UNKNOWN";
+
 export interface ChronoEntry {
   /** The record's own id — always resolvable back to a real record. */
   record_id: string;
@@ -51,6 +55,8 @@ export interface ChronoEntry {
   references: string[];
   /** Verification the record itself carries. Absent stays UNKNOWN. */
   verification: "VERIFIED" | "CLAIMED" | "UNKNOWN";
+  /** Source classification. Set where the source is known; never defaulted. */
+  provenance: RecordProvenance;
 }
 
 /** Event types that connect two named entities — the network-scope test. */
@@ -90,12 +96,15 @@ export function buildSocialChronology(input: ChronoInput): ChronoEntry[] {
       verification: e.verification_status && VERIFIED_STATUSES.includes(e.verification_status)
         ? "VERIFIED"
         : e.verification_status ? "CLAIMED" : "UNKNOWN",
+      // The durable Philos event log. DEMO community fixtures are a separate
+      // stream and never reach this function.
+      provenance: "REAL",
     });
   }
 
   for (const o of input.observations) {
     out.push({
-      record_id: o.canon_event_id, layer: "CANON", kind: "observation", at: o.at,
+      record_id: o.canon_event_id, layer: "CANON", kind: "observation", provenance: "REAL" as const, at: o.at,
       label: "תצפית", scopes: ["GROUP"], references: [], verification: "CLAIMED",
     });
   }
@@ -105,21 +114,21 @@ export function buildSocialChronology(input: ChronoInput): ChronoEntry[] {
     // by an explicit write or an explicit declaration, never by its text.
     const scopes: ChronoScope[] = n.origin_group_id ? ["GROUP", "NETWORK"] : ["GROUP"];
     out.push({
-      record_id: n.need_id, layer: "CANON", kind: "need", at: n.recorded_at,
+      record_id: n.need_id, layer: "CANON", kind: "need", provenance: "REAL" as const, at: n.recorded_at,
       label: n.desired_change.slice(0, 60), scopes, references: [], verification: "CLAIMED",
     });
   }
 
   for (const o of input.offers) {
     out.push({
-      record_id: o.offer_id, layer: "CANON", kind: "offer", at: o.recorded_at,
+      record_id: o.offer_id, layer: "CANON", kind: "offer", provenance: "REAL" as const, at: o.recorded_at,
       label: o.available_resource.slice(0, 60), scopes: ["GROUP"], references: [], verification: "CLAIMED",
     });
   }
 
   for (const a of input.actions) {
     out.push({
-      record_id: a.action_id, layer: "CANON", kind: "action", at: a.recorded_at,
+      record_id: a.action_id, layer: "CANON", kind: "action", provenance: "REAL" as const, at: a.recorded_at,
       label: "פעולה", scopes: ["GROUP"],
       // Real recorded inputs — this is the only kind of link drawn here.
       references: [...a.inputs],
@@ -129,7 +138,7 @@ export function buildSocialChronology(input: ChronoInput): ChronoEntry[] {
 
   for (const e of input.effects) {
     out.push({
-      record_id: e.effect_id, layer: "CANON", kind: "effect", at: e.recorded_at,
+      record_id: e.effect_id, layer: "CANON", kind: "effect", provenance: "REAL" as const, at: e.recorded_at,
       label: "אפקט", scopes: ["GROUP"], references: [e.action_ref],
       verification: e.verified ? "VERIFIED" : "CLAIMED",
     });
