@@ -117,13 +117,24 @@ export function buildSocialFlow(i: FlowInput, opts?: ScaleEligibility): FlowStag
     { key: "emergent_value", label: "VALUE EMERGENCE", label_he: "צמיחת ערך",
       count: i.emergentValues, status: "SOURCE", basis: "יחסים נתמכי-מקור", connector: "CONCEPTUAL" },
 
+    // These two are MATERIALIZED ENTITIES once declared, not source inventory.
+    // They read SOURCE while the stub existed; a declared value is a real
+    // record with an authority behind it, so it reads REAL. Status is about
+    // the provenance tier; DECLARED vs VERIFIED is a separate axis carried on
+    // the record itself and never collapsed into this one.
     { key: "personal_value", label: "PERSONAL VALUE", label_he: "ערך הפרט",
-      count: i.personalValues, status: i.personalValues === null ? "UNKNOWN" : "SOURCE",
-      basis: "לא מומש כישות", connector: "CONCEPTUAL" },
+      count: i.personalValues, status: real(i.personalValues),
+      basis: i.personalValues === null
+        ? "טרם הוצהר — נתיב כתיבה קיים, אין רשומה"
+        : "ערכים שהאדם הצהיר עליהם בעצמו",
+      connector: "CONCEPTUAL" },
 
     { key: "group_value", label: "GROUP VALUE", label_he: "ערך קבוצה",
-      count: i.groupValues, status: i.groupValues === null ? "UNKNOWN" : "SOURCE",
-      basis: "לא מומש כישות", connector: "CONCEPTUAL" },
+      count: i.groupValues, status: real(i.groupValues),
+      basis: i.groupValues === null
+        ? "טרם אומץ — נתיב כתיבה קיים, אין רשומה"
+        : "ערכים שהקבוצה אימצה, עם מקור סמכות מתועד",
+      connector: "CONCEPTUAL" },
 
     { key: "value_group", label: "VALUE GROUP", label_he: "קבוצת ערך",
       count: i.valueGroups, status: real(i.valueGroups), basis: "קבוצות אמיתיות בלוג", connector: "CONCEPTUAL" },
