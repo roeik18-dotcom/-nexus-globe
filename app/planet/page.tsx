@@ -55,6 +55,8 @@ import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel"
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
 import { projectSocialSystem } from "@/app/lib/philos/social/socialSystemProjection";
 import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection";
+import { ABSENCE_TEXT } from "@/app/lib/philos/social/socialSystemProjection";
+import { roleTouchOf } from "@/app/lib/philos/social/roleTouch";
 import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
 import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import SocialChronologyPanel from "@/app/lib/philos/shell/SocialChronologyPanel";
@@ -270,6 +272,20 @@ export default async function PlanetPage({
           claimed: rep.byStatus.CLAIMED,
           unknown: rep.byStatus.UNKNOWN,
           reasons: Object.entries(rep.byReason).map(([reason, count]) => ({ reason, count })),
+        };
+      })()}
+      socialSelection={(() => {
+        const sel = resolveSocialSelection(params.sel, socialObjects);
+        if (sel.status !== "resolved") return undefined;
+        const o = sel.object;
+        const net = o.scales.NETWORK;
+        return {
+          record_id: o.record_id, kind: o.kind, at: o.at,
+          verification: o.verification, provenance: o.provenance,
+          network_present: net.present,
+          absent_reason: net.absent_because ? ABSENCE_TEXT[net.absent_because] : undefined,
+          roles: roleTouchOf(o.kind, o.verification),
+          source_record_ids: o.source_record_ids,
         };
       })()}
       bridgeLinks={registry

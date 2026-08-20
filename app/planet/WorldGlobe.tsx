@@ -293,6 +293,20 @@ function BridgeSection({ subject, registry }: { subject: string; registry: Entit
  * fabricate a dead link, none is added; this is a real, stated limitation,
  * not silently glossed over.
  */
+/** One inspector row. Fixed key column so the seven fields align. */
+function Row({ k, v, mono = false }: { k: string; v: string; mono?: boolean }) {
+  return (
+    <div style={{ display: "flex", gap: 7, fontSize: 9.5, padding: "1px 0", alignItems: "baseline" }}>
+      <span style={{ ...TYPE.micro, fontSize: 7.5, color: "#7f97c2", width: 66, flexShrink: 0 }}>{k}</span>
+      <span style={{
+        color: "#dbe6f6", flex: 1, minWidth: 0, wordBreak: "break-word",
+        fontFamily: mono ? "ui-monospace, monospace" : undefined,
+        fontSize: mono ? 8.5 : 9.5,
+      }}>{v}</span>
+    </div>
+  );
+}
+
 function CanonActivityPanel({ canonActions, canonEffects, canonNeeds, canonOffers }: { canonActions: ActionRecord[]; canonEffects: EffectRecord[]; canonNeeds: NeedRecord[]; canonOffers: OfferRecord[] }) {
   const box = {
     position: "absolute", right: 24, top: 168, zIndex: 12, width: 300,
@@ -449,7 +463,7 @@ function starShadows(n: number, seed: number) {
   return out.join(",");
 }
 
-export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry, identityLink, personContext, canonActions, canonEffects, canonNeeds, canonOffers, canonicalSlice, observationStrip, personFrameSlot, bridgeLinks, gate }: {
+export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry, identityLink, personContext, canonActions, canonEffects, canonNeeds, canonOffers, canonicalSlice, observationStrip, personFrameSlot, bridgeLinks, gate, socialSelection }: {
   nodes: GlobeNode[]; arcs: GlobeArc[]; selected?: SelectedContext; registry?: EntityLink[]; identityLink?: ShellIdentityLink;
   /** STEP 2 — the frame this screen's readings are relative to (canon §19). */
   personContext?: PersonContext;
@@ -474,6 +488,20 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
   personFrameSlot?: ReactNode;
   /** EntityLink rows surfaced beside the drawn arcs — provenance preserved. */
   bridgeLinks?: { relation: string; link_id: string; provenance: "REAL" | "DEMO"; derived?: boolean }[];
+  /** The SHARED social selection — the same record_id Community and World
+   *  use. Globe resolves it to real geometry that already exists, or reports
+   *  NOT_APPLICABLE. It never creates a node or a coordinate for it. */
+  socialSelection?: {
+    record_id: string;
+    kind: string;
+    at: string;
+    verification: "VERIFIED" | "CLAIMED" | "UNKNOWN";
+    provenance: string;
+    network_present: boolean;
+    absent_reason?: string;
+    roles: { role: string; because: string }[];
+    source_record_ids: string[];
+  };
   /** Verdict from the network truth gate over every candidate edge. */
   gate?: {
     candidates: number; passed: number; rejected: number;
@@ -488,7 +516,12 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
    *  spatial: the record has no coordinate and none is invented. */
   observationStrip?: ReactNode;
 }) {
-  const highlightedEventId = selected?.status === "found" && selected.system === "legacy" ? selected.matched_id : undefined;
+  // The shared `?sel=` record joins the EXISTING highlight path by event_id.
+  // No second selection mechanism, and no geometry is created for it: if no
+  // arc carries this event_id, nothing lights up and the inspector says why.
+  const highlightedEventId = selected?.status === "found" && selected.system === "legacy"
+    ? selected.matched_id
+    : socialSelection?.record_id;
   const wrapRef = useRef<HTMLDivElement>(null);
   const globeRef = useRef<any>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -522,14 +555,25 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
     // until a second group exists to separate.
     const slots = fibSphere(nodes.length);
     const pos = new Map<string, { lat: number; lng: number }>();
+    // Endpoints of the highlighted arc — read from the arc's own source/target
+    // ids, never from proximity or from what "looks related".
+    const selectedArcRaw = highlightedEventId
+      ? eventArcs.find((a) => a.event_id === highlightedEventId)
+      : undefined;
+    const endpointIds = new Set<string>(
+      selectedArcRaw ? [selectedArcRaw.source_id, selectedArcRaw.target_id] : [],
+    );
+
     const entityPts = nodes.map((n, i) => {
       const { lat, lng } = slots[i];
       pos.set(n.id, { lat, lng });
+      const isEndpoint = endpointIds.has(n.id);
       return {
         lat, lng,
-        color: NODE_COLOR[n.type], r: NODE_RADIUS[n.type],
+        color: isEndpoint ? "#ffd88a" : NODE_COLOR[n.type],
+        r: isEndpoint ? NODE_RADIUS[n.type] * 2.1 : NODE_RADIUS[n.type],
         alt: n.type === "value_group" ? 0.04 : 0.015,
-        label: n.label, type: n.type,
+        label: n.label, type: n.type, isEndpoint,
       };
     });
     // Every line is an event. An arc whose endpoints are not both placeable is
@@ -741,7 +785,47 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
             state, and it can no longer occlude the sphere because it is
             height-capped and bottom-anchored. */}
       {!selected || selected.status === "none" ? (
-        <div dir="rtl" style={{ position: "absolute", left: 12, bottom: 12, zIndex: 14, maxWidth: 420, maxHeight: "34vh", overflowY: "auto" }}>
+        <div dir="rtl" style={{ position: "absolute", left: 12, bottom: 48, zIndex: 14, maxWidth: 420, maxHeight: "34vh", overflowY: "auto" }}>
+          {/* SELECTED OBJECT — the same record Community and World have
+              selected, resolved against geometry that ALREADY EXISTS. When no
+              arc carries this event_id the projection is NOT_APPLICABLE and
+              says why; no node, coordinate or edge is created to satisfy a
+              selection. */}
+          {socialSelection ? (
+            <div dir="rtl" style={{
+              border: `1px solid ${socialSelection.network_present ? "rgba(255,216,138,0.5)" : COLOR.border}`,
+              borderRadius: 10, padding: "8px 11px", marginBottom: 6,
+              background: "rgba(4,10,22,0.97)", backdropFilter: "blur(10px)",
+            }}>
+              <div style={{ ...TYPE.micro, fontSize: 8.5, letterSpacing: 1.1, color: "#ffd88a", marginBottom: 4 }}>
+                אובייקט נבחר · SELECTED OBJECT
+              </div>
+              <Row k="OBJECT" v={`${socialSelection.kind} · ${socialSelection.record_id}`} mono />
+              <Row
+                k="RELATION"
+                v={socialSelection.network_present
+                  ? "קשת מודגשת + שני קצותיה"
+                  : `NOT_APPLICABLE — ${socialSelection.absent_reason ?? "אין ייצוג רשתי"}`}
+              />
+              <Row k="TIME" v={socialSelection.at.slice(0, 16).replace("T", " ")} mono />
+              <Row
+                k="ROLES"
+                v={socialSelection.roles.length > 0
+                  ? socialSelection.roles.map((r) => r.role).join(" · ")
+                  : "אף תפקיד פנימי לא מופעל"}
+              />
+              <Row
+                k="EVIDENCE"
+                v={socialSelection.source_record_ids.length > 0
+                  ? socialSelection.source_record_ids.join(" · ")
+                  : "אין הפניה מתועדת"}
+                mono
+              />
+              <Row k="PROVENANCE" v={socialSelection.provenance} />
+              <Row k="STATUS" v={socialSelection.verification} />
+            </div>
+          ) : null}
+
           {/* NETWORK LAYER, stated as records — relation type, source event id,
               provenance and epistemic status for every arc actually drawn.
               Collapsed by default so the sphere stays the primary content. */}
@@ -769,8 +853,14 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
       {/* Legend — blueprint §13: a line the viewer cannot decode is not
           information. Lists exactly what is drawn, node types included, since
           every one of them now comes from the projection. */}
-      <div style={S.legend}>
-        <div style={S.railHead}>LEGEND</div>
+      {/* Collapsed by default. This corner also holds the selected-object
+          inspector and the observation stack, and their combined height kept
+          colliding with a fixed-position legend — chased three times with a
+          new bottom offset each time. A disclosure has a predictable closed
+          height, so the collision cannot recur as content grows. The legend
+          is one click away and nothing was removed. */}
+      <details style={S.legend}>
+        <summary style={{ ...S.railHead, cursor: "pointer", listStyle: "none" }}>LEGEND</summary>
         <div style={S.legendRow}>
           <span style={{ ...S.legendLine, background: "linear-gradient(90deg,rgba(255,206,138,0.1),#ffce8a)", height: 2 }} />
           <span style={S.legendText}>resource transfer — amount · value · event</span>
@@ -803,7 +893,7 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
           Every point and line comes from an event and names it on hover. Point
           positions are layout, not geography.
         </div>
-      </div>
+      </details>
 
       <div style={S.rightRail}>
         <div style={{ ...S.railHead, textAlign: "right" }}>EVENTS ON SCREEN</div>
@@ -853,7 +943,7 @@ const S: Record<string, React.CSSProperties> = {
   topCenter: { position: "absolute", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 10, fontSize: 11, letterSpacing: "3px", color: "#c3d5f2", textAlign: "center" },
   purposeLine: { fontSize: 9, letterSpacing: "0.3px", color: "#6f89b6", marginTop: 5, maxWidth: 360, textTransform: "none" },
 
-  legend: { position: "absolute", left: 24, bottom: 112, zIndex: 10, display: "flex", flexDirection: "column", gap: 5, maxWidth: 250 },
+  legend: { position: "absolute", left: 24, bottom: 26, zIndex: 10, display: "flex", flexDirection: "column", gap: 5, maxWidth: 250 },
   legendRow: { display: "flex", alignItems: "center", gap: 9 },
   legendLine: { width: 26, height: 1.5, borderRadius: 2, flexShrink: 0 },
   legendDot: { width: 6, height: 6, borderRadius: "50%", flexShrink: 0, marginLeft: 10, marginRight: 10 },
