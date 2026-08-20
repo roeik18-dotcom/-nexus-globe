@@ -14,7 +14,7 @@ import { revalidatePath } from "next/cache";
 
 import { recordAction, ActionReferentialIntegrityError } from "./actionLifecycle";
 import type { Action, ActionType, MechanismScope } from "./action";
-import { REAL_CURRENT_SUBJECT } from "@/app/lib/philos/subjectRegistry";
+import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { createIdGenerator, systemClock } from "@/app/lib/philos/eventStore";
 import { verifyMatchPermit } from "./matchPermit";
 
@@ -27,6 +27,8 @@ const MECHANISM_SCOPES: MechanismScope[] = ["self_regulation", "melting_pot"];
 
 /** Testable core — no `revalidatePath`. Same split as `observationFormAction.ts`. */
 export async function createActionForCurrentUserCore(formData: FormData): Promise<CreateActionResult> {
+  // Server-resolved identity. Never a client-supplied subject.
+  const viewer = await resolveViewerContext();
   const type = String(formData.get("type") ?? "");
   const mechanism_scope = String(formData.get("mechanism_scope") ?? "");
   const reversibility = String(formData.get("reversibility") ?? "").trim();
@@ -70,7 +72,7 @@ export async function createActionForCurrentUserCore(formData: FormData): Promis
   const action: Action = {
     action_id: createIdGenerator().next("action"),
     type: type as ActionType,
-    owner: REAL_CURRENT_SUBJECT,
+    owner: viewer.subject_id,
     mechanism_scope: mechanism_scope as MechanismScope,
     consent,
     inputs,

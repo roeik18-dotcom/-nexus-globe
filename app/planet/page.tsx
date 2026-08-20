@@ -54,6 +54,7 @@ import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePane
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
 import { loadSocialSystem } from "@/app/lib/philos/social/loadSocialSystem";
+import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection";
 import { ABSENCE_TEXT } from "@/app/lib/philos/social/socialSystemProjection";
 import { roleTouchOf } from "@/app/lib/philos/social/roleTouch";
@@ -113,7 +114,7 @@ export default async function PlanetPage({
 
 
   // ONE authority, same as Community and World.
-  const social = await loadSocialSystem();
+  const social = await loadSocialSystem(await resolveViewerContext());
   const chronology = social.chronology;
   const socialObjects = social.objects;
 

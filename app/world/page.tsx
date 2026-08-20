@@ -21,6 +21,7 @@ import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePane
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
 import { loadSocialSystem } from "@/app/lib/philos/social/loadSocialSystem";
+import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection";
 import { buildSocialFlow } from "@/app/lib/philos/social/socialFlowStages";
 import { primaryStage } from "@/app/lib/philos/shell/primaryStage";
@@ -74,7 +75,7 @@ export default async function WorldPage({ searchParams }: {
   // ONE authority. World previously built the projection with an EMPTY
   // needGroups map, which is why it reported NETWORK = 10 while the other two
   // reported 11 from the same records.
-  const social = await loadSocialSystem();
+  const social = await loadSocialSystem(await resolveViewerContext());
   const chronology = social.chronology;
   const socialObjects = social.objects;
   const worldToday = todayIn(systemClock);

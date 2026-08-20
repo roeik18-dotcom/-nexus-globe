@@ -57,6 +57,24 @@ export interface ChronoEntry {
   verification: "VERIFIED" | "CLAIMED" | "UNKNOWN";
   /** Source classification. Set where the source is known; never defaulted. */
   provenance: RecordProvenance;
+  /**
+   * OWNERSHIP — the subject this record belongs to, taken from the record's
+   * own ownership field (Need.subject, Action.owner, Effect.subject,
+   * Observation.subject). NEVER inferred from a label, an id shape, or
+   * proximity.
+   *
+   * `undefined` means the record has no personal owner — a group event like
+   * `group.opened` belongs to the group, not to a person. Undefined is NOT
+   * "unknown owner"; it is "no personal owner", and the scoping rules treat
+   * the two differently: a record with no owner may be shared with anyone who
+   * can see the group, while a record whose owner is someone else may not.
+   *
+   * Without this field the chronology could not be filtered at all — which is
+   * exactly the state that made the shared loader a cross-user leak.
+   */
+  owner_subject?: string;
+  /** Group this record belongs to, when it is group-scoped rather than personal. */
+  owner_group?: string;
 }
 
 /** Event types that connect two named entities — the network-scope test. */
@@ -64,11 +82,11 @@ const EDGE_EVENTS = new Set(["member.joined", "leader.appointed", "transfer.comp
 
 export interface ChronoInput {
   events: readonly PhilosEvent[];
-  needs: readonly { need_id: string; desired_change: string; recorded_at: string; origin_group_id?: string }[];
-  offers: readonly { offer_id: string; available_resource: string; recorded_at: string }[];
-  actions: readonly { action_id: string; inputs: string[]; recorded_at: string }[];
-  effects: readonly { effect_id: string; action_ref: string; verified: boolean; recorded_at: string }[];
-  observations: readonly { canon_event_id: string; at: string }[];
+  needs: readonly { need_id: string; desired_change: string; recorded_at: string; origin_group_id?: string; subject?: string }[];
+  offers: readonly { offer_id: string; available_resource: string; recorded_at: string; source?: string }[];
+  actions: readonly { action_id: string; inputs: string[]; recorded_at: string; owner?: string }[];
+  effects: readonly { effect_id: string; action_ref: string; verified: boolean; recorded_at: string; subject?: string }[];
+  observations: readonly { canon_event_id: string; at: string; subject?: string }[];
 }
 
 export function buildSocialChronology(input: ChronoInput): ChronoEntry[] {
@@ -99,12 +117,16 @@ export function buildSocialChronology(input: ChronoInput): ChronoEntry[] {
       // The durable Philos event log. DEMO community fixtures are a separate
       // stream and never reach this function.
       provenance: "REAL",
+      // Value-Group log events are GROUP-scoped: they belong to the group's
+      // history, not to the actor personally. `actor_id` is who did it, which
+      // is not the same as who owns the record.
+      owner_group: e.entity_type === "value_group" ? e.entity_id : undefined,
     });
   }
 
   for (const o of input.observations) {
     out.push({
-      record_id: o.canon_event_id, layer: "CANON", kind: "observation", provenance: "REAL" as const, at: o.at,
+      record_id: o.canon_event_id, layer: "CANON", kind: "observation", provenance: "REAL" as const, owner_subject: o.subject, at: o.at,
       label: "תצפית", scopes: ["GROUP"], references: [], verification: "CLAIMED",
     });
   }
@@ -114,21 +136,21 @@ export function buildSocialChronology(input: ChronoInput): ChronoEntry[] {
     // by an explicit write or an explicit declaration, never by its text.
     const scopes: ChronoScope[] = n.origin_group_id ? ["GROUP", "NETWORK"] : ["GROUP"];
     out.push({
-      record_id: n.need_id, layer: "CANON", kind: "need", provenance: "REAL" as const, at: n.recorded_at,
+      record_id: n.need_id, layer: "CANON", kind: "need", provenance: "REAL" as const, owner_subject: n.subject, at: n.recorded_at,
       label: n.desired_change.slice(0, 60), scopes, references: [], verification: "CLAIMED",
     });
   }
 
   for (const o of input.offers) {
     out.push({
-      record_id: o.offer_id, layer: "CANON", kind: "offer", provenance: "REAL" as const, at: o.recorded_at,
+      record_id: o.offer_id, layer: "CANON", kind: "offer", provenance: "REAL" as const, owner_subject: o.source, at: o.recorded_at,
       label: o.available_resource.slice(0, 60), scopes: ["GROUP"], references: [], verification: "CLAIMED",
     });
   }
 
   for (const a of input.actions) {
     out.push({
-      record_id: a.action_id, layer: "CANON", kind: "action", provenance: "REAL" as const, at: a.recorded_at,
+      record_id: a.action_id, layer: "CANON", kind: "action", provenance: "REAL" as const, owner_subject: a.owner, at: a.recorded_at,
       label: "פעולה", scopes: ["GROUP"],
       // Real recorded inputs — this is the only kind of link drawn here.
       references: [...a.inputs],
@@ -138,7 +160,7 @@ export function buildSocialChronology(input: ChronoInput): ChronoEntry[] {
 
   for (const e of input.effects) {
     out.push({
-      record_id: e.effect_id, layer: "CANON", kind: "effect", provenance: "REAL" as const, at: e.recorded_at,
+      record_id: e.effect_id, layer: "CANON", kind: "effect", provenance: "REAL" as const, owner_subject: e.subject, at: e.recorded_at,
       label: "אפקט", scopes: ["GROUP"], references: [e.action_ref],
       verification: e.verified ? "VERIFIED" : "CLAIMED",
     });

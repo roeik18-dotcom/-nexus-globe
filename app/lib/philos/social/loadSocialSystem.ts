@@ -38,6 +38,7 @@ import type { EntityLink } from "../bridge/entityLink";
 import { buildSocialChronology, type ChronoEntry } from "./socialChronology";
 import { projectSocialSystem, type SocialObject, type Scale } from "./socialSystemProjection";
 import { buildSocialFlow, type FlowStage } from "./socialFlowStages";
+import { mayReadSubject, type ViewerContext } from "../identity/viewerContext";
 // The two SOURCE counts come from the authoritative collections themselves,
 // never from a literal. They were hardcoded as 110 and 4 — correct at the time
 // and silently wrong the moment either collection changed, with nothing to
@@ -68,7 +69,22 @@ export interface SocialSystemState {
   flow: (over?: { valueGroups?: number | null; memberships?: number | null; scale?: "GROUP" | "NETWORK" | "SYSTEM" }) => FlowStage[];
 }
 
-export async function loadSocialSystem(): Promise<SocialSystemState> {
+/**
+ * SCOPED AUTHORITY. Takes the viewer and filters BEFORE projection.
+ *
+ * The unscoped version loaded every record for everyone and then analysed the
+ * whole set — so the flow, roles, spine and chronology were all computed over
+ * other people's data before anything was filtered. Filtering after analysis
+ * is not filtering: the numbers are already contaminated.
+ *
+ * THE SCOPING RULE, applied to raw records before anything else runs:
+ *   personal records  visible only to their own subject
+ *   group records     visible to a viewer with a real membership in that group
+ *   unowned records   group history with no personal owner; shared with anyone
+ *                     who can see the group
+ * Nothing is visible merely because it was already in memory.
+ */
+export async function loadSocialSystem(viewer: ViewerContext): Promise<SocialSystemState> {
   const today = todayIn(systemClock);
 
   const [events, needs, offers, actions, effects, declarations, canonEvents, valueDeclarations] = await Promise.all([
@@ -87,21 +103,49 @@ export async function loadSocialSystem(): Promise<SocialSystemState> {
     loadValueDeclarations().catch(() => []),
   ]);
 
+  // Groups this viewer legitimately belongs to — from real membership records,
+  // never from a default constant.
+  const viewerGroups = new Set(
+    events
+      .filter((e) => e.event_type === "member.joined" && (e.actor_id === viewer.person_id || e.actor_id === viewer.subject_id))
+      .map((e) => e.entity_id),
+  );
+
+  const ownsCanon = <T,>(rec: T, subject: string | undefined) => mayReadSubject(viewer, subject);
+
+  // SCOPED BEFORE PROJECTION. Each store is filtered to what this viewer may
+  // read, and everything downstream — chronology, flow, roles, registry — is
+  // built from the filtered set only.
+  const visibleNeeds = needs.filter((n) => ownsCanon(n, n.need.subject));
+  const visibleOffers = offers.filter((o) => ownsCanon(o, o.offer.source));
+  const visibleActions = actions.filter((a) => ownsCanon(a, a.action.owner));
+  const visibleEffects = effects.filter((e) => ownsCanon(e, e.effect.subject));
+  const visibleValues = valueDeclarations.filter(
+    (v) => (v.scope === "PERSONAL" && mayReadSubject(viewer, v.holder_id))
+        || (v.scope === "GROUP" && viewerGroups.has(v.holder_id)),
+  );
+  // Group log events: visible for groups the viewer belongs to. A viewer with
+  // no membership sees no group history, which is the correct default for a
+  // second user rather than an empty-state bug.
+  const visibleEvents = events.filter(
+    (e) => e.entity_type !== "value_group" || viewerGroups.has(e.entity_id),
+  );
+
   const chronology = buildSocialChronology({
-    events,
+    events: visibleEvents,
     needs: needs.map((n) => ({
       need_id: n.need.need_id, desired_change: n.need.desired_change,
-      recorded_at: n.recorded_at, origin_group_id: n.origin_group_id,
+      recorded_at: n.recorded_at, origin_group_id: n.origin_group_id, subject: n.need.subject,
     })),
     offers: offers.map((o) => ({
-      offer_id: o.offer.offer_id, available_resource: o.offer.available_resource, recorded_at: o.recorded_at,
+      offer_id: o.offer.offer_id, available_resource: o.offer.available_resource, recorded_at: o.recorded_at, source: o.offer.source,
     })),
     actions: actions.map((a) => ({
-      action_id: a.action.action_id, inputs: a.action.inputs, recorded_at: a.recorded_at,
+      action_id: a.action.action_id, inputs: a.action.inputs, recorded_at: a.recorded_at, owner: a.action.owner,
     })),
     effects: effects.map((e) => ({
       effect_id: e.effect.effect_id, action_ref: e.effect.action_ref,
-      verified: isEffectVerified(e.effect), recorded_at: e.recorded_at,
+      verified: isEffectVerified(e.effect), recorded_at: e.recorded_at, subject: e.effect.subject,
     })),
     observations: canonEvents
       .filter((e) => e.canon_type === "observation")
@@ -112,23 +156,24 @@ export async function loadSocialSystem(): Promise<SocialSystemState> {
   // half of them. `origin_group_id` (written at creation) outranks a later
   // declaration, exactly as the registry rules it.
   const needGroups = new Map<string, string>();
-  for (const d of declarations) needGroups.set(d.need_id, d.group_id);
-  for (const n of needs) if (n.origin_group_id) needGroups.set(n.need.need_id, n.origin_group_id);
+  const visibleNeedIds = new Set(visibleNeeds.map((n) => n.need.need_id));
+  for (const d of declarations) if (visibleNeedIds.has(d.need_id)) needGroups.set(d.need_id, d.group_id);
+  for (const n of visibleNeeds) if (n.origin_group_id) needGroups.set(n.need.need_id, n.origin_group_id);
 
   const objects = projectSocialSystem({ chronology, needGroups });
 
   // The registry gets the FULL canon input every time. Community used to omit
   // needs and actions here, which is why its cards showed no links.
   const bridgeLinks = buildDefaultLinkRegistry(
-    events,
+    visibleEvents,
     today,
-    effects.map((e) => ({ effect_id: e.effect.effect_id, action_ref: e.effect.action_ref })),
+    visibleEffects.map((e) => ({ effect_id: e.effect.effect_id, action_ref: e.effect.action_ref })),
     {
-      needs: needs.map((n) => ({
+      needs: visibleNeeds.map((n) => ({
         need_id: n.need.need_id, origin_group_id: n.origin_group_id, recorded_at: n.recorded_at,
       })),
-      actions: actions.map((a) => ({ action_id: a.action.action_id, inputs: a.action.inputs })),
-      needGroupDeclarations: declarations.map((d) => ({
+      actions: visibleActions.map((a) => ({ action_id: a.action.action_id, inputs: a.action.inputs })),
+      needGroupDeclarations: declarations.filter((d) => visibleNeedIds.has(d.need_id)).map((d) => ({
         need_id: d.need_id, group_id: d.group_id, link_id: d.link_id, created_at: d.created_at,
       })),
     },
@@ -143,10 +188,10 @@ export async function loadSocialSystem(): Promise<SocialSystemState> {
   // Personal and Group values are counted SEPARATELY and never merged: one
   // person's value is not the group's, and the spine shows them as two links
   // precisely because they are two different facts.
-  const personalDecls = valueDeclarations.filter((v) => v.scope === "PERSONAL");
-  const groupDecls = valueDeclarations.filter((v) => v.scope === "GROUP");
+  const personalDecls = visibleValues.filter((v) => v.scope === "PERSONAL");
+  const groupDecls = visibleValues.filter((v) => v.scope === "GROUP");
   const values = {
-    all: valueDeclarations,
+    all: visibleValues,
     // UNKNOWN until one exists — an empty store means nobody has declared,
     // which is not the same as "zero values exist".
     personal: personalDecls.length > 0 ? personalDecls.length : null,
@@ -155,10 +200,10 @@ export async function loadSocialSystem(): Promise<SocialSystemState> {
     groupVerified: groupDecls.filter((v) => v.status === "VERIFIED").length,
   };
 
-  const verifiedEffects = effects.filter((e) => isEffectVerified(e.effect)).length;
+  const verifiedEffects = visibleEffects.filter((e) => isEffectVerified(e.effect)).length;
   const totals = {
-    needs: needs.length, offers: offers.length, actions: actions.length,
-    effects: effects.length, verifiedEffects,
+    needs: visibleNeeds.length, offers: visibleOffers.length, actions: visibleActions.length,
+    effects: visibleEffects.length, verifiedEffects,
   };
 
   return {

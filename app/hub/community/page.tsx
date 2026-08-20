@@ -39,6 +39,7 @@ import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePane
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
 import { loadSocialSystem } from "@/app/lib/philos/social/loadSocialSystem";
+import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection";
 import { buildSocialFlow } from "@/app/lib/philos/social/socialFlowStages";
 import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
@@ -125,7 +126,7 @@ export default async function CommunityPage({
   // ONE authority for every social fact this page shows. The registry used to
   // be built here WITHOUT needs or actions, so it produced no real links and
   // the group card contradicted the flow rail in the same viewport.
-  const social = await loadSocialSystem();
+  const social = await loadSocialSystem(await resolveViewerContext());
   const chronology = social.chronology;
   const socialObjects = social.objects;
   const bridgeLinks = social.bridgeLinks;

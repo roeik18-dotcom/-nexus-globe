@@ -12,7 +12,7 @@
  */
 import { revalidatePath } from "next/cache";
 
-import { REAL_CURRENT_SUBJECT } from "@/app/lib/philos/subjectRegistry";
+import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { createIdGenerator, systemClock } from "@/app/lib/philos/eventStore";
 import { ingestNeed } from "@/app/lib/philos/canon/needIngestion";
 import { ingestOffer } from "@/app/lib/philos/canon/offerIngestion";
@@ -32,6 +32,9 @@ function addDays(iso: string, days: number): string {
  *  `app/lib/philos/canon/observationFormAction.ts`'s LOOP 1 convention),
  *  so this is reachable outside a live Next.js request. */
 export async function registerNeedCore(formData: FormData): Promise<RegisterActionResult> {
+  // Identity comes from the SERVER. The client cannot choose who is acting;
+  // a submitted `subject=` is ignored here by construction.
+  const viewer = await resolveViewerContext();
   const desired_change = String(formData.get("desired_change") ?? "").trim();
   const domain = String(formData.get("domain") ?? "E") as Domain;
   if (!desired_change) return { ok: false, message: "desired_change is required" };
@@ -57,7 +60,7 @@ export async function registerNeedCore(formData: FormData): Promise<RegisterActi
   const result = await ingestNeed({
     need: {
       need_id: ids.next("need"),
-      subject: REAL_CURRENT_SUBJECT,
+      subject: viewer.subject_id,
       desired_change,
       scope: { kind: "domain", domain },
       provenance: "self_reported",
@@ -91,6 +94,9 @@ export async function registerNeedAction(formData: FormData): Promise<RegisterAc
 
 /** Testable core — no `revalidatePath`. See `registerNeedCore`. */
 export async function registerOfferCore(formData: FormData): Promise<RegisterActionResult> {
+  // Identity comes from the SERVER. The client cannot choose who is acting;
+  // a submitted `subject=` is ignored here by construction.
+  const viewer = await resolveViewerContext();
   const available_resource = String(formData.get("available_resource") ?? "").trim();
   const resource_type = String(formData.get("resource_type") ?? "").trim();
   const amount_or_capacity = String(formData.get("amount_or_capacity") ?? "").trim();
@@ -115,7 +121,7 @@ export async function registerOfferCore(formData: FormData): Promise<RegisterAct
   const result = await ingestOffer({
     offer: {
       offer_id: ids.next("offer"),
-      source: REAL_CURRENT_SUBJECT,
+      source: viewer.subject_id,
       source_cell: { domain, frame: "I" },
       available_resource,
       resource_type,
