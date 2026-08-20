@@ -27,7 +27,7 @@
  * **Colour stays routing metadata** (`Cell_ID != Color_ID`, master §7). A
  * role being carried says nothing about any 3x3 cell, level or stability.
  */
-import { COLOR, COLOR_ROLE, RADIUS, SPACE, TYPE } from "./designTokens";
+import { COLOR, COLOR_ROLE, FS, RADIUS, SPACE, TYPE } from "./designTokens";
 
 /** Verbatim from the Colour Source Lock, in its own ORDER_INDEX order. */
 const ROLES = [
@@ -89,11 +89,11 @@ export default function SystemRoleRail({ evidence }: { evidence: SystemRoleEvide
               }}
             >
               <span style={{ fontSize: 12 }}>{r.glyph}</span>
-              <span style={{ ...TYPE.micro, fontSize: 8, color: carried ? r.hex : COLOR.textFaint }}>{r.name}</span>
-              <span style={{ fontSize: 8.5, color: COLOR.textFaint, textAlign: "center", lineHeight: 1.25 }}>
+              <span style={{ ...TYPE.micro, fontSize: FS.tag, color: carried ? r.hex : COLOR.textFaint }}>{r.name}</span>
+              <span style={{ fontSize: FS.tag, color: COLOR.textFaint, textAlign: "center", lineHeight: 1.25 }}>
                 {r.fn.replace(/ layer$/, "")}
               </span>
-              <span style={{ fontSize: 9.5, fontFamily: "ui-monospace, monospace", color: carried ? COLOR.text : "#8798b8" }}>
+              <span style={{ fontSize: FS.tag, fontFamily: "ui-monospace, monospace", color: carried ? COLOR.text : "#8798b8" }}>
                 {unchecked ? "UNKNOWN" : v}
               </span>
             </div>
@@ -120,10 +120,10 @@ export default function SystemRoleRail({ evidence }: { evidence: SystemRoleEvide
 const S: Record<string, React.CSSProperties> = {
   band: { background: "rgba(90,120,180,0.05)", border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.md}px`, marginBottom: SPACE.md },
   head: { display: "flex", flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 6 },
-  eyebrow: { ...TYPE.micro, fontSize: 8.5, color: COLOR.accent },
-  note: { fontSize: 9, color: COLOR.textFaint },
+  eyebrow: { ...TYPE.micro, fontSize: FS.tag, color: COLOR.accent },
+  note: { fontSize: FS.tag, color: COLOR.textFaint },
   rail: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(88px, 1fr))", gap: 5 },
   role: { display: "flex", flexDirection: "column", alignItems: "center", gap: 2, border: "1px solid", borderRadius: RADIUS.sm, padding: "6px 4px" },
-  footer: { marginTop: SPACE.sm, paddingTop: 6, borderTop: `1px solid ${COLOR.border}`, fontSize: 9.5, color: COLOR.textFaint, lineHeight: 1.6 },
-  footerGaps: { marginTop: 4, fontSize: 9.5, color: "#fbbf24", lineHeight: 1.6 },
+  footer: { marginTop: SPACE.sm, paddingTop: 6, borderTop: `1px solid ${COLOR.border}`, fontSize: FS.tag, color: COLOR.textFaint, lineHeight: 1.6 },
+  footerGaps: { marginTop: 4, fontSize: FS.tag, color: "#fbbf24", lineHeight: 1.6 },
 };

@@ -410,18 +410,28 @@ const S: Record<string, React.CSSProperties> = {
     padding: "9px 14px",
     borderBottom: `1px solid ${COLOR.border}`,
   },
-  /* PRIMARY — the selected object and the current operational truth. Given a
-     raised surface and a coloured edge so it is found without reading. */
+  /* PRIMARY — the selected object and the current operational truth.
+     The separation is carried by THREE signals, not one, because a single
+     6%-alpha tint was the whole treatment and the honest report on it was
+     "everything looks the same": a raised surface, a coloured edge, and —
+     the one that works at a glance — AIR. A primary lane is given roughly
+     twice the vertical padding of a secondary one, so the hierarchy is
+     legible in peripheral vision, before any colour is resolved and without
+     reading a word. */
   lanePrimary: {
-    background: "rgba(120,150,220,0.06)",
-    borderInlineStart: `2px solid ${PRODUCT_FAMILY_CUE.borderActive}`,
+    background: "rgba(120,150,220,0.10)",
+    borderInlineStart: `3px solid ${PRODUCT_FAMILY_CUE.borderActive}`,
+    padding: "16px 18px",
+    boxShadow: "inset 0 1px 0 0 rgba(160,190,255,0.10)",
   },
   /* SECONDARY — the model and the flow. Default weight, no treatment. */
   /* AUDIT — provenance and formulas. Recessed, and collapsed by default, so
      it is present without competing. The tiering is expressed in WEIGHT
      rather than only in order, because order alone put three equal-looking
      bands next to each other and let the audit read as primary. */
-  laneAudit: { background: "rgba(0,0,0,0.16)", opacity: 0.9 },
+  /* AUDIT — the other end of the same three signals: recessed surface, no
+     edge, and LESS air than a secondary lane. Present, never competing. */
+  laneAudit: { background: "rgba(0,0,0,0.26)", opacity: 0.72, padding: "6px 14px" },
   gutter: {
     fontSize: FS.tag, fontWeight: 700, letterSpacing: 1.4, textTransform: "uppercase",
     color: PRODUCT_FAMILY_CUE.label,

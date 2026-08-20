@@ -15,7 +15,7 @@
  */
 import { CONTRADICTION_MASTER } from "../valueSystem/contradictionMaster";
 import { DIRECT_CONTRADICTION_VALUE_RELATIONS } from "../valueSystem/socialValueSpine";
-import { COLOR, RADIUS, SPACE, TYPE } from "./designTokens";
+import { COLOR, FS, RADIUS, SPACE, TYPE } from "./designTokens";
 
 export default function SocialValueSummaryLine({
   verifiedGroupRelations = 0, namedBaseOppositions = 0,
@@ -66,14 +66,14 @@ const S: Record<string, React.CSSProperties> = {
     background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.18)",
     borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.md}px`, marginBottom: SPACE.md,
   },
-  eyebrow: { ...TYPE.micro, fontSize: 8.5, color: "#a78bfa" },
+  eyebrow: { ...TYPE.micro, fontSize: FS.tag, color: "#a78bfa" },
   seg: { display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, color: COLOR.textDim },
   src: { fontSize: 13, fontWeight: 800, color: "#a78bfa", fontFamily: "ui-monospace, monospace" },
   real: { fontSize: 13, fontWeight: 800, color: "#34d399", fontFamily: "ui-monospace, monospace" },
   none: { fontSize: 13, fontWeight: 800, color: "#8798b8", fontFamily: "ui-monospace, monospace" },
-  tag: { ...TYPE.micro, fontSize: 7, color: "#a78bfa", border: "1px solid rgba(167,139,250,0.35)", borderRadius: RADIUS.pill, padding: "0 5px" },
-  tagReal: { ...TYPE.micro, fontSize: 7, color: "#34d399", border: "1px solid rgba(52,211,153,0.35)", borderRadius: RADIUS.pill, padding: "0 5px" },
+  tag: { ...TYPE.micro, fontSize: FS.tag, color: "#a78bfa", border: "1px solid rgba(167,139,250,0.35)", borderRadius: RADIUS.pill, padding: "0 5px" },
+  tagReal: { ...TYPE.micro, fontSize: FS.tag, color: "#34d399", border: "1px solid rgba(52,211,153,0.35)", borderRadius: RADIUS.pill, padding: "0 5px" },
   divider: { width: 1, alignSelf: "stretch", background: COLOR.border },
-  note: { fontSize: 9.5, color: COLOR.textFaint, flex: 1, minWidth: 200 },
-  link: { fontSize: 9.5, color: COLOR.accent, textDecoration: "none" },
+  note: { fontSize: FS.tag, color: COLOR.textFaint, flex: 1, minWidth: 200 },
+  link: { fontSize: FS.tag, color: COLOR.accent, textDecoration: "none" },
 };

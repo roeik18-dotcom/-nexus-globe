@@ -18,7 +18,7 @@ import {
   CONTRADICTION_MASTER, TAXONOMY_CONFLICTS, type TaxonomyKey,
 } from "../valueSystem/contradictionMaster";
 import { multiLayerContradictions, DIRECT_CONTRADICTION_VALUE_RELATIONS } from "../valueSystem/socialValueSpine";
-import { COLOR, RADIUS, SPACE, TYPE } from "./designTokens";
+import { COLOR, FS, RADIUS, SPACE, TYPE } from "./designTokens";
 import { ProvenanceBadge } from "./provenance";
 
 const TAX_LABEL: Record<TaxonomyKey, string> = {
@@ -70,10 +70,10 @@ export default function ContradictionProvenancePanel() {
       {TAXONOMY_CONFLICTS.map((c) => (
         <div key={c.conflict_id} style={S.conflict}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <span style={{ ...TYPE.micro, fontSize: 8, color: c.status === "SOURCE_CONFLICT" ? "#f2635c" : "#fbbf24" }}>
+            <span style={{ ...TYPE.micro, fontSize: FS.tag, color: c.status === "SOURCE_CONFLICT" ? "#f2635c" : "#fbbf24" }}>
               {c.status}
             </span>
-            <span style={{ ...TYPE.micro, fontSize: 8, color: COLOR.textFaint }}>{c.conflict_id}</span>
+            <span style={{ ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint }}>{c.conflict_id}</span>
           </div>
           {"statement" in c ? (
             <div style={S.conflictBody}>{c.statement}</div>
@@ -97,14 +97,14 @@ export default function ContradictionProvenancePanel() {
           <span style={{ fontSize: 11.5, color: COLOR.text, fontWeight: 700, minWidth: 150 }}>
             {r.pole_a} ↔ {r.pole_b}
           </span>
-          <span style={{ ...TYPE.micro, fontSize: 7.5, color: "#a78bfa" }}>{r.relation}</span>
-          <span style={{ fontSize: 9.5, color: COLOR.textFaint, flex: 1, minWidth: 170 }}>
+          <span style={{ ...TYPE.micro, fontSize: FS.tag, color: "#a78bfa" }}>{r.relation}</span>
+          <span style={{ fontSize: FS.tag, color: COLOR.textFaint, flex: 1, minWidth: 170 }}>
             «{r.source_rule}» · קובץ {r.source_file}
           </span>
-          <span style={{ ...TYPE.micro, fontSize: 7.5, color: "#fbbf24" }}>
+          <span style={{ ...TYPE.micro, fontSize: FS.tag, color: "#fbbf24" }}>
             ערך שנוצר: NOT NAMED BY SOURCE
           </span>
-          <span style={{ ...TYPE.micro, fontSize: 7.5, color: "#8798b8" }}>
+          <span style={{ ...TYPE.micro, fontSize: FS.tag, color: "#8798b8" }}>
             cardinality {r.cardinality}
           </span>
         </div>
@@ -123,8 +123,8 @@ function M({ k, v, note, tone }: { k: string; v: number | string; note: string; 
   return (
     <div style={S.metric}>
       <div style={{ fontSize: 17, fontWeight: 800, color: tone ?? COLOR.text, fontFamily: "ui-monospace, monospace" }}>{v}</div>
-      <div style={{ ...TYPE.micro, fontSize: 7.5, color: COLOR.textDim }}>{k}</div>
-      <div style={{ fontSize: 8.5, color: COLOR.textFaint }}>{note}</div>
+      <div style={{ ...TYPE.micro, fontSize: FS.tag, color: COLOR.textDim }}>{k}</div>
+      <div style={{ fontSize: FS.tag, color: COLOR.textFaint }}>{note}</div>
     </div>
   );
 }
@@ -132,14 +132,14 @@ function M({ k, v, note, tone }: { k: string; v: number | string; note: string; 
 const S: Record<string, React.CSSProperties> = {
   band: { background: "rgba(91,156,246,0.05)", border: "1px solid rgba(91,156,246,0.20)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.md}px`, marginBottom: SPACE.md },
   head: { display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 7 },
-  eyebrow: { ...TYPE.micro, fontSize: 8.5, color: COLOR.accent },
+  eyebrow: { ...TYPE.micro, fontSize: FS.tag, color: COLOR.accent },
   metrics: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(96px, 1fr))", gap: 6 },
   metric: { background: "rgba(20,28,48,0.5)", border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.sm, padding: "6px 8px", display: "flex", flexDirection: "column", gap: 1 },
-  subHead: { ...TYPE.micro, fontSize: 8, color: COLOR.textFaint, margin: "9px 0 4px" },
+  subHead: { ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint, margin: "9px 0 4px" },
   taxRow: { display: "flex", flexWrap: "wrap", gap: 5 },
-  taxChip: { fontSize: 9.5, color: COLOR.textDim, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 9px" },
+  taxChip: { fontSize: FS.tag, color: COLOR.textDim, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 9px" },
   conflict: { background: "rgba(242,99,92,0.05)", border: "1px solid rgba(242,99,92,0.18)", borderRadius: RADIUS.sm, padding: "6px 9px", marginBottom: 4 },
   rel: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 7, background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.18)", borderRadius: RADIUS.sm, padding: "5px 9px", marginBottom: 3 },
-  conflictBody: { fontSize: 9.5, color: COLOR.textDim, lineHeight: 1.55, marginTop: 2 },
-  rule: { marginTop: SPACE.sm, fontSize: 9.5, color: COLOR.textDim, lineHeight: 1.6, background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: RADIUS.sm, padding: "6px 9px" },
+  conflictBody: { fontSize: FS.tag, color: COLOR.textDim, lineHeight: 1.55, marginTop: 2 },
+  rule: { marginTop: SPACE.sm, fontSize: FS.tag, color: COLOR.textDim, lineHeight: 1.6, background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: RADIUS.sm, padding: "6px 9px" },
 };

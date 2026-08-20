@@ -152,34 +152,38 @@ function GroupCard({ data }: { data: ValueGroupCardData }) {
           the schema — true when written, false since the bridge layer, and it
           contradicted the flow rail in the same viewport. It now reads the
           real link count. */}
-      <FieldRow label="NEEDS" provenance={data.groupNeedLinks > 0 ? "CANON" : data.linkedSubjectNeeds !== null ? "CANON" : "UNKNOWN"}
-        value={data.groupNeedLinks > 0
-          ? `${data.groupNeedLinks} Need משויך לקבוצה`
-          : data.linkedSubjectNeeds !== null ? `${data.linkedSubjectNeeds} Need של האדם · 0 משויכים לקבוצה` : "UNKNOWN"}
-        meta={data.groupNeedLinks > 0
-          ? "COMMUNITY_HAS_NEED — שיוך מפורש (כתיבה או הצהרה), לא הסקה"
-          : data.linkedSubjectNeeds !== null ? "רשומות קנוניות של האדם המקושר — אף אחת לא שויכה לקבוצה הזאת" : "אין קישור קנוני בין Need לקבוצה זו"}
-        italic={data.linkedSubjectNeeds === null} />
-
-      <FieldRow label="OFFERS" provenance={data.linkedSubjectOffers !== null ? "CANON" : "UNKNOWN"}
-        value={data.linkedSubjectOffers !== null ? `${data.linkedSubjectOffers} Offer` : "UNKNOWN"}
-        meta={data.linkedSubjectOffers !== null ? "רשומות קנוניות של האדם המקושר" : "אין קישור קנוני בין Offer לקבוצה זו"}
-        italic={data.linkedSubjectOffers === null} />
-
-      <FieldRow label="ACTIONS" provenance={data.bridgeActionCount > 0 ? "CANON" : view.today.length > 0 ? "REAL" : "UNKNOWN"}
-        value={`${data.bridgeActionCount} Action מקושר · ${view.today.length} פעילות היום`}
-        meta={data.bridgeActionCount > 0 ? "ACTION_AFFECTS_COMMUNITY מרישום הגשרים" : "אין Action קנוני שמקושר לקבוצה"}
-        italic={data.bridgeActionCount === 0 && view.today.length === 0} />
-
-      <FieldRow label="EFFECTS" provenance={view.impact.length > 0 ? prov : "UNKNOWN"}
-        value={`${view.impact.length} Impact claims`}
-        meta={view.impact[0] ? view.impact[0].statement : "אין Impact רשום"}
-        italic={view.impact.length === 0} />
-
-      <FieldRow label="EVIDENCE" provenance={verified.length > 0 ? prov : "UNKNOWN"}
-        value={`${verified.length} / ${view.impact.length} מאומת`}
-        meta={verified[0] ? `${verified[0].statement} · ${verified[0].people_affected} מושפעים` : "אין אימות — claims בלבד"}
-        italic={verified.length === 0} />
+      {/* THE PIPELINE, as a strip rather than five stacked rows.
+          NEEDS/OFFERS/ACTIONS/EFFECTS/EVIDENCE were five FieldRows of three
+          lines each — fifteen lines per card, which is why three cards read as
+          a database dump instead of three groups. They are one row now, in the
+          same grammar the social spine uses at the top of the page, so the
+          card and the spine echo each other instead of describing the same
+          pipeline in two different visual languages.
+          Every `meta` sentence moved to the cell's title; nothing was lost. */}
+      <div style={S.pipeline}>
+        <Stage n={data.groupNeedLinks > 0 ? data.groupNeedLinks : data.linkedSubjectNeeds}
+               label="NEED" prov={data.groupNeedLinks > 0 ? "CANON" : data.linkedSubjectNeeds !== null ? "CANON" : "UNKNOWN"}
+               title={data.groupNeedLinks > 0
+                 ? "COMMUNITY_HAS_NEED — שיוך מפורש (כתיבה או הצהרה), לא הסקה"
+                 : "רשומות קנוניות של האדם המקושר — אף אחת לא שויכה לקבוצה הזאת"} />
+        <Arrow />
+        <Stage n={data.linkedSubjectOffers} label="OFFER"
+               prov={data.linkedSubjectOffers !== null ? "CANON" : "UNKNOWN"}
+               title="Offer קנוני של האדם המקושר" />
+        <Arrow />
+        <Stage n={data.bridgeActionCount > 0 ? data.bridgeActionCount : view.today.length || null}
+               label="ACTION"
+               prov={data.bridgeActionCount > 0 ? "CANON" : view.today.length > 0 ? "REAL" : "UNKNOWN"}
+               title={data.bridgeActionCount > 0 ? "ACTION_AFFECTS_COMMUNITY מרישום הגשרים" : "אין Action קנוני שמקושר לקבוצה"} />
+        <Arrow />
+        <Stage n={view.impact.length || null} label="EFFECT"
+               prov={view.impact.length > 0 ? prov : "UNKNOWN"}
+               title={view.impact.length > 0 ? `${view.impact.length} טענת השפעה` : "אין רשומת השפעה"} />
+        <Arrow />
+        <Stage n={verified.length || null} label="EVIDENCE"
+               prov={verified.length > 0 ? prov : "UNKNOWN"}
+               title={`${verified.length} מאומתות מתוך ${view.impact.length}`} />
+      </div>
 
       <FieldRow label="TREND" provenance={data.capital || data.membership ? "STATIC" : "UNKNOWN"}
         value={data.capital
@@ -236,6 +240,26 @@ function Vital({ n, label, title, accent = false }: { n: number; label: string; 
   );
 }
 
+/** One pipeline stage: the count leads, the word explains, the dot carries
+ *  provenance. `null` renders as UNKNOWN and never as 0. */
+function Stage({ n, label, prov, title }: { n: number | null; label: string; prov: Provenance; title?: string }) {
+  const has = n !== null && n > 0;
+  return (
+    <span style={S.stage} title={title}>
+      <b style={{ ...S.stageN, color: has ? COLOR.text : COLOR.textFaint, fontSize: has ? FS.head : FS.tag }}>
+        {n === null ? "—" : n}
+      </b>
+      <span style={{ ...S.stageDot, background: has ? PROVENANCE_STYLE[prov].text : "transparent",
+                     border: has ? "none" : `1px dashed ${COLOR.border}` }} />
+      <span style={S.stageLabel}>{label}</span>
+    </span>
+  );
+}
+
+function Arrow() {
+  return <span style={S.stageArrow} aria-hidden>←</span>;
+}
+
 function FieldRow({ label, value, meta, provenance, italic }: { label: string; value: string; meta?: string; provenance: Provenance; italic?: boolean }) {
   return (
     <div style={S.fieldRow}>
@@ -250,6 +274,12 @@ function FieldRow({ label, value, meta, provenance, italic }: { label: string; v
 }
 
 const S: Record<string, React.CSSProperties> = {
+  pipeline: { display: "flex", alignItems: "flex-start", gap: 2, flexWrap: "wrap", margin: "8px 0 6px", paddingBottom: 8, borderBottom: `1px solid ${COLOR.border}` },
+  stage: { display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 2, minWidth: 52 },
+  stageN: { fontFamily: "ui-monospace, monospace", fontWeight: 700, lineHeight: 1 },
+  stageDot: { width: 7, height: 7, borderRadius: "50%", boxSizing: "border-box" },
+  stageLabel: { fontSize: FS.tag, fontWeight: 700, letterSpacing: 0.2, color: COLOR.textDim },
+  stageArrow: { fontSize: FS.base, color: COLOR.textFaint, marginTop: 6 },
   vitals: { display: "flex", gap: SPACE.sm, flexWrap: "wrap", margin: "8px 0 6px", paddingBottom: 8, borderBottom: `1px solid ${COLOR.border}` },
   vital: { display: "inline-flex", flexDirection: "column", gap: 0, minWidth: 58 },
   vitalN: { fontSize: FS.head, fontWeight: 700, fontFamily: "ui-monospace, monospace", lineHeight: 1.1 },

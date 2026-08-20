@@ -158,7 +158,7 @@ const S: Record<string, React.CSSProperties> = {
      the gap, so the track meets the markers rather than floating above them. */
   conn: { display: "inline-flex", alignItems: "center", width: 22, position: "relative", justifyContent: "center", height: 11, marginTop: 20 },
   track: { display: "block", width: "100%" },
-  head: { position: "absolute", insetInlineStart: -2, fontSize: 9, color: COLOR_ROLE.blue, lineHeight: 1 },
+  head: { position: "absolute", insetInlineStart: -2, fontSize: FS.tag, color: COLOR_ROLE.blue, lineHeight: 1 },
 
   seam: { display: "inline-flex", alignItems: "center", gap: 3, width: 22, justifyContent: "center", height: 11, marginTop: 20 },
   seamBar: { display: "block", width: 2, height: 16, background: "rgba(251,191,36,0.65)", borderRadius: 1 },

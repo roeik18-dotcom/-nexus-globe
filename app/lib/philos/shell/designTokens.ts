@@ -90,7 +90,7 @@ export function statusBadgeStyle(kind: StatusKind): React.CSSProperties {
   const s = STATUS[kind];
   return {
     display: "inline-flex", alignItems: "center", gap: 4,
-    fontSize: 9.5, fontWeight: 800, letterSpacing: 0.6,
+    fontSize: FS.tag, fontWeight: 800, letterSpacing: 0.6,
     padding: "2px 8px", borderRadius: RADIUS.pill,
     background: s.bg, border: `1px solid ${s.border}`, color: s.text,
   };

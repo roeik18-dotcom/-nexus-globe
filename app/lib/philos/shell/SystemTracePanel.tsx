@@ -7,7 +7,7 @@
  */
 import type { TraceEdge } from "../systemTrace";
 import { traceSummary } from "../systemTrace";
-import { COLOR, RADIUS, SPACE, TYPE } from "./designTokens";
+import { COLOR, FS, RADIUS, SPACE, TYPE } from "./designTokens";
 
 const LINK_TONE: Record<string, string> = {
   VERIFIED_REFERENCE_LINK: "#34d399",
@@ -36,8 +36,8 @@ export default function SystemTracePanel({ edges }: { edges: TraceEdge[] }) {
         <div key={i} style={S.row}>
           <span style={{ ...S.glyph, color: LINK_TONE[e.linkage] }}>{GLYPH[e.linkage]}</span>
           <span style={S.edge}>{e.from} <span style={{ color: COLOR.textFaint }}>→</span> {e.to}</span>
-          <span style={{ ...TYPE.micro, fontSize: 7.5, color: LINK_TONE[e.linkage] }}>{e.linkage}</span>
-          <span style={{ ...TYPE.micro, fontSize: 7.5, color: e.status === "IMPLEMENTED" ? "#6fe3b4" : e.status === "OPEN_BOUNDARY" ? "#a78bfa" : "#fbbf24" }}>
+          <span style={{ ...TYPE.micro, fontSize: FS.tag, color: LINK_TONE[e.linkage] }}>{e.linkage}</span>
+          <span style={{ ...TYPE.micro, fontSize: FS.tag, color: e.status === "IMPLEMENTED" ? "#6fe3b4" : e.status === "OPEN_BOUNDARY" ? "#a78bfa" : "#fbbf24" }}>
             {e.status}
           </span>
           {/* The actual record ids. Without them this is a diagram, not a
@@ -60,12 +60,12 @@ export default function SystemTracePanel({ edges }: { edges: TraceEdge[] }) {
 const S: Record<string, React.CSSProperties> = {
   band: { background: "rgba(90,111,150,0.04)", border: `1px dashed ${COLOR.border}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.md}px` },
   head: { display: "flex", flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 6 },
-  eyebrow: { ...TYPE.micro, fontSize: 8.5, color: COLOR.accent },
-  counts: { fontSize: 9.5, color: COLOR.textFaint, fontFamily: "ui-monospace, monospace" },
+  eyebrow: { ...TYPE.micro, fontSize: FS.tag, color: COLOR.accent },
+  counts: { fontSize: FS.tag, color: COLOR.textFaint, fontFamily: "ui-monospace, monospace" },
   row: { display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 7, padding: "3px 8px", background: "rgba(90,120,180,0.04)", borderRadius: RADIUS.sm, marginBottom: 2 },
   glyph: { fontSize: 12, width: 12, textAlign: "center" },
   edge: { fontSize: 10.5, color: COLOR.text, minWidth: 230 },
-  ids: { fontSize: 8, color: COLOR.textDim, fontFamily: "ui-monospace, monospace", maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-  basis: { fontSize: 9, color: COLOR.textFaint, flex: 1, minWidth: 200, lineHeight: 1.45 },
-  note: { marginTop: 5, fontSize: 9, color: COLOR.textFaint, lineHeight: 1.5 },
+  ids: { fontSize: FS.tag, color: COLOR.textDim, fontFamily: "ui-monospace, monospace", maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  basis: { fontSize: FS.tag, color: COLOR.textFaint, flex: 1, minWidth: 200, lineHeight: 1.45 },
+  note: { marginTop: 5, fontSize: FS.tag, color: COLOR.textFaint, lineHeight: 1.5 },
 };

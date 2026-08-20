@@ -15,7 +15,7 @@
  * link, and it renders as a record id the reader can go check.
  */
 import { atScope, SCOPE_OF_SURFACE, type ChronoEntry, type ChronoScope } from "../social/socialChronology";
-import { COLOR, COLOR_ROLE, RADIUS, SPACE, TYPE } from "./designTokens";
+import { COLOR, COLOR_ROLE, FS, RADIUS, SPACE, TYPE } from "./designTokens";
 
 const SCOPE_LABEL: Record<ChronoScope, string> = {
   GROUP: "GROUP · קבוצה",
@@ -106,21 +106,21 @@ export default function SocialChronologyPanel({
 const S: Record<string, React.CSSProperties> = {
   band: { border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.md, padding: "8px 12px", background: "rgba(90,120,180,0.04)", marginBottom: SPACE.md },
   head: { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, flexWrap: "wrap" },
-  eyebrow: { ...TYPE.micro, fontSize: 8.5, letterSpacing: 1.2, color: COLOR.textDim },
-  span: { ...TYPE.micro, fontSize: 8, color: COLOR.textFaint },
+  eyebrow: { ...TYPE.micro, fontSize: FS.tag, letterSpacing: 1.2, color: COLOR.textDim },
+  span: { ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint },
   scopes: { display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", margin: "5px 0 6px" },
-  scopePill: { ...TYPE.micro, fontSize: 8, color: COLOR.textFaint, border: `1px solid ${COLOR.border}`, borderRadius: 4, padding: "1px 6px" },
+  scopePill: { ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint, border: `1px solid ${COLOR.border}`, borderRadius: 4, padding: "1px 6px" },
   scopeHere: { color: COLOR.text, borderColor: COLOR.borderStrong, background: "rgba(120,150,220,0.1)" },
-  rule: { fontSize: 8.5, color: COLOR.textFaint, lineHeight: 1.5, flex: 1, minWidth: 240 },
+  rule: { fontSize: FS.tag, color: COLOR.textFaint, lineHeight: 1.5, flex: 1, minWidth: 240 },
   row: { display: "flex", alignItems: "center", gap: 7, padding: "2px 0", borderTop: `1px solid ${COLOR.border}`, fontSize: 10 },
-  at: { fontFamily: "ui-monospace, monospace", fontSize: 9, color: COLOR.textFaint, minWidth: 74 },
+  at: { fontFamily: "ui-monospace, monospace", fontSize: FS.tag, color: COLOR.textFaint, minWidth: 74 },
   dot: { width: 6, height: 6, borderRadius: "50%", flexShrink: 0 },
-  kind: { fontFamily: "ui-monospace, monospace", fontSize: 9.5, color: COLOR.textDim, minWidth: 112 },
+  kind: { fontFamily: "ui-monospace, monospace", fontSize: FS.tag, color: COLOR.textDim, minWidth: 112 },
   label: { color: COLOR.text, flex: 1, minWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-  layer: { ...TYPE.micro, fontSize: 7.5 },
-  verif: { ...TYPE.micro, fontSize: 7.5, minWidth: 52 },
-  id: { fontFamily: "ui-monospace, monospace", fontSize: 8, color: COLOR.textFaint },
-  refs: { fontSize: 8, color: COLOR_ROLE.blue },
+  layer: { ...TYPE.micro, fontSize: FS.tag },
+  verif: { ...TYPE.micro, fontSize: FS.tag, minWidth: 52 },
+  id: { fontFamily: "ui-monospace, monospace", fontSize: FS.tag, color: COLOR.textFaint },
+  refs: { fontSize: FS.tag, color: COLOR_ROLE.blue },
   empty: { fontSize: 10, color: COLOR.textFaint, fontStyle: "italic", padding: "5px 0", lineHeight: 1.6 },
-  more: { fontSize: 8.5, color: COLOR.textFaint, paddingTop: 4 },
+  more: { fontSize: FS.tag, color: COLOR.textFaint, paddingTop: 4 },
 };

@@ -39,7 +39,7 @@
  * designed it has one treatment instead of seven; until then nothing may
  * return it, and no surface may style a reference link as a causal one.
  */
-import { COLOR, RADIUS, TYPE } from "./designTokens";
+import { COLOR, FS, RADIUS, TYPE } from "./designTokens";
 
 export type Linkage =
   | "VERIFIED_CAUSAL_LINK"
@@ -109,7 +109,7 @@ export function LinkageConnector({ kind }: { kind: Linkage }) {
           opacity: s.stroke === "solid" ? 0.9 : 0.55,
         }}
       />
-      <span style={{ ...TYPE.micro, fontSize: 7.5, letterSpacing: 0.3, color: s.color, textAlign: "center", lineHeight: 1.1 }}>
+      <span style={{ ...TYPE.micro, fontSize: FS.tag, letterSpacing: 0.3, color: s.color, textAlign: "center", lineHeight: 1.1 }}>
         {s.label}
       </span>
     </div>
@@ -132,11 +132,11 @@ export function LinkageLegend({ kinds }: { kinds: readonly Linkage[] }) {
         return (
           <span key={k} title={s.title} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
             <span style={{ color: s.color, fontSize: 12 }}>{s.glyph}</span>
-            <span style={{ ...TYPE.micro, fontSize: 8, color: COLOR.textFaint, letterSpacing: 0.4 }}>{s.label}</span>
+            <span style={{ ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint, letterSpacing: 0.4 }}>{s.label}</span>
           </span>
         );
       })}
-      <span style={{ fontSize: 8.5, color: COLOR.textFaint, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "1px 7px" }}>
+      <span style={{ fontSize: FS.tag, color: COLOR.textFaint, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "1px 7px" }}>
         קרונולוגיה אינה סיבתיות
       </span>
     </div>

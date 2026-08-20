@@ -26,7 +26,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 
-import { FS, COLOR, PRODUCT_FAMILY_CUE, RADIUS, TYPE } from "./designTokens";
+import { FS, COLOR, PRODUCT_FAMILY_CUE, RADIUS, TERMINAL, TYPE } from "./designTokens";
 
 const SCALES = [
   { key: "community", label: "Community", level: "GROUP", href: "/hub/community" },
@@ -55,7 +55,7 @@ export default function SocialScaleNav() {
             key={s.key}
             href={href}
             prefetch
-            style={{ ...S.item, ...(here ? S.itemHere : null) }}
+            style={{ ...S.item, ...(here ? { ...S.itemHere, background: TERMINAL[s.key].accent } : null) }}
             aria-current={here ? "page" : undefined}
           >
             <b style={{ ...S.level, color: here ? "#02101f" : COLOR.textFaint }}>{s.level}</b>
@@ -81,7 +81,16 @@ const S: Record<string, React.CSSProperties> = {
     fontSize: FS.meta, color: COLOR.textDim, textDecoration: "none",
     padding: "4px 10px", borderRadius: RADIUS.sm,
   },
-  itemHere: { background: PRODUCT_FAMILY_CUE.labelActive, color: "#02101f", fontWeight: 700 },
+  /* PRODUCT_FAMILY_CUE != CANONICAL_COLOR_ROLE, enforced at the pixel.
+     The CAPSULE carries the family cue — its border, its background, its
+     SOCIAL label. The ACTIVE MEMBER carries its OWN canonical accent from
+     `TERMINAL`, overridden at the call site. This used to fill the active
+     member with `PRODUCT_FAMILY_CUE.labelActive`, which meant standing on
+     /world painted World as a solid GREEN pill — the family cue rendered as
+     if it were the member's canonical role, and specifically the one member
+     whose role is WHITE. The two cues are now expressed by two different
+     parts of the control and can no longer be mistaken for each other. */
+  itemHere: { color: "#02101f", fontWeight: 700 },
   level: { ...TYPE.micro, fontSize: FS.base, letterSpacing: 1 },
   sel: { ...TYPE.micro, fontSize: FS.base, color: COLOR.textFaint, marginInlineStart: 4 },
 };

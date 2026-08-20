@@ -345,10 +345,26 @@ export function SystemShell({
             if (group.kind === "item") {
               const item = group.items[0];
               const here = item.key === surface;
+              /* HEADER ROLE BAND.
+                 Every terminal already owns a canonical accent in `TERMINAL`,
+                 but the nav painted it only on the ACTIVE item — so six of the
+                 seven roles were invisible and the header carried no colour
+                 structure at all. Each item now shows its own accent as a
+                 2px seat under the label, dim when elsewhere and solid when
+                 here. Read left to right the band is the role sequence the
+                 nav order encodes: Hub PURPLE, then BLUE -> YELLOW -> GREEN
+                 (the social capsule) -> ORANGE.
+
+                 A seat rather than a fill: seven filled pills would make the
+                 header a colour chart and destroy the one thing the active
+                 state has to communicate. `Cell_ID != Color_ID` is unaffected
+                 — this paints a terminal's own declared accent, and derives
+                 nothing from it. */
+              const accent = TERMINAL[item.key].accent;
               return here ? (
                 <span
                   key={item.label}
-                  style={{ fontSize: FS.meta, fontWeight: 700, padding: "6px 14px", borderRadius: 8, color: "#02101f", background: terminal.accent }}
+                  style={{ fontSize: FS.meta, fontWeight: 700, padding: "6px 14px", borderRadius: 8, color: "#02101f", background: accent, boxShadow: `inset 0 -2px 0 0 ${accent}` }}
                 >
                   {item.label}
                 </span>
@@ -356,7 +372,11 @@ export function SystemShell({
                 <Link
                   key={item.label}
                   href={hrefFor(item)}
-                  style={{ fontSize: FS.meta, fontWeight: 500, padding: "6px 14px", borderRadius: 8, color: COLOR.textDim, textDecoration: "none" }}
+                  style={{
+                    fontSize: FS.meta, fontWeight: 500, padding: "6px 14px", borderRadius: 8,
+                    color: COLOR.textDim, textDecoration: "none",
+                    boxShadow: `inset 0 -2px 0 0 ${accent}55`,
+                  }}
                 >
                   {item.label}
                 </Link>

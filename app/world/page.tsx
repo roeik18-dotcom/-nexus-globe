@@ -9,7 +9,7 @@ import type { Provider } from "@/app/lib/provider/schema";
 import type { ProviderCapabilityRelation } from "@/app/lib/provider-capability-relation/schema";
 import WorldView from "./WorldView";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
-import { COLOR, RADIUS, STATUS, TYPE } from "@/app/lib/philos/shell/designTokens";
+import { COLOR, FS, RADIUS, STATUS, TYPE } from "@/app/lib/philos/shell/designTokens";
 import { loadPhilosEvents } from "@/app/lib/philos-event-store";
 import { systemClock, todayIn } from "@/app/lib/philos/eventStore";
 import { projectValueGroup, type ValueGroupView } from "@/app/lib/philos/projectValueGroup";
@@ -93,6 +93,34 @@ export default async function WorldPage({ searchParams }: {
     if (matches.length > 0) communityGroupsByValueId[v.id] = matches.map((g) => ({ group_name: g.name, status: g.status }));
   }
 
+  /* OBSERVED-tier figures, read off the SAME flow the frame renders — not a
+     second count, and not a hardcoded 0. `eligible` is what reaches SYSTEM;
+     `count` is what exists in the model. Keeping both visible is the whole
+     point: "0 at this scale" and "these records exist" are both true, and
+     collapsing them would either invent system relevance or erase real
+     records. The reason string comes from the flow builder itself, so this
+     strip cannot drift from the lane above it. */
+  const systemFlow = social.flow({ scale: "SYSTEM" });
+  /* ONE source for the scale figure. An earlier version of this strip summed
+     the flow's stages and reported 115/119 — it had added the 110 base
+     CONTRADICTIONS and 4 VALUE EMERGENCE relations, which are SOURCE
+     INVENTORY, into a count of entities (SOURCE != REAL). A second version
+     summed only the REAL stages and reported 1, which contradicted the WHERE
+     lane's own "0 World SYSTEM" three rows above it, because the flow gates
+     eligibility on the canon tail only and GROUP VALUE carries no scale gate.
+
+     Both were second derivations of a number the frame already computes. This
+     reads the SAME expression `SocialFrame` reads, off the SAME objects array
+     passed to it, so the two cannot disagree. */
+  const systemPresent = socialObjects.filter((o) => o.scales.SYSTEM.present).length;
+  /* What EXISTS but does not reach this scale — the canon tail, which is the
+     only part of the flow the builder actually gates. Reported separately and
+     never added to the figure above: "0 at SYSTEM" and "these records exist"
+     are both true at once, and UNKNOWN is not 0. */
+  const systemGated = systemFlow.filter((st) => st.eligible === 0 && (st.count ?? 0) > 0);
+  const systemExists = systemGated.reduce((n, st) => n + (st.count ?? 0), 0);
+  const systemReason = systemGated[0]?.not_eligible_because ?? "אין ראיה מערכתית רחבה משלו";
+
   return (
     <div style={{ background: COLOR.bg, minHeight: "100vh" }}>
       {/* BATCH 4 — `/world` previously mounted no shared shell at all (the
@@ -134,7 +162,7 @@ export default async function WorldPage({ searchParams }: {
           // presence is never accepted as a substitute. UNKNOWN != 0.
           // Same flow builder, same totals, as every other scale. SYSTEM sees
           // no groups of its own, so only those two stages differ.
-          flow={social.flow({ scale: "SYSTEM" })}
+          flow={systemFlow}
           chronology={chronology}
           objects={socialObjects}
           selection={resolveSocialSelection(params?.sel, socialObjects)}
@@ -145,10 +173,40 @@ export default async function WorldPage({ searchParams }: {
           // nothing inside it can sort above the navigation.
           primary={
             <>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 12, padding: "5px 12px", borderRadius: RADIUS.pill, background: STATUS.demo.bg, border: `1px solid ${STATUS.demo.border}` }}>
-                <span style={{ ...TYPE.micro, color: STATUS.demo.text }}>REFERENCE ARCHITECTURE</span>
-                <span style={{ fontSize: 10.5, color: COLOR.textDim }}>— PUDM legacy dataset, לא Observation/Action/Effect קנוני אמיתי</span>
+              {/* ── OBSERVED / REFERENCE — the SYSTEM scale's whole hierarchy
+                  ────────────────────────────────────────────────────────────
+                  World is the one surface whose visible content is almost
+                  entirely REFERENCE. Until this pass that fact was carried by
+                  a single pill at the top, which scrolled away after ~40px
+                  and left 560px of large, bright, confidently-laid-out
+                  architecture reading as observed reality.
+
+                  Two tiers now, stated in this order because it is the honest
+                  order: what is OBSERVED at this scale comes first even
+                  though it is empty, and the reference material is wrapped
+                  for its ENTIRE extent rather than introduced once. A badge
+                  labels a moment; a container labels a region. */}
+              <div style={S.observed}>
+                <span style={{ ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint, width: 74, flexShrink: 0, paddingTop: 2 }}>OBSERVED</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 20, fontWeight: 700, color: COLOR.textDim, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{systemPresent}</span>
+                    <span style={{ ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint }}>RECORDS AT SYSTEM SCALE</span>
+                    <span style={{ ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint, opacity: 0.5 }}>·</span>
+                    <span style={{ fontSize: FS.read, fontWeight: 700, color: STATUS.real.text, fontVariantNumeric: "tabular-nums" }}>{systemExists}</span>
+                    <span style={{ ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint }}>EXIST, GATED OUT</span>
+                  </div>
+                  <div style={{ fontSize: FS.tag, color: COLOR.textFaint, lineHeight: 1.6, marginTop: 4 }}>
+                    {systemReason} · UNKNOWN ≠ 0 — הרשומות קיימות, הן פשוט אינן מגיעות לקנה־המידה הזה.
+                  </div>
+                </div>
               </div>
+
+              <div style={S.reference}>
+                <div style={S.referenceTag}>
+                  <span style={{ ...TYPE.micro, color: STATUS.demo.text }}>REFERENCE ARCHITECTURE</span>
+                  <span style={{ fontSize: FS.tag, color: COLOR.textDim }}>— PUDM legacy dataset, לא Observation/Action/Effect קנוני אמיתי</span>
+                </div>
               <div style={{ ...primaryStage({ minHeight: 560, scroll: true }), marginTop: 6 }}>
             <WorldView
               missions={missions}
@@ -160,6 +218,7 @@ export default async function WorldPage({ searchParams }: {
               pcRelations={pcRelations}
               communityGroupsByValueId={communityGroupsByValueId}
             />
+              </div>
               </div>
             </>
           }
@@ -223,3 +282,32 @@ export default async function WorldPage({ searchParams }: {
     </div>
   );
 }
+
+const S: Record<string, React.CSSProperties> = {
+  /* OBSERVED — a lane, not a card: same label gutter and same type scale the
+     shared frame uses, so the first thing on the stage reads as part of the
+     frame above it rather than as a new component. */
+  observed: {
+    display: "flex", alignItems: "flex-start", gap: 12,
+    borderInlineStart: `2px solid ${COLOR.border}`,
+    border: `1px solid ${COLOR.border}`,
+    borderRadius: RADIUS.md, padding: "10px 14px", marginBottom: 10,
+    background: "rgba(11,15,26,0.55)",
+  },
+  /* REFERENCE — the container that holds the demotion for the whole region.
+     Dashed, because a dashed edge is the one border grammar this product
+     already uses for "not recorded" (the spine's CONCEPTUAL connector), and
+     tinted with the DEMO token so the classification is the same colour here
+     as everywhere else. */
+  reference: {
+    border: `1px dashed ${STATUS.demo.border}`,
+    borderRadius: RADIUS.lg,
+    background: STATUS.demo.bg,
+    padding: 10,
+  },
+  referenceTag: {
+    display: "inline-flex", alignItems: "center", gap: 6,
+    padding: "5px 12px", borderRadius: RADIUS.pill,
+    background: STATUS.demo.bg, border: `1px solid ${STATUS.demo.border}`,
+  },
+};

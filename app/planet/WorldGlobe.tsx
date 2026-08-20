@@ -55,7 +55,7 @@ import {
 function Chip({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <span style={{ fontSize: 8.5, letterSpacing: 1, color: "#5a76a3", textTransform: "uppercase" }}>{label}</span>
+      <span style={{ fontSize: FS.tag, letterSpacing: 1, color: "#5a76a3", textTransform: "uppercase" }}>{label}</span>
       <span style={{ fontSize: 11, fontWeight: 600, color: color ?? "#dbe6f6", display: "inline-flex", alignItems: "center", gap: 5 }}>
         {color ? <span style={{ width: 6, height: 6, borderRadius: 3, background: color, display: "inline-block" }} /> : null}
         {value}
@@ -105,7 +105,7 @@ function ContextInspector({ selected, registry }: { selected: SelectedContext; r
     color: "#cfe0f5",
   } as const;
   const kicker = { fontSize: 10, letterSpacing: 2, color: "#5aa6ff", marginBottom: 8 } as const;
-  const q = { fontSize: 8.5, letterSpacing: 0.5, color: "#5a76a3", marginTop: 10 } as const;
+  const q = { fontSize: FS.tag, letterSpacing: 0.5, color: "#5a76a3", marginTop: 10 } as const;
 
   if (selected.status === "unknown" || selected.status === "not_found") {
     const src =
@@ -153,7 +153,7 @@ function ContextInspector({ selected, registry }: { selected: SelectedContext; r
     <div style={{ ...box, borderLeft: `3px solid ${claimedColor}` }}>
       <div style={kicker}>SELECTED CONTEXT</div>
 
-      <div style={{ fontSize: 8.5, letterSpacing: 0.5, color: "#5a76a3" }}>WHAT AM I LOOKING AT?</div>
+      <div style={{ fontSize: FS.tag, letterSpacing: 0.5, color: "#5a76a3" }}>WHAT AM I LOOKING AT?</div>
       <div style={{ fontSize: 13, fontWeight: 700, color: "#f2f6fc", marginTop: 3 }}>{selected.label}</div>
       <div style={{ fontSize: 10, color: "#7f97c2", marginTop: 2 }}>
         {selected.system === "canon" ? "canon Observation" : "legacy event"} · {selected.matched_id}
@@ -255,7 +255,7 @@ function BridgeSection({ subject, registry }: { subject: string; registry: Entit
   ];
   return (
     <>
-      <div style={{ fontSize: 8.5, letterSpacing: 0.5, color: "#5a76a3", marginTop: 10 }}>BRIDGE — TYPED CROSS-ENTITY LINKS</div>
+      <div style={{ fontSize: FS.tag, letterSpacing: 0.5, color: "#5a76a3", marginTop: 10 }}>BRIDGE — TYPED CROSS-ENTITY LINKS</div>
       <div style={{ marginTop: 4 }}>
         {links.length === 0 ? (
           <span style={{ color: "#5a76a3", fontStyle: "italic" }}>לא נמצא קישור אמיתי או DEMO ל-{subject}.</span>
@@ -303,6 +303,48 @@ function Row({ k, v, mono = false }: { k: string; v: string; mono?: boolean }) {
         fontFamily: mono ? "ui-monospace, monospace" : undefined,
         fontSize: mono ? FS.base : FS.meta,
       }}>{v}</span>
+    </div>
+  );
+}
+
+/* ── HUD LANE — the ONE shape every floating panel on this globe takes ────
+   Before this pass the corner held three unrelated shapes: a bordered box
+   for the selected object, two bare <details>, and a legend anchored 12px
+   further in than the stack above it. Same corner, three grammars, two
+   left edges. `HudLane` is the SocialFrame lane translated to a surface
+   that floats over a moving canvas: same 58px label gutter, same FS scale,
+   same accent-edge-marks-primary rule. The only thing it adds is an opaque
+   backdrop, which it needs because there is a rotating globe behind it. */
+function HudLane({ label, accent, children }: { label: string; accent?: string; children: ReactNode }) {
+  return (
+    <div dir="rtl" style={{
+      display: "flex", alignItems: "flex-start", gap: 12,
+      borderInlineStart: `2px solid ${accent ?? COLOR.border}`,
+      border: `1px solid ${COLOR.border}`,
+      borderRadius: RADIUS.md, padding: "9px 12px",
+      background: "rgba(4,10,22,0.97)", backdropFilter: "blur(10px)",
+    }}>
+      <span style={{
+        ...TYPE.micro, fontSize: FS.tag, letterSpacing: 1.4,
+        color: accent ?? COLOR.textFaint,
+        width: 58, flexShrink: 0, paddingTop: 2,
+      }}>{label}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>{children}</div>
+    </div>
+  );
+}
+
+/* A count that carries its own provenance colour, so the HUD never states a
+   number without stating what kind of number it is. */
+function Tally({ items }: { items: { n: number; label: string; color: string }[] }) {
+  return (
+    <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "baseline" }}>
+      {items.map((it) => (
+        <span key={it.label} style={{ display: "inline-flex", alignItems: "baseline", gap: 5 }}>
+          <span style={{ fontSize: FS.read, fontWeight: 700, color: it.color, fontVariantNumeric: "tabular-nums" }}>{it.n}</span>
+          <span style={{ ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint }}>{it.label}</span>
+        </span>
+      ))}
     </div>
   );
 }
@@ -366,7 +408,7 @@ export function CanonActivityPanel({ canonActions, canonEffects, canonNeeds, can
         אין קואורדינטות אמיתיות — הקשר מערכת (system context) בלבד, לא מפה:
       </div>
       {contexts.slice(0, 5).map((c) => (
-        <div key={c} style={{ marginTop: 3, fontSize: 10.5, color: COLOR.textDim }}>· {c}</div>
+        <div key={c} style={{ marginTop: 3, fontSize: FS.meta, color: COLOR.textDim }}>· {c}</div>
       ))}
     </div>
   );
@@ -403,13 +445,13 @@ export function RegionLayerPanel({ registry }: { registry: EntityLink[] }) {
   }
 
   return (
-    <div dir="rtl" style={{ position: "absolute", left: 24, top: 168, zIndex: 10, width: 220, background: "rgba(4,10,22,0.85)", backdropFilter: "blur(8px)", border: "1px solid #2a3f66", borderRadius: 8, padding: "10px 12px", fontSize: 10.5, color: "#9fb2d6" }}>
-      <div style={{ fontSize: 8.5, letterSpacing: 2, color: "#5aa6ff", marginBottom: 6 }}>REGIONS · שכבת מרחב (בגשר)</div>
+    <div dir="rtl" style={{ position: "absolute", left: 24, top: 168, zIndex: 10, width: 220, background: "rgba(4,10,22,0.85)", backdropFilter: "blur(8px)", border: "1px solid #2a3f66", borderRadius: 8, padding: "10px 12px", fontSize: FS.meta, color: "#9fb2d6" }}>
+      <div style={{ fontSize: FS.tag, letterSpacing: 2, color: "#5aa6ff", marginBottom: 6 }}>REGIONS · שכבת מרחב (בגשר)</div>
       {[...byRegion.entries()].map(([regionId, r]) => (
         <div key={regionId} style={{ marginBottom: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: "#dbe6f6" }}>{r.communities[0].source.type === "community" ? r.communities[0].target.canonical_id : regionId}</span>
-            <span style={{ fontSize: 8.5, fontWeight: 800, padding: "1px 5px", borderRadius: 4, color: r.provenance === "DEMO" ? "#fbbf24" : "#34d399", border: `1px solid ${r.provenance === "DEMO" ? "#fbbf24" : "#34d399"}55` }}>{r.provenance}</span>
+            <span style={{ fontSize: FS.tag, fontWeight: 800, padding: "1px 5px", borderRadius: 4, color: r.provenance === "DEMO" ? "#fbbf24" : "#34d399", border: `1px solid ${r.provenance === "DEMO" ? "#fbbf24" : "#34d399"}55` }}>{r.provenance}</span>
           </div>
           {r.communities.map((c) => (
             <a key={c.link_id} href={`/hub/community?community=${c.source.canonical_id}`} style={{ display: "block", fontSize: 10, color: "#5b9cf6", textDecoration: "none", marginTop: 2 }}>
@@ -418,7 +460,7 @@ export function RegionLayerPanel({ registry }: { registry: EntityLink[] }) {
           ))}
         </div>
       ))}
-      <div style={{ fontSize: 8.5, color: "#5a76a3", marginTop: 4 }}>
+      <div style={{ fontSize: FS.tag, color: "#5a76a3", marginTop: 4 }}>
         אין קואורדינטות אמיתיות — קיבוץ לפי group.region בלבד, לא מפה.
       </div>
     </div>
@@ -754,7 +796,7 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
             <summary
               style={{
                 cursor: "pointer",
-                fontSize: 10.5,
+                fontSize: FS.meta,
                 letterSpacing: 1.2,
                 color: "#5a76a3",
                 padding: "3px 0",
@@ -778,127 +820,137 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
       {selected && selected.status !== "none" ? (
         <ContextInspector selected={selected} registry={registry ?? []} />
       ) : null}
-      {/* BOTTOM-LEFT STACK — tier 4 of the Globe hierarchy: compact
-            overlays / verified network info, below the sphere in priority.
-            Both this stack and LEGEND are anchored bottom-left; the legend
-            reserves the space above (`styles.legend`, bottom 112) and this
-            stack sits under it, collapsed. Expanding it deliberately
-            overlays the legend (zIndex 14) — a user action, not a default
-            state, and it can no longer occlude the sphere because it is
-            height-capped and bottom-anchored. */}
-      {!selected || selected.status === "none" ? (
-        <div dir="rtl" style={{ position: "absolute", left: 12, bottom: 48, zIndex: 14, maxWidth: 420, maxHeight: "34vh", overflowY: "auto" }}>
-          {/* SELECTED OBJECT — the same record Community and World have
-              selected, resolved against geometry that ALREADY EXISTS. When no
-              arc carries this event_id the projection is NOT_APPLICABLE and
-              says why; no node, coordinate or edge is created to satisfy a
-              selection. */}
-          {socialSelection ? (
-            /* Reads as a LANE of the shared frame rather than a box parked in
-               the corner: same left gutter for the label, same body column,
-               same 10px floor, same provenance vocabulary. The only thing it
-               keeps of its own is the near-opaque backdrop, which it needs
-               because it floats over a moving canvas rather than sitting in
-               document flow. Integrated, not bolted on. */
-            <div dir="rtl" style={{
-              display: "flex", alignItems: "flex-start", gap: 12,
-              borderInlineStart: `2px solid ${socialSelection.network_present ? "#ffd88a" : COLOR.border}`,
-              border: `1px solid ${COLOR.border}`,
-              borderRadius: RADIUS.md, padding: "9px 12px", marginBottom: 6,
-              background: "rgba(4,10,22,0.97)", backdropFilter: "blur(10px)",
-            }}>
-              <span style={{
-                ...TYPE.micro, fontSize: FS.tag, letterSpacing: 1.4,
-                color: socialSelection.network_present ? "#ffd88a" : COLOR.textFaint,
-                width: 58, flexShrink: 0, paddingTop: 2,
-              }}>OBJECT</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-              <Row k="OBJECT" v={`${socialSelection.kind} · ${socialSelection.record_id}`} mono />
-              <Row
-                k="RELATION"
-                v={socialSelection.network_present
-                  ? "קשת מודגשת + שני קצותיה"
-                  : `NOT_APPLICABLE — ${socialSelection.absent_reason ?? "אין ייצוג רשתי"}`}
-              />
-              <Row k="TIME" v={socialSelection.at.slice(0, 16).replace("T", " ")} mono />
-              <Row
-                k="ROLES"
-                v={socialSelection.roles.length > 0
-                  ? socialSelection.roles.map((r) => r.role).join(" · ")
-                  : "אף תפקיד פנימי לא מופעל"}
-              />
-              <Row
-                k="EVIDENCE"
-                v={socialSelection.source_record_ids.length > 0
-                  ? socialSelection.source_record_ids.join(" · ")
-                  : "אין הפניה מתועדת"}
-                mono
-              />
-              <Row k="PROVENANCE" v={socialSelection.provenance} />
-              <Row k="STATUS" v={socialSelection.verification} />
+      {/* ── HUD COLUMN — ONE anchor, one gutter, one grammar ───────────────
+            This corner used to hold two independently positioned stacks: the
+            overlay stack at (left 12, bottom 48) and the legend at (left 24,
+            bottom 26). Their heights were unrelated, so they collided — a bug
+            chased three times, each time with a new bottom offset. They are
+            now ONE flow-laid column: the legend cannot collide with the stack
+            above it because it is IN it. The column is height-capped and
+            scrolls itself, so it can never grow over the sphere.
+
+            Order is hierarchy, top to bottom: what the network IS (always
+            visible) → what is SELECTED (when something is) → AUDIT
+            (collapsed) → how to read the picture (collapsed). */}
+      <div style={S.hudColumn}>
+        {/* NETWORK — the always-on readout. Before this pass provenance and
+            verification existed on this surface only after a selection, so
+            the default view of the globe showed lines whose epistemic status
+            was invisible. These are gate figures over the CANDIDATE EDGES,
+            not over the drawing: the drawing's own counts live under the
+            sphere and are not repeated here. */}
+        {gate ? (
+          <HudLane label="NETWORK" accent={STATUS.real.text}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              <Tally items={[
+                { n: gate.real, label: "REAL", color: STATUS.real.text },
+                { n: gate.derived, label: "DERIVED", color: persistedDerivedColor("derived") },
+                { n: gate.demo, label: "DEMO", color: STATUS.demo.text },
+              ]} />
+              <Tally items={[
+                { n: gate.verified, label: "VERIFIED", color: STATUS.verified.text },
+                { n: gate.claimed, label: "CLAIMED", color: STATUS.claimed.text },
+                { n: gate.unknown, label: "UNKNOWN", color: STATUS.unknown.text },
+              ]} />
+              <div style={{ ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint }}>
+                {gate.passed}/{gate.candidates} עברו את שער האמת · {gate.rejected} נדחו
               </div>
             </div>
-          ) : null}
+          </HudLane>
+        ) : null}
 
-          <details>
-            <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>
-              תצפית אחרונה · LATEST OBSERVATION (CANON)
-            </summary>
-            {observationStrip}
-          </details>
-          <details>
-            <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>
-              Person / Value State (Phase 4, זהה ל-Hub/Dynamics/Brain) · CANON + קריאת התצפית האחרונה
-            </summary>
-            {canonicalSlice}
-          </details>
-        </div>
-      ) : null}
+        {/* SELECTED OBJECT — the same record Community and World have
+            selected, resolved against geometry that ALREADY EXISTS. When no
+            arc carries this event_id the projection is NOT_APPLICABLE and
+            says why; no node, coordinate or edge is created to satisfy a
+            selection. ROLES / TIME / PROVENANCE sit here, one lane below the
+            network's own provenance, in the same gutter — the two read as
+            one instrument reporting at two scales. */}
+        {socialSelection ? (
+          <HudLane label="OBJECT" accent={socialSelection.network_present ? "#ffd88a" : undefined}>
+            <Row k="OBJECT" v={`${socialSelection.kind} · ${socialSelection.record_id}`} mono />
+            <Row
+              k="RELATION"
+              v={socialSelection.network_present
+                ? "קשת מודגשת + שני קצותיה"
+                : `NOT_APPLICABLE — ${socialSelection.absent_reason ?? "אין ייצוג רשתי"}`}
+            />
+            <Row k="TIME" v={socialSelection.at.slice(0, 16).replace("T", " ")} mono />
+            <Row
+              k="ROLES"
+              v={socialSelection.roles.length > 0
+                ? socialSelection.roles.map((r) => r.role).join(" · ")
+                : "אף תפקיד פנימי לא מופעל"}
+            />
+            <Row
+              k="EVIDENCE"
+              v={socialSelection.source_record_ids.length > 0
+                ? socialSelection.source_record_ids.join(" · ")
+                : "אין הפניה מתועדת"}
+              mono
+            />
+            <Row k="PROVENANCE" v={socialSelection.provenance} />
+            <Row k="STATUS" v={socialSelection.verification} />
+          </HudLane>
+        ) : null}
 
-      {/* Legend — blueprint §13: a line the viewer cannot decode is not
-          information. Lists exactly what is drawn, node types included, since
-          every one of them now comes from the projection. */}
-      {/* Collapsed by default. This corner also holds the selected-object
-          inspector and the observation stack, and their combined height kept
-          colliding with a fixed-position legend — chased three times with a
-          new bottom offset each time. A disclosure has a predictable closed
-          height, so the collision cannot recur as content grows. The legend
-          is one click away and nothing was removed. */}
-      <details style={S.legend}>
-        <summary style={{ ...S.railHead, cursor: "pointer", listStyle: "none" }}>LEGEND</summary>
-        <div style={S.legendRow}>
-          <span style={{ ...S.legendLine, background: "linear-gradient(90deg,rgba(255,206,138,0.1),#ffce8a)", height: 2 }} />
-          <span style={S.legendText}>resource transfer — amount · value · event</span>
-        </div>
-        <div style={S.legendRow}>
-          <span style={{ ...S.legendLine, background: "linear-gradient(90deg,rgba(150,210,255,0.1),#96d2ff)" }} />
-          <span style={S.legendText}>membership / appointment — from the event log</span>
-        </div>
-        <div style={S.legendRow}>
-          <span style={{ ...S.legendLine, background: "#fff", height: 2 }} />
-          <span style={S.legendText}>selected context — from a real ?ctx=</span>
-        </div>
-        <div style={S.legendRow}>
-          <span style={{ ...S.legendDot, background: GROUP }} />
-          <span style={S.legendText}>value group</span>
-        </div>
-        <div style={S.legendRow}>
-          <span style={{ ...S.legendDot, background: VALUE }} />
-          <span style={S.legendText}>value — the group's own real central_value</span>
-        </div>
-        <div style={S.legendRow}>
-          <span style={{ ...S.legendDot, background: PERSON }} />
-          <span style={S.legendText}>person — registered in the log</span>
-        </div>
-        <div style={S.legendRow}>
-          <span style={{ ...S.legendDot, background: RECIPIENT }} />
-          <span style={S.legendText}>recipient — named by an approved transfer</span>
-        </div>
-        <div style={S.legendNote}>
-          Every point and line comes from an event and names it on hover. Point
-          positions are layout, not geography.
-        </div>
-      </details>
+        {/* AUDIT — collapsed by default, same as the frame's audit lane. */}
+        {!selected || selected.status === "none" ? (
+          <div dir="rtl">
+            <details>
+              <summary style={S.hudSummary}>תצפית אחרונה · LATEST OBSERVATION (CANON)</summary>
+              {observationStrip}
+            </details>
+            <details>
+              <summary style={S.hudSummary}>Person / Value State (Phase 4, זהה ל-Hub/Dynamics/Brain) · CANON + קריאת התצפית האחרונה</summary>
+              {canonicalSlice}
+            </details>
+          </div>
+        ) : null}
+
+        {/* Legend — blueprint §13: a line the viewer cannot decode is not
+            information. Lists exactly what is drawn, node types included,
+            since every one of them now comes from the projection. Collapsed
+            by default; it is the last thing in the column because it is the
+            reference for everything above it. */}
+        <details>
+          <summary style={{ ...S.hudSummary, listStyle: "none" }}>LEGEND</summary>
+          <div style={S.legend}>
+            <div style={S.legendRow}>
+              <span style={{ ...S.legendLine, background: "linear-gradient(90deg,rgba(255,206,138,0.1),#ffce8a)", height: 2 }} />
+              <span style={S.legendText}>resource transfer — amount · value · event</span>
+            </div>
+            <div style={S.legendRow}>
+              <span style={{ ...S.legendLine, background: "linear-gradient(90deg,rgba(150,210,255,0.1),#96d2ff)" }} />
+              <span style={S.legendText}>membership / appointment — from the event log</span>
+            </div>
+            <div style={S.legendRow}>
+              <span style={{ ...S.legendLine, background: "#fff", height: 2 }} />
+              <span style={S.legendText}>selected context — from a real ?ctx=</span>
+            </div>
+            <div style={S.legendRow}>
+              <span style={{ ...S.legendDot, background: GROUP }} />
+              <span style={S.legendText}>value group</span>
+            </div>
+            <div style={S.legendRow}>
+              <span style={{ ...S.legendDot, background: VALUE }} />
+              <span style={S.legendText}>value — the group's own real central_value</span>
+            </div>
+            <div style={S.legendRow}>
+              <span style={{ ...S.legendDot, background: PERSON }} />
+              <span style={S.legendText}>person — registered in the log</span>
+            </div>
+            <div style={S.legendRow}>
+              <span style={{ ...S.legendDot, background: RECIPIENT }} />
+              <span style={S.legendText}>recipient — named by an approved transfer</span>
+            </div>
+            <div style={S.legendNote}>
+              Every point and line comes from an event and names it on hover.
+              Point positions are layout, not geography.
+            </div>
+          </div>
+        </details>
+      </div>
 
       {/* EVENTS ON SCREEN removed: it listed the same records the shared
           TIME lane already lists, in Globe's own layout. One timeline, one
@@ -960,19 +1012,34 @@ const S: Record<string, React.CSSProperties> = {
   loading: { position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#4f6a99", letterSpacing: "3px", fontSize: 12 },
 
   topCenter: { position: "absolute", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 10, fontSize: 11, letterSpacing: "3px", color: "#c3d5f2", textAlign: "center" },
-  purposeLine: { fontSize: 9, letterSpacing: "0.3px", color: "#6f89b6", marginTop: 5, maxWidth: 360, textTransform: "none" },
+  purposeLine: { fontSize: FS.tag, letterSpacing: "0.3px", color: "#6f89b6", marginTop: 5, maxWidth: 360, textTransform: "none" },
 
-  legend: { position: "absolute", left: 24, bottom: 26, zIndex: 10, display: "flex", flexDirection: "column", gap: 5, maxWidth: 250 },
+  /* ONE anchor for everything in this corner. Nothing inside it is
+     positioned; the column lays out in flow, so no two panels here can ever
+     be given conflicting offsets again. Capped + self-scrolling, so the
+     column can never occlude the sphere however much it holds. */
+  hudColumn: {
+    position: "absolute", left: 14, bottom: 14, zIndex: 14,
+    width: 392, maxWidth: "32vw", maxHeight: "62vh", overflowY: "auto",
+    display: "flex", flexDirection: "column", gap: 6,
+  },
+  /* One disclosure style for every collapsed panel on this surface — the
+     legend used `railHead`, the audit stack used two inline objects. */
+  hudSummary: { cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#5a76a3", padding: "4px 2px" },
+
+  legend: { display: "flex", flexDirection: "column", gap: 5, maxWidth: 260, padding: "4px 2px 2px" },
   legendRow: { display: "flex", alignItems: "center", gap: 9 },
   legendLine: { width: 26, height: 1.5, borderRadius: 2, flexShrink: 0 },
   legendDot: { width: 6, height: 6, borderRadius: "50%", flexShrink: 0, marginLeft: 10, marginRight: 10 },
-  legendText: { fontSize: 9.5, color: "#6f89b6", lineHeight: 1.4 },
-  legendNote: { fontSize: 8.5, color: "#3e587f", lineHeight: 1.5, marginTop: 4 },
+  /* 10px floor — these were 9.5 and 8.5, the last two sub-floor sizes on
+     this surface. A legend nobody can read is not a legend. */
+  legendText: { fontSize: FS.tag, color: "#7f97c2", lineHeight: 1.5 },
+  legendNote: { fontSize: FS.tag, color: "#5a76a3", lineHeight: 1.55, marginTop: 5 },
   /* Pinned BELOW the right-hand context panel rather than vertically centred:
      centred, it sat at 394-506 and was completely covered by CANON ACTIVITY
      (168-630, zIndex 12) — the rail rendered but was never visible. */
   rightRail: { position: "absolute", right: 24, top: 620, zIndex: 10, width: 190, display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" },
-  railHead: { fontSize: 8.5, letterSpacing: "2.5px", color: "#3e587f", marginBottom: 8 },
+  railHead: { fontSize: FS.tag, letterSpacing: "2.5px", color: "#3e587f", marginBottom: 8 },
   streamRow: { fontSize: 10, lineHeight: 1.5, color: "#7f97c2", textAlign: "right" },
   streamId: { color: "#3e587f" },
 
@@ -980,7 +1047,7 @@ const S: Record<string, React.CSSProperties> = {
   stats: { display: "flex", alignItems: "center", gap: 22 },
   stat: { display: "flex", flexDirection: "column", alignItems: "center", position: "relative" },
   statNum: { fontSize: 22, fontWeight: 700, color: "#eaf1ff", lineHeight: 1, fontVariantNumeric: "tabular-nums" },
-  statLabel: { fontSize: 8, textTransform: "uppercase", letterSpacing: "1.5px", color: "#43608a", marginTop: 4 },
+  statLabel: { fontSize: FS.tag, textTransform: "uppercase", letterSpacing: "1.5px", color: "#43608a", marginTop: 4 },
   statSep: { position: "absolute", right: -11, top: 2, width: 1, height: 22, background: "rgba(90,130,190,0.18)" },
-  statsNote: { fontSize: 8.5, letterSpacing: "1px", color: "#3e587f" },
+  statsNote: { fontSize: FS.tag, letterSpacing: "1px", color: "#3e587f" },
 };
