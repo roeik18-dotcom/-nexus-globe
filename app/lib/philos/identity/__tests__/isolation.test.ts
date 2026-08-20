@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { mayReadSubject, LOCAL_SINGLE_USER, resolveViewerContext, setViewerProvider, type ViewerContext } from "../viewerContext";
+import { USER_A, USER_B } from "./viewerFixtures";
 import { buildSocialChronology, type ChronoEntry } from "../../social/socialChronology";
 import { projectSocialSystem } from "../../social/socialSystemProjection";
 
@@ -119,5 +120,64 @@ describe("ISOLATION — the client cannot choose who is acting", () => {
 
   it("resolveViewerContext takes NO parameters — impersonation has no channel", () => {
     expect(resolveViewerContext.length).toBe(0);
+  });
+});
+
+/* ──────────────────────────────────────────────────────────────────────────
+   END-TO-END SCOPING THROUGH THE LOADER
+   ──────────────────────────────────────────────────────────────────────────
+   The suite above proves `mayReadSubject` is correct, and it was — while
+   `loadSocialSystem` computed `visibleNeeds` / `visibleOffers` /
+   `visibleActions` / `visibleEffects` and then passed the UNFILTERED arrays
+   into the chronology. Observations were not filtered at all. Every unit test
+   here passed throughout, because none of them ran the loader.
+
+   Scoping that is computed but not applied is worse than no scoping: it reads
+   as done. These assert the OUTPUT of the real loader, which is the only thing
+   a second user actually meets. */
+describe("ISOLATION — the real loader, not the helper it calls", () => {
+  it("B, who owns nothing, gets an EMPTY social projection — not A's", async () => {
+    const { loadSocialSystem } = await import("../../social/loadSocialSystem");
+    const b = await loadSocialSystem(USER_B);
+    for (const entry of b.chronology) {
+      expect(entry.owner_subject === undefined || entry.owner_subject === USER_B.subject_id).toBe(true);
+      expect(entry.owner_subject).not.toBe(USER_A.subject_id);
+    }
+    expect(b.totals.needs).toBe(0);
+    expect(b.totals.actions).toBe(0);
+    expect(b.totals.effects).toBe(0);
+  });
+
+  it("B inherits none of A's scale counts", async () => {
+    const { loadSocialSystem } = await import("../../social/loadSocialSystem");
+    const [a, b] = await Promise.all([loadSocialSystem(USER_A), loadSocialSystem(USER_B)]);
+    expect(b.counts.GROUP).toBeLessThan(a.counts.GROUP);
+    expect(b.counts.NETWORK).toBe(0);
+    expect(b.counts.SYSTEM).toBe(0);
+  });
+
+  it("B inherits no PERSONAL value and no membership of A's group", async () => {
+    const { loadSocialSystem } = await import("../../social/loadSocialSystem");
+    const b = await loadSocialSystem(USER_B);
+    expect(b.values.personal).toBeNull();
+    expect(b.values.all.every((v) => v.holder_id !== USER_A.subject_id)).toBe(true);
+  });
+
+  it("A's own projection still contains A's records — scoping is not a blanket empty", async () => {
+    const { loadSocialSystem } = await import("../../social/loadSocialSystem");
+    const a = await loadSocialSystem(USER_A);
+    expect(a.counts.GROUP).toBeGreaterThan(0);
+    expect(a.totals.needs).toBeGreaterThan(0);
+  });
+
+  it("NO record owned by anyone other than the viewer survives into A's chronology", async () => {
+    const { loadSocialSystem } = await import("../../social/loadSocialSystem");
+    const a = await loadSocialSystem(USER_A);
+    const foreign = a.chronology.filter(
+      (e) => e.owner_subject !== undefined
+        && e.owner_subject !== USER_A.subject_id
+        && e.owner_subject !== USER_A.person_id,
+    );
+    expect(foreign.map((e) => `${e.kind}:${e.owner_subject}`)).toEqual([]);
   });
 });

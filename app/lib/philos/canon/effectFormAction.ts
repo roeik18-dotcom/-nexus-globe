@@ -19,7 +19,7 @@ import { revalidatePath } from "next/cache";
 
 import { recordEffect, EffectReferentialIntegrityError } from "./actionLifecycle";
 import type { Effect } from "./effect";
-import { REAL_CURRENT_SUBJECT } from "@/app/lib/philos/subjectRegistry";
+import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { createIdGenerator, systemClock } from "@/app/lib/philos/eventStore";
 
 export type CreateEffectResult =
@@ -28,6 +28,12 @@ export type CreateEffectResult =
 
 /** Testable core — no `revalidatePath`. */
 export async function createEffectForCurrentUserCore(formData: FormData): Promise<CreateEffectResult> {
+/* WRITE AUTHORITY comes from the VIEWER, not from a module-level constant.
+     The client could never set this field — that part was already right — but
+     it was bound to `REAL_CURRENT_SUBJECT`, so every write in the product was
+     authored by person_roei regardless of who was acting. Server-bound and
+     viewer-bound are two different properties; only the first was true. */
+  const viewer = await resolveViewerContext();
   const action_ref = String(formData.get("action_ref") ?? "").trim();
   // OBSERVED-IN (t1). Optional and never inferred: the person states which
   // Observation recorded this outcome, or states none. `recordEffect`
@@ -57,7 +63,7 @@ export async function createEffectForCurrentUserCore(formData: FormData): Promis
   const effect: Effect = {
     effect_id: createIdGenerator().next("effect"),
     action_ref,
-    subject: REAL_CURRENT_SUBJECT,
+    subject: viewer.subject_id,
     concerns_subject_internal_state,
     claimed_outcome: outcome,
     verified_outcome: self_verified ? { ...outcome } : undefined,

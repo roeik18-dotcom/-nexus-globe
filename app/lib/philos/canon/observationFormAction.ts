@@ -25,7 +25,7 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 
-import { REAL_CURRENT_SUBJECT } from "@/app/lib/philos/subjectRegistry";
+import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { recordObservationAction } from "./observationIngestion";
 import { projectCanonDynamics } from "./projectCanonDynamics";
 import type { Domain, Frame, Observation } from "./observation";
@@ -88,6 +88,12 @@ function isFrame(v: FormDataEntryValue | null): v is "I" | "R" {
  * directly instead of only reachable through a live Next.js request.
  */
 export async function recordObservationFromForm(formData: FormData): Promise<CreateObservationResult> {
+/* WRITE AUTHORITY comes from the VIEWER, not from a module-level constant.
+     The client could never set this field — that part was already right — but
+     it was bound to `REAL_CURRENT_SUBJECT`, so every write in the product was
+     authored by person_roei regardless of who was acting. Server-bound and
+     viewer-bound are two different properties; only the first was true. */
+  const viewer = await resolveViewerContext();
   const domainRaw = formData.get("domain");
   const frameRaw = formData.get("frame");
   const levelRaw = formData.get("level");
@@ -109,7 +115,7 @@ export async function recordObservationFromForm(formData: FormData): Promise<Cre
   const frame: Frame = frameRaw;
 
   const observation: Observation = {
-    subject: REAL_CURRENT_SUBJECT,
+    subject: viewer.subject_id,
     domain,
     frame,
     reference: "self_baseline",
@@ -135,7 +141,7 @@ export async function recordObservationFromForm(formData: FormData): Promise<Cre
   try {
     const canon = await projectCanonDynamics();
     const priorCandidates = canon.nodes
-      .filter((n) => n.subject === REAL_CURRENT_SUBJECT && n.domain === domain && n.frame === frame && n.canon_event_id !== result.canon_event_id && n.observed_at <= observation.time)
+      .filter((n) => n.subject === viewer.subject_id && n.domain === domain && n.frame === frame && n.canon_event_id !== result.canon_event_id && n.observed_at <= observation.time)
       .sort((a, b) => b.observed_at.localeCompare(a.observed_at));
     const prior = priorCandidates[0];
     if (prior) before = { level: prior.level, stability: prior.stability, observed_at: prior.observed_at, canon_event_id: prior.canon_event_id };

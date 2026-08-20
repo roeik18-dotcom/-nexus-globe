@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { USER_A } from "@/app/lib/philos/identity/__tests__/viewerFixtures";
 import { buildPersonInContext } from "../personInContext";
 import { resolvePersonContext } from "../personContext";
 import { resolvePersonRef } from "../personRef";
 import { MUSIC_CANON_DOMAIN_ID } from "../../canonical/musicMasterLoader";
 
-const person = resolvePersonRef("person_roei");
+const person = resolvePersonRef(USER_A, "person_roei");
 const context = resolvePersonContext({ person, reference: null, context: null, asOf: "2026-08-19T00:00:00Z" });
 const frame = (activeDomainId?: string | null) => buildPersonInContext({ person, context, activeDomainId });
 

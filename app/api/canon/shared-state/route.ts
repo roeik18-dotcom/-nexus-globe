@@ -40,7 +40,7 @@ import { loadPhilosEvents } from "@/app/lib/philos-event-store";
 import { systemClock, todayIn } from "@/app/lib/philos/eventStore";
 import { buildDefaultLinkRegistry } from "@/app/lib/philos/bridge/linkRegistry";
 import { linksForEntity } from "@/app/lib/philos/bridge/entityLink";
-import { REAL_CURRENT_SUBJECT } from "@/app/lib/philos/subjectRegistry";
+import { mayReadSubject, resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { buildPersonInstance, buildValueDomainInstance } from "@/app/lib/philos/canonical/personInstance";
 import { buildActivePersonRefs } from "@/app/lib/philos/canonical/activeConfig";
 import { availableDomainConfigs } from "@/app/lib/philos/canonical/domainConfigRegistry";
@@ -71,7 +71,24 @@ export async function GET(request: Request): Promise<Response> {
   if (!authorized(request)) return json({ error: "unauthorized" }, 401);
 
   const url = new URL(request.url);
-  const subject = url.searchParams.get("subject") ?? REAL_CURRENT_SUBJECT;
+  /* IMPERSONATION HOLE, CLOSED.
+     `?subject=` was read straight off the query string and fell back to the
+     single-user constant. A caller holding the shared bearer token could
+     therefore read ANY subject's canon state — domain states, action
+     lifecycle, person instance — by naming them in a URL. The bearer proves
+     the caller is a trusted service; it says nothing about WHICH human's
+     records that service may read.
+
+     The acting subject now comes from the viewer, server-side, and a
+     `?subject=` that names anyone else is REFUSED rather than silently
+     narrowed to the viewer — a request that asked for someone else's data
+     should not receive a 200 full of a different person's records. */
+  const viewer = await resolveViewerContext();
+  const requested = url.searchParams.get("subject");
+  if (requested !== null && !mayReadSubject(viewer, requested)) {
+    return json({ error: "forbidden", detail: "subject is not readable by this viewer" }, 403);
+  }
+  const subject = viewer.subject_id;
   const asOf = url.searchParams.get("asOf") ?? systemClock.now();
 
   try {

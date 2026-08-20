@@ -85,7 +85,7 @@ export default async function CommunityPage({
 
   const params = await searchParams;
   // STEP 1 — the ONE shared identity reference.
-  const personRef = resolvePersonRef(params.subject);
+  const personRef = resolvePersonRef(await resolveViewerContext(), params.subject);
   // STEP 2 — the frame this screen's readings are relative to (canon §19).
   const personContext = resolvePersonContext({ person: personRef, asOf: systemClock.now() });
   const isPrototypeView = params.view === "prototype";

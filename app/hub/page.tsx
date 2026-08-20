@@ -1,3 +1,4 @@
+import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { connection } from "next/server";
 import type { ReactNode } from "react";
 
@@ -103,7 +104,7 @@ export default async function HubPage({
   // same deterministic default as before).
   const params = await searchParams;
   // STEP 1 — the ONE shared identity reference.
-  const personRef = resolvePersonRef(params.subject);
+  const personRef = resolvePersonRef(await resolveViewerContext(), params.subject);
   // `resolvePersonRef` already applied this exact `typeof` check; kept as a
   // local alias so the canon-scoped block below reads unchanged.
   const requestedSubject: string | undefined = typeof params.subject === "string" ? params.subject : undefined;

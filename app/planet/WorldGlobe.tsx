@@ -32,7 +32,6 @@ import VerifiedRelationInventory from "@/app/lib/philos/shell/VerifiedRelationIn
 import type { GlobeArc, GlobeNode } from "@/app/lib/philos/projectGlobeGraph";
 import { VERIFIED_STATUSES } from "@/app/lib/philos/events";
 import { SystemShell, type ShellIdentityLink } from "@/app/lib/philos/shell/SystemShell";
-import { REAL_CURRENT_SUBJECT } from "@/app/lib/philos/subjectRegistry";
 import type { PersonContext } from "@/app/lib/philos/person/personContext";
 import EntityContextPanel from "@/app/lib/philos/shell/EntityContextPanel";
 import { linksByRelation, linksForEntity, otherEnd, type EntityLink } from "@/app/lib/philos/bridge/entityLink";
@@ -479,7 +478,7 @@ function starShadows(n: number, seed: number) {
   return out.join(",");
 }
 
-export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry, identityLink, personContext, canonActions, canonEffects, canonNeeds, canonOffers, canonicalSlice, observationStrip, personFrameSlot, bridgeLinks, gate, socialSelection, primaryCtx }: {
+export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry, identityLink, personContext, canonActions, canonEffects, canonNeeds, canonOffers, canonicalSlice, observationStrip, personFrameSlot, bridgeLinks, gate, socialSelection, primaryCtx, viewerSubject }: {
   nodes: GlobeNode[]; arcs: GlobeArc[]; selected?: SelectedContext; registry?: EntityLink[]; identityLink?: ShellIdentityLink;
   /** STEP 2 — the frame this screen's readings are relative to (canon §19). */
   personContext?: PersonContext;
@@ -522,6 +521,10 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
    *  `buildSocialPrimaryContext` in `page.tsx`, identical in shape and
    *  derivation to the one GROUP and SYSTEM pass. */
   primaryCtx: SocialPrimaryContext;
+  /** The VIEWER's own canon subject, resolved server-side. This client
+   *  component used to fall back to `REAL_CURRENT_SUBJECT` when no `?ctx=`
+   *  named a subject — a client choosing a person by importing a constant. */
+  viewerSubject: string;
   /** Verdict from the network truth gate over every candidate edge. */
   gate?: {
     candidates: number; passed: number; rejected: number;
@@ -779,7 +782,7 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
           purpose="Where this exists in the system, and what flows between whom — layout, not geography, until location is real."
           selected={selected}
           personContext={personContext}
-          subject={selected?.status === "found" && selected.subject ? selected.subject : REAL_CURRENT_SUBJECT}
+          subject={selected?.status === "found" && selected.subject ? selected.subject : viewerSubject}
           identityLink={identityLink}
         />
         {/* The shared frame is REFERENCE / AUDIT content, not the primary

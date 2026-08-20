@@ -130,28 +130,62 @@ export async function loadSocialSystem(viewer: ViewerContext): Promise<SocialSys
   // Group log events: visible for groups the viewer belongs to. A viewer with
   // no membership sees no group history, which is the correct default for a
   // second user rather than an empty-state bug.
-  const visibleEvents = events.filter(
-    (e) => e.entity_type !== "value_group" || viewerGroups.has(e.entity_id),
-  );
+  /* Group-log scoping, properly.
+     This read `entity_type !== "value_group" || viewerGroups.has(entity_id)`,
+     which let EVERY non-group event through for everyone — so a viewer who
+     belongs to nothing still received all 27 `person.registered` records, a
+     complete roster of the system's people. "It isn't a value_group event"
+     is not the same question as "may this viewer see it".
 
+     A group-log event is visible when it is the viewer's OWN, or when it
+     belongs to a group the viewer has a recorded membership in. People are
+     visible through a SHARED GROUP, never globally: co-membership is a real
+     recorded relation, and it is the only thing that makes another person's
+     registration a fact this viewer is party to. */
+  const coMembers = new Set<string>();
+  for (const e of events) {
+    if (e.event_type === "member.joined" && viewerGroups.has(e.entity_id)) coMembers.add(e.actor_id);
+  }
+  const isOwn = (id: string) => id === viewer.person_id || id === viewer.subject_id;
+  const visibleEvents = events.filter((e) => {
+    if (isOwn(e.actor_id) || isOwn(e.entity_id)) return true;
+    if (e.entity_type === "value_group") return viewerGroups.has(e.entity_id);
+    // A person record: visible only through a shared group.
+    if (e.entity_type === "person") return coMembers.has(e.entity_id) || coMembers.has(e.actor_id);
+    // Anything else is visible only when its actor shares a group with the
+    // viewer — an unclassified event is not public by default.
+    return coMembers.has(e.actor_id);
+  });
+
+  /* SCOPED BEFORE PROJECTION — for real this time.
+     The `visible*` arrays above were computed correctly and then NOT USED: the
+     chronology was built from the unfiltered `needs` / `offers` / `actions` /
+     `effects`, and observations were not filtered at all. Only `events` used
+     its scoped version. Everything downstream — objects, scale counts,
+     relations, the whole social projection — is derived from the chronology,
+     so a second user would have seen every one of the first user's canon
+     records while the scoping code sat one line above, looking correct.
+     Scoping that is computed but not applied is worse than no scoping: it
+     reads as done. */
   const chronology = buildSocialChronology({
     events: visibleEvents,
-    needs: needs.map((n) => ({
+    needs: visibleNeeds.map((n) => ({
       need_id: n.need.need_id, desired_change: n.need.desired_change,
       recorded_at: n.recorded_at, origin_group_id: n.origin_group_id, subject: n.need.subject,
     })),
-    offers: offers.map((o) => ({
+    offers: visibleOffers.map((o) => ({
       offer_id: o.offer.offer_id, available_resource: o.offer.available_resource, recorded_at: o.recorded_at, source: o.offer.source,
     })),
-    actions: actions.map((a) => ({
+    actions: visibleActions.map((a) => ({
       action_id: a.action.action_id, inputs: a.action.inputs, recorded_at: a.recorded_at, owner: a.action.owner,
     })),
-    effects: effects.map((e) => ({
+    effects: visibleEffects.map((e) => ({
       effect_id: e.effect.effect_id, action_ref: e.effect.action_ref,
       verified: isEffectVerified(e.effect), recorded_at: e.recorded_at, subject: e.effect.subject,
     })),
     observations: canonEvents
-      .filter((e) => e.canon_type === "observation")
+      // The Observation's own subject lives on the payload, not the envelope.
+      .filter((e) => e.canon_type === "observation" && mayReadSubject(viewer, e.payload.subject))
       .map((e) => ({ canon_event_id: e.canon_event_id, at: e.recorded_at })),
   });
 

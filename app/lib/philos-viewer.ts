@@ -21,7 +21,8 @@
  * stays pure. The `Viewer` shape itself is domain (`philos/viewer.ts`).
  */
 
-import { CURRENT_VIEWER, type Viewer } from "./philos/viewer";
+import { type Viewer } from "./philos/viewer";
+import { resolveViewerContext } from "./philos/identity/viewerContext";
 
 /**
  * Who is looking at this render.
@@ -31,5 +32,21 @@ import { CURRENT_VIEWER, type Viewer } from "./philos/viewer";
  * else. `app/hub/actions.ts` takes no person parameter for that reason.
  */
 export async function resolveViewer(): Promise<Viewer> {
-  return CURRENT_VIEWER;
+  /* ONE AUTHORITY. This returned the `CURRENT_VIEWER` constant while
+     `resolveViewerContext()` — written for the multi-user foundation —
+     answered the same question from a provider. Two functions answering "who
+     is acting" is the same defect as two functions answering "how many
+     memberships": it does not matter that they agree today, only that nothing
+     makes them agree tomorrow. Worse, this shape carries no `subject_id` at
+     all, so no canon write could ever be bound through it.
+
+     It is now a PROJECTION of the one context: the same identity, narrowed to
+     the two fields the older call sites use. Those call sites keep working
+     unchanged, and there is one place a session lands. */
+  const ctx = await resolveViewerContext();
+  return { person_id: ctx.person_id, display_name: CURRENT_VIEWER_DISPLAY_NAME };
 }
+
+/** The viewer's display name is not yet a recorded fact for any identity —
+ *  stated here once rather than implied by a constant that also carried an id. */
+const CURRENT_VIEWER_DISPLAY_NAME = "את/ה";

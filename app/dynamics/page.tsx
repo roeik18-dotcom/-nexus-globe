@@ -49,6 +49,7 @@
  * Canon has no edges at all (unchanged fact) — `relationships: []` states
  * that explicitly, rendered as "UNRESOLVED — no verified relationship".
  */
+import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { connection } from "next/server";
 
 import { projectCanonDynamics, type CanonDynamicsGraph } from "@/app/lib/philos/canon/projectCanonDynamics";
@@ -152,7 +153,7 @@ export default async function DynamicsPage({
 
   const params = await searchParams;
   // STEP 1 — the ONE shared identity reference.
-  const personRef = resolvePersonRef(params.subject);
+  const personRef = resolvePersonRef(await resolveViewerContext(), params.subject);
   // STEP 2 — the frame this screen's readings are relative to (canon §19).
   const personContext = resolvePersonContext({ person: personRef, asOf: systemClock.now() });
   // SAME shared accessor as every other surface.
@@ -243,7 +244,8 @@ export default async function DynamicsPage({
     } catch { return null; }
   })();
 
-  return <DynamicsView personFrameSlot={
+  return <DynamicsView
+      viewerSubject={personRef.person_id} personFrameSlot={
       <>
         {personFrame ? <PersonFrameStrip frame={personFrame} compact /> : null}
         {traceEdges ? <SystemTracePanel edges={traceEdges} /> : null}

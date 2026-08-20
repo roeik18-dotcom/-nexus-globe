@@ -23,6 +23,7 @@ import { resolveValueDomainParam } from "../canon/domainStateQuery";
 import type { ValueGroupView } from "../projectValueGroup";
 import { buildPersonInContext, type PersonInContext } from "./personInContext";
 import { resolvePersonContext } from "./personContext";
+import { resolveViewerContext } from "../identity/viewerContext";
 import { resolvePersonRef } from "./personRef";
 
 export async function resolvePersonFrame(params: {
@@ -40,7 +41,12 @@ export async function resolvePersonFrame(params: {
 }): Promise<PersonInContext> {
   const { subject, asOf, reference = null, context = null, verifiedGroups = [] } = params;
 
-  const person = resolvePersonRef(subject);
+  /* `subject` here is already a server-resolved id (every caller passes the
+     viewer's own `personRef.person_id`), not a query value — so this asks the
+     viewer gate about a subject the viewer has already been granted. Routing
+     it through `resolvePersonRef` keeps ONE gate rather than a second path
+     that happens to be safe today. */
+  const person = resolvePersonRef(await resolveViewerContext(), subject);
   const personContext = resolvePersonContext({ person, reference, context, asOf });
 
   // REAL DomainState records only — this is the single source of domain

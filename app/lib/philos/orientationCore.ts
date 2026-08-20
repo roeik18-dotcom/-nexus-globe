@@ -41,7 +41,6 @@
  */
 import type { CanonDynamicsGraph, CanonObservationMark } from "./canon/projectCanonDynamics";
 import type { Domain, Frame, Observation } from "./canon/observation";
-import { REAL_CURRENT_SUBJECT } from "./subjectRegistry";
 
 /** The canon axes, re-exported so a caller enumerating cells never
  *  re-declares them. Exactly 3 × 3 — no fourth Domain, no fifth Frame
@@ -135,24 +134,14 @@ export interface MeasuredStateSpace extends OrientationCore {
   observed_count: number;
 }
 
-/**
- * Normal-product-mode default subject (ledger §33). Always resolves to
- * `REAL_CURRENT_SUBJECT` — the one designated real subject — never a
- * TEST/PLACEHOLDER/SYSTEM identity.
- *
- * Previously: "the subject of the most recent real Observation across the
- * whole canon store." That logic is now `resolveMostRecentObservedSubject`
- * below, kept for developer/diagnostic use — it silently resolved to a
- * test fixture in normal mode, because `.philos-canon-data/canon-events.jsonl`
- * currently contains ONLY test/placeholder/system Observations (verified
- * this pass; see `subjectRegistry.ts`'s own header). This function no
- * longer looks at canon content to pick a default at all — the real
- * subject is a stable identity, not something inferred from whichever
- * Observation happens to exist.
- */
-export function resolveDefaultSubject(_canon: CanonDynamicsGraph): string | undefined {
-  return REAL_CURRENT_SUBJECT;
-}
+/* `resolveDefaultSubject(canon)` stood here. It ignored its argument and
+   returned `REAL_CURRENT_SUBJECT` unconditionally — a single-user default
+   wearing the name of a resolver. By the end of this phase it had no runtime
+   call sites left (the pages take their subject from the viewer), so it is
+   DELETED rather than left as a working way to obtain person_roei without an
+   identity. `resolveMostRecentObservedSubject` below is untouched and is
+   still explicitly diagnostic-only. */
+
 
 /** The subject of the most recent real Observation across the whole canon
  *  store, regardless of classification — real, but may resolve to a TEST/

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ALL_CELL_KEYS, buildMeasuredStateSpace, resolveDefaultSubject, resolveMostRecentObservedSubject } from "../orientationCore";
-import { REAL_CURRENT_SUBJECT } from "../subjectRegistry";
+import { ALL_CELL_KEYS, buildMeasuredStateSpace, resolveMostRecentObservedSubject } from "../orientationCore";
 import type { CanonDynamicsGraph, CanonObservationMark } from "../canon/projectCanonDynamics";
 
 function mark(overrides: Partial<CanonObservationMark>): CanonObservationMark {
@@ -29,19 +28,6 @@ function graph(nodes: CanonObservationMark[]): CanonDynamicsGraph {
   return { source: "canon", nodes, summary: { node_count: nodes.length, persisted_count: nodes.length, domains: { G: 0, E: 0, C: 0 } } };
 }
 
-describe("resolveDefaultSubject — ledger §33: always the one designated REAL subject, never inferred from canon content", () => {
-  it("empty canon -> still REAL_CURRENT_SUBJECT, not undefined", () => {
-    expect(resolveDefaultSubject(graph([]))).toBe(REAL_CURRENT_SUBJECT);
-  });
-
-  it("canon full of OTHER subjects' Observations -> still REAL_CURRENT_SUBJECT, never a TEST/PLACEHOLDER fallback", () => {
-    const g = graph([
-      mark({ canon_event_id: "a", subject: "person_e2e", observed_at: "2026-08-15T09:00:00.000Z" }),
-      mark({ canon_event_id: "b", subject: "person_qa_natural_philos_PLACEHOLDER", observed_at: "2026-08-15T11:00:00.000Z" }),
-    ]);
-    expect(resolveDefaultSubject(g)).toBe(REAL_CURRENT_SUBJECT);
-  });
-});
 
 describe("resolveMostRecentObservedSubject — the old unfiltered logic, kept for diagnostics only", () => {
   it("empty canon -> undefined, never a guessed subject", () => {

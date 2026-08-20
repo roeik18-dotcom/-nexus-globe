@@ -1,3 +1,4 @@
+import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { connection } from "next/server";
 
 import { projectCanonDynamics, type CanonDynamicsGraph } from "@/app/lib/philos/canon/projectCanonDynamics";
@@ -71,7 +72,7 @@ export default async function BrainPage({
   // section to its honest empty shape, never fabricated.
   const params = await searchParams;
   // STEP 1 — the ONE shared identity reference.
-  const personRef = resolvePersonRef(params.subject);
+  const personRef = resolvePersonRef(await resolveViewerContext(), params.subject);
   // STEP 2 — the frame this screen's readings are relative to (canon §19).
   const personContext = resolvePersonContext({ person: personRef, asOf: systemClock.now() });
   // `resolvePersonRef` performs exactly the same two steps this line used to

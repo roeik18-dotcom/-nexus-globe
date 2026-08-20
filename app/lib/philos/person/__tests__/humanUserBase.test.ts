@@ -4,11 +4,12 @@
  * discouraged.
  */
 import { describe, expect, it } from "vitest";
+import { USER_A } from "@/app/lib/philos/identity/__tests__/viewerFixtures";
 import { buildHumanUserBase } from "../humanUserBase";
 import { resolvePersonRef } from "../personRef";
 import { buildActivePersonRefs } from "../../canonical/activeConfig";
 
-const person = resolvePersonRef("person_roei");
+const person = resolvePersonRef(USER_A, "person_roei");
 
 describe("HumanUserBase — config is never state", () => {
   const base = buildHumanUserBase(person);

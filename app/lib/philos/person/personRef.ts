@@ -56,7 +56,8 @@
  * `"person_roei"` into a human name would invent personal data from an
  * identifier.
  */
-import { classifySubject, REAL_CURRENT_SUBJECT, type SubjectClassification } from "../subjectRegistry";
+import { classifySubject, type SubjectClassification } from "../subjectRegistry";
+import { mayReadSubject, type ViewerContext } from "../identity/viewerContext";
 
 /**
  * Where a display name came from.
@@ -89,19 +90,30 @@ export interface PersonRef {
  *
  * Pure and synchronous — no store read, no I/O, no canon projection.
  *
- * `requested` is the raw `searchParams.subject` value. The `typeof` check
- * mirrors, exactly, what `app/hub/page.tsx` and `app/brain/page.tsx` already
- * do (`typeof params.subject === "string" ? params.subject : undefined`)
- * followed by `?? resolveDefaultSubject(canon)` — and `resolveDefaultSubject`
- * always returns `REAL_CURRENT_SUBJECT` regardless of canon content. So this
- * function is behaviourally identical to the two-step it replaces.
+ * THE CLIENT DOES NOT CHOOSE THE ACTING SUBJECT.
+ * This function used to read `searchParams.subject` and fall back to
+ * `REAL_CURRENT_SUBJECT`, and six pages — Hub, Brain, Dynamics, Globe,
+ * Marketplace, Community — passed the raw query value in. Every read on those
+ * pages was therefore scoped to whatever subject a URL named. With one human
+ * in the system that was invisible; with two it is the whole product reading
+ * as the wrong person.
  *
- * Deliberately NOT trimmed: an explicit `?subject=` (empty string) currently
- * passes through as `""` and resolves to no records. Trimming it to the
- * default would silently change that behaviour, which this pass must not do.
+ * The viewer decides. A `?subject=` is honoured ONLY when it names someone
+ * this viewer may read, which today means themselves; anything else THROWS.
+ * It does not quietly narrow to the viewer either: a request that asked for
+ * another person's records must not render a page full of a different
+ * person's records under the name that was asked for.
+ *
+ * Deliberately NOT trimmed: an explicit empty `?subject=` still passes
+ * through as `""` and resolves to no records, exactly as before.
  */
-export function resolvePersonRef(requested?: unknown): PersonRef {
-  const person_id = typeof requested === "string" ? requested : REAL_CURRENT_SUBJECT;
+export function resolvePersonRef(viewer: ViewerContext, requested?: unknown): PersonRef {
+  if (typeof requested === "string" && requested !== "" && !mayReadSubject(viewer, requested)) {
+    throw new Error(
+      `subject "${requested}" is not readable by viewer "${viewer.viewer_id}"; refusing to render another person's records`,
+    );
+  }
+  const person_id = typeof requested === "string" ? requested : viewer.subject_id;
   return {
     person_id,
     classification: classifySubject(person_id),

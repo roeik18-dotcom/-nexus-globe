@@ -17,6 +17,7 @@
  * real frozen Source Lock in this repository.
  */
 import { describe, expect, it } from "vitest";
+import { USER_A } from "@/app/lib/philos/identity/__tests__/viewerFixtures";
 
 import { type ActiveConfigSet } from "../activeConfig";
 import {
@@ -202,9 +203,9 @@ describe("DOMAIN SWAP — Music can be replaced without touching the core", () =
   });
 
   it("PersonRef does not change when the domain changes — identity carries no domain", () => {
-    const ref = resolvePersonRef("person_roei");
+    const ref = resolvePersonRef(USER_A, "person_roei");
     for (const slot of SLOTS) slot.activeConfig();
-    expect(resolvePersonRef("person_roei")).toEqual(ref);
+    expect(resolvePersonRef(USER_A, "person_roei")).toEqual(ref);
     // The locked rule: no domain, no config, no state, no cell on identity.
     expect(Object.keys(ref).sort()).toEqual(
       ["classification", "display_name", "display_name_source", "person_id"],
@@ -212,7 +213,7 @@ describe("DOMAIN SWAP — Music can be replaced without touching the core", () =
   });
 
   it("PersonContext contract does not change when the domain changes", () => {
-    const person = resolvePersonRef("person_roei");
+    const person = resolvePersonRef(USER_A, "person_roei");
     const ctx = resolvePersonContext({
       person, reference: null, context: null, asOf: "2026-08-19T00:00:00Z",
     });
@@ -254,7 +255,7 @@ describe("DOMAIN SWAP — Music can be replaced without touching the core", () =
     // Human Config still resolves.
     expect(buildActivePersonRefs().refs.length).toBeGreaterThan(0);
     // Identity still resolves.
-    expect(resolvePersonRef("person_roei").person_id).toBe("person_roei");
+    expect(resolvePersonRef(USER_A, "person_roei").person_id).toBe("person_roei");
     // And "which domain is active" still has an honest answer.
     const r = resolveSelectedDomain(undefined);
     expect(r.selected).toBe(false);

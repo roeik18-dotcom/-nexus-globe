@@ -26,7 +26,7 @@ import { revalidatePath } from "next/cache";
 import { domainStateStore } from "./domainStateStoreAccessor";
 import { DomainStateAppendRejectedError, type DomainStateRecord } from "./domainStateStore";
 import type { DomainState } from "../valueDomain/valueDomainConfig";
-import { REAL_CURRENT_SUBJECT } from "@/app/lib/philos/subjectRegistry";
+import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { createIdGenerator, systemClock } from "@/app/lib/philos/eventStore";
 
 export type CreateDomainStateResult =
@@ -36,6 +36,12 @@ export type CreateDomainStateResult =
 /** Testable core — no `revalidatePath`, same split as every other real
  *  write path in this directory. */
 export async function createDomainStateForCurrentUserCore(formData: FormData): Promise<CreateDomainStateResult> {
+/* WRITE AUTHORITY comes from the VIEWER, not from a module-level constant.
+     The client could never set this field — that part was already right — but
+     it was bound to `REAL_CURRENT_SUBJECT`, so every write in the product was
+     authored by person_roei regardless of who was acting. Server-bound and
+     viewer-bound are two different properties; only the first was true. */
+  const viewer = await resolveViewerContext();
   const domain_id = String(formData.get("domain_id") ?? "").trim();
   const parameter_id = String(formData.get("parameter_id") ?? "").trim();
   const levelRaw = formData.get("level");
@@ -54,7 +60,7 @@ export async function createDomainStateForCurrentUserCore(formData: FormData): P
   const state: DomainState = {
     domain_id,
     parameter_id,
-    subject: REAL_CURRENT_SUBJECT,
+    subject: viewer.subject_id,
     level,
     confidence,
     observed_at: now,

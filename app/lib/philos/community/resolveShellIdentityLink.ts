@@ -3,18 +3,18 @@
  * `identityLink` prop — a single real resolution of the person_roei ↔
  * p_you triple, never re-derived per page.
  */
-import { REAL_CURRENT_SUBJECT } from "../subjectRegistry";
+import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { GROUP_ID } from "../valueGroupLog";
 import { resolveViewer } from "@/app/lib/philos-viewer";
 import { resolveRealPersonCommunityLink } from "./personCommunityLinkStoreAccessor";
 import type { ShellIdentityLink } from "../shell/SystemShell";
 
 export async function resolveShellIdentityLink(): Promise<ShellIdentityLink> {
-  const viewer = await resolveViewer();
-  const resolved = await resolveRealPersonCommunityLink(REAL_CURRENT_SUBJECT, viewer.person_id, GROUP_ID);
+  const viewer = await resolveViewerContext();
+  const resolved = await resolveRealPersonCommunityLink(viewer.subject_id, viewer.person_id, GROUP_ID);
   return {
     status: resolved.link_status,
-    person_id: REAL_CURRENT_SUBJECT,
+    person_id: viewer.subject_id,
     community_member_id: viewer.person_id,
   };
 }

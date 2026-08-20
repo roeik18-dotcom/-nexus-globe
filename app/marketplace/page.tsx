@@ -1,3 +1,4 @@
+import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import path from "path";
 import { readJsonStore } from "@/app/lib/json-store";
 import type { Mission } from "@/app/lib/mission/schema";
@@ -122,7 +123,7 @@ export default async function MarketplacePage({
   // provider list. No fake offers/requests/providers are ever rendered.
   const params = await searchParams;
   // STEP 1 — the ONE shared identity reference.
-  const personRef = resolvePersonRef(params.subject);
+  const personRef = resolvePersonRef(await resolveViewerContext(), params.subject);
   // STEP 2 — the frame this screen's readings are relative to (canon §19).
   const personContext = resolvePersonContext({ person: personRef, asOf: systemClock.now() });
   // SAME shared accessor as Hub/Brain — this surface resolves no

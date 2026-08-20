@@ -45,7 +45,7 @@ import { resolveShellIdentityLink } from "@/app/lib/philos/community/resolveShel
 import { findNeedsForSubject } from "@/app/lib/philos/canon/needStoreAccessor";
 import { findOffersForSource } from "@/app/lib/philos/canon/offerStoreAccessor";
 import { buildActionLifecycleSummary, type ActionLifecycleEntry } from "@/app/lib/philos/canon/actionLifecycle";
-import { REAL_CURRENT_SUBJECT } from "@/app/lib/philos/subjectRegistry";
+import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { QUALITY_GROUP_MODEL } from "@/app/lib/philos/community/sourceValueModel";
 import { BASE_VALUES, CANDIDATE_VALUE_FAMILIES } from "./baseValueRegistry";
 import { resolveValueGroups, type ValueGroupResolverResult } from "./groupResolver";
@@ -106,6 +106,11 @@ export function deriveLeadingFamily(centralValue: string): OperationalGroupProfi
  * individual routes already use.
  */
 export async function buildOperationalGroupProfile(): Promise<OperationalGroupProfile | null> {
+  /* The member-owned reads below were scoped to `REAL_CURRENT_SUBJECT`, so
+     any viewer who happened to be a member of this group saw ROEI's Needs,
+     Offers and Action lifecycle presented as their own. The membership gate
+     was correct; the subject it then read for was a constant. */
+  const viewer = await resolveViewerContext();
   const events = await loadPhilosEvents();
   const today = todayIn(systemClock);
   const view = projectValueGroup(events, GROUP_ID, today);
@@ -121,9 +126,9 @@ export async function buildOperationalGroupProfile(): Promise<OperationalGroupPr
   // Member-owned canon records — real membership is the ONLY door in.
   const isMember = !!memberId && view.members.some((m) => m.person_id === memberId);
   const [ownNeeds, ownOffers, lifecycle] = await Promise.all([
-    isMember ? findNeedsForSubject(REAL_CURRENT_SUBJECT).catch(() => []) : Promise.resolve([]),
-    isMember ? findOffersForSource(REAL_CURRENT_SUBJECT).catch(() => []) : Promise.resolve([]),
-    buildActionLifecycleSummary(REAL_CURRENT_SUBJECT).catch(() => ({ subject: REAL_CURRENT_SUBJECT, actions: [], counts: { actions_total: 0, no_effect_recorded: 0, effect_claimed_only: 0, effect_verified: 0, learnings_with_state_prime: 0 } })),
+    isMember ? findNeedsForSubject(viewer.subject_id).catch(() => []) : Promise.resolve([]),
+    isMember ? findOffersForSource(viewer.subject_id).catch(() => []) : Promise.resolve([]),
+    buildActionLifecycleSummary(viewer.subject_id).catch(() => ({ subject: viewer.subject_id, actions: [], counts: { actions_total: 0, no_effect_recorded: 0, effect_claimed_only: 0, effect_verified: 0, learnings_with_state_prime: 0 } })),
   ]);
 
   const linked_actions = lifecycle.actions.filter((a) => bridgeActionIds.includes(a.action.action.action_id));
@@ -159,7 +164,7 @@ export async function buildOperationalGroupProfile(): Promise<OperationalGroupPr
   // TRACE — every hop a real stored reference; stop honestly where none.
   const trace: TraceHop[] = [];
   trace.push(isMember
-    ? { step: "PERSON → GROUP", ref: memberId!, detail: `${REAL_CURRENT_SUBJECT} ↔ ${memberId} חבר אמיתי ב-${view.name}`, linked_via: "member.joined event + VERIFIED_SAME_PERSON" }
+    ? { step: "PERSON → GROUP", ref: memberId!, detail: `${viewer.subject_id} ↔ ${memberId} חבר אמיתי ב-${view.name}`, linked_via: "member.joined event + VERIFIED_SAME_PERSON" }
     : { step: "PERSON → GROUP", ref: null, detail: "אין חברות אמיתית — השרשרת נעצרת", linked_via: "—" });
   const needIds = new Set(ownNeeds.map((n) => n.need.need_id));
   const offerIds = new Set(ownOffers.map((o) => o.offer.offer_id));

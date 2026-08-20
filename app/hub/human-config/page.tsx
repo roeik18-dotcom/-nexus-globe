@@ -32,7 +32,7 @@ import {
   humanDomainUnits,
 } from "@/app/lib/philos/humanConfig/humanConfigHierarchy";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
-import { REAL_CURRENT_SUBJECT } from "@/app/lib/philos/subjectRegistry";
+import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { resolveShellIdentityLink } from "@/app/lib/philos/community/resolveShellIdentityLink";
 import HumanConfigView from "./HumanConfigView";
 import CreateHumanDomainStateForm from "./CreateHumanDomainStateForm";
@@ -53,6 +53,7 @@ export default async function HumanConfigPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  const viewer = await resolveViewerContext();
   await connection();
   const params = await searchParams;
   const section = typeof params.section === "string" ? params.section : undefined;
@@ -67,9 +68,9 @@ export default async function HumanConfigPage({
   // param) is completely unaffected by this branch. See
   // `HumanConfigPrototype.tsx`'s own header.
   if (view === "prototype") {
-    const myDomainStates = await findDomainStatesForSubject(REAL_CURRENT_SUBJECT);
+    const myDomainStates = await findDomainStatesForSubject(viewer.subject_id);
     const parameters = TEMPERAMENT_DIMENSIONS.map((dimension) => {
-      const timeline = buildDomainStateTimeline(myDomainStates, REAL_CURRENT_SUBJECT, HUMAN_TEMPERAMENT_DOMAIN_ID, dimension.parameter_id);
+      const timeline = buildDomainStateTimeline(myDomainStates, viewer.subject_id, HUMAN_TEMPERAMENT_DOMAIN_ID, dimension.parameter_id);
       const latest = timeline[timeline.length - 1] ?? null;
       const evidenceCount = timeline.filter((t) => t.evidence && t.evidence.trim().length > 0).length;
       return { dimension, latest, evidenceCount, changed: timeline.length > 1 };
@@ -77,9 +78,9 @@ export default async function HumanConfigPage({
     return (
       <div style={{ minHeight: "100vh", background: "#0b0f1a" }}>
         <div style={{ padding: "12px 20px 0" }}>
-          <SystemShell surface="hub" purpose="Human Config — prototype תצוגה ראשונה" subject={REAL_CURRENT_SUBJECT} identityLink={identityLink} />
+          <SystemShell surface="hub" purpose="Human Config — prototype תצוגה ראשונה" subject={viewer.subject_id} identityLink={identityLink} />
         </div>
-        <HumanConfigPrototype subjectId={REAL_CURRENT_SUBJECT} parameters={parameters} />
+        <HumanConfigPrototype subjectId={viewer.subject_id} parameters={parameters} />
       </div>
     );
   }
@@ -92,7 +93,7 @@ export default async function HumanConfigPage({
   // DomainState for this subject — "select ONLY legitimate compatible
   // records," honored by construction, not a client-side re-check of
   // the real server-side gate.
-  const myDomainStates = await findDomainStatesForSubject(REAL_CURRENT_SUBJECT);
+  const myDomainStates = await findDomainStatesForSubject(viewer.subject_id);
   const latestByKey = new Map<string, (typeof myDomainStates)[number]>();
   for (const r of myDomainStates) {
     const key = `${r.state.domain_id}::${r.state.parameter_id}`;
@@ -110,16 +111,16 @@ export default async function HumanConfigPage({
 
   const [myActions, myEffects] = await Promise.all([loadActions().catch(() => []), loadEffects().catch(() => [])]);
   const actionOptions = myActions
-    .filter((a) => a.action.owner === REAL_CURRENT_SUBJECT)
+    .filter((a) => a.action.owner === viewer.subject_id)
     .map((a) => ({ action_id: a.action.action_id, label: `${a.action.type} · ${a.action.reversibility} (${a.action.action_id.slice(0, 8)}…)` }));
   const effectOptions = myEffects
-    .filter((e) => e.effect.subject === REAL_CURRENT_SUBJECT)
+    .filter((e) => e.effect.subject === viewer.subject_id)
     .map((e) => ({ effect_id: e.effect.effect_id, label: `${e.effect.claimed_outcome.statement} (${e.effect.effect_id.slice(0, 8)}…)` }));
 
   return (
     <div style={{ minHeight: "100vh", background: "#0b0f1a" }}>
       <div style={{ padding: "12px 20px 0" }}>
-        <SystemShell surface="hub" purpose="Human Config אמיתי — מבנה מקור, לא מצב חי." subject={REAL_CURRENT_SUBJECT} identityLink={identityLink} />
+        <SystemShell surface="hub" purpose="Human Config אמיתי — מבנה מקור, לא מצב חי." subject={viewer.subject_id} identityLink={identityLink} />
       </div>
       <div dir="rtl" style={{ padding: "0 20px" }}>
         <CreateHumanDomainStateForm />
@@ -154,7 +155,7 @@ export default async function HumanConfigPage({
             : undefined;
           return (
             <HumanConfigView
-              subjectId={REAL_CURRENT_SUBJECT}
+              subjectId={viewer.subject_id}
               sourceFileName={source.sourceFileName}
               summary={summary}
               hierarchy={hierarchy}

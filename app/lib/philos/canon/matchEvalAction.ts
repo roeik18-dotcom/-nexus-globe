@@ -27,7 +27,7 @@
 import { loadNeeds } from "./needStoreAccessor";
 import { loadOffers } from "./offerStoreAccessor";
 import { evaluateMatch, validateMatchAttempt, type MatchAttempt, type MatchResult } from "./matching";
-import { REAL_CURRENT_SUBJECT } from "@/app/lib/philos/subjectRegistry";
+import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { issueMatchPermit, type MatchPermit } from "./matchPermit";
 import { systemClock } from "@/app/lib/philos/eventStore";
 
@@ -41,6 +41,12 @@ export type EvaluateMatchResult =
 const GATES = ["CAN", "WANTS", "ALLOWED", "APPROPRIATE", "AVAILABLE", "CONSENT"] as const;
 
 export async function evaluateMatchForCurrentUser(formData: FormData): Promise<EvaluateMatchResult> {
+/* WRITE AUTHORITY comes from the VIEWER, not from a module-level constant.
+     The client could never set this field — that part was already right — but
+     it was bound to `REAL_CURRENT_SUBJECT`, so every write in the product was
+     authored by person_roei regardless of who was acting. Server-bound and
+     viewer-bound are two different properties; only the first was true. */
+  const viewer = await resolveViewerContext();
   const need_id = String(formData.get("need_id") ?? "").trim();
   const offer_id = String(formData.get("offer_id") ?? "").trim();
   const context = String(formData.get("context") ?? "").trim();
@@ -69,8 +75,8 @@ export async function evaluateMatchForCurrentUser(formData: FormData): Promise<E
     match_id: `eval_${Date.now()}`,
     need_ref: needRecord.need.need_id,
     offer_ref: offerRecord.offer.offer_id,
-    source: REAL_CURRENT_SUBJECT,
-    target: REAL_CURRENT_SUBJECT,
+    source: viewer.subject_id,
+    target: viewer.subject_id,
     cell: offerRecord.offer.source_cell,
     context,
     time: new Date().toISOString(),

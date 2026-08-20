@@ -20,10 +20,11 @@
  * `app/hub/actions.ts` already uses for "you are already a member."
  */
 
+import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { revalidatePath } from "next/cache";
 
-import { REAL_CURRENT_SUBJECT } from "@/app/lib/philos/subjectRegistry";
-import { GROUP_ID } from "@/app/lib/philos/valueGroupLog";
+import { resolveGroupContext } from "@/app/lib/philos/community/groupContext";
+import { loadPhilosEvents } from "@/app/lib/philos-event-store";
 import { createIdGenerator, systemClock } from "@/app/lib/philos/eventStore";
 import { resolveViewer } from "@/app/lib/philos-viewer";
 import {
@@ -56,14 +57,32 @@ const PROJECTING_ROUTES = [
   "/marketplace",
 ] as const;
 
+
+/**
+ * The group this identity link is being written against.
+ *
+ * This was the module constant `GROUP_ID`, so ANY viewer declaring an identity
+ * link was bound to Roei's group — a write authored by the right person into
+ * the wrong context. The group must come from the viewer's own recorded
+ * membership; with none, the action refuses rather than inventing one.
+ */
+async function resolveWriteGroup(viewer: Awaited<ReturnType<typeof resolveViewerContext>>) {
+  const events = await loadPhilosEvents();
+  return resolveGroupContext(viewer, events);
+}
+
 function revalidateAll() {
   for (const route of PROJECTING_ROUTES) revalidatePath(route);
 }
 
 export async function declareSamePersonAction(): Promise<IdentityLinkActionResult> {
-  const viewer = await resolveViewer();
+  const viewer = await resolveViewerContext();
+  const group = await resolveWriteGroup(viewer);
+  if (group.status !== "resolved") {
+    return { ok: false, message: `no group context for this viewer — ${group.status === "forbidden" ? group.because : group.because}` };
+  }
   const existing = await loadPersonCommunityLinks();
-  const resolved = resolvePersonCommunityLink(existing, REAL_CURRENT_SUBJECT, viewer.person_id, GROUP_ID);
+  const resolved = resolvePersonCommunityLink(existing, viewer.subject_id, viewer.person_id, group.group_id);
 
   if (resolved.link_status !== "NOT_LINKED") {
     return { ok: false, message: `link_status is already "${resolved.link_status}" — declare is only valid from NOT_LINKED` };
@@ -72,9 +91,9 @@ export async function declareSamePersonAction(): Promise<IdentityLinkActionResul
   const ids = createIdGenerator();
   const record = declareSamePerson({
     link_id: ids.next("link"),
-    person_id: REAL_CURRENT_SUBJECT,
+    person_id: viewer.subject_id,
     community_member_id: viewer.person_id,
-    community_id: GROUP_ID,
+    community_id: group.group_id,
     evidence: `explicit self-declaration by the single local viewer via the /hub/community identity-link UI`,
     provenance: "REAL",
     now: systemClock.now(),
@@ -86,9 +105,13 @@ export async function declareSamePersonAction(): Promise<IdentityLinkActionResul
 }
 
 export async function confirmSamePersonAction(): Promise<IdentityLinkActionResult> {
-  const viewer = await resolveViewer();
+  const viewer = await resolveViewerContext();
+  const group = await resolveWriteGroup(viewer);
+  if (group.status !== "resolved") {
+    return { ok: false, message: `no group context for this viewer — ${group.status === "forbidden" ? group.because : group.because}` };
+  }
   const existing = await loadPersonCommunityLinks();
-  const resolved = resolvePersonCommunityLink(existing, REAL_CURRENT_SUBJECT, viewer.person_id, GROUP_ID);
+  const resolved = resolvePersonCommunityLink(existing, viewer.subject_id, viewer.person_id, group.group_id);
 
   if (resolved.link_status !== "DECLARED_SAME_PERSON" || !resolved.latest) {
     return { ok: false, message: `link_status is "${resolved.link_status}" — confirm requires a prior DECLARED_SAME_PERSON record` };

@@ -52,7 +52,7 @@ export default async function WorldPage({ searchParams }: {
   // STEP 1 — the ONE shared identity reference. World has no `?subject=`,
   // so this resolves to the designated real subject, exactly as the bare
   // constant did before.
-  const personRef = resolvePersonRef();
+  const personRef = resolvePersonRef(await resolveViewerContext());
   // STEP 2 — the frame this screen's readings are relative to (canon §19).
   const personContext = resolvePersonContext({ person: personRef, asOf: systemClock.now() });
   // SAME shared accessor as Hub/Brain — this surface resolves no

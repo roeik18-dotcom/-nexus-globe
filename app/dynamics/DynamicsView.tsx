@@ -68,7 +68,7 @@ import { buildDomainConfigBaselines, resolveSelectedDomain } from "@/app/lib/phi
 import ObservationReadingPanel from "@/app/lib/philos/shell/ObservationReadingPanel";
 import GroupOpsPanel from "@/app/lib/philos/shell/GroupOpsPanel";
 import { COLOR, TYPE } from "@/app/lib/philos/shell/designTokens";
-import { isNormalModeSubject, REAL_CURRENT_SUBJECT } from "@/app/lib/philos/subjectRegistry";
+import { isNormalModeSubject } from "@/app/lib/philos/subjectRegistry";
 
 export type { SelectedContext };
 
@@ -1128,6 +1128,7 @@ const EMPTY_LIFECYCLE_DV: ActionLifecycleSummary = { subject: "", actions: [], c
 const EMPTY_KNOWN_NEEDS_DV: KnownNeedResult = { needs: [], checked: false, reason: "not computed" };
 
 export default function DynamicsView({
+  viewerSubject,
   view,
   canon,
   selected,
@@ -1140,6 +1141,9 @@ export default function DynamicsView({
   domainStates,
   personFrameSlot,
 }: {
+  /** The VIEWER's own canon subject, resolved server-side — never a
+   *  constant imported by a client component. */
+  viewerSubject: string;
   view: DynamicsViewModel;
   /** The shared PERSON-IN-CONTEXT frame, rendered server-side in page.tsx
    *  and threaded here as a slot — this component is `"use client"` and
@@ -1228,7 +1232,7 @@ export default function DynamicsView({
         personContext={personContext}
         purpose="What changed, when, and what do we know about why — a time/causality view of the system."
         selected={selected}
-        subject={selected?.status === "found" && selected.subject ? selected.subject : REAL_CURRENT_SUBJECT}
+        subject={selected?.status === "found" && selected.subject ? selected.subject : viewerSubject}
         identityLink={identityLink}
       />
 
@@ -1246,7 +1250,7 @@ export default function DynamicsView({
       {canon && today ? (
         <DynamicsDayClosingSection
           canon={canon}
-          subject={selected?.status === "found" && selected.system === "canon" && selected.subject ? selected.subject : REAL_CURRENT_SUBJECT}
+          subject={selected?.status === "found" && selected.system === "canon" && selected.subject ? selected.subject : viewerSubject}
           knownNeeds={selected?.status === "found" && selected.system === "canon" ? selected.knownNeeds : undefined}
           lifecycle={(selected?.status === "found" && selected.system === "canon" ? selected.actionLifecycle : undefined) ?? defaultLifecycle}
           today={today}
@@ -1275,7 +1279,7 @@ export default function DynamicsView({
               given subject. */}
           {today ? (
             <CanonicalSlicePanel
-              subject={selected?.status === "found" && selected.system === "canon" && selected.subject ? selected.subject : REAL_CURRENT_SUBJECT}
+              subject={selected?.status === "found" && selected.system === "canon" && selected.subject ? selected.subject : viewerSubject}
               asOf={timeRange?.asOf ?? today}
             />
           ) : null}
