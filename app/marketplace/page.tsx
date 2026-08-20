@@ -1,4 +1,4 @@
-import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
+import { mayReadSubject, resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { resolveViewerContextSemantics } from "@/app/lib/philos/context/resolveViewerContextSemantics";
 import SignOutButton from "@/app/signin/SignOutButton";
 import { buildViewerLinkRegistry } from "@/app/lib/philos/bridge/viewerLinkRegistry";
@@ -127,10 +127,13 @@ export default async function MarketplacePage({
   // provider list. No fake offers/requests/providers are ever rendered.
   const params = await searchParams;
   // STEP 1 — the ONE shared identity reference.
-  const personRef = resolvePersonRef(await resolveViewerContext(), params.subject);
+  /* ONE viewer resolution for this render — the scoping below and the
+     semantic context both read it, rather than each resolving their own. */
+  const viewer = await resolveViewerContext();
+  const personRef = resolvePersonRef(viewer, params.subject);
   /* THE ONE semantic context — hoisted to the component scope so BOTH render
      branches use the same result rather than one branch resolving its own. */
-  const semanticContext = await resolveViewerContextSemantics(await resolveViewerContext());
+  const semanticContext = await resolveViewerContextSemantics(viewer);
   // STEP 2 — the frame this screen's readings are relative to (canon §19).
   const personContext = resolvePersonContext({ person: personRef, asOf: systemClock.now() });
   // SAME shared accessor as Hub/Brain — this surface resolves no
@@ -156,6 +159,22 @@ export default async function MarketplacePage({
     loadCanonEvents().catch(() => []),
   ]);
 
+  /* ── VIEWER SCOPING, APPLIED ONCE, BEFORE ANYTHING RENDERS ───────────
+     `loadNeeds()` / `loadOffers()` / `loadActions()` / `loadEffects()` return
+     EVERY subject's canon records. Individual call sites below filtered them
+     — `myNeeds`, `MatchActionFlow`, `OpportunityCandidates` all do — but
+     `<RealMarketplace>`, which is the primary content of this page, received
+     the raw arrays. Measured with a real User B session: `person_roei` on
+     screen 9 times, `אחריות קהילתית` 5 times, on a viewer who owns nothing.
+
+     Same shape as the `loadSocialSystem` leak: scoping that is written at
+     some call sites and skipped at the one that matters. It is done ONCE
+     here now, and the unscoped arrays are not passed anywhere. */
+  const mineNeeds = needs.filter((n) => mayReadSubject(viewer, n.need.subject));
+  const mineOffers = offers.filter((o) => mayReadSubject(viewer, o.offer.source));
+  const mineActions = actions.filter((a) => mayReadSubject(viewer, a.action.owner));
+  const mineEffects = effects.filter((e) => mayReadSubject(viewer, e.effect.subject));
+
   // Marketplace visual checkpoint — `?view=prototype` renders a card/
   // connector layout over the SAME real Need/Offer records already
   // loaded above (scoped to personRef.person_id, same filter
@@ -163,13 +182,13 @@ export default async function MarketplacePage({
   // store/lifecycle logic touched; production render below is
   // untouched when this param is absent.
   if (params.view === "prototype") {
-    const myNeeds = needs.filter((n) => n.need.subject === personRef.person_id)
+    const myNeeds = mineNeeds
       .map((n) => ({ need_id: n.need.need_id, desired_change: n.need.desired_change, domain: n.need.scope.kind === "domain" ? n.need.scope.domain : "—", subject: n.need.subject }));
-    const myOffers = offers.filter((o) => o.offer.source === personRef.person_id)
+    const myOffers = mineOffers
       .map((o) => ({ offer_id: o.offer.offer_id, available_resource: o.offer.available_resource, resource_type: o.offer.resource_type, amount_or_capacity: o.offer.amount_or_capacity, source: o.offer.source }));
   return (
       <MarketplacePrototype
-        needs={myNeeds} offers={myOffers} actionsCount={actions.length} effectsCount={effects.length}
+        needs={myNeeds} offers={myOffers} actionsCount={mineActions.length} effectsCount={mineEffects.length}
         identityLinked={identityLink.status === "VERIFIED_SAME_PERSON"}
         realGroupName={philosGroupsRealView?.name}
         realGroupCentralValue={philosGroupsRealView?.central_value}
@@ -198,7 +217,7 @@ export default async function MarketplacePage({
           Convergence pass). Leads every normal visit, `?ctx=` or not. */}
       {personFrame ? <PersonFrameStrip frame={personFrame} compact /> : null}
       <RealMarketplace
-        needs={needs} offers={offers} actions={actions} effects={effects} identityLink={identityLink}
+        needs={mineNeeds} offers={mineOffers} actions={mineActions} effects={mineEffects} identityLink={identityLink}
         realGroup={philosGroupsRealView ? { name: philosGroupsRealView.name, central_value: philosGroupsRealView.central_value } : undefined}
         realGroupOps={philosGroupsRealView ? {
           group_id: philosGroupsRealView.group_id,
@@ -241,8 +260,8 @@ export default async function MarketplacePage({
           pair to pick. */}
       <div dir="rtl" style={{ padding: "0 20px" }}>
         <OpportunityCandidates
-          needs={needs.filter((n) => n.need.subject === personRef.person_id)}
-          offers={offers.filter((o) => o.offer.source === personRef.person_id)}
+          needs={mineNeeds}
+          offers={mineOffers}
         />
       </div>
 
@@ -252,18 +271,15 @@ export default async function MarketplacePage({
           scoped to personRef.person_id only — never every subject in the
           store — since this judges a specific person's own match. */}
       <MatchActionFlow
-        needOptions={needs
-          .filter((n) => n.need.subject === personRef.person_id)
+        actingSubject={viewer.subject_id}
+        needOptions={mineNeeds
           .map((n) => ({ need_id: n.need.need_id, label: `${n.need.desired_change} (${n.need.need_id.slice(0, 8)}…)` }))}
-        offerOptions={offers
-          .filter((o) => o.offer.source === personRef.person_id)
+        offerOptions={mineOffers
           .map((o) => ({ offer_id: o.offer.offer_id, label: `${o.offer.available_resource} (${o.offer.offer_id.slice(0, 8)}…)` }))}
         inputOptions={[
-          ...needs
-            .filter((n) => n.need.subject === personRef.person_id)
+          ...mineNeeds
             .map((n) => ({ id: n.need.need_id, label: `need: ${n.need.desired_change}` })),
-          ...offers
-            .filter((o) => o.offer.source === personRef.person_id)
+          ...mineOffers
             .map((o) => ({ id: o.offer.offer_id, label: `offer: ${o.offer.available_resource}` })),
           // FORWARD LINKAGE: real Observations are offered as Action inputs.
           //

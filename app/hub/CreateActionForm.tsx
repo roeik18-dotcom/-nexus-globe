@@ -29,10 +29,13 @@ const SCOPES: { value: "self_regulation" | "melting_pot"; label: string }[] = [
 ];
 
 export default function CreateActionForm({
-  inputOptions, matchPermit,
+  inputOptions, matchPermit, actingSubject,
 }: {
   inputOptions: { id: string; label: string }[];
   matchPermit?: MatchPermit | null;
+  /** Whoever the server will bind this write to. Display only — the owner is
+   *  decided server-side and this cannot influence it. */
+  actingSubject?: string;
 }) {
   const [result, setResult] = useState<CreateActionResult | null>(null);
   const [pending, startTransition] = useTransition();
@@ -48,7 +51,13 @@ export default function CreateActionForm({
         });
       }}
     >
-      <div style={{ fontSize: 13, letterSpacing: 0.5, color: "#8fa3c9" }}>פעולה חדשה · NEW ACTION (person_roei)</div>
+      {/* The owner comes from the SERVER at submit time — `createActionForCurrentUser`
+          binds it to the resolved viewer. The label used to hard-code
+          "person_roei", so User B was shown Roei's name on their own form. It
+          names whoever is acting, or nobody. */}
+      <div style={{ fontSize: 13, letterSpacing: 0.5, color: "#8fa3c9" }}>
+        פעולה חדשה · NEW ACTION{actingSubject ? ` (${actingSubject})` : ""}
+      </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <select name="type" required style={selectStyle}>{TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select>
         <select name="mechanism_scope" required style={selectStyle}>{SCOPES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</select>
