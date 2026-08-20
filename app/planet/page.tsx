@@ -58,6 +58,7 @@ import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection"
 import { ABSENCE_TEXT } from "@/app/lib/philos/social/socialSystemProjection";
 import { roleTouchOf } from "@/app/lib/philos/social/roleTouch";
 import { buildSocialFlow } from "@/app/lib/philos/social/socialFlowStages";
+import VerifiedRelationInventory from "@/app/lib/philos/shell/VerifiedRelationInventory";
 import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
 import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import SocialChronologyPanel from "@/app/lib/philos/shell/SocialChronologyPanel";
@@ -75,7 +76,7 @@ import { resolveValueGroups } from "@/app/lib/philos/valueSystem/groupResolver";
 import { linksByRelation } from "@/app/lib/philos/bridge/entityLink";
 import { VERIFIED_STATUSES } from "@/app/lib/philos/events";
 import { projectValueGroup } from "@/app/lib/philos/projectValueGroup";
-import WorldGlobe from "./WorldGlobe";
+import WorldGlobe, { CanonActivityPanel, RegionLayerPanel } from "./WorldGlobe";
 
 export const metadata = { title: "Philos — Globe" };
 
@@ -158,7 +159,7 @@ export default async function PlanetPage({
   // honest state: the previous fallback ("No world data.") described the
   // ontology files, which this route no longer reads.
   if (nodes.length === 0) {
-    return (
+  return (
       <div style={{ padding: 40, fontFamily: "system-ui" }}>
         No event-backed entities to draw.
       </div>
@@ -231,13 +232,20 @@ export default async function PlanetPage({
     observationStrip = null;
   }
 
-  return (
-    <WorldGlobe
-      nodes={nodes}
-      arcs={arcs}
-      selected={selected}
-      registry={registry}
-      gate={(() => {
+  // Hoisted out of the JSX so the SHARED audit lane and the globe props read
+  // the same objects. Computed inline they were two evaluations of the same
+  // thing, which is exactly the pattern that produced the stale counters.
+  const bridgeRows = registry
+        .filter((l) => l.relation === "ACTION_AFFECTS_COMMUNITY" || l.relation === "EFFECT_AFFECTS_COMMUNITY" || l.relation === "COMMUNITY_HAS_NEED")
+        .map((l) => ({
+          relation: l.relation,
+          link_id: l.link_id,
+          provenance: l.provenance,
+          // Only EFFECT_AFFECTS_COMMUNITY is composed rather than recorded.
+          derived: l.relation === "EFFECT_AFFECTS_COMMUNITY",
+        }));
+
+  const gateReport = (() => {
         // EVERY candidate edge — drawn arcs and bridge links alike — is run
         // through the gate. Nothing reaches the sphere on the strength of
         // "it was already there".
@@ -283,7 +291,15 @@ export default async function PlanetPage({
           unknown: rep.byStatus.UNKNOWN,
           reasons: Object.entries(rep.byReason).map(([reason, count]) => ({ reason, count })),
         };
-      })()}
+      })();
+
+  return (
+    <WorldGlobe
+      nodes={nodes}
+      arcs={arcs}
+      selected={selected}
+      registry={registry}
+      gate={gateReport}
       socialSelection={(() => {
         const sel = resolveSocialSelection(params.sel, socialObjects);
         if (sel.status !== "resolved") return undefined;
@@ -298,15 +314,7 @@ export default async function PlanetPage({
           source_record_ids: o.source_record_ids,
         };
       })()}
-      bridgeLinks={registry
-        .filter((l) => l.relation === "ACTION_AFFECTS_COMMUNITY" || l.relation === "EFFECT_AFFECTS_COMMUNITY" || l.relation === "COMMUNITY_HAS_NEED")
-        .map((l) => ({
-          relation: l.relation,
-          link_id: l.link_id,
-          provenance: l.provenance,
-          // Only EFFECT_AFFECTS_COMMUNITY is composed rather than recorded.
-          derived: l.relation === "EFFECT_AFFECTS_COMMUNITY",
-        }))}
+      bridgeLinks={bridgeRows}
       identityLink={identityLink}
       personContext={personContext}
       canonActions={canonActions}
@@ -341,7 +349,26 @@ export default async function PlanetPage({
             objects={socialObjects}
             selection={resolveSocialSelection(params.sel, socialObjects)}
             chronoLimit={5}
-            audit={<SocialSourceSpinePanel surface="globe" limit={4} />}
+            // AUDIT — everything Globe used to float in its own grammar now
+            // lives in the frame's one audit lane: the verified-relation
+            // inventory with its truth-gate verdict, canon activity, and the
+            // region/related layer. Same disclosure, same lane, same
+            // vocabulary as Community and World.
+            audit={
+              <>
+                <VerifiedRelationInventory arcs={arcs} bridgeLinks={bridgeRows} gate={gateReport} />
+                <div style={{ marginTop: 8 }}>
+                  <CanonActivityPanel canonActions={canonActions} canonEffects={canonEffects}
+                                      canonNeeds={canonNeeds} canonOffers={canonOffers} />
+                </div>
+                <div style={{ marginTop: 8 }}>
+                  <RegionLayerPanel registry={registry} />
+                </div>
+                <div style={{ marginTop: 8 }}>
+                  <SocialSourceSpinePanel surface="globe" limit={4} />
+                </div>
+              </>
+            }
           />
         </>
       }

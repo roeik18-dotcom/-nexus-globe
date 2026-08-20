@@ -307,7 +307,7 @@ function Row({ k, v, mono = false }: { k: string; v: string; mono?: boolean }) {
   );
 }
 
-function CanonActivityPanel({ canonActions, canonEffects, canonNeeds, canonOffers }: { canonActions: ActionRecord[]; canonEffects: EffectRecord[]; canonNeeds: NeedRecord[]; canonOffers: OfferRecord[] }) {
+export function CanonActivityPanel({ canonActions, canonEffects, canonNeeds, canonOffers }: { canonActions: ActionRecord[]; canonEffects: EffectRecord[]; canonNeeds: NeedRecord[]; canonOffers: OfferRecord[] }) {
   const box = {
     position: "absolute", right: 24, top: 168, zIndex: 12, width: 300,
     /* Height-capped so this panel cannot grow down the right column and bury
@@ -391,7 +391,7 @@ function EntityBadge({ label, value, kind }: { label: string; value: number; kin
  * inspector drawer above already uses. Communities link out to
  * `/hub/community?community=`, preserving the same real/DEMO id.
  */
-function RegionLayerPanel({ registry }: { registry: EntityLink[] }) {
+export function RegionLayerPanel({ registry }: { registry: EntityLink[] }) {
   const regionLinks = linksByRelation(registry, "COMMUNITY_LOCATED_IN_REGION");
   if (regionLinks.length === 0) return null;
 
@@ -770,12 +770,14 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
         </div>
       </div>
 
+      {/* Only the SELECTED-entity inspector still floats, because it belongs
+          to the sphere interaction: it answers "what did I just click".
+          CANON ACTIVITY and REGIONS/RELATED moved into the shared frame's
+          AUDIT lane — they were a second grammar competing with the frame,
+          answering questions the frame's own lanes already answer. */}
       {selected && selected.status !== "none" ? (
         <ContextInspector selected={selected} registry={registry ?? []} />
-      ) : (
-        <CanonActivityPanel canonActions={canonActions ?? []} canonEffects={canonEffects ?? []} canonNeeds={canonNeeds ?? []} canonOffers={canonOffers ?? []} />
-      )}
-      <RegionLayerPanel registry={registry ?? []} />
+      ) : null}
       {/* BOTTOM-LEFT STACK — tier 4 of the Globe hierarchy: compact
             overlays / verified network info, below the sphere in priority.
             Both this stack and LEGEND are anchored bottom-left; the legend
@@ -838,15 +840,6 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
             </div>
           ) : null}
 
-          {/* NETWORK LAYER, stated as records — relation type, source event id,
-              provenance and epistemic status for every arc actually drawn.
-              Collapsed by default so the sphere stays the primary content. */}
-          <details>
-            <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>
-              קשרים מאומתים · VERIFIED RELATIONS ({eventArcs.length} + {(bridgeLinks ?? []).length} גשר)
-            </summary>
-            <VerifiedRelationInventory arcs={eventArcs} bridgeLinks={bridgeLinks ?? []} gate={gate} />
-          </details>
           <details>
             <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>
               תצפית אחרונה · LATEST OBSERVATION (CANON)
