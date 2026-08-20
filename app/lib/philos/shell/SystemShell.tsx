@@ -74,11 +74,21 @@ export type ShellSurfaceKey = "hub" | "brain" | "dynamics" | "globe" | "communit
  *   contradictions -> values -> group values / value groups
  *   -> social structure (Community) -> network (Globe) -> wider system (World)
  *
- * Marketplace sits BEFORE them, outside the family. It is an operational
+ * Marketplace sits AFTER them, still outside the family. It is an operational
  * mechanism (Need -> Capability/Resource/Offer -> Match -> Commitment ->
  * Action -> Effect); it consumes the family's consequences and does not
- * define the contradiction/value/group ontology. Leaving it between
- * Community and Globe split the family visually, which is why it moved.
+ * define the contradiction/value/group ontology. It must never sit BETWEEN
+ * family members, which would split the family visually — that constraint is
+ * what the original ordering protected, and it still holds.
+ *
+ * HEADER ROLE BAND. The sequence now reads BLUE -> YELLOW -> GREEN -> ORANGE
+ * (Brain, Dynamics, the SOCIAL capsule, Marketplace), so the header's colour
+ * roles sit adjacent as one band instead of GREEN being separated from the
+ * others by Marketplace. This is PROXIMITY ONLY: no role changed, no route
+ * changed, and Marketplace remains a standalone item outside the capsule's
+ * border rather than becoming a family member. `PRODUCT_FAMILY_CUE !=
+ * CANONICAL_COLOR_ROLE` is untouched — the capsule's green is the family cue,
+ * and each member still resolves its own accent from `TERMINAL`.
  *
  * **This order is a product decision, not the master's.**
  * `PHILOS-SYSTEM-LANGUAGE.md` §8 numbers the terminals 1-7 with
@@ -95,10 +105,10 @@ const NAV: { label: string; href: string; key: ShellSurfaceKey; carriesCtx?: boo
   { label: "Hub", href: "/hub", key: "hub", carriesSubject: true },
   { label: "Brain", href: "/brain", key: "brain", carriesSubject: true },
   { label: "Dynamics", href: "/dynamics", key: "dynamics", carriesCtx: true, carriesCommunity: true },
-  { label: "Marketplace", href: "/marketplace", key: "marketplace", carriesCtx: true },
   { label: "Community", href: "/hub/community", key: "community", carriesCommunity: true, family: "social" },
   { label: "Globe", href: "/planet", key: "globe", carriesCtx: true, family: "social" },
   { label: "World", href: "/world", key: "world", family: "social" },
+  { label: "Marketplace", href: "/marketplace", key: "marketplace", carriesCtx: true },
 ];
 
 type NavItem = (typeof NAV)[number];
