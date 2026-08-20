@@ -93,7 +93,13 @@ export default async function PlanetPage({
   // recorded on the value-group screen draws its node and arc here too.
   await connection();
   const events = await loadPhilosEvents();
-  const { nodes, arcs } = projectGlobeGraph(events, GROUP_ID);
+  /* The sphere's nodes and arcs came from `GROUP_ID`, so every viewer's globe
+     drew Roei's group. It draws the viewer's own group, or nothing — an empty
+     sphere is the honest picture for someone with no memberships. */
+  const globeCtx = await resolveViewerGroupView({ events });
+  const { nodes, arcs } = globeCtx.context.status === "resolved"
+    ? projectGlobeGraph(events, globeCtx.context.group_id)
+    : { nodes: [], arcs: [] };
 
   // Canonical Cross-Entity Link Registry (bridge layer): the SAME registry
   // Community/Marketplace build, over the SAME real event log this route

@@ -50,6 +50,7 @@
  * that explicitly, rendered as "UNRESOLVED — no verified relationship".
  */
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
+import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import { connection } from "next/server";
 
 import { projectCanonDynamics, type CanonDynamicsGraph } from "@/app/lib/philos/canon/projectCanonDynamics";
@@ -180,7 +181,15 @@ export default async function DynamicsPage({
     const demoMatch = DEMO_COMMUNITIES.find((c) => c.group_id === requestedCommunity);
     const events = demoMatch ? demoMatch.events : await loadPhilosEvents();
     const today = demoMatch ? demoMatch.today : todayIn(systemClock);
-    const groupId = demoMatch ? demoMatch.group_id : requestedCommunity === GROUP_ID ? GROUP_ID : undefined;
+    /* A non-demo `?community=` was accepted only when it equalled the
+       constant, which made "is this a real group" and "is this Roei's group"
+       the same test. It is now the viewer's own group context: a real
+       selection resolves, anything else stays undefined and renders nothing
+       rather than falling through to a group the viewer has no relation to. */
+    const realCtx = demoMatch ? null : await resolveViewerGroupView({ events, today, requested: requestedCommunity });
+    const groupId = demoMatch
+      ? demoMatch.group_id
+      : realCtx?.context.status === "resolved" ? realCtx.context.group_id : undefined;
     const group = groupId ? projectValueGroup(events, groupId, today) : null;
     if (group) {
       const provenance = demoMatch ? "DEMO" : "REAL";

@@ -89,6 +89,12 @@ export default async function CommunityPage({
      to anyone, as though it were theirs. */
   const groupCtx = await resolveViewerGroupView({ events, today, requested: params.community });
   const group = groupCtx.view;
+  /* The viewer's OWN group id, or null. Eight sites below passed `GROUP_ID`
+     here — the activity feed, the communities list, the event index and the
+     ids handed to child components — so even after the projection was
+     viewer-scoped, everything AROUND it still named Roei's group. A resolved
+     context that the surrounding code ignores is not a resolved context. */
+  const viewerGroupId = groupCtx.context.status === "resolved" ? groupCtx.context.group_id : null;
   // STEP 1 — the ONE shared identity reference.
   const personRef = resolvePersonRef(await resolveViewerContext(), params.subject);
   // STEP 2 — the frame this screen's readings are relative to (canon §19).
@@ -97,7 +103,7 @@ export default async function CommunityPage({
 
   const mode: Mode = (typeof params.mode === "string" && MODE_KEYS.includes(params.mode as Mode) ? (params.mode as Mode) : "overview");
   const hasExplicitCommunity = typeof params.community === "string";
-  const requestedCommunity = hasExplicitCommunity ? (params.community as string) : GROUP_ID;
+  const requestedCommunity = hasExplicitCommunity ? (params.community as string) : viewerGroupId;
   const demoMatch = DEMO_COMMUNITIES.find((c) => c.group_id === requestedCommunity);
   // GROUP DETAIL only renders when the universe's GROUPS landscape was
   // explicitly drilled into (ledger §40) — every other mode ignores
@@ -110,7 +116,7 @@ export default async function CommunityPage({
   const terminalProvenance: Provenance = demoMatch ? "DEMO" : "REAL";
 
   const allCommunities: { group_id: string; events: typeof events; today: string; provenance: Provenance }[] = [
-    { group_id: GROUP_ID, events, today, provenance: "REAL" },
+    ...(viewerGroupId ? [{ group_id: viewerGroupId, events, today, provenance: "REAL" as const }] : []),
     ...DEMO_COMMUNITIES.map((c) => ({ group_id: c.group_id, events: c.events, today: c.today, provenance: "DEMO" as const })),
   ];
   const currentIndex = allCommunities.findIndex((c) => c.group_id === terminalGroup?.group_id);
@@ -142,7 +148,7 @@ export default async function CommunityPage({
   const identityLink = await resolveShellIdentityLink();
 
 
-  const activityFeed = group ? buildActivityFeed(events, GROUP_ID, 15) : [];
+  const activityFeed = group && viewerGroupId ? buildActivityFeed(events, viewerGroupId, 15) : [];
   let realNeedsCount = 0;
   // Needs this subject may declare a group for: their own, carrying no group
   // yet. Nothing here reads the Need text to guess a group — the list is
@@ -302,7 +308,7 @@ export default async function CommunityPage({
   })();
 
   const eventsByGroupId = new Map<string, typeof events>([
-    [GROUP_ID, events],
+    ...(viewerGroupId ? [[viewerGroupId, events] as const] : []),
     ...DEMO_COMMUNITIES.map((c) => [c.group_id, c.events] as const),
   ]);
   const activityAll: ActivityRow[] = groupsWithProvenance.flatMap(({ view }) =>
@@ -655,7 +661,7 @@ export default async function CommunityPage({
                 personId={identityLink.person_id}
                 communityMemberId={identityLink.community_member_id}
                 communityMemberDisplayName={viewer.display_name}
-                communityId={GROUP_ID}
+                communityId={viewerGroupId ?? ""}
                 initialStatus={identityLink.status}
               />
               <CommunityCommandTerminal
@@ -675,7 +681,7 @@ export default async function CommunityPage({
           </details>
           <ValueHub
             events={events}
-            groupId={GROUP_ID}
+            groupId={viewerGroupId ?? ""}
             today={today}
             viewerId={viewer.person_id}
             joinAction={joinGroupAction}
