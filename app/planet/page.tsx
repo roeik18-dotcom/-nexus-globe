@@ -60,6 +60,7 @@ import { ABSENCE_TEXT } from "@/app/lib/philos/social/socialSystemProjection";
 import { roleTouchOf } from "@/app/lib/philos/social/roleTouch";
 import { buildSocialFlow } from "@/app/lib/philos/social/socialFlowStages";
 import VerifiedRelationInventory from "@/app/lib/philos/shell/VerifiedRelationInventory";
+import { FS } from "@/app/lib/philos/shell/designTokens";
 import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
 import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import SocialChronologyPanel from "@/app/lib/philos/shell/SocialChronologyPanel";
@@ -219,8 +220,8 @@ export default async function PlanetPage({
       // `app/planet/page.tsx (158:9)` warning this route carried.
       observationStrip = (
         <div key="observation-strip" style={{ marginBottom: 6, padding: "7px 10px", borderRadius: 10, border: "1px solid rgba(167,139,250,0.35)", background: "rgba(11,15,26,0.85)", fontSize: 10.5, color: "#cfe0f5", lineHeight: 1.6 }}>
-          <div key="obs1" style={{ fontWeight: 800, color: "#a78bfa", fontSize: 9.5, letterSpacing: 0.8 }}>תצפית אחרונה · LATEST OBSERVATION (CANON)</div>
-          <div key="obs2" style={{ direction: "ltr", textAlign: "right", fontFamily: "ui-monospace, monospace", fontSize: 9 }}>{latest.canon_event_id.slice(0, 14)}… · {latest.domain}/{latest.frame} · {latest.observed_at.slice(0, 10)}</div>
+          <div key="obs1" style={{ fontWeight: 800, color: "#a78bfa", fontSize: FS.tag, letterSpacing: 0.8 }}>תצפית אחרונה · LATEST OBSERVATION (CANON)</div>
+          <div key="obs2" style={{ direction: "ltr", textAlign: "right", fontFamily: "ui-monospace, monospace", fontSize: FS.tag }}>{latest.canon_event_id.slice(0, 14)}… · {latest.domain}/{latest.frame} · {latest.observed_at.slice(0, 10)}</div>
           <div key="obs3">{valueLabel}</div>
           <div key="obs4" style={{ color: "#6fe3b4" }}>אדם↔קבוצה · PERSON↔GROUP (לא קשור לתצפית): {relationsLine}</div>
           <div key="obs5" style={{ color: "#8fa3c9" }}>טופולוגיה אמיתית · TOPOLOGY: {nodes.length} nodes · {arcs.length} arcs מאירועים אמיתיים — שכבת קשרים בלבד, ללא גיאוגרפיה מומצאת</div>
