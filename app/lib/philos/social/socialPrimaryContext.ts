@@ -21,7 +21,6 @@ import type { EntityLink } from "../bridge/entityLink";
 import type { ViewerContext } from "../identity/viewerContext";
 import type { SocialPrimaryContext } from "../shell/SocialPrimaryStage";
 import { buildNetworkAccounting } from "./networkAccounting";
-import type { ChronoEntry } from "./socialChronology";
 import type { SocialSelection } from "./socialSelection";
 import { ABSENCE_TEXT, type Scale, type SocialObject } from "./socialSystemProjection";
 
@@ -32,7 +31,6 @@ export interface PrimaryContextInput {
   subtitle: string;
   /** Straight from `loadSocialSystem(viewer)` — never re-derived per surface. */
   objects: readonly SocialObject[];
-  chronology: readonly ChronoEntry[];
   bridgeLinks: readonly EntityLink[];
   selection: SocialSelection;
   /** Arcs THIS scale actually draws. GROUP and SYSTEM draw none, and 0 here is
@@ -71,7 +69,6 @@ export function buildSocialPrimaryContext(i: PrimaryContextInput): SocialPrimary
     },
     selection: i.selection,
     presence,
-    chronology: i.chronology,
     inScope: i.objects.filter((o) => o.scales[i.scale].present).length,
     relations: {
       entity_links: accounting.totals.entity_links,

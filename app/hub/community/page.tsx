@@ -201,7 +201,6 @@ export default async function CommunityPage({
     title: "קבוצות ערך · VALUE GROUPS",
     subtitle: "מי מחובר סביב איזה ערך, ומה הקבוצה עושה בפועל.",
     objects: socialObjects,
-    chronology,
     bridgeLinks,
     selection: socialSelection,
     audit: (

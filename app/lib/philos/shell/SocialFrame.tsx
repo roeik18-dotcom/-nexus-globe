@@ -128,208 +128,172 @@ export default function SocialFrame({
     ? `${chronology[0].at.slice(0, 10)} → ${chronology[chronology.length - 1].at.slice(0, 10)}`
     : "—";
 
+  /* ── ONE READING ORDER ───────────────────────────────────────────────────
+     A. ORIENTATION — where am I, at what scale, in whose frame (compact)
+     B. PRIMARY     — the answer this scale exists to give
+     C. CONTEXT     — timeline, value model, role counts (collapsed)
+     D. AUDIT       — source, provenance, formulas (collapsed)
+
+     Six top-level lanes stood here before: WHERE, OBJECT, VALUE, ROLES, TIME,
+     NOW, SOURCE. Four of them stated facts the primary stage states again
+     40px lower — OBJECT twice, ROLES twice, TIME twice, provenance twice —
+     so a reader met the same numbers two and three times before reaching the
+     terminal's actual content. Nothing below is new; four blocks moved down
+     one tier and one was deleted outright as a duplicate. */
   return (
     <section dir="rtl" style={S.frame}>
-      {/* WHERE ─────────────────────────────────────────────────────── */}
-      <div style={S.lane}>
-        <span style={S.gutter}>WHERE</span>
-        <div style={S.body}>
-          <div style={S.zoomRow}>
-            {ZOOM.map((z, i) => (
-              <span key={z.key} style={S.zoomCell}>
-                {i > 0 ? <span style={S.arrow} aria-hidden>→</span> : null}
-                <span style={{ ...S.zoom, ...(z.key === surface ? S.zoomHere : null) }}>
-                  <b style={S.zoomLevel}>{z.level}</b> {z.label}
-                  <span style={S.zoomN}>{counts[z.level]}</span>
-                </span>
+      {/* ══ A. ORIENTATION ═══════════════════════════════════════════════ */}
+      <div style={S.orient}>
+        <div style={S.zoomRow}>
+          {ZOOM.map((z, i) => (
+            <span key={z.key} style={S.zoomCell}>
+              {i > 0 ? <span style={S.arrow} aria-hidden>⇄</span> : null}
+              <span style={{ ...S.zoom, ...(z.key === surface ? S.zoomHere : null) }}>
+                <b style={S.zoomLevel}>{z.level}</b> {z.label}
+                <span style={S.zoomN}>{counts[z.level]}</span>
+              </span>
+            </span>
+          ))}
+        </div>
+
+        {/* The value spine, compacted to the four facts that orient. The full
+            ten-stage flow moved to CONTEXT: it is a model, not a heading, and
+            walking ten stages before seeing the terminal was the single
+            biggest reason this screen read as impenetrable. */}
+        {flow && flow.length > 0 ? (
+          <div style={S.orientFacts}>
+            {flow.filter((st) => ORIENT_STAGES.has(st.key)).map((st) => (
+              <span key={st.key} style={S.orientFact} title={st.basis}>
+                <b style={{ color: st.count === null ? COLOR.textFaint : COLOR.text }}>
+                  {st.count === null ? "—" : st.count}
+                </b>
+                <span style={S.orientLabel}>{st.label}</span>
+                <span style={S.orientStatus}>{st.count === null ? "UNKNOWN" : st.status}</span>
               </span>
             ))}
+            <span style={S.orientSpan}>{span}</span>
           </div>
-          <div style={S.note}>
-            זום מוצר — לא שרשרת סיבתית ולא יחס קנוני. אותו ציר בשלושתם; רק ההיקף משתנה.
-          </div>
-        </div>
-        <span style={S.rail}>{span}</span>
+        ) : null}
       </div>
 
-      {/* SELECTED — the SAME object at all three scales ───────────── */}
-      {selection && selection.status !== "none" ? (
-        <div style={{ ...S.lane, ...S.lanePrimary }}>
-          <span style={S.gutter}>OBJECT</span>
-          <div style={S.body}>
-            {selection.status === "unresolved" ? (
+      {/* ══ B. PRIMARY ═══════════════════════════════════════════════════
+          The OBJECT lane that used to sit here is DELETED. It showed the
+          selected record's kind, id, verification, provenance and its verdict
+          at all three scales — every one of which the stage's OBJECT / STATUS
+          / PROVENANCE / SCALE cells now show. Two readings of one record,
+          stacked, was the clearest single instance of the duplication. */}
+      {primary ? <div style={S.primary}>{primary}</div> : null}
+
+      {/* ══ C. CONTEXT ═══════════════════════════════════════════════════
+          Timeline, value model and scale-wide role counts. All three are real
+          and unchanged; none of them is the answer this terminal exists to
+          give, so none of them precedes it any more. */}
+      <details style={S.context}>
+        <summary style={S.contextSummary}>
+          ציר זמן · מודל הערך · תפקידים — CONTEXT
+          <span style={S.contextCount}>{here.length}/{chronology.length}</span>
+        </summary>
+
+        <div style={S.contextBody}>
+          {/* TIMELINE — the ONE place time appears in the product. */}
+          <div style={S.ctxBlock}>
+            <div style={S.ctxHead}>ציר זמן · TIMELINE</div>
+            {shown.length === 0 ? (
               <div style={S.empty}>
-                <code style={S.tId}>{selection.record_id}</code> — UNRESOLVED. הבחירה מצביעה על רשומה
-                שאינה בהקרנה. זו עובדה שמוצגת, לא מסך ריק.
+                אין רשומה שמגיעה לזום הזה — זו תשובה, לא חוסר.
+                {scope === "SYSTEM" ? " אין רשומה עם רלוונטיות מערכתית מאומתת." : ""}
               </div>
-            ) : (
-              <>
-                <div style={S.selHead}>
-                  <span style={{ ...S.tDot, background: KIND_COLOR[selection.object.kind] ?? COLOR.textFaint }} />
-                  <span style={S.tKind}>{selection.object.kind}</span>
-                  <span style={S.tLabel}>{selection.object.label}</span>
-                  <code style={S.tId}>{selection.object.record_id}</code>
-                  <span style={{ ...S.tVerif, color: selection.object.verification === "VERIFIED" ? COLOR_ROLE.green : COLOR.textFaint }}>
-                    {selection.object.verification}
-                  </span>
-                  <span style={S.tVerif}>{selection.object.provenance}</span>
-                </div>
-                <div style={S.scaleRow}>
-                  {(["GROUP", "NETWORK", "SYSTEM"] as Scale[]).map((sc) => {
-                    const p = selection.object.scales[sc];
-                    return (
-                      <span key={sc} style={{ ...S.scaleCell, opacity: p.present ? 1 : 0.62 }}
-                            title={p.present ? p.as : p.absent_because ? ABSENCE_TEXT[p.absent_because] : ""}>
-                        <b style={{ ...S.zoomLevel, color: p.present ? COLOR_ROLE.green : COLOR.textFaint }}>{sc}</b>
-                        <span style={S.scaleAs}>
-                          {p.present ? (p.as ?? "present") : (p.absent_because ? ABSENCE_TEXT[p.absent_because] : "absent")}
-                        </span>
-                      </span>
-                    );
-                  })}
-                </div>
-                {selection.object.source_record_ids.length > 0 ? (
-                  <div style={S.note}>
-                    הפניות מתועדות: {selection.object.source_record_ids.map((r) => (
-                      <code key={r} style={S.tId}>{r} </code>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={S.note}>אין הפניה מתועדת ברשומה — ולכן אין קישור מצויר.</div>
-                )}
-              </>
-            )}
-          </div>
-          <span style={S.rail}>SELECTED</span>
-        </div>
-      ) : null}
-
-      {/* VALUE ─────────────────────────────────────────────────────── */}
-      <div style={S.lane}>
-        <span style={S.gutter}>VALUE</span>
-        <div style={S.body}>
-          {flow && flow.length > 0 ? (
-            <SocialFlowRail stages={flow} litKey={touch?.touches ? touch.key : undefined} />
-          ) : (
-            <div style={S.spineRow}>
-              {spine.map((l, i) => (
-                <span key={l.key} style={S.spineCell}>
-                  {i > 0 ? <span style={S.arrow} aria-hidden>→</span> : null}
-                  <span
-                    style={{ ...S.spineItem, ...(touch?.touches && touch.key === l.key ? S.spineItemHit : null) }}
-                    title={`${l.gloss}\n${l.basis}\nלא נובע: ${l.not_implied}`}
-                  >
-                    <b style={{ ...S.spineN, color: l.count === null ? COLOR.textFaint : COLOR.text }}>
-                      {l.count === null ? "—" : l.count}
-                    </b>
-                    <span style={S.spineLabel}>{l.label}</span>
-                    <span style={S.spineStatus}>{l.status}</span>
-                  </span>
+            ) : shown.map((e) => (
+              <Link key={e.record_id} href={withSelection(surfaceHref(surface), e.record_id)}
+                 style={{ ...S.tRow, ...(selection?.status === "resolved" && selection.record_id === e.record_id ? S.tRowHere : null) }}>
+                <span style={S.tAt}>{e.at.slice(5, 16).replace("T", " ")}</span>
+                <span style={{ ...S.tDot, background: KIND_COLOR[e.kind] ?? COLOR.textFaint }} />
+                <span style={S.tKind}>{e.kind}</span>
+                <span style={S.tLabel}>{e.label}</span>
+                {e.references.length > 0 ? <span style={S.tRef}>→ {e.references.length}</span> : null}
+                <span style={{ ...S.tVerif, color: e.verification === "VERIFIED" ? COLOR_ROLE.green : COLOR.textFaint }}>
+                  {e.verification}
                 </span>
-              ))}
+                <span style={S.tId}>{e.record_id.slice(0, 20)}</span>
+              </Link>
+            ))}
+            <div style={S.note}>
+              סדר לפי חותמות זמן בלבד — <b>כרונולוגיה אינה סיבתיות</b>. רק הפניה מתועדת ברשומה היא קישור.
+              {here.length > shown.length ? ` ועוד ${here.length - shown.length} בזום הזה.` : ""}
             </div>
-          )}
-          <div style={S.note}>
-            ארגון מוצר של מושגים קיימים. <b>SOURCE ≠ REAL</b> — מספר גדול מציין מלאי מקור, לא ישויות אמיתיות.
           </div>
-          {touch ? (
-            <div style={{ ...S.note, color: touch.touches ? COLOR_ROLE.green : COLOR.textFaint }}>
-              {touch.touches
-                ? <>הרשומה הנבחרת ממשת את החוליה המודגשת — {touch.because}.</>
-                : <>הרשומה הנבחרת אינה ממשת אף חוליה בשדרה — {touch.because}.</>}
-            </div>
-          ) : null}
-        </div>
-        <span style={S.rail}>SPINE</span>
-      </div>
 
-      {/* ROLES ─────────────────────────────────────────────────────── */}
-      <div style={S.lane}>
-        <span style={S.gutter}>ROLES</span>
-        <div style={S.body}>
-          <div style={S.roleRow}>
-            <Role glyph="🔴" name="RED" v={roles.action} hex={COLOR_ROLE.red} what="Action / Effect" lit={litRoles.has("RED")} />
-            <Role glyph="⚪" name="WHITE" v={roles.evidence} hex={COLOR_ROLE.white} what="ראיה / פרובננס" lit={litRoles.has("WHITE")} />
-            <Role glyph="🟢" name="GREEN" v={roles.relations ?? null} hex={COLOR_ROLE.green} what="קשרים מתועדים" lit={litRoles.has("GREEN")} />
-            <Role glyph="🟣" name="PURPLE" v={roles.meaning ?? null} hex={COLOR_ROLE.purple} what={PURPLE_NEVER_ACTIVATED} lit={litRoles.has("PURPLE")} />
-          </div>
-          <div style={S.note}>
-            תפקידים בתוך המסוף — לא מסופים ולא זרימה סיבתית בין צבעים.
-            GREEN הוא קשר מתועד בלבד; דמיון אינו קשר. <b>UNKNOWN ≠ 0</b>.
-          </div>
-          {selection?.status === "resolved" ? (
-            activated.length > 0 ? (
-              <div style={{ ...S.note, color: COLOR.textDim }}>
-                {activated.map((a) => (
-                  <div key={a.role}>
-                    <b style={{ color: ROLE_HEX[a.role] }}>{a.role}</b> — {a.because}
-                  </div>
+          {/* VALUE MODEL — the full ten-stage flow, unchanged. */}
+          <div style={S.ctxBlock}>
+            <div style={S.ctxHead}>מודל הערך · VALUE MODEL</div>
+            {flow && flow.length > 0 ? (
+              <SocialFlowRail stages={flow} litKey={touch?.touches ? touch.key : undefined} />
+            ) : (
+              <div style={S.spineRow}>
+                {spine.map((l, i) => (
+                  <span key={l.key} style={S.spineCell}>
+                    {i > 0 ? <span style={S.arrow} aria-hidden>→</span> : null}
+                    <span
+                      style={{ ...S.spineItem, ...(touch?.touches && touch.key === l.key ? S.spineItemHit : null) }}
+                      title={`${l.gloss}\n${l.basis}\nלא נובע: ${l.not_implied}`}
+                    >
+                      <b style={{ ...S.spineN, color: l.count === null ? COLOR.textFaint : COLOR.text }}>
+                        {l.count === null ? "—" : l.count}
+                      </b>
+                      <span style={S.spineLabel}>{l.label}</span>
+                      <span style={S.spineStatus}>{l.status}</span>
+                    </span>
+                  </span>
                 ))}
               </div>
-            ) : (
-              <div style={S.note}>{noRoleReason(selection.object.kind)}</div>
-            )
-          ) : null}
-        </div>
-        <span style={S.rail}>INTERNAL</span>
-      </div>
-
-      {/* TIME ──────────────────────────────────────────────────────── */}
-      <div style={S.lane}>
-        <span style={S.gutter}>TIME</span>
-        <div style={S.body}>
-          {shown.length === 0 ? (
-            <div style={S.empty}>
-              אין רשומה שמגיעה לזום הזה — זו תשובה, לא חוסר.
-              {scope === "SYSTEM" ? " אין רשומה עם רלוונטיות מערכתית מאומתת." : ""}
+            )}
+            <div style={S.note}>
+              זום מוצר — לא שרשרת סיבתית ולא יחס קנוני. אותו ציר בשלושתם; רק ההיקף משתנה.{" "}
+              <b>SOURCE ≠ REAL</b> — מספר גדול מציין מלאי מקור, לא ישויות אמיתיות.
             </div>
-          ) : shown.map((e) => (
-            <Link key={e.record_id} href={withSelection(surfaceHref(surface), e.record_id)}
-               style={{ ...S.tRow, ...(selection?.status === "resolved" && selection.record_id === e.record_id ? S.tRowHere : null) }}>
-              <span style={S.tAt}>{e.at.slice(5, 16).replace("T", " ")}</span>
-              <span style={{ ...S.tDot, background: KIND_COLOR[e.kind] ?? COLOR.textFaint }} />
-              <span style={S.tKind}>{e.kind}</span>
-              <span style={S.tLabel}>{e.label}</span>
-              {e.references.length > 0 ? <span style={S.tRef}>→ {e.references.length}</span> : null}
-              <span style={{ ...S.tVerif, color: e.verification === "VERIFIED" ? COLOR_ROLE.green : COLOR.textFaint }}>
-                {e.verification}
-              </span>
-              <span style={S.tId}>{e.record_id.slice(0, 20)}</span>
-            </Link>
-          ))}
-          <div style={S.note}>
-            סדר לפי חותמות זמן בלבד — <b>כרונולוגיה אינה סיבתיות</b>. רק הפניה מתועדת ברשומה היא קישור.
-            {here.length > shown.length ? ` ועוד ${here.length - shown.length} בזום הזה.` : ""}
+            {touch ? (
+              <div style={{ ...S.note, color: touch.touches ? COLOR_ROLE.green : COLOR.textFaint }}>
+                {touch.touches
+                  ? <>הרשומה הנבחרת ממשת את החוליה המודגשת — {touch.because}.</>
+                  : <>הרשומה הנבחרת אינה ממשת אף חוליה בשדרה — {touch.because}.</>}
+              </div>
+            ) : null}
+          </div>
+
+          {/* ROLES — SCALE-WIDE counts. The stage's ROLES cell reports the
+              roles the SELECTED record activates. Two different questions
+              that shared one word and sat 40px apart; they are now a tier
+              apart and each says which it answers. */}
+          <div style={S.ctxBlock}>
+            <div style={S.ctxHead}>תפקידים בקנה־המידה · ROLES AT THIS SCALE</div>
+            <div style={S.roleRow}>
+              <Role glyph="🔴" name="RED" v={roles.action} hex={COLOR_ROLE.red} what="Action / Effect" lit={litRoles.has("RED")} />
+              <Role glyph="⚪" name="WHITE" v={roles.evidence} hex={COLOR_ROLE.white} what="ראיה / פרובננס" lit={litRoles.has("WHITE")} />
+              <Role glyph="🟢" name="GREEN" v={roles.relations ?? null} hex={COLOR_ROLE.green} what="קשרים מתועדים" lit={litRoles.has("GREEN")} />
+              <Role glyph="🟣" name="PURPLE" v={roles.meaning ?? null} hex={COLOR_ROLE.purple} what={PURPLE_NEVER_ACTIVATED} lit={litRoles.has("PURPLE")} />
+            </div>
+            <div style={S.note}>
+              תפקידים בתוך המסוף — לא מסופים ולא זרימה סיבתית בין צבעים.
+              GREEN הוא קשר מתועד בלבד; דמיון אינו קשר. <b>UNKNOWN ≠ 0</b>.
+            </div>
           </div>
         </div>
-        <span style={S.rail}>{here.length}/{chronology.length}</span>
-      </div>
+      </details>
 
-      {/* PRIMARY — this surface's own content, inside the frame ─────── */}
-      {primary ? (
-        <div style={{ ...S.lane, ...S.lanePrimary }}>
-          <span style={S.gutter}>NOW</span>
-          <div style={S.body}>{primary}</div>
-          <span style={S.rail}>{scope}</span>
-        </div>
-      ) : null}
-
-      {/* SOURCE ────────────────────────────────────────────────────── */}
+      {/* ══ D. AUDIT ═════════════════════════════════════════════════════ */}
       {audit ? (
-        <div style={{ ...S.lane, ...S.laneAudit, borderBottom: "none" }}>
-          <span style={S.gutter}>SOURCE</span>
-          <div style={S.body}>
-            <details>
-              <summary style={S.auditSummary}>מקור · פרובננס · טקסונומיה — AUDIT</summary>
-              <div style={{ marginTop: 6 }}>{audit}</div>
-            </details>
-          </div>
-          <span style={S.rail}>AUDIT</span>
-        </div>
+        <details style={S.auditLane}>
+          <summary style={S.auditSummary}>מקור · פרובננס · טקסונומיה — AUDIT</summary>
+          <div style={{ marginTop: 6 }}>{audit}</div>
+        </details>
       ) : null}
     </section>
   );
 }
+
+/** The four facts that ORIENT. The other six stages of the value model are
+ *  context, not a heading — see the CONTEXT section. */
+const ORIENT_STAGES = new Set(["contradiction", "emergent_value", "personal_value", "group_value"]);
 
 const ROLE_HEX: Record<InternalRole, string> = {
   RED: COLOR_ROLE.red, WHITE: COLOR_ROLE.white, GREEN: COLOR_ROLE.green, PURPLE: COLOR_ROLE.purple,
@@ -405,6 +369,34 @@ const S: Record<string, React.CSSProperties> = {
     marginBottom: SPACE.md,
     overflow: "hidden",
   },
+  /* ── A. ORIENTATION — compact by contract. Whatever is added here must
+     earn its place against the rule that the primary stage should be visible
+     without scrolling. */
+  orient: { padding: "10px 14px", borderBottom: `1px solid ${COLOR.border}` },
+  orientFacts: { display: "flex", alignItems: "baseline", gap: 16, flexWrap: "wrap", marginTop: 8 },
+  orientFact: { display: "inline-flex", alignItems: "baseline", gap: 5, fontSize: FS.meta },
+  orientLabel: { ...TYPE.micro, fontSize: FS.tag, color: COLOR.textDim },
+  orientStatus: { ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint },
+  orientSpan: { ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint, marginInlineStart: "auto" },
+
+  /* ── B. PRIMARY — no gutter, no rail, no lane chrome. The stage is not one
+     lane among six any more; it is the body of the frame. */
+  primary: { padding: "12px 14px" },
+
+  /* ── C. CONTEXT ── */
+  context: { borderTop: `1px solid ${COLOR.border}`, background: "rgba(0,0,0,0.14)" },
+  contextSummary: {
+    cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#5a76a3",
+    padding: "8px 14px", display: "flex", alignItems: "center", gap: 10,
+  },
+  contextCount: { ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint, marginInlineStart: "auto" },
+  contextBody: { padding: "0 14px 12px", display: "flex", flexDirection: "column", gap: 14 },
+  ctxBlock: { minWidth: 0 },
+  ctxHead: { ...TYPE.micro, fontSize: FS.tag, letterSpacing: 1.4, color: PRODUCT_FAMILY_CUE.label, marginBottom: 6 },
+
+  /* ── D. AUDIT ── */
+  auditLane: { borderTop: `1px solid ${COLOR.border}`, background: "rgba(0,0,0,0.26)", opacity: 0.78, padding: "6px 14px" },
+
   lane: {
     display: "flex", alignItems: "flex-start", gap: SPACE.md,
     padding: "9px 14px",

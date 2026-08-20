@@ -84,10 +84,25 @@ export default function ValueGroupsBoard({ groups, linkedSubject }: { groups: Va
         </div>
       </header>
 
+      {/* REAL groups are the answer to "who is this group and what is
+          happening". They get the full width. DEMO groups were rendered as
+          equal thirds of the same grid, so two illustrative fixtures took
+          two-thirds of the first screen and the one real group was a third of
+          it. They are still here, unchanged, one tier down. */}
       <div style={S.grid}>
         {real.map((g) => <GroupCard key={g.view.group_id} data={g} />)}
-        {demo.map((g) => <GroupCard key={g.view.group_id} data={g} />)}
       </div>
+      {demo.length > 0 ? (
+        <details style={S.demoLane}>
+          <summary style={S.demoSummary}>
+            {demo.length} קבוצות להמחשה — DEMO
+            <span style={S.demoNote}>לא נספרות באף מספר אמיתי במסך הזה</span>
+          </summary>
+          <div style={{ ...S.grid, marginTop: SPACE.md }}>
+            {demo.map((g) => <GroupCard key={g.view.group_id} data={g} />)}
+          </div>
+        </details>
+      ) : null}
       {groups.length === 0 ? (
         <div style={S.empty}>UNKNOWN — אף קבוצת ערך לא נטענה מהלוג</div>
       ) : null}
@@ -299,6 +314,9 @@ const S: Record<string, React.CSSProperties> = {
   headMeta: { display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" },
   chip: { fontSize: FS.base, fontWeight: 700, color: COLOR.textDim, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 9px", fontFamily: "ui-monospace, monospace" },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(330px, 1fr))", gap: SPACE.md },
+  demoLane: { marginTop: SPACE.md, background: "rgba(0,0,0,0.2)", borderRadius: RADIUS.md, padding: "6px 12px", opacity: 0.85 },
+  demoSummary: { cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#5a76a3", padding: "4px 0", display: "flex", gap: 10, alignItems: "baseline" },
+  demoNote: { fontSize: FS.tag, color: COLOR.textFaint },
   card: { border: "1px solid", borderRadius: RADIUS.lg, padding: `${SPACE.md}px ${SPACE.lg}px`, background: "rgba(10,14,23,0.5)", display: "flex", flexDirection: "column", gap: 6 },
   cardHead: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 },
   cardTitle: { fontSize: FS.head, fontWeight: 800, color: COLOR.text, textDecoration: "none" },

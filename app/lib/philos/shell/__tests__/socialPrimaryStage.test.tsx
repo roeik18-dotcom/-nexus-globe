@@ -35,7 +35,6 @@ function ctxFor(scale: Scale, over: Partial<SocialPrimaryContext> = {}): SocialP
     subtitle: "subtitle",
     headline: { n: scale === "GROUP" ? 51 : scale === "NETWORK" ? 11 : 0, unit: "RECORDS AT THIS SCALE" },
     selection: { status: "none" },
-    chronology: [],
     inScope: 0,
     relations: { entity_links: 38, gated_relations: 38, drawn_arcs: scale === "NETWORK" ? 10 : 0, passed: 38, candidates: 38 },
     provenance: { real: 12, derived: 1, demo: 25 },
@@ -110,7 +109,7 @@ describe("SOCIAL PRIMARY COMPOSITION CONTRACT", () => {
   });
 
   it("renders the same six context cells, in the same fixed order, at every scale", () => {
-    const expected = ["OBJECT", "STATUS", "TIME", "ROLES", "RELATIONS", "PROVENANCE"];
+    const expected = ["OBJECT", "STATUS", "SCALE", "ROLES", "RELATIONS", "PROVENANCE"];
     for (const s of SCALES) expect(structureOf(s).cells).toEqual(expected);
   });
 
@@ -120,11 +119,16 @@ describe("SOCIAL PRIMARY COMPOSITION CONTRACT", () => {
     // The per-scale region differs...
     expect(group.representation).not.toEqual(system.representation);
     // ...and the shared context, given the same facts, does not.
-    const a = textOf(sliceSlot(html("GROUP"), "context"));
-    const b = textOf(sliceSlot(html("SYSTEM", {
+    /* The SCALE cell names the current scale, which is the one token in the
+       rail that is SUPPOSED to differ — it is the cell's whole subject. It is
+       normalised out so this asserts what it means to assert: given the same
+       facts, no OTHER cell varies by scale. */
+    const norm = (t: string) => t.replace(/GROUP|NETWORK|SYSTEM/g, "«scale»");
+    const a = norm(textOf(sliceSlot(html("GROUP"), "context")));
+    const b = norm(textOf(sliceSlot(html("SYSTEM", {
       headline: { n: 51, unit: "RECORDS AT THIS SCALE" },
       relations: { entity_links: 38, gated_relations: 38, drawn_arcs: 0, passed: 38, candidates: 38 },
-    }), "context"));
+    }), "context")));
     expect(a).toEqual(b);
   });
 

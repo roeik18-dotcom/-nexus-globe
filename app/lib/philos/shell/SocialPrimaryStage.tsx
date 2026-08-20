@@ -38,7 +38,6 @@
 import type { ReactNode } from "react";
 
 import { COLOR, FS, PRODUCT_FAMILY_CUE, RADIUS, SPACE, STATUS, TYPE } from "./designTokens";
-import type { ChronoEntry } from "../social/socialChronology";
 import type { SocialSelection } from "../social/socialSelection";
 import type { Scale } from "../social/socialSystemProjection";
 import { noRoleReason, roleTouchOf, type InternalRole } from "../social/roleTouch";
@@ -92,9 +91,9 @@ export interface SocialPrimaryContext {
    *  cannot. Absence always carries a reason. */
   presence?: { present: boolean; because: string };
 
-  /** TIME CONTEXT */
-  chronology: readonly ChronoEntry[];
-  /** How many of the chronology's records this scale actually shows. */
+  /** How many of the chronology's records this scale actually shows. Used by
+   *  the SCALE cell; the timeline itself lives in section C and is not
+   *  restated here. */
   inScope: number;
 
   /** RELATION CONTEXT — null where the scale has no relation layer. */
@@ -209,18 +208,38 @@ export function StatusContext({ ctx }: { ctx: SocialPrimaryContext }) {
   );
 }
 
-/** 4 — TIME CONTEXT. The span, and how much of it this scale shows.
- *  CHRONOLOGY != CAUSALITY: this is an ordering, and says so. */
-export function TimeContext({ ctx }: { ctx: SocialPrimaryContext }) {
-  /* The SELECTED record's own timestamp. This used to print the whole
-     chronology's span plus `inScope/total` — which the frame's WHERE lane
-     already states as a date range and its TIME lane already states as
-     "51/51". Three statements of one fact on one screen is not emphasis, it
-     is noise, and it was the loudest reason this screen read as unclear. */
-  const at = ctx.selection.status === "resolved" ? ctx.selection.object.at : null;
+/** 4 — CURRENT SCALE VERDICT. Does the selected record reach THIS scale, and
+ *  what do the other two say about it? This replaced a TIME cell that printed
+ *  the chronology's whole span and `inScope/total` — facts the orientation
+ *  band states once and the timeline states again. TIME now appears exactly
+ *  once in the product, in section C. */
+export function ScaleVerdictContext({ ctx }: { ctx: SocialPrimaryContext }) {
+  const sel = ctx.selection;
   return (
-    <Cell label="TIME" scope="SELECTED" title="CHRONOLOGY != CAUSALITY — סדר, לא סיבתיות">
-      {at ? <code style={S.mono}>{at.slice(0, 16).replace("T", " ")}</code> : <Muted>—</Muted>}
+    <Cell label="SCALE" scope="SELECTED" title="EXISTS_IN_SOCIAL_MODEL != ELIGIBLE_AT_CURRENT_SCALE">
+      {sel.status !== "resolved" ? (
+        <>
+          <span style={{ color: COLOR.text, fontWeight: 700 }}>{ctx.headline.n ?? "—"}</span>{" "}
+          <Muted>רשומות מגיעות ל-{ctx.scale}</Muted>
+        </>
+      ) : (
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          {(["GROUP", "NETWORK", "SYSTEM"] as Scale[]).map((sc) => {
+            const p = sel.object.scales[sc];
+            const here = sc === ctx.scale;
+            return (
+              <span key={sc} title={p.present ? (p.as ?? "present") : "absent"}
+                    style={{ opacity: p.present ? 1 : 0.55, fontWeight: here ? 800 : 500 }}>
+                <span style={{ ...S.dot, background: p.present ? STATUS.real.text : COLOR.textFaint }} />
+                <span style={{ color: here ? COLOR.text : COLOR.textDim }}>{sc}</span>
+              </span>
+            );
+          })}
+        </div>
+      )}
+      {ctx.presence && !ctx.presence.present ? (
+        <div style={{ color: COLOR.textFaint, marginTop: 3 }}>{ctx.presence.because}</div>
+      ) : null}
     </Cell>
   );
 }
@@ -320,13 +339,13 @@ export default function SocialPrimaryStage({
       <div data-stage-slot="context" style={{ ...S.contextRail, ...(hud ? S.contextRailHud : null) }}>
         <ObjectContext ctx={ctx} />
         <StatusContext ctx={ctx} />
-        <TimeContext ctx={ctx} />
+        <ScaleVerdictContext ctx={ctx} />
         <RoleContext ctx={ctx} />
         <RelationContext ctx={ctx} />
         <ProvenanceContext ctx={ctx} />
       </div>
       <div data-stage-note style={S.scopeNote}>
-        ארבעת הראשונים מתארים את הרשומה <b>הנבחרת</b>; שניים האחרונים את <b>מאגר הקשרים כולו</b>,
+ארבעת הראשונים מתארים את הרשומה <b>הנבחרת</b>; שניים האחרונים את <b>מאגר הקשרים כולו</b>,
         שהוא אחד לכל המוצר ואינו משתנה עם הזום. מספר קשרים גדול לצד 0 רשומות בקנה־מידה הזה אינו סתירה — הם עונים על שתי שאלות.
       </div>
 

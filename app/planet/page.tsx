@@ -282,7 +282,6 @@ export default async function PlanetPage({
     title: "הרשת · NETWORK",
     subtitle: "איך הישויות והקשרים פרוסים — פריסה, לא גאוגרפיה, עד שמיקום יהיה אמיתי.",
     objects: socialObjects,
-    chronology,
     bridgeLinks: registry,
     selection: resolveSocialSelection(params.sel, socialObjects),
     arcs,

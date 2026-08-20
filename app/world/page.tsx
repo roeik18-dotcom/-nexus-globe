@@ -105,6 +105,11 @@ export default async function WorldPage({ searchParams }: {
      strip cannot drift from the lane above it. */
   const systemFlow = social.flow({ scale: "SYSTEM" });
   const systemSelection = resolveSocialSelection(params?.sel, socialObjects);
+  /* The SAME expression `SocialFrame` reads, off the SAME objects array, so
+     the orientation band and this table cannot disagree. */
+  const systemPresent = socialObjects.filter((o) => o.scales.SYSTEM.present).length;
+  const systemReason = systemFlow.find((st) => st.not_eligible_because)?.not_eligible_because
+    ?? "אין ראיה מערכתית רחבה משלו";
   /* SHARED PRIMARY CONTEXT — built by the ONE builder, from the ONE loader.
      World supplies only what is genuinely its own: its title, its audit node,
      and the fact that it draws no arcs. Every figure on the stage (headline,
@@ -117,7 +122,6 @@ export default async function WorldPage({ searchParams }: {
     title: "המערכת הרחבה · WIDER SYSTEM",
     subtitle: "מה נצפה בקנה־מידה מערכתי, ומה קיים אך אינו מגיע לכאן. UNKNOWN ≠ 0.",
     objects: socialObjects,
-    chronology,
     bridgeLinks: social.bridgeLinks,
     selection: systemSelection,
     audit: <SocialSourceSpinePanel surface="world" />,
@@ -184,15 +188,77 @@ export default async function WorldPage({ searchParams }: {
                are the stage's headline and RELATIONS cell now, so no scale
                states them in a grammar of its own. */
             <SocialPrimaryStage ctx={primaryCtx}>
-              {/* SYSTEM_UNIQUE_ONLY — the reference-architecture region.
-                  A badge labels a moment; a container labels a region, so the
-                  demotion is carried for WorldView's entire extent. */}
-              <div style={S.reference}>
-                <div style={S.referenceTag}>
-                  <span style={{ ...TYPE.micro, color: STATUS.demo.text }}>REFERENCE ARCHITECTURE</span>
-                  <span style={{ fontSize: FS.tag, color: COLOR.textDim }}>— PUDM legacy dataset, לא Observation/Action/Effect קנוני אמיתי</span>
+              {/* ── SYSTEM_UNIQUE_ONLY ─────────────────────────────────────
+                  OBSERVED first, REFERENCE second — in that order, because
+                  observed system state is 0 and that is the answer this
+                  terminal exists to give.
+
+                  The two-column table replaces badges that read "1 NEED"
+                  above "0 REAL" and "GROUP VALUE REAL 1" beside "VALUE GROUP
+                  UNKNOWN". Those mixed an EXISTENCE COUNT and a SCALE STATUS
+                  inside one badge, so the reader had to infer which number
+                  answered which question — and the honest report was that
+                  nobody could. Existence and eligibility are two dimensions;
+                  they now get two columns, named. */}
+              <div style={S.observed}>
+                <div style={S.observedHead}>
+                  <span style={{ ...TYPE.micro, fontSize: FS.tag, letterSpacing: 1.4, color: COLOR.textFaint }}>
+                    OBSERVED SYSTEM STATE
+                  </span>
+                  <span style={{ fontSize: 22, fontWeight: 700, color: COLOR.text, fontVariantNumeric: "tabular-nums" }}>
+                    {systemPresent}
+                  </span>
+                  <span style={{ fontSize: FS.meta, color: COLOR.textDim }}>רשומות מאומתות בקנה־מידה מערכתי</span>
                 </div>
-                <div style={{ ...primaryStage({ minHeight: 560, scroll: true }), marginTop: 6 }}>
+
+                <table style={S.exists}>
+                  <thead>
+                    <tr>
+                      <th style={{ ...S.exCell, ...S.exHead, textAlign: "start" }} />
+                      <th style={{ ...S.exCell, ...S.exHead }}>EXISTS IN SOCIAL MODEL</th>
+                      <th style={{ ...S.exCell, ...S.exHead }}>SYSTEM-ELIGIBLE</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {systemFlow.filter((st) => st.status === "REAL" || st.status === "DERIVED_REAL").map((st) => (
+                      <tr key={st.key}>
+                        <td style={{ ...S.exCell, textAlign: "start", color: COLOR.textDim }} title={st.basis}>
+                          {st.label}
+                        </td>
+                        <td style={{ ...S.exCell, color: COLOR.text, fontWeight: 700 }}>
+                          {st.count === null ? "—" : st.count}
+                        </td>
+                        {/* `eligible ?? count` was WRONG and showed it: the
+                            value-model stages carry no system gate, so they
+                            fell back to their existence count and the table
+                            read "GROUP VALUE ... SYSTEM-ELIGIBLE 1" directly
+                            under "OBSERVED SYSTEM STATE 0". A stage with no
+                            eligibility verdict is UNKNOWN — not eligible, and
+                            not 0 either. */}
+                        <td style={{ ...S.exCell, fontWeight: 700, color: st.eligible === undefined ? COLOR.textFaint : st.eligible ? STATUS.real.text : COLOR.textFaint }}
+                            title={st.eligible === undefined
+                              ? "אין שער מערכתי מוגדר לשלב הזה — UNKNOWN, לא 0 ולא זהה לקיום"
+                              : st.not_eligible_because}>
+                          {st.eligible === undefined ? "UNKNOWN" : st.eligible}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div style={{ fontSize: FS.tag, color: COLOR.textFaint, lineHeight: 1.6, marginTop: 6 }}>
+                  {systemReason} · <b>UNKNOWN ≠ 0</b> — הרשומות קיימות; הן פשוט אינן מגיעות לקנה־המידה הזה.
+                </div>
+              </div>
+
+              {/* REFERENCE — secondary, and visibly a reference document
+                  rather than a second application: it opens closed, under a
+                  heading that names what it is. */}
+              <details style={S.reference}>
+                <summary style={S.referenceTag}>
+                  <span style={{ ...TYPE.micro, color: STATUS.demo.text }}>REFERENCE ARCHITECTURE</span>
+                  <span style={{ fontSize: FS.tag, color: COLOR.textDim }}>— PUDM, להמחשה בלבד · לא Observation/Action/Effect קנוני</span>
+                </summary>
+                <div style={{ ...primaryStage({ minHeight: 560, scroll: true }), marginTop: 8 }}>
                   <WorldView
                     missions={missions}
                     gaps={gaps}
@@ -204,7 +270,7 @@ export default async function WorldPage({ searchParams }: {
                     communityGroupsByValueId={communityGroupsByValueId}
                   />
                 </div>
-              </div>
+              </details>
             </SocialPrimaryStage>
           }
           // AUDIT — passed to the shared stage as its AUDIT ENTRY primitive,
@@ -279,6 +345,17 @@ const S: Record<string, React.CSSProperties> = {
      already uses for "not recorded" (the spine's CONCEPTUAL connector), and
      tinted with the DEMO token so the classification is the same colour here
      as everywhere else. */
+  observed: {
+    border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.md,
+    padding: "12px 14px", marginBottom: 12, background: "rgba(11,15,26,0.55)",
+  },
+  observedHead: { display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 10 },
+  /* Two columns, named. Existence and scale-eligibility are two dimensions and
+     were being collapsed into one badge. */
+  exists: { borderCollapse: "collapse", width: "100%", maxWidth: 460, fontVariantNumeric: "tabular-nums" },
+  exCell: { padding: "4px 10px", fontSize: FS.meta, textAlign: "center", borderBottom: `1px solid ${COLOR.border}` },
+  exHead: { ...TYPE.micro, fontSize: FS.tag, letterSpacing: 1.2, color: COLOR.textFaint, fontWeight: 700 },
+
   reference: {
     border: `1px dashed ${STATUS.demo.border}`,
     borderRadius: RADIUS.lg,
@@ -286,7 +363,7 @@ const S: Record<string, React.CSSProperties> = {
     padding: 10,
   },
   referenceTag: {
-    display: "inline-flex", alignItems: "center", gap: 6,
+    display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer",
     padding: "5px 12px", borderRadius: RADIUS.pill,
     background: STATUS.demo.bg, border: `1px solid ${STATUS.demo.border}`,
   },
