@@ -39,6 +39,7 @@ import type { ReactNode } from "react";
 import { atScope, SCOPE_OF_SURFACE, type ChronoEntry, type ChronoScope } from "../social/socialChronology";
 import { ABSENCE_TEXT, type Scale, type SocialObject } from "../social/socialSystemProjection";
 import { withSelection, type SocialSelection } from "../social/socialSelection";
+import { spineTouchOf } from "../social/spineTouch";
 import type { SpineLink } from "../valueSystem/socialValueSpine";
 import { COLOR, COLOR_ROLE, PRODUCT_FAMILY_CUE, RADIUS, SPACE, TYPE } from "./designTokens";
 
@@ -88,6 +89,9 @@ export default function SocialFrame({
     SYSTEM: atScope(chronology, "SYSTEM").length,
   };
   const shown = [...here].reverse().slice(0, chronoLimit);
+  // FLOW: OBJECT -> VALUE. Which spine link the selected record actually
+  // instantiates. Usually none, and that is the point — see `spineTouch`.
+  const touch = selection?.status === "resolved" ? spineTouchOf(selection.object.kind) : undefined;
   const span = chronology.length > 0
     ? `${chronology[0].at.slice(0, 10)} → ${chronology[chronology.length - 1].at.slice(0, 10)}`
     : "—";
@@ -176,7 +180,13 @@ export default function SocialFrame({
             {spine.map((l, i) => (
               <span key={l.key} style={S.spineCell}>
                 {i > 0 ? <span style={S.arrow} aria-hidden>→</span> : null}
-                <span style={S.spineItem} title={`${l.gloss}\n${l.basis}\nלא נובע: ${l.not_implied}`}>
+                <span
+                  style={{
+                    ...S.spineItem,
+                    ...(touch?.touches && touch.key === l.key ? S.spineItemHit : null),
+                  }}
+                  title={`${l.gloss}\n${l.basis}\nלא נובע: ${l.not_implied}`}
+                >
                   <b style={{ ...S.spineN, color: l.count === null ? COLOR.textFaint : COLOR.text }}>
                     {l.count === null ? "—" : l.count}
                   </b>
@@ -189,6 +199,13 @@ export default function SocialFrame({
           <div style={S.note}>
             ארגון מוצר של מושגים קיימים. <b>SOURCE ≠ REAL</b> — מספר גדול מציין מלאי מקור, לא ישויות אמיתיות.
           </div>
+          {touch ? (
+            <div style={{ ...S.note, color: touch.touches ? COLOR_ROLE.green : COLOR.textFaint }}>
+              {touch.touches
+                ? <>הרשומה הנבחרת ממשת את החוליה המודגשת — {touch.because}.</>
+                : <>הרשומה הנבחרת אינה ממשת אף חוליה בשדרה — {touch.because}.</>}
+            </div>
+          ) : null}
         </div>
         <span style={S.rail}>SPINE</span>
       </div>
@@ -327,6 +344,8 @@ const S: Record<string, React.CSSProperties> = {
   spineRow: { display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" },
   spineCell: { display: "flex", alignItems: "center", gap: 2 },
   spineItem: { display: "inline-flex", alignItems: "baseline", gap: 4, padding: "2px 7px", borderRadius: RADIUS.sm, border: `1px solid ${COLOR.border}` },
+  /* Lit only when the SELECTED record genuinely instantiates this link. */
+  spineItemHit: { border: `1px solid ${COLOR_ROLE.green}`, background: "rgba(52,211,153,0.14)" },
   spineN: { fontSize: 12, fontFamily: "ui-monospace, monospace" },
   spineLabel: { fontSize: 8.5, color: COLOR.textDim },
   spineStatus: { ...TYPE.micro, fontSize: 6.5, color: COLOR.textFaint },
