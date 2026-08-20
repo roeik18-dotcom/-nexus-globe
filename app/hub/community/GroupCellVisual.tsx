@@ -55,7 +55,7 @@ export interface GroupCellData {
 }
 
 const W = 780;
-const H = 250;
+const H = 244;
 const CX = 168;
 const CY = 116;
 const R_GROUP = 50;
@@ -107,7 +107,7 @@ export default function GroupCellVisual({ data }: { data: GroupCellData }) {
             it was labelling. The coordinate system is geometry, not prose —
             it is pinned LTR, and the Hebrew strings inside still shape
             correctly because bidi resolves per text run. */
-         style={{ display: "block", maxWidth: W, overflow: "visible", direction: "ltr" }}>
+         style={{ display: "block", maxWidth: W, margin: "0 auto", overflow: "visible", direction: "ltr" }}>
       <defs>
         <radialGradient id="gcell-core">
           <stop offset="0%" stopColor="rgba(52,211,153,0.30)" />

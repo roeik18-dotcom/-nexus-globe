@@ -58,7 +58,7 @@ export default function SystemGateVisual({ rows, observed, because }: {
             it was labelling. The coordinate system is geometry, not prose —
             it is pinned LTR, and the Hebrew strings inside still shape
             correctly because bidi resolves per text run. */
-         style={{ display: "block", maxWidth: W, overflow: "visible", direction: "ltr" }}>
+         style={{ display: "block", maxWidth: W, margin: "0 auto", overflow: "visible", direction: "ltr" }}>
       {/* column headings */}
       <text x={X_LABEL} y={26} textAnchor="end" style={{ ...TYPE.micro, fontSize: FS.tag, fill: COLOR.textFaint, letterSpacing: 1.3 }}>
         SOCIAL EXISTS
@@ -75,7 +75,8 @@ export default function SystemGateVisual({ rows, observed, because }: {
         const unknown = r.eligible === undefined || r.eligible === null;
         // UNKNOWN stops short of the gate: it was never tested, so drawing it
         // arriving at the barrier would claim a verdict that does not exist.
-        const x2 = unknown ? X_GATE - 42 : X_GATE - 8;
+        // The UNKNOWN word needs room: at 1440 it was touching the gate line.
+        const x2 = unknown ? X_GATE - 86 : X_GATE - 8;
         return (
           <g key={r.label}>
             <text x={X_LABEL} y={y + 4} textAnchor="end" style={{ fontSize: FS.meta, fill: COLOR.textDim }}>
@@ -106,7 +107,7 @@ export default function SystemGateVisual({ rows, observed, because }: {
             ) : null}
 
             {unknown ? (
-              <text x={x2 + 6} y={y + 4} style={{ ...TYPE.micro, fontSize: FS.tag, fill: COLOR.textFaint }}>
+              <text x={x2 + 8} y={y + 4} style={{ ...TYPE.micro, fontSize: FS.tag, fill: COLOR.textFaint }}>
                 UNKNOWN
               </text>
             ) : null}

@@ -47,7 +47,10 @@ export function ProvenanceBadge({ p, title }: { p: Provenance; title?: string })
         fontSize: FS.base, fontWeight: 800, letterSpacing: 0.7,
         padding: "1px 6px", borderRadius: RADIUS.pill,
         background: s.bg, border: `1px solid ${s.border}`, color: s.text,
-        fontFamily: "ui-monospace, monospace", whiteSpace: "nowrap",
+        /* REAL / DEMO / STATIC are words, not machine tokens. The mono face
+           here rendered every provenance mark on every terminal as console
+           output — one line, seven surfaces. */
+        whiteSpace: "nowrap",
       }}
     >
       {p}

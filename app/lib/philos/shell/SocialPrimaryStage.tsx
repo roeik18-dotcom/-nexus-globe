@@ -181,9 +181,16 @@ export function ObjectContext({ ctx }: { ctx: SocialPrimaryContext }) {
             UNRESOLVED — <code style={S.mono}>{sel.record_id}</code>
           </span>
         ) : (
+          /* The record's own LABEL leads; its id moved to the title.
+             A raw `action_msw4v8oy_000001` was the one identifier still
+             sitting in a primary cell, and an id answers "which row in the
+             store", not "what did I select". It is one hover away here, and
+             still printed in full in the timeline rows and the audit lane. */
           <>
-            <div style={{ color: COLOR.text }}>{sel.object.kind}</div>
-            <code style={S.mono}>{sel.object.record_id}</code>
+            <div style={{ color: COLOR.text }} title={sel.object.record_id}>
+              {sel.object.kind}
+              {sel.object.label ? <span style={{ color: COLOR.textDim }}> · {sel.object.label}</span> : null}
+            </div>
             {ctx.presence && !ctx.presence.present ? (
               <div style={{ color: COLOR.textFaint, marginTop: 2 }}>
                 NOT_APPLICABLE — {ctx.presence.because}
@@ -203,7 +210,7 @@ export function StatusContext({ ctx }: { ctx: SocialPrimaryContext }) {
   const tone = v === "VERIFIED" ? STATUS.verified.text : v === "CLAIMED" ? STATUS.claimed.text : COLOR.textFaint;
   return (
     <Cell label="STATUS" scope="SELECTED" title="CLAIMED != VERIFIED — אף גזירה אינה מייצרת אימות">
-      {v === null ? <Muted>UNKNOWN</Muted> : <span style={{ color: tone, fontWeight: 700 }}>{v}</span>}
+      {v === null ? <Muted>UNKNOWN</Muted> : <span style={{ color: tone, fontWeight: 700, letterSpacing: 0.4 }}>{v}</span>}
     </Cell>
   );
 }

@@ -81,7 +81,7 @@ export default function ValueGroupsBoard({ groups, linkedSubject }: { groups: Va
         <div style={S.headMeta}>
           <span style={S.chip}>{real.length} REAL</span>
           <span style={S.chip}>{demo.length} DEMO</span>
-          {linkedSubject ? <span style={S.chip}>{linkedSubject}</span> : null}
+          {linkedSubject ? <span style={{ ...S.chip, ...S.chipId }}>{linkedSubject}</span> : null}
         </div>
       </header>
 
@@ -310,7 +310,11 @@ const S: Record<string, React.CSSProperties> = {
   eyebrow: { ...TYPE.micro, color: COLOR.accent, marginBottom: 4 },
   title: { fontSize: FS.read, fontWeight: 800, margin: 0, color: COLOR.text, direction: "ltr", textAlign: "right" },
   headMeta: { display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" },
-  chip: { fontSize: FS.base, fontWeight: 700, color: COLOR.textDim, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 9px", fontFamily: "ui-monospace, monospace" },
+  /* The mono face is reserved for the identifier chip. "1 REAL" and "2 DEMO"
+     are a count and a word — prose, and rendering them as console tokens is
+     the "chips-as-design" habit this pass is removing. */
+  chip: { fontSize: FS.base, fontWeight: 700, color: COLOR.textDim, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 9px" },
+  chipId: { fontFamily: "ui-monospace, monospace", direction: "ltr", unicodeBidi: "isolate" },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(330px, 1fr))", gap: SPACE.md },
   demoLane: { marginTop: SPACE.md, background: "rgba(0,0,0,0.2)", borderRadius: RADIUS.md, padding: "6px 12px", opacity: 0.85 },
   demoSummary: { cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#5a76a3", padding: "4px 0", display: "flex", gap: 10, alignItems: "baseline" },

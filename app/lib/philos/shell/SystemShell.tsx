@@ -149,7 +149,11 @@ function StatusPill({ label, value, kind }: { label: string; value: string; kind
     <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 12px", borderRadius: 8, background: COLOR.bgRaised, border: `1px solid ${COLOR.border}` }}>
       <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>{label}</span>
       <span style={{ fontSize: FS.read, fontWeight: 600, color: COLOR.text }}>{value}</span>
-      <span style={{ fontSize: FS.tag, fontWeight: 800, letterSpacing: 0.6, padding: "1px 6px", borderRadius: 999, background: s.bg, border: `1px solid ${s.border}`, color: s.text, fontFamily: "ui-monospace, monospace" }}>
+      {/* MONOSPACE IS FOR MACHINE TOKENS — identifiers and figures, where a
+          fixed advance width is the point. A status WORD is prose, and the
+          mono face on VERIFIED / UNKNOWN / REAL is most of what made these
+          screens read as console output rather than as a product. */}
+      <span style={{ fontSize: FS.tag, fontWeight: 800, letterSpacing: 0.6, padding: "1px 6px", borderRadius: 999, background: s.bg, border: `1px solid ${s.border}`, color: s.text }}>
         {s.label}
       </span>
     </div>
@@ -228,14 +232,14 @@ function ContextStrip({ person, domain, value, project, personContext, observedC
           <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>מסגרת היחוס</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
             <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>REFERENCE</span>
-            <span style={{ fontSize: FS.meta, fontWeight: 600, color: personContext.reference ? COLOR.textDim : STATUS.unknown.text, fontFamily: "ui-monospace, monospace" }}>
+            <span style={{ fontSize: FS.meta, fontWeight: 600, color: personContext.reference ? COLOR.textDim : STATUS.unknown.text }}>
               {personContext.reference ?? "UNKNOWN"}
             </span>
           </span>
           <span style={{ color: COLOR.textFaint }}>·</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }} title="קנון §20/§21 — קבוצת יחוס חייבת להיות מפורשת וניתנת לערעור; אסור להמציא ברירת מחדל">
             <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>REFERENCE GROUP</span>
-            <span style={{ fontSize: FS.meta, fontWeight: 700, color: STATUS.unknown.text, fontFamily: "ui-monospace, monospace" }}>
+            <span style={{ fontSize: FS.meta, fontWeight: 700, color: STATUS.unknown.text }}>
               {personContext.reference_group ?? "UNKNOWN"}
             </span>
             <span style={{ fontSize: FS.tag, color: COLOR.textFaint }}>אין מאגר — לא מומצאת</span>
