@@ -38,7 +38,8 @@ import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
 import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePanel";
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
-import SocialZoomStrip from "@/app/lib/philos/shell/SocialZoomStrip";
+import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
+import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
@@ -454,56 +455,31 @@ export default async function CommunityPage({
           Community is the GROUP zoom level. Not navigation (that is the nav
           capsule) and not a causal chain. */}
       <div style={{ margin: "10px 20px 0" }}>
-        <SocialZoomStrip surface="community" />
-      </div>
-
-      {/* SECONDARY — the reference frame is "what can be asked/measured", not
-          a measured state. It ships collapsed so the PRIMARY question of this
-          surface (which values/groups matter, and what are they doing) is not
-          pushed below a block of reference context. */}
-      {personFrame ? (
-        <div dir="rtl" style={{ margin: "8px 20px 0" }}>
-          <details>
-            <summary style={{ cursor: "pointer", fontSize: 10, letterSpacing: 1, color: "#5a6f96", padding: "2px 0" }}>
-              מסגרת אדם · ערך · דומיין (reference frame)
-            </summary>
-            <div style={{ marginTop: 6 }}>
-              <PersonFrameStrip frame={personFrame} compact />
-            </div>
-          </details>
-        </div>
-      ) : null}
-
-      <div style={{ margin: "0 20px" }}>
-        <SocialValueSpinePanel
+        {/* ONE frame for the whole social layer. Previously six sibling
+            bands; now one structure with lanes on a shared column grid, the
+            same one Globe and World render. The source spine moves inside it
+            as the collapsed AUDIT lane rather than a seventh box. */}
+        <SocialFrame
           surface="community"
-          valueGroups={groupsWithProvenance.filter((g) => g.provenance === "REAL").length}
-          verifiedGroupRelations={identityLink.status === "VERIFIED_SAME_PERSON"
-            ? groupsWithProvenance.filter((g) => g.provenance === "REAL"
-                && g.view.members.some((m) => m.person_id === identityLink.community_member_id)).length
-            : 0}
-        />
-        <SocialChronologyPanel entries={chronology} surface="community" />
-        <SocialRoleStrip
-          surface="community"
-          counts={{
-            // RED — real verified group IMPACT records (Action/Effect at group scope).
+          spine={buildSocialValueSpine({
+            verifiedGroupRelations: identityLink.status === "VERIFIED_SAME_PERSON"
+              ? groupsWithProvenance.filter((g) => g.provenance === "REAL"
+                  && g.view.members.some((m) => m.person_id === identityLink.community_member_id)).length
+              : 0,
+            valueGroups: groupsWithProvenance.filter((g) => g.provenance === "REAL").length,
+          }).links}
+          roles={{
             action: groupsWithProvenance.filter((g) => g.provenance === "REAL")
               .reduce((n, g) => n + g.view.impact.length, 0),
-            // WHITE — those of them that are actually VERIFIED, i.e. carry evidence.
             evidence: groupsWithProvenance.filter((g) => g.provenance === "REAL")
               .reduce((n, g) => n + g.view.impact.filter((i) => i.verified).length, 0),
-            // GREEN — recorded social relations only: real memberships plus any
-            // resolved person↔group relation carrying a real record. A value
-            // overlap is deliberately NOT counted; similarity is not a relation.
             relations: groupCards.filter((g) => g.provenance === "REAL")
               .reduce((n, g) => n + g.view.members.length + g.resolvedRelations.length, 0),
-            // PURPLE — value INTERPRETATION actually attributed: leading value
-            // families resolved for real groups. Absent stays absent.
             meaning: groupCards.filter((g) => g.provenance === "REAL" && g.leadingFamily).length,
           }}
+          chronology={chronology}
+          audit={<SocialSourceSpinePanel surface="community" observationText={latestObservationText} />}
         />
-        <SocialSourceSpinePanel surface="community" observationText={latestObservationText} />
       </div>
 
       {entityContext.status === "found_entity" ? (

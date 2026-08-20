@@ -53,7 +53,8 @@ import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
 import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePanel";
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
-import SocialZoomStrip from "@/app/lib/philos/shell/SocialZoomStrip";
+import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
+import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import SocialChronologyPanel from "@/app/lib/philos/shell/SocialChronologyPanel";
 import { runNetworkTruthGate, type EdgeCandidate } from "@/app/lib/philos/social/networkTruthGate";
 import { loadSocialChronology } from "@/app/lib/philos/social/loadSocialChronology";
@@ -288,29 +289,22 @@ export default async function PlanetPage({
               34vh over the canvas, and Globe is the one surface whose primary
               content is the sphere itself. The nav capsule already shows Globe
               as the active family member above the fold. */}
-          <SocialZoomStrip surface="globe" />
-          <SocialChronologyPanel entries={chronology} surface="globe" limit={6} />
-          {/* Globe is L4 of the shared social spine — same source model as
-              Community (L3) and World (L5). Server-rendered and passed as a
-              slot for the same client-boundary reason as the frame. */}
-          <SocialValueSpinePanel surface="globe" />
-          <SocialRoleStrip
+          {/* Same frame as Community and World. On Globe it lives inside the
+              collapsed disclosure, because here the sphere is the primary
+              content and the frame is reference. */}
+          <SocialFrame
             surface="globe"
-            counts={{
-              // RED — real canon Actions behind what the sphere can draw.
+            spine={buildSocialValueSpine({ valueGroups: nodes.filter((n) => n.type === "value_group").length }).links}
+            roles={{
               action: canonActions.length,
-              // WHITE — Effects carrying a verified outcome, i.e. provenance.
               evidence: canonEffects.filter((e) => !!e.effect.verified_outcome).length,
-              // GREEN — arcs actually drawn on the sphere. Every one comes from
-              // a recorded event (member.joined / leader.appointed /
-              // resource.transfer) and carries its own event_id. No arc is
-              // drawn from shared value, shared contradiction or similarity.
               relations: arcs.length,
-              // PURPLE — value groups whose own central value the nodes carry.
               meaning: nodes.filter((n) => n.type === "value").length,
             }}
+            chronology={chronology}
+            chronoLimit={5}
+            audit={<SocialSourceSpinePanel surface="globe" limit={4} />}
           />
-          <SocialSourceSpinePanel surface="globe" limit={4} />
         </>
       }
       observationStrip={observationStrip}

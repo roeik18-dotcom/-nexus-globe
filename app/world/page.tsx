@@ -20,7 +20,8 @@ import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
 import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePanel";
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
-import SocialZoomStrip from "@/app/lib/philos/shell/SocialZoomStrip";
+import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
+import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import SocialChronologyPanel from "@/app/lib/philos/shell/SocialChronologyPanel";
 import { loadSocialChronology } from "@/app/lib/philos/social/loadSocialChronology";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
@@ -105,36 +106,17 @@ export default async function WorldPage() {
             social/value model Community and Globe show at GROUP and NETWORK
             scope. This is what stops World reading as an independent
             reference application. */}
-        <SocialZoomStrip surface="world" />
-
-        {/* SECONDARY — reference frame, collapsed, so World's primary
-            question (what is happening at the wider system level) is not
-            preceded by a block of repeated person context. */}
-        {personFrame ? (
-          <div dir="rtl" style={{ marginBottom: 8 }}>
-            <details>
-              <summary style={{ cursor: "pointer", fontSize: 10, letterSpacing: 1, color: COLOR.textFaint, padding: "2px 0" }}>
-                מסגרת אדם · ערך · דומיין (reference frame)
-              </summary>
-              <div style={{ marginTop: 6 }}>
-                <PersonFrameStrip frame={personFrame} compact />
-              </div>
-            </details>
-          </div>
-        ) : null}
-        <SocialChronologyPanel entries={chronology} surface="world" />
-        <SocialValueSpinePanel surface="world" />
-        {/* No store records a verified EXTERNAL/system event, so both roles are
-            honestly UNKNOWN rather than 0 — nothing was checked and found empty. */}
-        {/* All four roles are UNKNOWN, not 0. No store records a verified
-            EXTERNAL/system event, a verified system-level social structure, or
-            a system-level value interpretation. Nothing was checked and found
-            empty — nothing was checkable. UNKNOWN != ZERO. */}
-        <SocialRoleStrip
+        {/* Same frame, same lanes, same grid as Community and Globe — only
+            the zoom differs. World's SYSTEM lane is empty and says so in
+            place: no record carries verified wider-system relevance, and
+            network density is never accepted as a substitute. */}
+        <SocialFrame
           surface="world"
-          counts={{ action: null, evidence: null, relations: null, meaning: null }}
+          spine={buildSocialValueSpine({}).links}
+          roles={{ action: null, evidence: null, relations: null, meaning: null }}
+          chronology={chronology}
+          audit={<SocialSourceSpinePanel surface="world" />}
         />
-        <SocialSourceSpinePanel surface="world" />
         <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 12, padding: "5px 12px", borderRadius: RADIUS.pill, background: STATUS.demo.bg, border: `1px solid ${STATUS.demo.border}` }}>
           <span style={{ ...TYPE.micro, color: STATUS.demo.text }}>REFERENCE ARCHITECTURE</span>
           <span style={{ fontSize: 10.5, color: COLOR.textDim }}>— PUDM legacy dataset, לא Observation/Action/Effect קנוני אמיתי</span>
