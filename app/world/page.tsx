@@ -8,6 +8,7 @@ import type { ValueCapabilityRelation } from "@/app/lib/value-capability-relatio
 import type { Provider } from "@/app/lib/provider/schema";
 import type { ProviderCapabilityRelation } from "@/app/lib/provider-capability-relation/schema";
 import WorldView from "./WorldView";
+import SystemGateVisual from "./SystemGateVisual";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
 import { COLOR, FS, RADIUS, STATUS, TYPE } from "@/app/lib/philos/shell/designTokens";
 import { loadPhilosEvents } from "@/app/lib/philos-event-store";
@@ -201,53 +202,64 @@ export default async function WorldPage({ searchParams }: {
                   nobody could. Existence and eligibility are two dimensions;
                   they now get two columns, named. */}
               <div style={S.observed}>
-                <div style={S.observedHead}>
-                  <span style={{ ...TYPE.micro, fontSize: FS.tag, letterSpacing: 1.4, color: COLOR.textFaint }}>
-                    OBSERVED SYSTEM STATE
-                  </span>
-                  <span style={{ fontSize: 22, fontWeight: 700, color: COLOR.text, fontVariantNumeric: "tabular-nums" }}>
-                    {systemPresent}
-                  </span>
-                  <span style={{ fontSize: FS.meta, color: COLOR.textDim }}>רשומות מאומתות בקנה־מידה מערכתי</span>
-                </div>
+                {/* ── THE PRIMARY STATEMENT, DRAWN ─────────────────────────
+                    The table below is still here and still correct, but it
+                    could only state that Need EXISTS 1 and is ELIGIBLE 0 — it
+                    could not show that those are the SAME records meeting a
+                    barrier, which is the whole of what "system = 0" means.
+                    Drawn, it is one glance: a populated left side, a gate, an
+                    empty right side. 0 is not missing data; it is data that
+                    stops. */}
+                <SystemGateVisual
+                  observed={systemPresent}
+                  because={systemReason}
+                  rows={systemFlow
+                    .filter((st) => st.status === "REAL" || st.status === "DERIVED_REAL")
+                    .map((st) => ({ label: st.label, exists: st.count, eligible: st.eligible }))}
+                />
 
-                <table style={S.exists}>
-                  <thead>
-                    <tr>
-                      <th style={{ ...S.exCell, ...S.exHead, textAlign: "start" }} />
-                      <th style={{ ...S.exCell, ...S.exHead }}>EXISTS IN SOCIAL MODEL</th>
-                      <th style={{ ...S.exCell, ...S.exHead }}>SYSTEM-ELIGIBLE</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {systemFlow.filter((st) => st.status === "REAL" || st.status === "DERIVED_REAL").map((st) => (
-                      <tr key={st.key}>
-                        <td style={{ ...S.exCell, textAlign: "start", color: COLOR.textDim }} title={st.basis}>
-                          {st.label}
-                        </td>
-                        <td style={{ ...S.exCell, color: COLOR.text, fontWeight: 700 }}>
-                          {st.count === null ? "—" : st.count}
-                        </td>
-                        {/* `eligible ?? count` was WRONG and showed it: the
-                            value-model stages carry no system gate, so they
-                            fell back to their existence count and the table
-                            read "GROUP VALUE ... SYSTEM-ELIGIBLE 1" directly
-                            under "OBSERVED SYSTEM STATE 0". A stage with no
-                            eligibility verdict is UNKNOWN — not eligible, and
-                            not 0 either. */}
-                        <td style={{ ...S.exCell, fontWeight: 700, color: st.eligible === undefined ? COLOR.textFaint : st.eligible ? STATUS.real.text : COLOR.textFaint }}
-                            title={st.eligible === undefined
-                              ? "אין שער מערכתי מוגדר לשלב הזה — UNKNOWN, לא 0 ולא זהה לקיום"
-                              : st.not_eligible_because}>
-                          {st.eligible === undefined ? "UNKNOWN" : st.eligible}
-                        </td>
+                {/* SECONDARY DETAIL — the same two dimensions as exact
+                    figures, for a reader who wants the numbers rather than
+                    the shape. */}
+                <details style={S.exDetails}>
+                  <summary style={S.exSummary}>EXISTS / SYSTEM-ELIGIBLE — פירוט מספרי</summary>
+                  <table style={S.exists}>
+                    <thead>
+                      <tr>
+                        <th style={{ ...S.exCell, ...S.exHead, textAlign: "start" }} />
+                        <th style={{ ...S.exCell, ...S.exHead }}>EXISTS IN SOCIAL MODEL</th>
+                        <th style={{ ...S.exCell, ...S.exHead }}>SYSTEM-ELIGIBLE</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div style={{ fontSize: FS.tag, color: COLOR.textFaint, lineHeight: 1.6, marginTop: 6 }}>
-                  {systemReason} · <b>UNKNOWN ≠ 0</b> — הרשומות קיימות; הן פשוט אינן מגיעות לקנה־המידה הזה.
-                </div>
+                    </thead>
+                    <tbody>
+                      {systemFlow.filter((st) => st.status === "REAL" || st.status === "DERIVED_REAL").map((st) => (
+                        <tr key={st.key}>
+                          <td style={{ ...S.exCell, textAlign: "start", color: COLOR.textDim }} title={st.basis}>
+                            {st.label}
+                          </td>
+                          <td style={{ ...S.exCell, color: COLOR.text, fontWeight: 700 }}>
+                            {st.count === null ? "—" : st.count}
+                          </td>
+                          {/* `eligible ?? count` was WRONG and showed it: stages
+                              with no system gate fell back to their existence
+                              count, so the table read "GROUP VALUE ·
+                              SYSTEM-ELIGIBLE 1" directly under "OBSERVED
+                              SYSTEM STATE 0". No verdict is UNKNOWN — not
+                              eligible, and not 0. */}
+                          <td style={{ ...S.exCell, fontWeight: 700, color: st.eligible === undefined ? COLOR.textFaint : st.eligible ? STATUS.real.text : COLOR.textFaint }}
+                              title={st.eligible === undefined
+                                ? "אין שער מערכתי מוגדר לשלב הזה — UNKNOWN, לא 0 ולא זהה לקיום"
+                                : st.not_eligible_because}>
+                            {st.eligible === undefined ? "UNKNOWN" : st.eligible}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div style={{ fontSize: FS.tag, color: COLOR.textFaint, lineHeight: 1.6, marginTop: 6 }}>
+                    <b>UNKNOWN ≠ 0</b> — הרשומות קיימות; הן פשוט אינן מגיעות לקנה־המידה הזה.
+                  </div>
+                </details>
               </div>
 
               {/* REFERENCE — secondary, and visibly a reference document
@@ -355,6 +367,8 @@ const S: Record<string, React.CSSProperties> = {
   exists: { borderCollapse: "collapse", width: "100%", maxWidth: 460, fontVariantNumeric: "tabular-nums" },
   exCell: { padding: "4px 10px", fontSize: FS.meta, textAlign: "center", borderBottom: `1px solid ${COLOR.border}` },
   exHead: { ...TYPE.micro, fontSize: FS.tag, letterSpacing: 1.2, color: COLOR.textFaint, fontWeight: 700 },
+  exDetails: { marginTop: 10, borderTop: `1px solid ${COLOR.border}`, paddingTop: 8 },
+  exSummary: { cursor: "pointer", fontSize: FS.tag, letterSpacing: 1, color: "#5a76a3", padding: "2px 0" },
 
   reference: {
     border: `1px dashed ${STATUS.demo.border}`,

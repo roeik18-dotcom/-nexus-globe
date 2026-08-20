@@ -30,6 +30,7 @@
  *                verified member of THIS group, or honestly not linked
  */
 import type { ValueGroupView } from "@/app/lib/philos/projectValueGroup";
+import GroupCellVisual from "./GroupCellVisual";
 import type { GroupRelation } from "@/app/lib/philos/valueSystem/groupResolver";
 import { QUALITY_GROUP_MODEL } from "@/app/lib/philos/community/sourceValueModel";
 import { PROVENANCE_STYLE, ProvenanceBadge, type Provenance } from "@/app/lib/philos/shell/provenance";
@@ -152,62 +153,59 @@ function GroupCard({ data }: { data: ValueGroupCardData }) {
           of glancing at eight figures. Detail that was in the `meta` line
           moves to the title attribute and to the DETAILS disclosure — it is
           still here, it just no longer costs a row each. */}
-      <div style={S.vitals}>
-        <Vital n={view.members.length} label="חברים"
-               title={view.members.slice(0, 5).map((m) => m.display_name).join(", ")} />
-        <Vital n={view.budget.available} label={`${view.budget.currency} זמין`}
-               title={`התקבל ${view.budget.received} · הוצא ${view.budget.spent} · הוקצה ${view.budget.committed}`} />
-        <Vital n={view.today.length} label="פעיל היום" />
-        <Vital n={verified.length} label="מאומת" accent={verified.length > 0} />
-      </div>
+      {/* ── THE REPRESENTATION ──────────────────────────────────────────
+          For a REAL group this is a drawing, not a readout. The vitals row
+          and the five-stage pipeline strip that stood here were the second
+          and third attempts at the same idea in text: eight numbers each
+          beside a word. Both are gone; the same eight figures are the ring,
+          the bar and the chain in `GroupCellVisual`, where size and position
+          carry the magnitude and the eye does the comparing.
 
-      {/* Two DIFFERENT facts, never merged: Needs the linked subject owns, and
-          Needs actually attached to THIS group by an explicit write or
-          declaration. The old copy claimed no Need↔group attachment exists in
-          the schema — true when written, false since the bridge layer, and it
-          contradicted the flow rail in the same viewport. It now reads the
-          real link count. */}
-      {/* THE PIPELINE, as a strip rather than five stacked rows.
-          NEEDS/OFFERS/ACTIONS/EFFECTS/EVIDENCE were five FieldRows of three
-          lines each — fifteen lines per card, which is why three cards read as
-          a database dump instead of three groups. They are one row now, in the
-          same grammar the social spine uses at the top of the page, so the
-          card and the spine echo each other instead of describing the same
-          pipeline in two different visual languages.
-          Every `meta` sentence moved to the cell's title; nothing was lost. */}
-      <div style={S.pipeline}>
-        <Stage n={data.groupNeedLinks > 0 ? data.groupNeedLinks : data.linkedSubjectNeeds}
-               label="NEED" prov={data.groupNeedLinks > 0 ? "CANON" : data.linkedSubjectNeeds !== null ? "CANON" : "UNKNOWN"}
-               title={data.groupNeedLinks > 0
-                 ? "COMMUNITY_HAS_NEED — שיוך מפורש (כתיבה או הצהרה), לא הסקה"
-                 : "רשומות קנוניות של האדם המקושר — אף אחת לא שויכה לקבוצה הזאת"} />
-        <Arrow />
-        <Stage n={data.linkedSubjectOffers} label="OFFER"
-               prov={data.linkedSubjectOffers !== null ? "CANON" : "UNKNOWN"}
-               title="Offer קנוני של האדם המקושר" />
-        <Arrow />
-        <Stage n={data.bridgeActionCount > 0 ? data.bridgeActionCount : view.today.length || null}
-               label="ACTION"
-               prov={data.bridgeActionCount > 0 ? "CANON" : view.today.length > 0 ? "REAL" : "UNKNOWN"}
-               title={data.bridgeActionCount > 0 ? "ACTION_AFFECTS_COMMUNITY מרישום הגשרים" : "אין Action קנוני שמקושר לקבוצה"} />
-        <Arrow />
-        <Stage n={view.impact.length || null} label="EFFECT"
-               prov={view.impact.length > 0 ? prov : "UNKNOWN"}
-               title={view.impact.length > 0 ? `${view.impact.length} טענת השפעה` : "אין רשומת השפעה"} />
-        <Arrow />
-        <Stage n={verified.length || null} label="EVIDENCE"
-               prov={verified.length > 0 ? prov : "UNKNOWN"}
-               title={`${verified.length} מאומתות מתוך ${view.impact.length}`} />
-      </div>
+          DEMO groups keep the compact text form. They are illustrative, they
+          live one tier down behind a disclosure, and giving a fixture the
+          same visual weight as the one real group is exactly the mistake the
+          information-architecture pass removed. */}
+      {provenance === "REAL" ? (
+        <GroupCellVisual data={{
+          name: view.name,
+          value: view.central_value,
+          members: view.members.length,
+          capital: data.capital
+            ? { balance: data.capital.balance, lastDelta: data.capital.lastDelta, currency: data.capital.currency }
+            : null,
+          viewerIsMember: data.personRelation.linked,
+          chain: {
+            need: data.groupNeedLinks > 0 ? data.groupNeedLinks : data.linkedSubjectNeeds,
+            offer: data.linkedSubjectOffers,
+            action: data.bridgeActionCount > 0 ? data.bridgeActionCount : view.today.length || null,
+            effect: view.impact.length || null,
+            evidence: verified.length || null,
+          },
+          verified: verified.length,
+        }} />
+      ) : (
+        <div style={S.vitals}>
+          <Vital n={view.members.length} label="חברים"
+                 title={view.members.slice(0, 5).map((m) => m.display_name).join(", ")} />
+          <Vital n={view.budget.available} label={`${view.budget.currency} זמין`}
+                 title={`התקבל ${view.budget.received} · הוצא ${view.budget.spent} · הוקצה ${view.budget.committed}`} />
+          <Vital n={view.today.length} label="פעיל היום" />
+          <Vital n={verified.length} label="מאומת" accent={verified.length > 0} />
+        </div>
+      )}
 
-      <FieldRow label="TREND" provenance={data.capital || data.membership ? "STATIC" : "UNKNOWN"}
+      {/* The REAL group's trend is the notch on the capacity bar and the
+          ring's density — drawn, not restated. DEMO cards keep the line. */}
+      {provenance === "REAL" ? null : (
+        <FieldRow label="TREND" provenance={data.capital || data.membership ? "STATIC" : "UNKNOWN"}
         value={data.capital
           ? `הון ${data.capital.balance} ${data.capital.currency} (Δ אחרון ${data.capital.lastDelta > 0 ? "+" : ""}${data.capital.lastDelta})`
           : "אין אירוע כספי"}
         meta={data.membership
           ? `חברות: ${data.membership.count} · הצטרפות אחרונה ${data.membership.lastJoinDate}` + (data.openTensions > 0 ? ` · ${data.openTensions} Tension פתוח` : "")
           : "אין אירוע הצטרפות"}
-        italic={!data.capital && !data.membership} />
+          italic={!data.capital && !data.membership} />
+      )}
 
       {/* AUDIT tier — diagnostics, resolved-relation reasoning and raw ids.
           Real and unchanged, but they answered a different question than

@@ -30,6 +30,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import VerifiedRelationInventory from "@/app/lib/philos/shell/VerifiedRelationInventory";
 import type { GlobeArc, GlobeNode } from "@/app/lib/philos/projectGlobeGraph";
+import { VERIFIED_STATUSES } from "@/app/lib/philos/events";
 import { SystemShell, type ShellIdentityLink } from "@/app/lib/philos/shell/SystemShell";
 import { REAL_CURRENT_SUBJECT } from "@/app/lib/philos/subjectRegistry";
 import type { PersonContext } from "@/app/lib/philos/person/personContext";
@@ -460,6 +461,14 @@ const NODE_RADIUS: Record<GlobeNode["type"], number> = {
   value: 0.38,
 };
 
+/** The ONE test for "is this relation verified". No status is literally
+ *  "verified" — the two real ones are community_verified / external_verified,
+ *  and a string comparison against "verified" (which this file once had) is a
+ *  branch that can never be true. */
+function isVerifiedArc(d: { verification_status?: string }): boolean {
+  return !!d.verification_status && (VERIFIED_STATUSES as readonly string[]).includes(d.verification_status);
+}
+
 function seeded(seed: number) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
 function fibSphere(n: number) { const o: { lat: number; lng: number }[] = []; const g = Math.PI * (3 - Math.sqrt(5)); for (let i = 0; i < n; i++) { const y = 1 - (i / Math.max(1, n - 1)) * 2, r = Math.sqrt(Math.max(0, 1 - y * y)), t = g * i; o.push({ lat: Math.asin(y) * 180 / Math.PI, lng: Math.atan2(Math.sin(t) * r, Math.cos(t) * r) * 180 / Math.PI }); } return o; }
 
@@ -580,6 +589,7 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
       pos.set(n.id, { lat, lng });
       const isEndpoint = endpointIds.has(n.id);
       return {
+        isFaded: false,
         lat, lng,
         color: isEndpoint ? "#ffd88a" : NODE_COLOR[n.type],
         r: isEndpoint ? NODE_RADIUS[n.type] * 2.1 : NODE_RADIUS[n.type],
@@ -625,6 +635,17 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
       a.isDimmed = !!selectedArc && !a.isSelected && !a.isNeighbor;
     }
 
+    /* RELATION VISUAL LANGUAGE — the ENDS of a relation.
+       The endpoints of a selected arc were ALREADY lifted and recoloured
+       (`isEndpoint`, above); a first version of this pass added a second
+       mechanism doing the same job, which is the duplication this whole
+       sequence of passes has been removing. What was genuinely missing is the
+       other half of a focus: the arcs dim around a selection but the NODES
+       did not, so the pair of things a relation connects never separated
+       from the crowd. They do now — same flag, no new state. */
+    const hasFocus = !!selectedArc;
+    for (const p of entityPts) (p as { isFaded?: boolean }).isFaded = hasFocus && !p.isEndpoint;
+
     return { points: entityPts, arcs };
   }, [nodes, eventArcs, highlightedEventId]);
 
@@ -663,7 +684,8 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
             onGlobeReady={onReady}
             pointsData={points}
             pointLat={(d: any) => d.lat} pointLng={(d: any) => d.lng}
-            pointColor={(d: any) => d.color} pointAltitude={(d: any) => d.alt} pointRadius={(d: any) => d.r} pointResolution={5}
+            pointColor={(d: any) => (d.isFaded ? `${d.color}44` : d.color)}
+            pointAltitude={(d: any) => d.alt} pointRadius={(d: any) => d.r} pointResolution={5}
             pointLabel={(d: any) => d.label ? `<div style="font:600 12px system-ui;color:#fff">${d.label}</div><div style="font:11px system-ui;color:${d.color}">${d.type}</div>` : ""}
             arcsData={arcs}
             arcStartLat={(d: any) => d.startLat} arcStartLng={(d: any) => d.startLng} arcEndLat={(d: any) => d.endLat} arcEndLng={(d: any) => d.endLng}
@@ -679,7 +701,15 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
               ? [`rgba(255,206,138,${d.isDimmed ? 0.02 : 0.06})`, `rgba(255,206,138,${d.isDimmed ? 0.25 : 0.92})`]
               : [`rgba(120,180,255,${d.isDimmed ? 0.01 : 0.05})`, `rgba(150,210,255,${d.isDimmed ? 0.18 : 0.85})`]}
             arcStroke={(d: any) => (d.isSelected ? 0.55 : d.isNeighbor ? 0.4 : (d.isTransfer ? 0.32 : 0.18) * (d.isDimmed ? 0.4 : 1))} arcAltitude={0.18}
-            arcDashLength={0.4} arcDashGap={0.25} arcDashAnimateTime={3200}
+            /* Motion means something now. Every arc animated on the same
+               3200ms dash, so the one property carried by movement carried no
+               information at all. A VERIFIED relation is drawn SOLID and
+               STILL — it is settled; a CLAIMED or unverified one keeps the
+               travelling dash — it is still a claim in motion. Verification
+               was previously legible only by hovering a line. */
+            arcDashLength={(d: any) => (isVerifiedArc(d) ? 1 : 0.4)}
+            arcDashGap={(d: any) => (isVerifiedArc(d) ? 0 : 0.25)}
+            arcDashAnimateTime={(d: any) => (isVerifiedArc(d) ? 0 : 3200)}
             // Hovering a line states its provenance. Not decoration: without this
             // a viewer cannot ask why a line exists and get an answer (§13).
             // Amount/currency/value appear ONLY when the event carried them.
