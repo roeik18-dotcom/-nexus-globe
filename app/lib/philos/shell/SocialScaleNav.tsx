@@ -28,14 +28,10 @@ import { usePathname, useSearchParams } from "next/navigation";
 
 import { FS, COLOR, PRODUCT_FAMILY_CUE, RADIUS, TYPE } from "./designTokens";
 
-/* ONE TERMINAL, three scales. These were three routes; they are now one
-   route with a `scale` parameter, so a scale change is a camera move on the
-   same page rather than a navigation to another product. The legacy paths
-   still resolve and redirect, so no existing link breaks. */
 const SCALES = [
-  { key: "community", label: "Community", level: "GROUP", href: "/social?scale=group" },
-  { key: "globe", label: "Globe", level: "NETWORK", href: "/social?scale=network" },
-  { key: "world", label: "World", level: "SYSTEM", href: "/social?scale=system" },
+  { key: "community", label: "Community", level: "GROUP", href: "/hub/community" },
+  { key: "globe", label: "Globe", level: "NETWORK", href: "/planet" },
+  { key: "world", label: "World", level: "SYSTEM", href: "/world" },
 ] as const;
 
 export default function SocialScaleNav() {
@@ -43,12 +39,7 @@ export default function SocialScaleNav() {
   const params = useSearchParams();
   const sel = params.get("sel");
 
-  // The scale comes from the query on the unified route; the legacy paths are
-  // still recognised so the bar highlights correctly during the transition.
-  const scaleParam = params.get("scale");
-  const activeKey = pathname.startsWith("/social")
-    ? (scaleParam === "network" ? "globe" : scaleParam === "system" ? "world" : "community")
-    : pathname.startsWith("/hub/community") ? "community"
+  const activeKey = pathname.startsWith("/hub/community") ? "community"
     : pathname.startsWith("/planet") ? "globe"
     : pathname.startsWith("/world") ? "world" : undefined;
 
@@ -58,7 +49,7 @@ export default function SocialScaleNav() {
       {SCALES.map((s) => {
         const here = s.key === activeKey;
         // The selection is the one thing that must survive a scale change.
-        const href = sel ? `${s.href}&sel=${encodeURIComponent(sel)}` : s.href;
+        const href = sel ? `${s.href}?sel=${encodeURIComponent(sel)}` : s.href;
         return (
           <Link
             key={s.key}
