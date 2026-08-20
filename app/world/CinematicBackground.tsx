@@ -37,7 +37,13 @@ export default function CinematicBackground() {
     }
     function resize() {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      W = window.innerWidth; H = window.innerHeight;
+      // PARENT-OWNED, not viewport-owned. Measuring the window was correct
+      // only while this canvas happened to fill the screen; inside a
+      // PRIMARY_STAGE it must measure the stage, or it paints at the wrong
+      // size and overflows its own container.
+      const box = cv!.parentElement?.getBoundingClientRect();
+      W = Math.max(1, Math.round(box?.width ?? window.innerWidth));
+      H = Math.max(1, Math.round(box?.height ?? window.innerHeight));
       cv!.width = W * dpr; cv!.height = H * dpr;
       cv!.style.width = W + "px"; cv!.style.height = H + "px";
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -93,14 +99,30 @@ export default function CinematicBackground() {
     window.addEventListener("resize", resize);
     frame();
     if (reduce) frame(); // single static paint
-    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+    // Observe the STAGE, not just the window: the stage can change size
+    // without the window doing so (a lane opening, a panel expanding), and a
+    // window-only listener misses exactly those cases.
+    const ro = typeof ResizeObserver !== "undefined" && cv.parentElement
+      ? new ResizeObserver(() => resize())
+      : null;
+    if (ro && cv.parentElement) ro.observe(cv.parentElement);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", resize);
+      ro?.disconnect();
+    };
   }, []);
 
   return (
     <canvas
       ref={ref}
       aria-hidden
-      style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }}
+      /* ABSOLUTE, never fixed. `fixed` escaped every ancestor, so nesting
+         this inside the shared frame painted the starfield over the entire
+         shell — navigation included. Inside a `position: relative` stage the
+         two look identical right up until they do not. */
+      style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none" }}
     />
   );
 }

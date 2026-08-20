@@ -934,7 +934,32 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
 }
 
 const S: Record<string, React.CSSProperties> = {
-  root: { position: "fixed", inset: 0, background: "radial-gradient(120% 90% at 50% 42%, #071120 0%, #03060e 48%, #010206 100%)", color: "#9fb2d6", fontFamily: "system-ui, -apple-system, sans-serif", overflow: "hidden" },
+  /* PRIMARY_STAGE, not the viewport.
+     This was `position: fixed; inset: 0` — the surface owned the window, so
+     it could never be nested inside the shared frame without painting over
+     the navigation. Everything inside it is already `position: absolute`, so
+     those overlays now anchor to THIS box instead of the screen, and the
+     canvas needed no change at all: it has always measured its parent through
+     a ResizeObserver rather than reading `window.innerWidth`.
+     `isolation: isolate` seals the z-order — the band at zIndex 20 and the
+     panels at 10-14 now sort only against each other, never against the shell.
+     Height is ASKED FOR, not taken. `min-height: 100vh` on a relative element
+     is not the bug `position: fixed` was: it is a request the parent can
+     override, and everything still positions against this box. On /planet the
+     shell renders INSIDE this stage (the nav band sits at zIndex 20 over the
+     canvas by design), so the stage wants the full viewport; nested in a
+     smaller container it simply gets less and the canvas follows, because the
+     canvas measures its parent. */
+  root: {
+    position: "relative",
+    width: "100%",
+    minHeight: "100vh",
+    overflow: "hidden",
+    isolation: "isolate",
+    background: "radial-gradient(120% 90% at 50% 42%, #071120 0%, #03060e 48%, #010206 100%)",
+    color: "#9fb2d6",
+    fontFamily: "system-ui, -apple-system, sans-serif",
+  },
   stars: { position: "absolute", top: 0, left: 0, width: 1, height: 1, borderRadius: "50%", background: "transparent", zIndex: 0 },
   breathe: { position: "absolute", left: "50%", top: "50%", width: "76vmin", height: "76vmin", transform: "translate(-50%,-50%)", borderRadius: "50%", background: "radial-gradient(circle, rgba(70,140,255,0.22) 0%, rgba(50,110,230,0.06) 45%, transparent 66%)", zIndex: 0, pointerEvents: "none" },
   stage: { position: "absolute", inset: 0, zIndex: 1 },

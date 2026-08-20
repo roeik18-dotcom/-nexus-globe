@@ -342,6 +342,12 @@ const S: Record<string, React.CSSProperties> = {
   panelTitle: { fontSize: 12.5, fontWeight: 700, color: "#5aa6ff", marginBottom: 10 },
   linkOut: { display: "inline-block", marginTop: 8, fontSize: 11.5, color: "#5b9cf6", textDecoration: "none" },
 
+  /* DELIBERATELY viewport-owned, and the only two left in the social family.
+     A modal scrim and its drawer are not PRIMARY_STAGE content: their whole
+     job is to cover the window and take focus until dismissed. Containing
+     them inside a stage would make the scrim cover only part of the screen,
+     which is worse than the bug the containment pass fixed. Converted
+     nothing here, on purpose. */
   scrim: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 40 },
   drawer: { position: "fixed", top: 0, bottom: 0, insetInlineEnd: 0, width: "min(420px, 92vw)", background: "#0f1522", borderInlineStart: "1px solid rgba(90,120,180,0.25)", zIndex: 41, overflowY: "auto", padding: 20 },
   drawerClose: { fontSize: 11, color: "#8fa3c9", background: "transparent", border: "none", cursor: "pointer", padding: 0, marginBottom: 12 },

@@ -23,6 +23,7 @@ import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
 import { projectSocialSystem } from "@/app/lib/philos/social/socialSystemProjection";
 import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection";
 import { buildSocialFlow } from "@/app/lib/philos/social/socialFlowStages";
+import { primaryStage } from "@/app/lib/philos/shell/primaryStage";
 import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
 import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import SocialChronologyPanel from "@/app/lib/philos/shell/SocialChronologyPanel";
@@ -135,12 +136,33 @@ export default async function WorldPage({ searchParams }: {
           chronology={chronology}
           objects={socialObjects}
           selection={resolveSocialSelection(params?.sel, socialObjects)}
+          // NOW — World's primary content, INSIDE a PRIMARY_STAGE.
+          // `CinematicBackground` is now `position: absolute` and measures its
+          // parent, so it fills this stage instead of escaping to the
+          // viewport. The stage's `isolation: isolate` seals its z-order, so
+          // nothing inside it can sort above the navigation.
+          primary={
+            <>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 12, padding: "5px 12px", borderRadius: RADIUS.pill, background: STATUS.demo.bg, border: `1px solid ${STATUS.demo.border}` }}>
+                <span style={{ ...TYPE.micro, color: STATUS.demo.text }}>REFERENCE ARCHITECTURE</span>
+                <span style={{ fontSize: 10.5, color: COLOR.textDim }}>— PUDM legacy dataset, לא Observation/Action/Effect קנוני אמיתי</span>
+              </div>
+              <div style={{ ...primaryStage({ minHeight: 560, scroll: true }), marginTop: 6 }}>
+            <WorldView
+              missions={missions}
+              gaps={gaps}
+              values={values}
+              capabilities={capabilities}
+              vcRelations={vcRelations}
+              providers={providers}
+              pcRelations={pcRelations}
+              communityGroupsByValueId={communityGroupsByValueId}
+            />
+              </div>
+            </>
+          }
           audit={<SocialSourceSpinePanel surface="world" />}
         />
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 12, padding: "5px 12px", borderRadius: RADIUS.pill, background: STATUS.demo.bg, border: `1px solid ${STATUS.demo.border}` }}>
-          <span style={{ ...TYPE.micro, color: STATUS.demo.text }}>REFERENCE ARCHITECTURE</span>
-          <span style={{ fontSize: 10.5, color: COLOR.textDim }}>— PUDM legacy dataset, לא Observation/Action/Effect קנוני אמיתי</span>
-        </div>
         {/* PRIMARY / AUDIT ORDER — World's primary question is "what is
             happening at the wider system level", and its answer is the map
             below. The observation reading, group-relevance block and
@@ -148,24 +170,6 @@ export default async function WorldPage({ searchParams }: {
             used to render BEFORE the visualization and pushed it past the
             fold. They now follow it. Nothing was removed. */}
       </div>
-      {/* NOT folded into SocialFrame's NOW lane, unlike Community's board.
-          WorldView renders CinematicBackground as `position: fixed; inset: 0`,
-          which escapes any ancestor and painted over the entire shell when it
-          was nested inside the frame — the surface rendered as a starfield
-          with no navigation at all. A fixed full-viewport child cannot be
-          contained by a flow layout, so the map stays a sibling and the frame
-          stays above it via the stacking context the header div already
-          establishes. Tried, measured, reverted. */}
-      <WorldView
-        missions={missions}
-        gaps={gaps}
-        values={values}
-        capabilities={capabilities}
-        vcRelations={vcRelations}
-        providers={providers}
-        pcRelations={pcRelations}
-        communityGroupsByValueId={communityGroupsByValueId}
-      />
       <div dir="rtl" style={{ padding: "0 20px 20px", position: "relative", zIndex: 1 }}>
         {/* Phase 6C — "replacing static-only dependency where canon data
             exists": World's PUDM/Fashion content below stays exactly what
