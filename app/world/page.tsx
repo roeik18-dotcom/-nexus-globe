@@ -22,6 +22,7 @@ import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel"
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
 import { projectSocialSystem } from "@/app/lib/philos/social/socialSystemProjection";
 import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection";
+import GlobeWarmup from "@/app/lib/philos/shell/GlobeWarmup";
 import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
 import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import SocialChronologyPanel from "@/app/lib/philos/shell/SocialChronologyPanel";
@@ -118,6 +119,8 @@ export default async function WorldPage({ searchParams }: {
             the zoom differs. World's SYSTEM lane is empty and says so in
             place: no record carries verified wider-system relevance, and
             network density is never accepted as a substitute. */}
+        {/* Warm the globe at idle so changing scale does not pay ~1s. */}
+        <GlobeWarmup />
         <SocialFrame
           surface="world"
           spine={buildSocialValueSpine({}).links}

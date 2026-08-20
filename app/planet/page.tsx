@@ -61,7 +61,8 @@ import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
 import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import SocialChronologyPanel from "@/app/lib/philos/shell/SocialChronologyPanel";
 import { runNetworkTruthGate, type EdgeCandidate } from "@/app/lib/philos/social/networkTruthGate";
-import { loadSocialChronology } from "@/app/lib/philos/social/loadSocialChronology";
+import { buildSocialChronology } from "@/app/lib/philos/social/socialChronology";
+import { isEffectVerified } from "@/app/lib/philos/canon/effect";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import CanonicalSlicePanel from "@/app/hub/CanonicalSlicePanel";
@@ -95,16 +96,46 @@ export default async function PlanetPage({
   // space `PERSON_MEMBER_OF_COMMUNITY` links use, so no id translation is
   // needed here. Passed to the inspector drawer only — the sphere's own
   // node population and layout (`nodes`/`arcs` above) are unchanged.
-  const needGroupDeclarations = await loadNeedGroupLinks().catch(() => []);
-  const chronology = await loadSocialChronology().catch(() => []);
+
+  // These six stores are INDEPENDENT of each other. They were awaited one
+  // after another, so the route paid the sum of six round trips before it
+  // could render — measured as ~1s to a visible canvas. Loading them together
+  // pays the slowest, not the total.
+  const [needGroupDeclarations, canonActions, canonEffects, canonNeeds, canonOffers] = await Promise.all([
+    loadNeedGroupLinks().catch(() => []),
+    loadActions().catch(() => []),
+    loadEffects().catch(() => []),
+    loadNeeds().catch(() => []),
+    loadOffers().catch(() => []),
+  ]);
+
+  // The chronology is built from the records ALREADY loaded above rather than
+  // by `loadSocialChronology()`, which would re-read needs, offers, actions
+  // and effects a second time. Same projection, same result, four fewer store
+  // reads per request.
+  const chronology = buildSocialChronology({
+    events,
+    needs: canonNeeds.map((n) => ({
+      need_id: n.need.need_id, desired_change: n.need.desired_change,
+      recorded_at: n.recorded_at, origin_group_id: n.origin_group_id,
+    })),
+    offers: canonOffers.map((o) => ({
+      offer_id: o.offer.offer_id, available_resource: o.offer.available_resource, recorded_at: o.recorded_at,
+    })),
+    actions: canonActions.map((a) => ({
+      action_id: a.action.action_id, inputs: a.action.inputs, recorded_at: a.recorded_at,
+    })),
+    effects: canonEffects.map((e) => ({
+      effect_id: e.effect.effect_id, action_ref: e.effect.action_ref,
+      verified: isEffectVerified(e.effect), recorded_at: e.recorded_at,
+    })),
+    observations: [],
+  });
+
   const socialObjects = projectSocialSystem({
     chronology,
     needGroups: new Map(needGroupDeclarations.map((d) => [d.need_id, d.group_id] as const)),
   });
-  const canonActions = await loadActions().catch(() => []);
-  const canonEffects = await loadEffects().catch(() => []);
-  const canonNeeds = await loadNeeds().catch(() => []);
-  const canonOffers = await loadOffers().catch(() => []);
 
   // Effects are loaded BEFORE the registry so EFFECT_AFFECTS_COMMUNITY can be
   // derived from (existing ACTION_AFFECTS_COMMUNITY link) + Effect.action_ref.
