@@ -12,8 +12,10 @@ import { describe, expect, it } from "vitest";
 import { loadSocialSystem } from "../../social/loadSocialSystem";
 import { resolveGroupContext } from "../../community/groupContext";
 import { loadPhilosEvents } from "@/app/lib/philos-event-store";
-import { resolveViewerContext, setViewerProvider, LOCAL_SINGLE_USER } from "../viewerContext";
-import { SESSION_VIEWER, setSessionReader, registeredViewerIds } from "../sessionViewer";
+import { resolveViewerContext, tryResolveViewerContext, setViewerProvider, LOCAL_SINGLE_USER } from "../viewerContext";
+import { SESSION_VIEWER, setSessionReader } from "../sessionViewer";
+import { issueSession, resolveSession, revokeSession, setSessionRepository, type SessionRecord } from "../sessionStore";
+import { providerForMode, resolveViewerMode } from "../viewerMode";
 import { USER_A, USER_B } from "./viewerFixtures";
 
 /** Roei's baseline, as ratified after the scoping ruling. 51/11 are the
@@ -101,41 +103,171 @@ describe("TWO VIEWERS — the real loader", () => {
   });
 });
 
-describe("TWO VIEWERS — the session seam resolves two distinct people", () => {
-  it("knows exactly the registered sessions", () => {
-    expect(registeredViewerIds().sort()).toEqual(["sess_a", "sess_b"]);
-  });
+describe("TWO VIEWERS — authenticated sessions", () => {
+  /* Fixtures are ISSUED, not written. `issueSession` mints 32 random bytes and
+     the store holds the mapping; the test never learns a token by construction
+     and could not forge a second one if it tried. That is the property being
+     tested, so faking it here would test nothing. */
+  async function twoSessions() {
+    setSessionRepository(new Map0());
+    const a = await issueSession({ viewer_id: "person_roei", subject_id: "person_roei", person_id: "p_you" });
+    const b = await issueSession({ viewer_id: "person_bet", subject_id: "person_bet", person_id: "p_bet" });
+    return { a, b };
+  }
 
-  it("two different session ids resolve to two different viewers", async () => {
+  it("A resolves only A, B resolves only B", async () => {
+    const { a, b } = await twoSessions();
     setViewerProvider(SESSION_VIEWER);
     try {
-      setSessionReader(async () => "sess_a");
-      const a = await resolveViewerContext();
-      setSessionReader(async () => "sess_b");
-      const b = await resolveViewerContext();
-      expect(a.subject_id).toBe("person_roei");
-      expect(b.subject_id).toBe("person_bet");
-      expect(a.subject_id).not.toBe(b.subject_id);
-      expect(b.source).toBe("SESSION");
-    } finally {
-      setViewerProvider(LOCAL_SINGLE_USER);
+      setSessionReader(async () => a);
+      expect((await resolveViewerContext()).subject_id).toBe("person_roei");
+      setSessionReader(async () => b);
+      expect((await resolveViewerContext()).subject_id).toBe("person_bet");
+    } finally { setViewerProvider(LOCAL_SINGLE_USER); }
+  });
+
+  it("the token carries NO identity — it is not derived from the viewer", async () => {
+    const { a, b } = await twoSessions();
+    for (const t of [a, b]) {
+      expect(t).not.toMatch(/roei|bet|person|p_you|p_bet|sess/i);
+      // 32 bytes base64url
+      expect(Buffer.from(t, "base64url").length).toBe(32);
     }
+    expect(a).not.toBe(b);
   });
 
-  it("an UNKNOWN session resolves to nobody — it never falls back to a person", async () => {
+  it("an UNKNOWN token resolves to nobody", async () => {
+    await twoSessions();
     setViewerProvider(SESSION_VIEWER);
     try {
-      setSessionReader(async () => "sess_forged");
-      await expect(resolveViewerContext()).rejects.toThrow(/refusing to act without an identity/);
+      setSessionReader(async () => "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQ");
+      await expect(resolveViewerContext()).rejects.toThrow(/refusing to act/);
+      setSessionReader(async () => undefined);
+      await expect(resolveViewerContext()).rejects.toThrow(/refusing to act/);
+    } finally { setViewerProvider(LOCAL_SINGLE_USER); }
+  });
+
+  it("an EXPIRED token resolves to nobody", async () => {
+    setSessionRepository(new Map0());
+    const t = await issueSession({ viewer_id: "x", subject_id: "x", person_id: "px" }, { ttlMs: 1000, now: 0 });
+    expect(await resolveSession(t, 999)).not.toBeNull();
+    expect(await resolveSession(t, 1000)).toBeNull();
+    expect(await resolveSession(t, 5000)).toBeNull();
+  });
+
+  it("a REVOKED token resolves to nobody — logout works and is idempotent", async () => {
+    const { a } = await twoSessions();
+    expect(await resolveSession(a)).not.toBeNull();
+    await revokeSession(a);
+    expect(await resolveSession(a)).toBeNull();
+    await revokeSession(a);
+    await revokeSession("never-existed");
+    expect(await resolveSession(a)).toBeNull();
+  });
+
+  it("B's session cannot be transformed into A's", async () => {
+    const { a, b } = await twoSessions();
+    setViewerProvider(SESSION_VIEWER);
+    try {
+      // every mutation a client could attempt on its own token
+      for (const forged of [b + "=", b.slice(0, -1), b.toUpperCase(), a.slice(0, 10) + b.slice(10)]) {
+        setSessionReader(async () => forged);
+        const r = await tryResolveViewerContext();
+        expect(r?.subject_id ?? null).not.toBe("person_roei");
+      }
+      setSessionReader(async () => a);
+      expect((await resolveViewerContext()).subject_id).toBe("person_roei");
+    } finally { setViewerProvider(LOCAL_SINGLE_USER); }
+  });
+
+  it("MODE is chosen, never fallen back to — a missing env var means SESSION", () => {
+    expect(resolveViewerMode({})).toBe("SESSION");
+    expect(resolveViewerMode({ PHILOS_VIEWER_MODE: "" })).toBe("SESSION");
+    expect(resolveViewerMode({ PHILOS_VIEWER_MODE: "production" })).toBe("SESSION");
+    expect(resolveViewerMode({ PHILOS_VIEWER_MODE: "LOCAL_DEV" })).toBe("LOCAL_DEV");
+  });
+
+  it("SESSION mode never resolves the dev viewer", async () => {
+    setViewerProvider(providerForMode("SESSION"));
+    try {
+      setSessionReader(async () => undefined);
+      expect(await tryResolveViewerContext()).toBeNull();
+    } finally { setViewerProvider(LOCAL_SINGLE_USER); }
+  });
+});
+
+/** A SessionRepository backed by a fresh Map — one per test, so no test can
+ *  see a token another test issued. */
+class Map0 {
+  private rows = new Map<string, SessionRecord>();
+  async get(t: string) { return this.rows.get(t) ?? null; }
+  async put(t: string, r: SessionRecord) { this.rows.set(t, r); }
+  async delete(t: string) { this.rows.delete(t); }
+  async tokens() { return [...this.rows.keys()]; }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   USER #2 READINESS — through the ACTUAL runtime provider.
+   ──────────────────────────────────────────────────────────────────────────
+   Everything above either passes a fixture ViewerContext to the loader or
+   tests the provider alone. This does neither: it installs SESSION_VIEWER as
+   the live provider, presents a token, and lets the loader resolve the viewer
+   the same way a request would. It is the only test here that would catch a
+   loader which resolved identity a second way of its own.
+
+   No production User #2 data is created. B logs in and correctly finds
+   nothing, which is exactly the state a new user arrives in. */
+describe("USER #2 READINESS — live provider, no fixture viewer passed", () => {
+  async function sessionFor(v: { viewer_id: string; subject_id: string; person_id: string }) {
+    return issueSession(v);
+  }
+
+  it("A logs in and gets A's scoped SOCIAL; B logs in and gets a separate empty one", async () => {
+    setSessionRepository(new Map0());
+    const tokenA = await sessionFor({ viewer_id: "person_roei", subject_id: "person_roei", person_id: "p_you" });
+    const tokenB = await sessionFor({ viewer_id: "person_bet", subject_id: "person_bet", person_id: "p_bet" });
+    setViewerProvider(SESSION_VIEWER);
+    try {
+      setSessionReader(async () => tokenA);
+      const a = await loadSocialSystem(await resolveViewerContext());
+      setSessionReader(async () => tokenB);
+      const b = await loadSocialSystem(await resolveViewerContext());
+
+      // A: the ratified baseline, reached through a session rather than a fixture.
+      expect(a.counts).toEqual({ GROUP: 34, NETWORK: 10, SYSTEM: 0 });
+      // B: a real, separate, empty social state.
+      expect(b.counts).toEqual({ GROUP: 0, NETWORK: 0, SYSTEM: 0 });
+      expect(b.chronology).toEqual([]);
+      expect(b.values.personal).toBeNull();
+      expect(b.values.group).toBeNull();
+
+      // and nothing of A's reached B by any route.
+      const aIds = new Set(a.chronology.map((e) => e.record_id));
+      expect(b.chronology.filter((e) => aIds.has(e.record_id))).toEqual([]);
+    } finally { setViewerProvider(LOCAL_SINGLE_USER); }
+  });
+
+  it("with no session, the loader is never reached — there is no viewer to load for", async () => {
+    setSessionRepository(new Map0());
+    setViewerProvider(SESSION_VIEWER);
+    try {
       setSessionReader(async () => undefined);
       await expect(resolveViewerContext()).rejects.toThrow(/refusing to act without an identity/);
-    } finally {
-      setViewerProvider(LOCAL_SINGLE_USER);
-    }
+      expect(await tryResolveViewerContext()).toBeNull();
+    } finally { setViewerProvider(LOCAL_SINGLE_USER); }
   });
 
-  it("the client presents a SESSION, never a subject — resolve() takes no argument", () => {
-    expect(SESSION_VIEWER.resolve.length).toBe(0);
-    expect(resolveViewerContext.length).toBe(0);
+  it("DEMO is absent from personal analysis for a session-resolved viewer", async () => {
+    setSessionRepository(new Map0());
+    const t = await sessionFor({ viewer_id: "person_roei", subject_id: "person_roei", person_id: "p_you" });
+    setViewerProvider(SESSION_VIEWER);
+    try {
+      setSessionReader(async () => t);
+      const a = await loadSocialSystem(await resolveViewerContext());
+      expect(a.chronology.filter((c) => c.provenance === "DEMO")).toEqual([]);
+      expect(a.objects.filter((o) => o.provenance === "DEMO")).toEqual([]);
+      // registry-wide provenance is unchanged — that cell is labelled as such
+      expect(a.bridgeLinks.filter((l) => l.provenance === "DEMO").length).toBe(25);
+    } finally { setViewerProvider(LOCAL_SINGLE_USER); }
   });
 });

@@ -1,4 +1,5 @@
 import { FS } from "@/app/lib/philos/shell/designTokens";
+import { buildViewerLinkRegistry } from "@/app/lib/philos/bridge/viewerLinkRegistry";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 /**
  * CanonicalSlicePanel — Phase 4 vertical slice, shared verbatim between
@@ -131,7 +132,7 @@ export default async function CanonicalSlicePanel({ subject, asOf }: { subject: 
   // Opening's own `collect_world_external` reports this honestly) — this
   // section shows real INTERNAL relevance (which real Action affected
   // which real Community) rather than inventing an external one.
-  const bridgeRegistry = buildDefaultLinkRegistry(philosEvents, today);
+  const bridgeRegistry = await buildViewerLinkRegistry({ events: philosEvents, today });
   const worldRelevanceLinks = linksByRelation(bridgeRegistry, "ACTION_AFFECTS_COMMUNITY");
 
   return (

@@ -1,4 +1,5 @@
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
+import { buildViewerLinkRegistry } from "@/app/lib/philos/bridge/viewerLinkRegistry";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import path from "path";
 import { readJsonStore } from "@/app/lib/json-store";
@@ -198,15 +199,15 @@ export default async function MarketplacePage({
           group_id: philosGroupsRealView.group_id,
           members: philosGroupsRealView.members.length,
           verifiedEffects: philosGroupsRealView.impact.filter((i) => i.verified).length,
-          bridgeActions: linksByRelation(buildDefaultLinkRegistry(marketplacePhilosEvents, marketplaceToday), "ACTION_AFFECTS_COMMUNITY")
+          bridgeActions: linksByRelation(await buildViewerLinkRegistry({ events: marketplacePhilosEvents, today: marketplaceToday }), "ACTION_AFFECTS_COMMUNITY")
             .filter((l) => l.target.canonical_id === philosGroupsRealView.group_id).length,
           opened_at: philosGroupsRealView.opened_at,
         } : undefined}
-        groupRelations={(() => {
+        groupRelations={await (async () => {
           // The ONE shared Value Group resolver — person-level relations
           // for the REAL operational group, projected into the flow header.
           if (!philosGroupsRealView || identityLink.status !== "VERIFIED_SAME_PERSON") return [];
-          const bridge = buildDefaultLinkRegistry(marketplacePhilosEvents, marketplaceToday);
+          const bridge = await buildViewerLinkRegistry({ events: marketplacePhilosEvents, today: marketplaceToday });
           const res = resolveValueGroups({
             familyMatches: [], generalValueMatches: [], baseValueMatches: [],
             groups: [{

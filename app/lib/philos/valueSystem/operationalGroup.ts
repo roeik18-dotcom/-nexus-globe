@@ -35,6 +35,7 @@
  * reference the trace stops there and says so.
  */
 import { loadPhilosEvents } from "@/app/lib/philos-event-store";
+import { buildViewerLinkRegistry } from "@/app/lib/philos/bridge/viewerLinkRegistry";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import { systemClock, todayIn } from "@/app/lib/philos/eventStore";
 import { buildCapitalTimeline, buildMembershipTimeline, projectValueGroup, type ValueGroupView } from "@/app/lib/philos/projectValueGroup";
@@ -120,7 +121,7 @@ export async function buildOperationalGroupProfile(): Promise<OperationalGroupPr
   const identityLink = await resolveShellIdentityLink();
   const linked = identityLink.status === "VERIFIED_SAME_PERSON";
   const memberId = linked ? identityLink.community_member_id : undefined;
-  const bridge = buildDefaultLinkRegistry(events, today);
+  const bridge = await buildViewerLinkRegistry({ events, today });
   const bridgeActionIds = linksByRelation(bridge, "ACTION_AFFECTS_COMMUNITY")
     .filter((l) => l.target.canonical_id === view.group_id).map((l) => l.source.canonical_id);
 

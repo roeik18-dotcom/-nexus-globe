@@ -1,4 +1,5 @@
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
+import { buildViewerLinkRegistry } from "@/app/lib/philos/bridge/viewerLinkRegistry";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import { connection } from "next/server";
 import type { ReactNode } from "react";
@@ -225,7 +226,7 @@ export default async function HubPage({
       // Planet/Dynamics build, over the SAME real event log — used here
       // only to check whether today's Actions have a real collective link
       // (COMMUNITY/MARKET PROPAGATION in the runtime-loop carry-forward).
-      const bridgeRegistry = buildDefaultLinkRegistry(await loadPhilosEvents(), todayIn(systemClock));
+      const bridgeRegistry = await buildViewerLinkRegistry();
       dayCycleSection = <DayCycle subject={subject} core={core} tensions={tensions} lifecycle={lifecycle} today={todayIn(systemClock)} knownNeeds={knownNeeds} bridgeRegistry={bridgeRegistry} />;
 
       // Mission / Orientation Picture: composed entirely from the SAME

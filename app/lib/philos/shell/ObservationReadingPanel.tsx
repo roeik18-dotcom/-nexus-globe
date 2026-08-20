@@ -23,6 +23,7 @@
  * Learning is invented anywhere here.
  */
 import { projectCanonDynamics } from "@/app/lib/philos/canon/projectCanonDynamics";
+import { buildViewerLinkRegistry } from "@/app/lib/philos/bridge/viewerLinkRegistry";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import { deriveObservationReading, type ObservationReading } from "@/app/lib/philos/canon/observationReading";
 import { classifyObservationText, type ObservationClassification, type OperationalGroupInput } from "@/app/lib/philos/valueSystem/classifier";
@@ -117,7 +118,7 @@ export default async function ObservationReadingPanel({
       // codebase already performs: identity link, bridge registry,
       // community tensions, the group projections above.
       const identityLink = await resolveShellIdentityLink();
-      const bridgeLinks = buildDefaultLinkRegistry(events, todayIn(systemClock));
+      const bridgeLinks = await buildViewerLinkRegistry({ events });
       const resolverGroups: ResolverGroupInput[] = groups.map(({ view, provenance }) => ({
         group_id: view.group_id,
         name: view.name,

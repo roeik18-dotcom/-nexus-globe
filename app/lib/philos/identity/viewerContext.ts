@@ -105,3 +105,15 @@ export function mayReadSubject(viewer: ViewerContext, subject: string | undefine
   if (!subject) return false;
   return subject === viewer.subject_id || subject === viewer.person_id;
 }
+
+/**
+ * The outcome of asking who is acting, without throwing.
+ *
+ * `resolveViewerContext()` throws, which is right for a render that must not
+ * proceed. A route that has to answer 401 rather than 500 needs the same
+ * question asked politely — and needs it to be IMPOSSIBLE to answer it with a
+ * fallback identity, so this returns null and nothing else.
+ */
+export async function tryResolveViewerContext(): Promise<ViewerContext | null> {
+  return currentViewerProvider().resolve();
+}

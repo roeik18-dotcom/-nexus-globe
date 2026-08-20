@@ -31,6 +31,7 @@
  *   500  unexpected store/loader failure
  */
 import { timingSafeEqual } from "node:crypto";
+import { buildViewerLinkRegistry } from "@/app/lib/philos/bridge/viewerLinkRegistry";
 
 import { findDomainStatesForSubject } from "@/app/lib/philos/canon/domainStateStoreAccessor";
 import { buildActionLifecycleSummary } from "@/app/lib/philos/canon/actionLifecycle";
@@ -40,7 +41,7 @@ import { loadPhilosEvents } from "@/app/lib/philos-event-store";
 import { systemClock, todayIn } from "@/app/lib/philos/eventStore";
 import { buildDefaultLinkRegistry } from "@/app/lib/philos/bridge/linkRegistry";
 import { linksForEntity } from "@/app/lib/philos/bridge/entityLink";
-import { mayReadSubject, resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
+import { mayReadSubject, tryResolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { buildPersonInstance, buildValueDomainInstance } from "@/app/lib/philos/canonical/personInstance";
 import { buildActivePersonRefs } from "@/app/lib/philos/canonical/activeConfig";
 import { availableDomainConfigs } from "@/app/lib/philos/canonical/domainConfigRegistry";
@@ -83,7 +84,12 @@ export async function GET(request: Request): Promise<Response> {
      `?subject=` that names anyone else is REFUSED rather than silently
      narrowed to the viewer — a request that asked for someone else's data
      should not receive a 200 full of a different person's records. */
-  const viewer = await resolveViewerContext();
+  /* 401 vs 500. `resolveViewerContext()` THROWS when nobody resolves, which
+     is right for a render that must not proceed but wrong for a route that
+     owes the caller a status. `tryResolveViewerContext()` asks the same
+     question without a fallback identity — null is the only other answer. */
+  const viewer = await tryResolveViewerContext();
+  if (!viewer) return json({ error: "unauthenticated", detail: "no valid session" }, 401);
   const requested = url.searchParams.get("subject");
   if (requested !== null && !mayReadSubject(viewer, requested)) {
     return json({ error: "forbidden", detail: "subject is not readable by this viewer" }, 403);
@@ -128,7 +134,7 @@ export async function GET(request: Request): Promise<Response> {
     // World relevance — the SAME Canonical Cross-Entity Link Registry
     // Brain/Globe already build, over the SAME real event log.
     const events = await loadPhilosEvents();
-    const registry = buildDefaultLinkRegistry(events, todayIn(systemClock));
+    const registry = await buildViewerLinkRegistry({ events });
     const worldLinks = linksForEntity(registry, "person", subject);
 
     const colors = loadColorMaster();

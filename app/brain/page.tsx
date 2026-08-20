@@ -1,4 +1,5 @@
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
+import { buildViewerLinkRegistry } from "@/app/lib/philos/bridge/viewerLinkRegistry";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import { connection } from "next/server";
 
@@ -107,7 +108,7 @@ export default async function BrainPage({
   // zero here (not hiding the check) is the point: it makes the gap visible
   // and queryable instead of just documented in a ledger file.
   const bridgeLinkCount = subject
-    ? linksForEntity(buildDefaultLinkRegistry(await loadPhilosEvents(), todayIn(systemClock)), "person", subject).length
+    ? linksForEntity(await buildViewerLinkRegistry(), "person", subject).length
     : 0;
   const identityLink = await resolveShellIdentityLink();
 
