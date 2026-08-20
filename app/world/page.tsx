@@ -1,4 +1,5 @@
 import path from "path";
+import SignOutButton from "@/app/signin/SignOutButton";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import { readJsonStore } from "@/app/lib/json-store";
 import type { Mission } from "@/app/lib/mission/schema";
@@ -148,6 +149,7 @@ export default async function WorldPage({ searchParams }: {
           looked like it had no navigation at all. */}
       <div style={{ padding: "12px 20px 0", position: "relative", zIndex: 1 }}>
         <SystemShell
+          signOut={<SignOutButton />}
           surface="world"
           personContext={personContext}
           purpose="ארכיטקטורת ייחוס — משימות/פערים/יכולות/ספקים לדוגמה, לא מציאות קנונית נצפית."

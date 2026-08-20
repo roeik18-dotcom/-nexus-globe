@@ -21,6 +21,7 @@
  * parameter that has never had a real reading recorded.
  */
 import { connection } from "next/server";
+import SignOutButton from "@/app/signin/SignOutButton";
 import { loadHumanConfigSource } from "@/app/lib/philos/humanConfig/masterUnitsSource";
 import {
   buildCanonicalConcepts,
@@ -78,7 +79,8 @@ export default async function HumanConfigPage({
     return (
       <div style={{ minHeight: "100vh", background: "#0b0f1a" }}>
         <div style={{ padding: "12px 20px 0" }}>
-          <SystemShell surface="hub" purpose="Human Config — prototype תצוגה ראשונה" subject={viewer.subject_id} identityLink={identityLink} />
+          <SystemShell
+          signOut={<SignOutButton />} surface="hub" purpose="Human Config — prototype תצוגה ראשונה" subject={viewer.subject_id} identityLink={identityLink} />
         </div>
         <HumanConfigPrototype subjectId={viewer.subject_id} parameters={parameters} />
       </div>
@@ -120,7 +122,8 @@ export default async function HumanConfigPage({
   return (
     <div style={{ minHeight: "100vh", background: "#0b0f1a" }}>
       <div style={{ padding: "12px 20px 0" }}>
-        <SystemShell surface="hub" purpose="Human Config אמיתי — מבנה מקור, לא מצב חי." subject={viewer.subject_id} identityLink={identityLink} />
+        <SystemShell
+          signOut={<SignOutButton />} surface="hub" purpose="Human Config אמיתי — מבנה מקור, לא מצב חי." subject={viewer.subject_id} identityLink={identityLink} />
       </div>
       <div dir="rtl" style={{ padding: "0 20px" }}>
         <CreateHumanDomainStateForm />

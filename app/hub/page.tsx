@@ -1,4 +1,5 @@
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
+import SignOutButton from "@/app/signin/SignOutButton";
 import { buildViewerLinkRegistry } from "@/app/lib/philos/bridge/viewerLinkRegistry";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import { connection } from "next/server";
@@ -414,6 +415,7 @@ export default async function HubPage({
     <div style={{ background: "#0b0f1a", minHeight: "100vh" }}>
       <div style={{ padding: "12px 20px 0" }}>
         <SystemShell
+          signOut={<SignOutButton />}
           surface="hub"
           personContext={personContext}
           observedCount={nowInputs?.core.observed_count}

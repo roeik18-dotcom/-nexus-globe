@@ -1,4 +1,5 @@
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
+import SignOutButton from "@/app/signin/SignOutButton";
 import { buildViewerLinkRegistry } from "@/app/lib/philos/bridge/viewerLinkRegistry";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import { connection } from "next/server";
@@ -164,6 +165,7 @@ export default async function BrainPage({
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#080b13" }}>
       <div style={{ padding: "12px 20px 0", background: "#080b13" }}>
         <SystemShell
+          signOut={<SignOutButton />}
           surface="brain"
           personContext={personContext}
           purpose="אדם אחד, בין מציאות לאפשרות — לולאת Action/Effect/Learning משולבת מרחבית, לא כתוספת בתחתית."

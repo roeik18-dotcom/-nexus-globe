@@ -1,4 +1,5 @@
 import path from "path";
+import SignOutButton from "@/app/signin/SignOutButton";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import { connection } from "next/server";
 
@@ -488,6 +489,7 @@ export default async function CommunityPage({
     <div style={{ background: "#0b0f1a", minHeight: "100vh" }}>
       <div style={{ padding: "12px 20px 0", background: "#0b0f1a" }}>
         <SystemShell
+          signOut={<SignOutButton />}
           surface="community"
           personContext={personContext}
           purpose="עולם הערכים והקבוצות של PHILOS — לא קבוצה אחת בלבד."

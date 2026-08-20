@@ -29,6 +29,7 @@ import Link from "next/link";
 
 import SocialScaleNav from "./SocialScaleNav";
 
+import type { ReactNode } from "react";
 import { COLOR, FS, PRODUCT_FAMILY_CUE, RADIUS, SPACE, STATUS, TERMINAL, TYPE } from "./designTokens";
 import type { PersonContext } from "../person/personContext";
 
@@ -251,6 +252,7 @@ function ContextStrip({ person, domain, value, project, personContext, observedC
 }
 
 export function SystemShell({
+  signOut,
   surface,
   purpose,
   selected,
@@ -293,6 +295,9 @@ export function SystemShell({
    *  insertion point that propagates the Person↔Community-Member link
    *  status across every surface that mounts this shell. */
   identityLink?: ShellIdentityLink;
+  /** Server-rendered sign-out control, passed as a slot — see the note at the
+   *  render site for why this cannot be an import. */
+  signOut?: ReactNode;
 }) {
   const ctxValue = selected?.status === "found" ? encodeSystemContextRef(selected.ref) : undefined;
   // Real cross-surface subject handoff: Hub/Brain read `?subject=` — never
@@ -431,6 +436,13 @@ export function SystemShell({
         {identityLink ? (
           <StatusPill label="IDENTITY" value={`${identityLink.person_id} ↔ ${identityLink.community_member_id}`} kind={identityKind} />
         ) : null}
+        {/* Sign out, as a SLOT. `SystemShell` is imported by client
+            components (WorldGlobe, DynamicsView), so anything it imports ends
+            up in the client bundle — importing the button directly dragged
+            `next/headers` across the boundary and broke every page that
+            renders a globe. The server pages render it and pass it down, the
+            same way `personFrameSlot` and `canonicalSlice` already work. */}
+        {signOut}
       </div>
     </div>
   );

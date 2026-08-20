@@ -67,7 +67,36 @@ export const LOCAL_SINGLE_USER: ViewerProvider = {
   },
 };
 
-let _provider: ViewerProvider = LOCAL_SINGLE_USER;
+/**
+ * THE DEFAULT PROVIDER IS THE MODE, RESOLVED PER CALL — not a boot side-effect.
+ *
+ * This was `let _provider = LOCAL_SINGLE_USER`, with `instrumentation.ts`
+ * calling `activateViewerProvider()` at startup to replace it. That failed
+ * open, and did: the dev server had already booted, `register()` never re-ran
+ * after the wiring landed, and the module kept the single-user provider — so
+ * middleware redirected the signed-out correctly while a request carrying ANY
+ * cookie value at all rendered Roei's complete social state. Verified with
+ * `-b philos_session=forged`: 200, person_roei, 34 records.
+ *
+ * A boot side-effect that silently does not run leaves the system in its
+ * PERMISSIVE state, which is the wrong direction to fail in. The mode is now
+ * consulted on every resolution, so there is no window in which the provider
+ * is more permissive than the configuration says.
+ *
+ * The import is dynamic on purpose: `viewerMode` reaches `sessionViewer`,
+ * which imports `next/headers`, and this module is imported almost everywhere
+ * including inside client boundaries. A static import would drag a
+ * server-only API across that line.
+ */
+const MODE_PROVIDER: ViewerProvider = {
+  kind: "SESSION",
+  async resolve() {
+    const { providerForMode, resolveViewerMode } = await import("./viewerMode");
+    return providerForMode(resolveViewerMode()).resolve();
+  },
+};
+
+let _provider: ViewerProvider = MODE_PROVIDER;
 
 /** Install a provider (a real session provider in production, a fixture in
  *  tests). Never called from a request path. */
