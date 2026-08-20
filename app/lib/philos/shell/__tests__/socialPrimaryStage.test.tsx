@@ -137,13 +137,23 @@ describe("SOCIAL PRIMARY COMPOSITION CONTRACT", () => {
   });
 
   it("renders UNKNOWN as UNKNOWN, never as 0", () => {
-    const text = textOf(html("SYSTEM", {
+    /* Asserted over the CELLS, not the whole stage: the rail carries a static
+       note explaining that "0 records at this scale" beside a large relation
+       count is not a contradiction, and that sentence legitimately contains a
+       0. Matching the prose would have made this test fail on an editorial
+       change and pass on a real regression. */
+    const markup = html("SYSTEM", {
       headline: { n: null, unit: "RECORDS AT THIS SCALE" },
       relations: null,
       provenance: { real: null, derived: null, demo: null },
-    }));
-    expect(text).toContain("UNKNOWN");
-    expect(text).not.toMatch(/\b0\b/);
+    });
+    // Bounded at `data-stage-note`, the rail's own explanatory sentence, so
+    // the last cell's slice does not swallow it.
+    const rail = sliceSlot(markup, "context").split("data-stage-note")[0];
+    const cells = [...rail.matchAll(/data-stage-cell="[^"]+"[\s\S]*?(?=data-stage-cell=|$)/g)]
+      .map((m) => textOf(`<i ${m[0]}`));
+    expect(cells.join(" ")).toContain("UNKNOWN");
+    for (const cell of cells) expect(cell).not.toMatch(/\b0\b/);
   });
 
   it("states a reason whenever the selected object is absent at this scale", () => {

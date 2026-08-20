@@ -350,10 +350,10 @@ export default async function PlanetPage({
               relations: arcs.length,
               meaning: nodes.filter((n) => n.type === "value").length,
             }}
-            flow={social.flow({
-              valueGroups: nodes.filter((n) => n.type === "value_group").length || null,
-              memberships: arcs.filter((a) => a.relation === "member.joined").length || null,
-            })}
+            // Counted once in `loadSocialSystem`. Globe used to count NODES
+            // and ARCS here — facts about its own drawing, not about the
+            // records — and reported 6 where Community reported 9.
+            flow={social.flow()}
             chronology={chronology}
             objects={socialObjects}
             selection={resolveSocialSelection(params.sel, socialObjects)}

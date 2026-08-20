@@ -138,11 +138,30 @@ export function PrimaryHeader({ ctx }: { ctx: SocialPrimaryContext }) {
   );
 }
 
-/** The ONE cell shape every context primitive below is built from. */
-function Cell({ label, children, title }: { label: string; children: ReactNode; title?: string }) {
+/**
+ * The ONE cell shape every context primitive below is built from.
+ *
+ * `scope` is load-bearing, not decoration. Without it this rail produced two
+ * contradictions the moment it shipped:
+ *
+ *   - The frame's ROLES lane counts roles active across the SCALE (GREEN 11
+ *     at GROUP). This rail's ROLES cell reports the roles the SELECTED record
+ *     activates (— when nothing is selected). One word, two meanings, ten
+ *     centimetres apart, one saying 11 and the other saying nothing.
+ *   - RELATIONS and PROVENANCE describe the LINK REGISTRY, which is one
+ *     registry for the whole product. Printed unlabelled inside a stage whose
+ *     headline reads "0 RECORDS AT THIS SCALE", World showed "0 records" and
+ *     "38 links · 12 REAL" side by side and looked broken.
+ *
+ * Both figures were correct. Neither said what it was about.
+ */
+function Cell({ label, scope, children, title }: { label: string; scope: "SELECTED" | "REGISTRY"; children: ReactNode; title?: string }) {
   return (
-    <div data-stage-cell={label} style={S.cell} title={title}>
-      <span data-cell-label style={S.cellLabel}>{label}</span>
+    <div data-stage-cell={label} data-cell-scope={scope} style={S.cell} title={title}>
+      <span data-cell-label style={S.cellLabel}>
+        {label}
+        <span style={S.cellScope}>{scope === "SELECTED" ? "· הנבחר" : "· כל המאגר"}</span>
+      </span>
       <div style={S.cellBody}>{children}</div>
     </div>
   );
@@ -156,7 +175,7 @@ function Muted({ children }: { children: ReactNode }) {
 export function ObjectContext({ ctx }: { ctx: SocialPrimaryContext }) {
   const sel = ctx.selection;
   return (
-    <Cell label="OBJECT">
+    <Cell label="OBJECT" scope="SELECTED">
       {sel.status === "none" ? <Muted>לא נבחר אובייקט</Muted>
         : sel.status === "unresolved" ? (
           <span style={{ color: STATUS.unknown.text }}>
@@ -184,7 +203,7 @@ export function StatusContext({ ctx }: { ctx: SocialPrimaryContext }) {
   const v = sel.status === "resolved" ? sel.object.verification : null;
   const tone = v === "VERIFIED" ? STATUS.verified.text : v === "CLAIMED" ? STATUS.claimed.text : COLOR.textFaint;
   return (
-    <Cell label="STATUS" title="CLAIMED != VERIFIED — אף גזירה אינה מייצרת אימות">
+    <Cell label="STATUS" scope="SELECTED" title="CLAIMED != VERIFIED — אף גזירה אינה מייצרת אימות">
       {v === null ? <Muted>UNKNOWN</Muted> : <span style={{ color: tone, fontWeight: 700 }}>{v}</span>}
     </Cell>
   );
@@ -193,18 +212,15 @@ export function StatusContext({ ctx }: { ctx: SocialPrimaryContext }) {
 /** 4 — TIME CONTEXT. The span, and how much of it this scale shows.
  *  CHRONOLOGY != CAUSALITY: this is an ordering, and says so. */
 export function TimeContext({ ctx }: { ctx: SocialPrimaryContext }) {
-  const first = ctx.chronology[0]?.at?.slice(0, 10);
-  const last = ctx.chronology[ctx.chronology.length - 1]?.at?.slice(0, 10);
+  /* The SELECTED record's own timestamp. This used to print the whole
+     chronology's span plus `inScope/total` — which the frame's WHERE lane
+     already states as a date range and its TIME lane already states as
+     "51/51". Three statements of one fact on one screen is not emphasis, it
+     is noise, and it was the loudest reason this screen read as unclear. */
+  const at = ctx.selection.status === "resolved" ? ctx.selection.object.at : null;
   return (
-    <Cell label="TIME" title="CHRONOLOGY != CAUSALITY — סדר, לא סיבתיות">
-      {first ? (
-        <>
-          <code style={S.mono}>{first} → {last}</code>
-          <div style={{ color: COLOR.textFaint, marginTop: 2 }}>
-            {ctx.inScope}/{ctx.chronology.length} בהיקף
-          </div>
-        </>
-      ) : <Muted>אין רשומות</Muted>}
+    <Cell label="TIME" scope="SELECTED" title="CHRONOLOGY != CAUSALITY — סדר, לא סיבתיות">
+      {at ? <code style={S.mono}>{at.slice(0, 16).replace("T", " ")}</code> : <Muted>—</Muted>}
     </Cell>
   );
 }
@@ -215,7 +231,7 @@ export function RoleContext({ ctx }: { ctx: SocialPrimaryContext }) {
   const sel = ctx.selection;
   const roles = sel.status === "resolved" ? roleTouchOf(sel.object.kind, sel.object.verification) : [];
   return (
-    <Cell label="ROLES">
+    <Cell label="ROLES" scope="SELECTED">
       {sel.status !== "resolved" ? <Muted>—</Muted>
         : roles.length === 0 ? <Muted>{noRoleReason(sel.object.kind)}</Muted>
         : (
@@ -235,7 +251,7 @@ export function RoleContext({ ctx }: { ctx: SocialPrimaryContext }) {
 export function RelationContext({ ctx }: { ctx: SocialPrimaryContext }) {
   const r = ctx.relations;
   return (
-    <Cell label="RELATIONS" title="ארבע שכבות חשבונאות — לא נסכמות זו לזו">
+    <Cell label="RELATIONS" scope="REGISTRY" title="ארבע שכבות חשבונאות — לא נסכמות זו לזו">
       {r === null ? <Muted>UNKNOWN — אין שכבת יחסים בקנה־מידה זה</Muted> : (
         <>
           <div><code style={S.mono}>{r.passed}/{r.candidates}</code> <Muted>שער האמת</Muted></div>
@@ -261,7 +277,7 @@ export function ProvenanceContext({ ctx }: { ctx: SocialPrimaryContext }) {
     </span>
   );
   return (
-    <Cell label="PROVENANCE" title="DEMO != REAL · גזירה אינה רישום">
+    <Cell label="PROVENANCE" scope="REGISTRY" title="DEMO != REAL · גזירה אינה רישום">
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         {item(p.real, "REAL", STATUS.real.text)}
         {item(p.derived, "DERIVED", "#8fa3c9")}
@@ -309,6 +325,10 @@ export default function SocialPrimaryStage({
         <RelationContext ctx={ctx} />
         <ProvenanceContext ctx={ctx} />
       </div>
+      <div data-stage-note style={S.scopeNote}>
+        ארבעת הראשונים מתארים את הרשומה <b>הנבחרת</b>; שניים האחרונים את <b>מאגר הקשרים כולו</b>,
+        שהוא אחד לכל המוצר ואינו משתנה עם הזום. מספר קשרים גדול לצד 0 רשומות בקנה־מידה הזה אינו סתירה — הם עונים על שתי שאלות.
+      </div>
 
       {/* THE ONLY PER-SCALE REGION. Everything else on this stage is shared. */}
       <div data-stage-slot="representation" data-scale={ctx.scale} style={S.representation}>
@@ -354,6 +374,8 @@ const S: Record<string, React.CSSProperties> = {
     ...TYPE.micro, fontSize: FS.tag, letterSpacing: 1.4,
     color: PRODUCT_FAMILY_CUE.label, display: "block", marginBottom: 3,
   },
+  cellScope: { ...TYPE.micro, fontSize: FS.tag, color: COLOR.textFaint, marginInlineStart: 5, letterSpacing: 0.6, fontWeight: 400 },
+  scopeNote: { fontSize: FS.tag, color: COLOR.textFaint, lineHeight: 1.6, padding: "0 2px" },
   cellBody: { fontSize: FS.meta, color: COLOR.textDim, lineHeight: 1.5, minWidth: 0, wordBreak: "break-word" },
 
   mono: { fontFamily: "ui-monospace, monospace", fontSize: FS.base, color: COLOR.text, direction: "ltr", unicodeBidi: "isolate" },

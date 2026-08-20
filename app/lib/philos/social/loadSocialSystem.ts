@@ -66,7 +66,10 @@ export interface SocialSystemState {
     groupVerified: number;
   };
   /** The ten-stage flow, built once from the same numbers. */
-  flow: (over?: { valueGroups?: number | null; memberships?: number | null; scale?: "GROUP" | "NETWORK" | "SYSTEM" }) => FlowStage[];
+  /** The ten-stage flow. `scale` is the ONLY thing a surface may vary — see
+   *  the note on `flow` in the return value for why the two value-model
+   *  counts stopped being overridable. */
+  flow: (over?: { scale?: "GROUP" | "NETWORK" | "SYSTEM" }) => FlowStage[];
 }
 
 /**
@@ -206,6 +209,25 @@ export async function loadSocialSystem(viewer: ViewerContext): Promise<SocialSys
     effects: visibleEffects.length, verifiedEffects,
   };
 
+  /* VALUE GROUPS and MEMBERSHIPS, counted ONCE.
+     These were `over?.valueGroups` / `over?.memberships` — an override hole
+     that made this module a shared BUILDER while leaving three call sites
+     free to be three AUTHORITIES. They were, and they disagreed on screen:
+     Community counted REAL value groups and the members on their rosters and
+     showed 1 / 9; Globe counted value_group NODES and member.joined ARCS and
+     showed 1 / 6; World passed nothing at all and showed UNKNOWN / UNKNOWN.
+     One set of records, three answers, all three visible at once.
+
+     MEMBERSHIP counts RECORDED MEMBERSHIP EVENTS, which is what the stage's
+     own basis line has always claimed it counts ("חברות מתועדת"). A group's
+     ROSTER is a different, also-real number and is still shown on the group
+     card as "N חברים" — a roster of 9 and 6 recorded joins are both true, and
+     collapsing them was how 9 came to appear under a label that means 6. */
+  const valueGroupCount = new Set(
+    chronology.filter((e) => e.kind === "group.opened" && e.provenance === "REAL").map((e) => e.record_id),
+  ).size;
+  const membershipCount = chronology.filter((e) => e.kind === "member.joined").length;
+
   return {
     chronology, objects, bridgeLinks, needGroups, counts, totals, values,
     // Only the two value-model stages differ by scale (a scale may see no
@@ -215,8 +237,8 @@ export async function loadSocialSystem(viewer: ViewerContext): Promise<SocialSys
       emergentValues: DIRECT_CONTRADICTION_VALUE_RELATIONS.length,
       personalValues: values.personal,
       groupValues: values.group,
-      valueGroups: over?.valueGroups ?? null,
-      memberships: over?.memberships ?? null,
+      valueGroups: valueGroupCount || null,
+      memberships: membershipCount || null,
       needs: totals.needs || null,
       actions: totals.actions || null,
       effects: totals.effects || null,

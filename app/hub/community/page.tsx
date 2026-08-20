@@ -516,11 +516,10 @@ export default async function CommunityPage({
           }}
           // Same flow builder and the SAME canon totals as Globe and World.
           // Only the two value-model stages are scale-specific.
-          flow={social.flow({
-            valueGroups: groupsWithProvenance.filter((g) => g.provenance === "REAL").length || null,
-            memberships: groupCards.filter((g) => g.provenance === "REAL")
-              .reduce((n, g) => n + g.view.members.length, 0) || null,
-          })}
+          // The two value-model counts are no longer passed in: they are
+          // counted once inside `loadSocialSystem`. This call site used to
+          // send a roster total under a label that means recorded joins.
+          flow={social.flow()}
           chronology={chronology}
           chronoLimit={12}
           objects={socialObjects}
