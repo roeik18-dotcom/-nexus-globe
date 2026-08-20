@@ -25,6 +25,10 @@
  * literal UNKNOWN.
  */
 import { encodeSystemContextRef, type ContextSurface, type SelectedContext } from "@/app/lib/systemContext";
+import Link from "next/link";
+
+import SocialScaleNav from "./SocialScaleNav";
+
 import { COLOR, PRODUCT_FAMILY_CUE, RADIUS, SPACE, STATUS, TERMINAL, TYPE } from "./designTokens";
 import type { PersonContext } from "../person/personContext";
 
@@ -339,88 +343,28 @@ export function SystemShell({
                   {item.label}
                 </span>
               ) : (
-                <a
+                <Link
                   key={item.label}
                   href={hrefFor(item)}
                   style={{ fontSize: 11.5, fontWeight: 500, padding: "6px 14px", borderRadius: 8, color: COLOR.textDim, textDecoration: "none" }}
                 >
                   {item.label}
-                </a>
+                </Link>
               );
             }
 
-            // SOCIAL-VALUE FAMILY: Community · Globe · World are ONE navigation
-            // category, not three sibling destinations. They are rendered inside
-            // a single capsule with an explicit family label and internal
-            // sub-tabs, so the grouping is a container — not a hairline hint.
+            // SOCIAL-VALUE FAMILY — rendered by `SocialScaleNav`, a CLIENT
+            // control, because changing scale must behave like changing a
+            // view rather than leaving for another product. It uses
+            // `next/link` with prefetch; the plain `<a href>` this replaced
+            // made every scale change a FULL PAGE RELOAD that tore down and
+            // rebuilt the 3D globe. It also carries the current selection
+            // across the change, so one object stays selected through a zoom.
             //
-            // PRODUCT_FAMILY_CUE ≠ CANONICAL_COLOR_ROLE.
-            //
-            // The capsule is tinted GREEN as a PRODUCT-GROUPING cue only: two of
-            // the three members carry GREEN canonically (Community = GREEN,
-            // Globe = GREEN + PURPLE), which makes green the recognisable cue
-            // for this family in the product. The tint belongs to the CONTAINER,
-            // never to a member.
-            //
-            // World's canonical role is NOT green and is never drawn as green.
-            // The Colour Source Lock is untouched:
-            //   Community = GREEN · Globe = GREEN + PURPLE · World = WHITE + PURPLE
-            //
-            // The separation is enforced structurally: the cue paints only the
-            // capsule's own background/border/label, while every sub-tab still
-            // resolves its accent from `TERMINAL[surface]`. On /world the active
-            // sub-tab therefore paints World's WHITE+PURPLE accent inside a
-            // green-cued capsule — family cue and canonical role, side by side,
-            // never conflated.
-            const familyActive = group.items.some((x) => x.key === surface);
-            return (
-              <div
-                key="social-family"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "3px 7px 3px 8px",
-                  borderRadius: 11,
-                  border: `1px solid ${familyActive ? PRODUCT_FAMILY_CUE.borderActive : PRODUCT_FAMILY_CUE.borderIdle}`,
-                  background: familyActive ? PRODUCT_FAMILY_CUE.bgActive : PRODUCT_FAMILY_CUE.bgIdle,
-                }}
-              >
-                <span
-                  style={{
-                    ...TYPE.micro,
-                    letterSpacing: 1.4,
-                    color: familyActive ? PRODUCT_FAMILY_CUE.labelActive : PRODUCT_FAMILY_CUE.label,
-                    whiteSpace: "nowrap",
-                  }}
-                  title="קטגוריה אחת: קהילה · גלובוס · עולם"
-                >
-                  SOCIAL
-                </span>
-                <span style={{ width: 1, alignSelf: "stretch", background: PRODUCT_FAMILY_CUE.borderIdle }} />
-                <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  {group.items.map((item) => {
-                    const here = item.key === surface;
-                    return here ? (
-                      <span
-                        key={item.label}
-                        style={{ fontSize: 11.5, fontWeight: 700, padding: "5px 11px", borderRadius: 7, color: "#02101f", background: terminal.accent }}
-                      >
-                        {item.label}
-                      </span>
-                    ) : (
-                      <a
-                        key={item.label}
-                        href={hrefFor(item)}
-                        style={{ fontSize: 11.5, fontWeight: 500, padding: "5px 11px", borderRadius: 7, color: familyActive ? COLOR.text : COLOR.textDim, textDecoration: "none" }}
-                      >
-                        {item.label}
-                      </a>
-                    );
-                  })}
-                </div>
-              </div>
-            );
+            // PRODUCT_FAMILY_CUE != CANONICAL_COLOR_ROLE still holds: the bar
+            // is tinted with the family cue, and no member's canonical role is
+            // restated by it.
+            return <SocialScaleNav key="social-family" />;
           })}
         </div>
       </div>

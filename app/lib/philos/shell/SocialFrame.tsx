@@ -36,6 +36,8 @@
  */
 import type { ReactNode } from "react";
 
+import Link from "next/link";
+
 import { atScope, SCOPE_OF_SURFACE, type ChronoEntry, type ChronoScope } from "../social/socialChronology";
 import { ABSENCE_TEXT, type Scale, type SocialObject } from "../social/socialSystemProjection";
 import { withSelection, type SocialSelection } from "../social/socialSelection";
@@ -258,7 +260,7 @@ export default function SocialFrame({
               {scope === "SYSTEM" ? " אין רשומה עם רלוונטיות מערכתית מאומתת." : ""}
             </div>
           ) : shown.map((e) => (
-            <a key={e.record_id} href={withSelection(surfaceHref(surface), e.record_id)}
+            <Link key={e.record_id} href={withSelection(surfaceHref(surface), e.record_id)}
                style={{ ...S.tRow, ...(selection?.status === "resolved" && selection.record_id === e.record_id ? S.tRowHere : null) }}>
               <span style={S.tAt}>{e.at.slice(5, 16).replace("T", " ")}</span>
               <span style={{ ...S.tDot, background: KIND_COLOR[e.kind] ?? COLOR.textFaint }} />
@@ -269,7 +271,7 @@ export default function SocialFrame({
                 {e.verification}
               </span>
               <span style={S.tId}>{e.record_id.slice(0, 20)}</span>
-            </a>
+            </Link>
           ))}
           <div style={S.note}>
             סדר לפי חותמות זמן בלבד — <b>כרונולוגיה אינה סיבתיות</b>. רק הפניה מתועדת ברשומה היא קישור.
