@@ -23,7 +23,7 @@
  * component takes a status its caller already resolved and renders it in the
  * one agreed treatment.
  */
-import { COLOR, RADIUS, TYPE } from "./designTokens";
+import { FS, COLOR, RADIUS, TYPE } from "./designTokens";
 import { ProvenanceBadge, type Provenance } from "./provenance";
 
 // ── A. STANCE — canon §17: a claimed outcome must never render as verified ──
@@ -50,7 +50,7 @@ export function Stance({ stance, title }: { stance: EvidenceStance; title?: stri
         ? "לסכמה שמאחורי הערך הזה אין ציר אימות כלל — לא נטען ולא אומת"
         : undefined)}
       style={{
-        fontSize: 8.5, fontWeight: 800, letterSpacing: 0.6, padding: "1px 6px",
+        fontSize: FS.base, fontWeight: 800, letterSpacing: 0.6, padding: "1px 6px",
         borderRadius: RADIUS.pill, background: s.bg, border: `1px solid ${s.border}`,
         color: s.text, fontFamily: "ui-monospace, monospace", whiteSpace: "nowrap",
       }}
@@ -83,9 +83,9 @@ export function EvidenceRow({ statement, stance, origin, verifierType, confidenc
           {verifierType ?? "VERIFIER UNKNOWN"} · conf {confidence ?? "UNKNOWN"}
         </span>
       </div>
-      <div style={{ fontSize: 11.5, color: COLOR.text, lineHeight: 1.5 }}>{statement}</div>
+      <div style={{ fontSize: FS.read, color: COLOR.text, lineHeight: 1.5 }}>{statement}</div>
       {sourceId || time ? (
-        <div style={{ fontSize: 9, color: COLOR.textFaint, fontFamily: "ui-monospace, monospace", direction: "ltr", textAlign: "right" }}>
+        <div style={{ fontSize: FS.base, color: COLOR.textFaint, fontFamily: "ui-monospace, monospace", direction: "ltr", textAlign: "right" }}>
           {sourceId ?? ""}{sourceId && time ? " · " : ""}{time ?? ""}
         </div>
       ) : null}
@@ -107,7 +107,7 @@ export function Measurement({ kind }: { kind: "MEASURED" | "MENTIONED" }) {
         ? "מדידה קנונית — Observation על תא (Domain × Frame), נושאת Level ו-Stability"
         : "אזכור טקסטואלי בלבד — זיהוי טוקן בטקסט התצפית. אינו מדידה ואינו קובע מצב תא."}
       style={{
-        fontSize: 8.5, fontWeight: 800, letterSpacing: 0.6, padding: "1px 6px",
+        fontSize: FS.base, fontWeight: 800, letterSpacing: 0.6, padding: "1px 6px",
         borderRadius: RADIUS.pill, fontFamily: "ui-monospace, monospace", whiteSpace: "nowrap",
         background: measured ? "rgba(52,211,153,0.14)" : "rgba(167,139,250,0.12)",
         border: `1px solid ${measured ? "rgba(52,211,153,0.45)" : "rgba(167,139,250,0.4)"}`,
@@ -139,12 +139,12 @@ export function Epistemic({ state, reason }: { state: EpistemicState; reason: st
   return (
     <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
       <span style={{
-        fontSize: 10, fontWeight: 800, letterSpacing: 0.7, color: "#8798b8",
+        fontSize: FS.meta, fontWeight: 800, letterSpacing: 0.7, color: "#8798b8",
         fontFamily: "ui-monospace, monospace",
       }}>
         {state}
       </span>
-      <span style={{ fontSize: 10, color: COLOR.textFaint, fontStyle: "italic" }}>
+      <span style={{ fontSize: FS.meta, color: COLOR.textFaint, fontStyle: "italic" }}>
         {EPISTEMIC_HE[state]} — {reason}
       </span>
     </span>
@@ -186,7 +186,7 @@ export function ScopedNextAction({ label, reason, scope, basis, accent }: {
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
         <span style={{
-          fontSize: 8.5, fontWeight: 800, letterSpacing: 0.6, padding: "1px 7px",
+          fontSize: FS.base, fontWeight: 800, letterSpacing: 0.6, padding: "1px 7px",
           borderRadius: RADIUS.pill, background: `${c}18`, border: `1px solid ${c}55`,
           color: c, fontFamily: "ui-monospace, monospace",
         }}>
@@ -195,10 +195,10 @@ export function ScopedNextAction({ label, reason, scope, basis, accent }: {
         <span style={{ ...TYPE.micro, color: COLOR.textFaint }}>{SCOPE_HE[scope]}</span>
         <ProvenanceBadge p="STATIC" title="כלל מעל רשומות אמיתיות — NEXT ACTION אינו ישות קנונית" />
       </div>
-      <div style={{ fontSize: 12.5, fontWeight: 600, color: c, lineHeight: 1.5 }}>{label}</div>
-      <div style={{ fontSize: 10, color: COLOR.textFaint, lineHeight: 1.45 }}>{reason}</div>
+      <div style={{ fontSize: FS.read, fontWeight: 600, color: c, lineHeight: 1.5 }}>{label}</div>
+      <div style={{ fontSize: FS.meta, color: COLOR.textFaint, lineHeight: 1.45 }}>{reason}</div>
       {basis ? (
-        <div style={{ fontSize: 9, color: COLOR.textFaint, fontFamily: "ui-monospace, monospace", direction: "ltr", textAlign: "right" }}>
+        <div style={{ fontSize: FS.base, color: COLOR.textFaint, fontFamily: "ui-monospace, monospace", direction: "ltr", textAlign: "right" }}>
           {basis}
         </div>
       ) : null}
@@ -247,17 +247,17 @@ export const EPISTEMIC_WEIGHT: Record<EpistemicWeight, {
   he: string;
 }> = {
   A: {
-    text: { color: COLOR.text, fontWeight: 700, fontSize: 13, lineHeight: 1.35 },
+    text: { color: COLOR.text, fontWeight: 700, fontSize: FS.read, lineHeight: 1.35 },
     surface: { opacity: 1, background: "linear-gradient(180deg, rgba(20,28,48,0.95), rgba(14,19,33,0.95))" },
     he: "רשומה אמיתית",
   },
   B: {
-    text: { color: COLOR.textDim, fontWeight: 600, fontSize: 12, lineHeight: 1.4 },
+    text: { color: COLOR.textDim, fontWeight: 600, fontSize: FS.read, lineHeight: 1.4 },
     surface: { opacity: 0.94, background: "rgba(20,28,48,0.55)" },
     he: "נגזר / נטען / הפניה",
   },
   C: {
-    text: { color: "#8798b8", fontWeight: 500, fontSize: 11, fontStyle: "italic", lineHeight: 1.45 },
+    text: { color: "#8798b8", fontWeight: 500, fontSize: FS.meta, fontStyle: "italic", lineHeight: 1.45 },
     surface: { opacity: 0.82, background: "rgba(90,111,150,0.05)" },
     he: "לא ידוע / לא הוכרע",
   },
@@ -296,7 +296,7 @@ export function OpenBoundaryMark({ note }: { note?: string }) {
       title={note ?? "שלב מכוון שחוזה הנתונים/ההתמדה שלו אינו פתור — לא 'לא קרה כלום'"}
       style={{
         display: "inline-flex", alignItems: "center", gap: 4,
-        fontSize: 8.5, fontWeight: 800, letterSpacing: 0.6,
+        fontSize: FS.base, fontWeight: 800, letterSpacing: 0.6,
         padding: "1px 6px", borderRadius: RADIUS.pill,
         background: "rgba(251,191,36,0.10)", border: "1px dashed rgba(251,191,36,0.55)",
         color: "#fbbf24", fontFamily: "ui-monospace, monospace", whiteSpace: "nowrap",
@@ -331,7 +331,7 @@ export function SectionHeader({ title, origin, count, accent, note }: {
         </span>
         <ProvenanceBadge p={origin} />
       </div>
-      {note ? <div style={{ fontSize: 9.5, color: COLOR.textFaint, lineHeight: 1.4 }}>{note}</div> : null}
+      {note ? <div style={{ fontSize: FS.base, color: COLOR.textFaint, lineHeight: 1.4 }}>{note}</div> : null}
     </div>
   );
 }
@@ -360,7 +360,7 @@ export function AuditSection({ title, note, children, open }: {
 }) {
   return (
     <details open={open} style={{ margin: 0, borderBottom: "1px solid rgba(120,150,220,0.10)" }}>
-      <summary style={{ cursor: "pointer", fontSize: 11, letterSpacing: 0.6, color: "#7d90b4", padding: "7px 0" }}>
+      <summary style={{ cursor: "pointer", fontSize: FS.meta, letterSpacing: 0.6, color: "#7d90b4", padding: "7px 0" }}>
         {title}
         {note ? <span style={{ color: "#4a5f85" }}> — {note}</span> : null}
       </summary>
@@ -374,7 +374,7 @@ export function AuditHeading({ accent }: { accent?: string }) {
   return (
     <div
       style={{
-        fontSize: 9.5, fontWeight: 700, letterSpacing: 1.4, textTransform: "uppercase",
+        fontSize: FS.base, fontWeight: 700, letterSpacing: 1.4, textTransform: "uppercase",
         color: accent ?? "#4a5f85", margin: "18px 0 2px",
         borderTop: "1px solid rgba(120,150,220,0.16)", paddingTop: 12,
       }}

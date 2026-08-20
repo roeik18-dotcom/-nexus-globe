@@ -1,3 +1,4 @@
+import { FS } from "@/app/lib/philos/shell/designTokens";
 /**
  * CanonicalSlicePanel — Phase 4 vertical slice, shared verbatim between
  * `/hub` and `/dynamics` (Phase 4 §8: "Both must resolve and display the
@@ -287,14 +288,14 @@ function ActionChain({ instance, label }: { instance: { history: CanonicalStateS
 function FlowStep({ label, count }: { label: string; count: number }) {
   return (
     <div style={S.flowStep}>
-      <div style={{ fontSize: 16, fontWeight: 800, color: count > 0 ? "#34d399" : "#5a6f96" }}>{count}</div>
-      <div style={{ fontSize: 9.5, color: "#8fa3c9" }}>{label}</div>
+      <div style={{ fontSize: FS.head, fontWeight: 800, color: count > 0 ? "#34d399" : "#5a6f96" }}>{count}</div>
+      <div style={{ fontSize: FS.base, color: "#8fa3c9" }}>{label}</div>
     </div>
   );
 }
 
 function FlowArrow() {
-  return <div style={{ fontSize: 14, color: "#5a76a3", alignSelf: "center" }}>→</div>;
+  return <div style={{ fontSize: FS.head, color: "#5a76a3", alignSelf: "center" }}>→</div>;
 }
 
 function MasterCard({ label, meta, total, buckets }: { label: string; meta: { row_count: number; id_field: string }; total: number; buckets: Record<string, number> }) {
@@ -345,21 +346,21 @@ function InstanceRows({ instance }: { instance: { current_state: CanonicalStateS
 const S: Record<string, React.CSSProperties> = {
   card: { background: "rgba(18,24,38,0.7)", border: "1px solid rgba(52,211,153,0.3)", borderRadius: 16, padding: "16px 18px", marginTop: 16 },
   head: { display: "flex", alignItems: "center", gap: 10, marginBottom: 6 },
-  kindBadge: { fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 6, fontFamily: "ui-monospace, monospace" },
-  title: { fontSize: 13.5, fontWeight: 700, margin: 0, color: "#f0f4fc" },
-  note: { fontSize: 10.5, color: "#8fa3c9", lineHeight: 1.7, marginBottom: 10, maxWidth: 900 },
-  subHead: { fontSize: 10.5, fontWeight: 700, color: "#8fa3c9", marginTop: 10, marginBottom: 4 },
+  kindBadge: { fontSize: FS.meta, fontWeight: 800, padding: "2px 8px", borderRadius: 6, fontFamily: "ui-monospace, monospace" },
+  title: { fontSize: FS.read, fontWeight: 700, margin: 0, color: "#f0f4fc" },
+  note: { fontSize: FS.meta, color: "#8fa3c9", lineHeight: 1.7, marginBottom: 10, maxWidth: 900 },
+  subHead: { fontSize: FS.meta, fontWeight: 700, color: "#8fa3c9", marginTop: 10, marginBottom: 4 },
 
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginBottom: 8 },
   paramCard: { border: "1px solid rgba(90,120,180,0.2)", borderRadius: 8, padding: "8px 10px" },
-  paramLabel: { fontSize: 12, fontWeight: 700, color: "#dbe6f6" },
-  tag: { fontSize: 10, color: "#8fa3c9", marginTop: 4 },
+  paramLabel: { fontSize: FS.read, fontWeight: 700, color: "#dbe6f6" },
+  tag: { fontSize: FS.meta, color: "#8fa3c9", marginTop: 4 },
 
-  row: { display: "flex", justifyContent: "space-between", gap: 8, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 11.5, marginBottom: 3 },
+  row: { display: "flex", justifyContent: "space-between", gap: 8, padding: "4px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: FS.read, marginBottom: 3 },
   meta: { color: "#8aa0c8" },
 
-  chainRow: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 6, background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.2)", fontSize: 11, marginBottom: 4 },
-  chainLabel: { fontWeight: 800, color: "#34d399", fontSize: 10 },
+  chainRow: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 6, background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.2)", fontSize: FS.meta, marginBottom: 4 },
+  chainLabel: { fontWeight: 800, color: "#34d399", fontSize: FS.meta },
   chainState: { color: "#dbe6f6" },
   chainArrow: { color: "#5a76a3" },
 

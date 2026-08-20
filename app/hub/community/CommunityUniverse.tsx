@@ -1,3 +1,4 @@
+import { FS } from "@/app/lib/philos/shell/designTokens";
 /**
  * CommunityUniverse — the Value + Value-Group universe ABOVE the single
  * selected community (ledger §40). Modes: OVERVIEW / VALUES / GROUPS /
@@ -295,7 +296,7 @@ function Overview({
       </Section>
 
       <details style={{ margin: "12px 20px" }}>
-        <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>
+        <summary style={{ cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>
           DETAILS / AUDIT — קבוצות פוטנציאליות, פעילות חיה גולמית
         </summary>
         <div style={{ marginTop: 8 }}>
@@ -544,7 +545,7 @@ function ValueLandscape({
           <a href="?mode=needs" style={S.actionBtn}>קדם ערך זה · ADVANCE THIS VALUE → צור Need</a>
           <a href="?mode=resources" style={S.actionBtn}>קדם ערך זה · ADVANCE THIS VALUE → צור Offer</a>
         </div>
-        <div style={{ fontSize: 10, color: "#5a76a3", marginTop: 6 }}>
+        <div style={{ fontSize: FS.meta, color: "#5a76a3", marginTop: 6 }}>
           DEFEND THIS VALUE — לא מוצג: אין אות "איום" אמיתי בשום מקום ב-canon; הצגתה הייתה דורשת המצאת איום.
         </div>
 
@@ -574,11 +575,11 @@ function ValueLandscape({
             — never a separate invented action. */}
         <div style={{ ...S.subHead, marginTop: 14 }}>הפעולה הבאה התקפה · NEXT VALID ACTION</div>
         {valueCauseTensions.length > 0 ? (
-          <div style={{ fontSize: 12, color: "#dbe6f6", padding: "8px 10px", borderRadius: 8, background: "rgba(242,99,92,0.08)", border: "1px solid rgba(242,99,92,0.25)" }}>
+          <div style={{ fontSize: FS.read, color: "#dbe6f6", padding: "8px 10px", borderRadius: 8, background: "rgba(242,99,92,0.08)", border: "1px solid rgba(242,99,92,0.25)" }}>
             בדוק Tension: {valueCauseTensions[0].label} — <a href="/dynamics" style={{ color: "#5b9cf6" }}>Dynamics →</a>
           </div>
         ) : selected.groups.length === 0 ? (
-          <div style={{ fontSize: 12, color: "#dbe6f6", padding: "8px 10px", borderRadius: 8, background: "rgba(91,156,246,0.08)", border: "1px solid rgba(91,156,246,0.25)" }}>
+          <div style={{ fontSize: FS.read, color: "#dbe6f6", padding: "8px 10px", borderRadius: 8, background: "rgba(91,156,246,0.08)", border: "1px solid rgba(91,156,246,0.25)" }}>
             0 קבוצות סביב ערך זה — הפעולה התקפה היחידה: קדם אותו (למעלה) עד שקבוצה תיפתח.
           </div>
         ) : (
@@ -597,7 +598,7 @@ function ValueLandscape({
             does nothing. */}
         <div style={{ ...S.subHead, marginTop: 14 }}>קמפיינים · CAMPAIGNS (0)</div>
         <Empty>0 — Campaign אינה ישות persisted בבנייה זו עדיין (דורש store חדש, החלטת scope נפרדת).</Empty>
-        <div style={{ fontSize: 10.5, color: "#5a76a3", padding: "6px 10px", border: "1px dashed rgba(90,120,180,0.3)", borderRadius: 6, marginTop: 4, display: "inline-block" }}>
+        <div style={{ fontSize: FS.meta, color: "#5a76a3", padding: "6px 10px", border: "1px dashed rgba(90,120,180,0.3)", borderRadius: 6, marginTop: 4, display: "inline-block" }}>
           CREATE CAMPAIGN · not connected yet
         </div>
       </Section>
@@ -671,7 +672,7 @@ function ValueLandscape({
              already uses for GROUP DETAIL). Kept, not deleted: real
              evidence, just not primary-viewport material. */}
       <details dir="rtl" style={{ margin: "0 0 16px" }}>
-        <summary style={{ cursor: "pointer", fontSize: 10.5, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>DETAILS / AUDIT</summary>
+        <summary style={{ cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#5a76a3", padding: "4px 0" }}>DETAILS / AUDIT</summary>
         <div style={{ marginTop: 8 }}>
           <Section title={`מועמדים ממקור · SOURCE CANDIDATES (${SOURCE_CONCEPTS.length} מקור · ${countCanonicalConcepts()} קנוני לאחר איחוד כפילויות)`}>
             <div style={S.note}>
@@ -975,7 +976,7 @@ function ActivityMode({
   return (
     <>
       <Section title={`קבוצה · LEGACY GROUP ACTIVITY (${activity.length})`}>
-        <div style={{ fontSize: 10, color: "#5a76a3", marginBottom: 8 }}>
+        <div style={{ fontSize: FS.meta, color: "#5a76a3", marginBottom: 8 }}>
           מקור: יומן Value-Group ההיסטורי (legacy event log) — נפרד לגמרי ממערכת ה-canon למטה, אין מיזוג מזהים.
         </div>
         {activity.length === 0 ? <Empty>אין פעילות רשומה.</Empty> : (
@@ -1019,7 +1020,7 @@ function CanonActivitySection({
 
   return (
     <Section title={`CANON · פעילות Action/Effect קנונית (${canonActions.length + canonEffects.length})`}>
-      <div style={{ fontSize: 10, color: "#5a76a3", marginBottom: 8 }}>
+      <div style={{ fontSize: FS.meta, color: "#5a76a3", marginBottom: 8 }}>
         מקור: canon actionStore/effectStore — אותם action_id/effect_id בדיוק כמו ב-/marketplace וב-/dynamics. אין group_id על Action קנוני — אין ייחוס קבוצתי מומצא.
       </div>
       {canonActions.length === 0 && canonEffects.length === 0 ? (
@@ -1108,46 +1109,46 @@ function Empty({ children }: { children: React.ReactNode }) {
 export const S: Record<string, React.CSSProperties> = {
   wrap: { fontFamily: "system-ui", color: "#e6ebf5" },
   tabs: { display: "flex", flexWrap: "wrap", gap: 6, margin: "16px 20px 0" },
-  tab: { fontSize: 11, padding: "5px 12px", borderRadius: 12, border: "1px solid rgba(90,120,180,0.3)", color: "#8fa3c9", textDecoration: "none" },
+  tab: { fontSize: FS.meta, padding: "5px 12px", borderRadius: 12, border: "1px solid rgba(90,120,180,0.3)", color: "#8fa3c9", textDecoration: "none" },
   tabActive: { color: "#0b0f1a", background: "#5b9cf6", borderColor: "#5b9cf6", fontWeight: 700 },
 
   statGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 8, margin: "12px 20px" },
-  compactStrip: { fontSize: 11, color: "#8fa3c9", margin: "12px 20px", padding: "8px 14px", background: "rgba(91,156,246,0.06)", border: "1px solid rgba(91,156,246,0.2)", borderRadius: 10 },
+  compactStrip: { fontSize: FS.meta, color: "#8fa3c9", margin: "12px 20px", padding: "8px 14px", background: "rgba(91,156,246,0.06)", border: "1px solid rgba(91,156,246,0.2)", borderRadius: 10 },
   stat: { textAlign: "center", background: "rgba(18,24,38,0.6)", border: "1px solid rgba(90,120,180,0.16)", borderRadius: 10, padding: "8px 6px" },
-  statValue: { fontSize: 18, fontWeight: 800 },
-  statLabel: { fontSize: 8.5, color: "#8fa3c9", letterSpacing: 0.3, marginTop: 2 },
+  statValue: { fontSize: FS.head, fontWeight: 800 },
+  statLabel: { fontSize: FS.base, color: "#8fa3c9", letterSpacing: 0.3, marginTop: 2 },
 
   section: { margin: "0 20px 16px", padding: "14px 16px", background: "rgba(18,24,38,0.6)", border: "1px solid rgba(90,120,180,0.16)", borderRadius: 14 },
-  sectionTitle: { fontSize: 12, fontWeight: 700, color: "#5aa6ff", letterSpacing: 0.5, marginBottom: 10 },
-  subHead: { fontSize: 11, fontWeight: 700, color: "#8fa3c9", marginTop: 12, marginBottom: 6 },
-  moreLink: { display: "inline-block", fontSize: 10.5, color: "#5b9cf6", textDecoration: "none", marginTop: 6 },
-  actionBtn: { display: "inline-block", fontSize: 12, fontWeight: 600, color: "#0b0f1a", background: "#5b9cf6", padding: "8px 14px", borderRadius: 8, textDecoration: "none" },
-  back: { display: "inline-block", fontSize: 11, color: "#5b9cf6", textDecoration: "none", marginBottom: 10 },
+  sectionTitle: { fontSize: FS.read, fontWeight: 700, color: "#5aa6ff", letterSpacing: 0.5, marginBottom: 10 },
+  subHead: { fontSize: FS.meta, fontWeight: 700, color: "#8fa3c9", marginTop: 12, marginBottom: 6 },
+  moreLink: { display: "inline-block", fontSize: FS.meta, color: "#5b9cf6", textDecoration: "none", marginTop: 6 },
+  actionBtn: { display: "inline-block", fontSize: FS.read, fontWeight: 600, color: "#0b0f1a", background: "#5b9cf6", padding: "8px 14px", borderRadius: 8, textDecoration: "none" },
+  back: { display: "inline-block", fontSize: FS.meta, color: "#5b9cf6", textDecoration: "none", marginBottom: 10 },
 
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8 },
   valueCard: { display: "block", border: "1px solid", borderRadius: 10, padding: "8px 10px", textDecoration: "none", background: "rgba(90,120,180,0.04)" },
-  valueCardTitle: { fontSize: 12.5, fontWeight: 700 },
-  valueCardMeta: { fontSize: 9.5, color: "#8aa0c8", marginTop: 3 },
+  valueCardTitle: { fontSize: FS.read, fontWeight: 700 },
+  valueCardMeta: { fontSize: FS.base, color: "#8aa0c8", marginTop: 3 },
 
   groupChips: { display: "flex", flexWrap: "wrap", gap: 6 },
-  groupChip: { fontSize: 11, padding: "5px 12px", borderRadius: 12, border: "1px solid", textDecoration: "none" },
+  groupChip: { fontSize: FS.meta, padding: "5px 12px", borderRadius: 12, border: "1px solid", textDecoration: "none" },
 
   detailGrid: { display: "flex", flexDirection: "column", gap: 4 },
   detailRow: { display: "flex", flexDirection: "column", gap: 2, padding: "6px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)" },
-  detailLabel: { fontSize: 8.5, color: "#5a76a3", letterSpacing: 0.5 },
-  detailValue: { fontSize: 12, color: "#dbe6f6" },
+  detailLabel: { fontSize: FS.base, color: "#5a76a3", letterSpacing: 0.5 },
+  detailValue: { fontSize: FS.read, color: "#dbe6f6" },
 
   list: { display: "flex", flexDirection: "column", gap: 4 },
   listRow: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, background: "rgba(90,120,180,0.06)", flexWrap: "wrap" },
-  listTitle: { fontSize: 12, color: "#e8edf6" },
-  listMeta: { fontSize: 10, color: "#8aa0c8" },
+  listTitle: { fontSize: FS.read, color: "#e8edf6" },
+  listMeta: { fontSize: FS.meta, color: "#8aa0c8" },
 
   feed: { display: "flex", flexDirection: "column", gap: 4 },
-  feedRow: { display: "flex", alignItems: "center", gap: 8, padding: "5px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: 11.5, flexWrap: "wrap" },
-  feedTag: { fontSize: 9, fontWeight: 800, fontFamily: "ui-monospace, monospace" },
+  feedRow: { display: "flex", alignItems: "center", gap: 8, padding: "5px 8px", borderRadius: 6, background: "rgba(90,120,180,0.05)", fontSize: FS.read, flexWrap: "wrap" },
+  feedTag: { fontSize: FS.base, fontWeight: 800, fontFamily: "ui-monospace, monospace" },
   feedText: { flex: 1, color: "#dbe6f6" },
-  feedTime: { fontSize: 9.5, color: "#5a76a3" },
+  feedTime: { fontSize: FS.base, color: "#5a76a3" },
 
-  note: { fontSize: 10.5, color: "#5a76a3", lineHeight: 1.7, marginBottom: 8 },
-  empty: { fontSize: 11.5, color: "#7b8ca6", fontStyle: "italic", padding: "4px 2px", lineHeight: 1.6 },
+  note: { fontSize: FS.meta, color: "#5a76a3", lineHeight: 1.7, marginBottom: 8 },
+  empty: { fontSize: FS.read, color: "#7b8ca6", fontStyle: "italic", padding: "4px 2px", lineHeight: 1.6 },
 };

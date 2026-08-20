@@ -39,7 +39,7 @@ import { GROUP_ID } from "@/app/lib/philos/valueGroupLog";
 import { DEMO_COMMUNITIES } from "@/app/lib/philos/demoCommunities";
 import { ProvenanceBadge } from "./provenance";
 import { Epistemic, Measurement, Stance } from "./epistemics";
-import { COLOR, RADIUS, SPACE, TYPE } from "./designTokens";
+import { FS, COLOR, RADIUS, SPACE, TYPE } from "./designTokens";
 
 const DIMENSION_WORD: Record<string, string> = { PHYSICAL: "גופני", EMOTIONAL: "רגשי", COGNITIVE: "שכלי" };
 const ORIENTATION_WORD: Record<string, string> = { INTERNAL: "פנימי", EXTERNAL: "חיצוני" };
@@ -367,7 +367,7 @@ export default async function ObservationReadingPanel({
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "4px 8px", alignItems: "center" }}>
               <span style={{ ...TYPE.micro, color: "#8fa3c9" }}>COLOR ROLES (routing metadata · Cell_ID ≠ Color_ID)</span>
               {classification.color_roles.map((r) => (
-                <span key={r.role} title={r.reason} style={{ fontSize: 10, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 8px", color: COLOR.textDim }}>
+                <span key={r.role} title={r.reason} style={{ fontSize: FS.meta, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 8px", color: COLOR.textDim }}>
                   {COLOR_GLYPH[r.role]} {r.meaning}
                 </span>
               ))}
@@ -381,8 +381,8 @@ export default async function ObservationReadingPanel({
               <span style={{ ...TYPE.micro, color: "#a78bfa" }}>עיקרון כללי · GENERAL PRINCIPLE (פרשנות, לא איסור)</span>
               <ProvenanceBadge p="STATIC" />
             </div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: COLOR.text, marginTop: 4 }}>{reading.principle.text}</div>
-            <div style={{ fontSize: 10.5, color: "#fbbf24", marginTop: 3 }}>{reading.principle.qualifier}</div>
+            <div style={{ fontSize: FS.read, fontWeight: 700, color: COLOR.text, marginTop: 4 }}>{reading.principle.text}</div>
+            <div style={{ fontSize: FS.meta, color: "#fbbf24", marginTop: 3 }}>{reading.principle.qualifier}</div>
           </div>
         ) : null}
       </div>
@@ -405,7 +405,7 @@ function Row({ label, value, good }: { label: string; value: string; good: boole
   return (
     <div style={S.row}>
       <span style={{ ...TYPE.micro, color: "#8fa3c9", flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 11.5, color: good ? COLOR.text : "#8798b8", fontStyle: good ? "normal" : "italic", textAlign: "left" }}>{value}</span>
+      <span style={{ fontSize: FS.read, color: good ? COLOR.text : "#8798b8", fontStyle: good ? "normal" : "italic", textAlign: "left" }}>{value}</span>
     </div>
   );
 }
@@ -420,18 +420,18 @@ const S: Record<string, React.CSSProperties> = {
   },
   headRow: { display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 },
   eyebrow: { ...TYPE.micro, color: "#a78bfa" },
-  idChip: { fontSize: 9.5, fontWeight: 700, color: COLOR.textDim, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 9px", fontFamily: "ui-monospace, monospace", direction: "ltr" },
+  idChip: { fontSize: FS.base, fontWeight: 700, color: COLOR.textDim, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.pill, padding: "2px 9px", fontFamily: "ui-monospace, monospace", direction: "ltr" },
   zone: { border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.md, padding: "8px 12px", marginBottom: 8, background: "rgba(10,14,23,0.45)" },
   zoneHead: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 },
-  zoneTitle: { fontSize: 10.5, fontWeight: 800, letterSpacing: 0.6, color: "#8fa3c9" },
-  contextBox: { fontSize: 12.5, color: COLOR.text, lineHeight: 1.7, background: "rgba(90,120,180,0.07)", borderRadius: RADIUS.sm, padding: "8px 10px" },
-  metaLine: { fontSize: 10, color: COLOR.textDim, marginTop: 5, fontFamily: "ui-monospace, monospace", direction: "ltr", textAlign: "right" },
+  zoneTitle: { fontSize: FS.meta, fontWeight: 800, letterSpacing: 0.6, color: "#8fa3c9" },
+  contextBox: { fontSize: FS.read, color: COLOR.text, lineHeight: 1.7, background: "rgba(90,120,180,0.07)", borderRadius: RADIUS.sm, padding: "8px 10px" },
+  metaLine: { fontSize: FS.meta, color: COLOR.textDim, marginTop: 5, fontFamily: "ui-monospace, monospace", direction: "ltr", textAlign: "right" },
   gridWrap: { overflowX: "auto", marginBottom: 6 },
   table: { borderCollapse: "collapse", width: "100%", minWidth: 420 },
   th: { ...TYPE.micro, color: COLOR.textFaint, textAlign: "right", padding: "4px 8px", borderBottom: `1px solid ${COLOR.border}` },
-  td: { fontSize: 11, padding: "5px 8px", borderBottom: `1px solid rgba(120,150,220,0.08)` },
-  noteLine: { fontSize: 9.5, color: COLOR.textFaint, marginBottom: 6, lineHeight: 1.5 },
+  td: { fontSize: FS.meta, padding: "5px 8px", borderBottom: `1px solid rgba(120,150,220,0.08)` },
+  noteLine: { fontSize: FS.base, color: COLOR.textFaint, marginBottom: 6, lineHeight: 1.5 },
   row: { display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, padding: "4px 8px", borderRadius: RADIUS.sm, background: "rgba(90,120,180,0.05)", marginBottom: 3 },
   principleBox: { border: "1px solid rgba(167,139,250,0.35)", borderRadius: RADIUS.md, padding: "8px 12px", marginTop: 6, background: "rgba(167,139,250,0.07)" },
-  emptyLine: { fontSize: 11.5, fontStyle: "italic", color: "#8798b8" },
+  emptyLine: { fontSize: FS.read, fontStyle: "italic", color: "#8798b8" },
 };

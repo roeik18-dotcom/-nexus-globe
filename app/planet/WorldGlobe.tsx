@@ -40,7 +40,7 @@ import type { EffectRecord } from "@/app/lib/philos/canon/effectStore";
 import type { NeedRecord } from "@/app/lib/philos/canon/needStore";
 import type { OfferRecord } from "@/app/lib/philos/canon/offerStore";
 import { isEffectVerified } from "@/app/lib/philos/canon/effect";
-import { COLOR, RADIUS, STATUS, TYPE } from "@/app/lib/philos/shell/designTokens";
+import { COLOR, FS, RADIUS, STATUS, TYPE } from "@/app/lib/philos/shell/designTokens";
 import {
   buildContextActions,
   claimedVerifiedColor,
@@ -296,12 +296,12 @@ function BridgeSection({ subject, registry }: { subject: string; registry: Entit
 /** One inspector row. Fixed key column so the seven fields align. */
 function Row({ k, v, mono = false }: { k: string; v: string; mono?: boolean }) {
   return (
-    <div style={{ display: "flex", gap: 7, fontSize: 9.5, padding: "1px 0", alignItems: "baseline" }}>
-      <span style={{ ...TYPE.micro, fontSize: 7.5, color: "#7f97c2", width: 66, flexShrink: 0 }}>{k}</span>
+    <div style={{ display: "flex", gap: 8, fontSize: FS.meta, padding: "2px 0", alignItems: "baseline" }}>
+      <span style={{ ...TYPE.micro, fontSize: FS.tag, color: "#7f97c2", width: 76, flexShrink: 0 }}>{k}</span>
       <span style={{
         color: "#dbe6f6", flex: 1, minWidth: 0, wordBreak: "break-word",
         fontFamily: mono ? "ui-monospace, monospace" : undefined,
-        fontSize: mono ? 8.5 : 9.5,
+        fontSize: mono ? FS.base : FS.meta,
       }}>{v}</span>
     </div>
   );
@@ -792,14 +792,25 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
               says why; no node, coordinate or edge is created to satisfy a
               selection. */}
           {socialSelection ? (
+            /* Reads as a LANE of the shared frame rather than a box parked in
+               the corner: same left gutter for the label, same body column,
+               same 10px floor, same provenance vocabulary. The only thing it
+               keeps of its own is the near-opaque backdrop, which it needs
+               because it floats over a moving canvas rather than sitting in
+               document flow. Integrated, not bolted on. */
             <div dir="rtl" style={{
-              border: `1px solid ${socialSelection.network_present ? "rgba(255,216,138,0.5)" : COLOR.border}`,
-              borderRadius: 10, padding: "8px 11px", marginBottom: 6,
+              display: "flex", alignItems: "flex-start", gap: 12,
+              borderInlineStart: `2px solid ${socialSelection.network_present ? "#ffd88a" : COLOR.border}`,
+              border: `1px solid ${COLOR.border}`,
+              borderRadius: RADIUS.md, padding: "9px 12px", marginBottom: 6,
               background: "rgba(4,10,22,0.97)", backdropFilter: "blur(10px)",
             }}>
-              <div style={{ ...TYPE.micro, fontSize: 8.5, letterSpacing: 1.1, color: "#ffd88a", marginBottom: 4 }}>
-                אובייקט נבחר · SELECTED OBJECT
-              </div>
+              <span style={{
+                ...TYPE.micro, fontSize: FS.tag, letterSpacing: 1.4,
+                color: socialSelection.network_present ? "#ffd88a" : COLOR.textFaint,
+                width: 58, flexShrink: 0, paddingTop: 2,
+              }}>OBJECT</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
               <Row k="OBJECT" v={`${socialSelection.kind} · ${socialSelection.record_id}`} mono />
               <Row
                 k="RELATION"
@@ -823,6 +834,7 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
               />
               <Row k="PROVENANCE" v={socialSelection.provenance} />
               <Row k="STATUS" v={socialSelection.verification} />
+              </div>
             </div>
           ) : null}
 
