@@ -38,6 +38,8 @@ import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
 import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePanel";
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
+import { projectSocialSystem } from "@/app/lib/philos/social/socialSystemProjection";
+import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection";
 import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
 import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
@@ -121,6 +123,13 @@ export default async function CommunityPage({
 
   const needGroupDeclarations = await loadNeedGroupLinks().catch(() => []);
   const chronology = await loadSocialChronology().catch(() => []);
+  // ONE projection, shared by all three scales. Need->group comes only from an
+  // explicit write or an explicit declaration; never from text or membership.
+  const needGroups = new Map<string, string>(
+    needGroupDeclarations.map((d) => [d.need_id, d.group_id] as const),
+  );
+  const socialObjects = projectSocialSystem({ chronology, needGroups });
+  const socialSelection = resolveSocialSelection(params.sel, socialObjects);
   const bridgeLinks = buildDefaultLinkRegistry(events, today, undefined, {
     needGroupDeclarations: needGroupDeclarations.map((d) => ({
       need_id: d.need_id, group_id: d.group_id, link_id: d.link_id, created_at: d.created_at,
@@ -478,6 +487,8 @@ export default async function CommunityPage({
             meaning: groupCards.filter((g) => g.provenance === "REAL" && g.leadingFamily).length,
           }}
           chronology={chronology}
+          objects={socialObjects}
+          selection={socialSelection}
           audit={<SocialSourceSpinePanel surface="community" observationText={latestObservationText} />}
         />
       </div>

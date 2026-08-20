@@ -37,6 +37,8 @@
 import type { ReactNode } from "react";
 
 import { atScope, SCOPE_OF_SURFACE, type ChronoEntry, type ChronoScope } from "../social/socialChronology";
+import { ABSENCE_TEXT, type Scale, type SocialObject } from "../social/socialSystemProjection";
+import { withSelection, type SocialSelection } from "../social/socialSelection";
 import type { SpineLink } from "../valueSystem/socialValueSpine";
 import { COLOR, COLOR_ROLE, PRODUCT_FAMILY_CUE, RADIUS, SPACE, TYPE } from "./designTokens";
 
@@ -61,7 +63,7 @@ export interface SocialRoles {
 }
 
 export default function SocialFrame({
-  surface, spine, roles, chronology, chronoLimit = 6, audit, primary,
+  surface, spine, roles, chronology, chronoLimit = 6, audit, primary, selection, objects = [],
 }: {
   surface: SocialSurface;
   spine: SpineLink[];
@@ -73,6 +75,10 @@ export default function SocialFrame({
   /** This surface's own primary content, rendered inside the frame so the
    *  frame reads as the surface rather than a header sitting above it. */
   primary?: ReactNode;
+  /** The one selected object, shared across all three scales. */
+  selection?: SocialSelection;
+  /** The unified projection — one identity, three representations. */
+  objects?: SocialObject[];
 }) {
   const scope = SCOPE_OF_SURFACE[surface];
   const here = atScope(chronology, scope);
@@ -109,6 +115,58 @@ export default function SocialFrame({
         </div>
         <span style={S.rail}>{span}</span>
       </div>
+
+      {/* SELECTED — the SAME object at all three scales ───────────── */}
+      {selection && selection.status !== "none" ? (
+        <div style={S.lane}>
+          <span style={S.gutter}>OBJECT</span>
+          <div style={S.body}>
+            {selection.status === "unresolved" ? (
+              <div style={S.empty}>
+                <code style={S.tId}>{selection.record_id}</code> — UNRESOLVED. הבחירה מצביעה על רשומה
+                שאינה בהקרנה. זו עובדה שמוצגת, לא מסך ריק.
+              </div>
+            ) : (
+              <>
+                <div style={S.selHead}>
+                  <span style={{ ...S.tDot, background: KIND_COLOR[selection.object.kind] ?? COLOR.textFaint }} />
+                  <span style={S.tKind}>{selection.object.kind}</span>
+                  <span style={S.tLabel}>{selection.object.label}</span>
+                  <code style={S.tId}>{selection.object.record_id}</code>
+                  <span style={{ ...S.tVerif, color: selection.object.verification === "VERIFIED" ? COLOR_ROLE.green : COLOR.textFaint }}>
+                    {selection.object.verification}
+                  </span>
+                  <span style={S.tVerif}>{selection.object.provenance}</span>
+                </div>
+                <div style={S.scaleRow}>
+                  {(["GROUP", "NETWORK", "SYSTEM"] as Scale[]).map((sc) => {
+                    const p = selection.object.scales[sc];
+                    return (
+                      <span key={sc} style={{ ...S.scaleCell, opacity: p.present ? 1 : 0.62 }}
+                            title={p.present ? p.as : p.absent_because ? ABSENCE_TEXT[p.absent_because] : ""}>
+                        <b style={{ ...S.zoomLevel, color: p.present ? COLOR_ROLE.green : COLOR.textFaint }}>{sc}</b>
+                        <span style={S.scaleAs}>
+                          {p.present ? (p.as ?? "present") : (p.absent_because ? ABSENCE_TEXT[p.absent_because] : "absent")}
+                        </span>
+                      </span>
+                    );
+                  })}
+                </div>
+                {selection.object.source_record_ids.length > 0 ? (
+                  <div style={S.note}>
+                    הפניות מתועדות: {selection.object.source_record_ids.map((r) => (
+                      <code key={r} style={S.tId}>{r} </code>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={S.note}>אין הפניה מתועדת ברשומה — ולכן אין קישור מצויר.</div>
+                )}
+              </>
+            )}
+          </div>
+          <span style={S.rail}>SELECTED</span>
+        </div>
+      ) : null}
 
       {/* VALUE ─────────────────────────────────────────────────────── */}
       <div style={S.lane}>
@@ -163,7 +221,8 @@ export default function SocialFrame({
               {scope === "SYSTEM" ? " אין רשומה עם רלוונטיות מערכתית מאומתת." : ""}
             </div>
           ) : shown.map((e) => (
-            <div key={e.record_id} style={S.tRow}>
+            <a key={e.record_id} href={withSelection(surfaceHref(surface), e.record_id)}
+               style={{ ...S.tRow, ...(selection?.status === "resolved" && selection.record_id === e.record_id ? S.tRowHere : null) }}>
               <span style={S.tAt}>{e.at.slice(5, 16).replace("T", " ")}</span>
               <span style={{ ...S.tDot, background: KIND_COLOR[e.kind] ?? COLOR.textFaint }} />
               <span style={S.tKind}>{e.kind}</span>
@@ -173,7 +232,7 @@ export default function SocialFrame({
                 {e.verification}
               </span>
               <span style={S.tId}>{e.record_id.slice(0, 20)}</span>
-            </div>
+            </a>
           ))}
           <div style={S.note}>
             סדר לפי חותמות זמן בלבד — <b>כרונולוגיה אינה סיבתיות</b>. רק הפניה מתועדת ברשומה היא קישור.
@@ -225,6 +284,10 @@ function Role({ glyph, name, v, hex, what }: { glyph: string; name: string; v: n
 /* ONE COLUMN GRID for every lane: a fixed left gutter for the lane name, a
    flexible body, a fixed right rail for provenance/scope. This is what makes
    the frame read as one object rather than stacked boxes. */
+function surfaceHref(s: SocialSurface): string {
+  return s === "community" ? "/hub/community" : s === "globe" ? "/planet" : "/world";
+}
+
 const GUTTER = 52;
 const RAIL = 78;
 
@@ -271,7 +334,7 @@ const S: Record<string, React.CSSProperties> = {
   roleRow: { display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" },
   role: { display: "inline-flex", alignItems: "baseline", gap: 4, border: "1px solid", borderRadius: RADIUS.sm, padding: "2px 8px" },
 
-  tRow: { display: "flex", alignItems: "center", gap: 7, fontSize: 9.5, padding: "1px 0" },
+  tRow: { display: "flex", alignItems: "center", gap: 7, fontSize: 9.5, padding: "1px 4px", textDecoration: "none", color: "inherit" },
   tAt: { fontFamily: "ui-monospace, monospace", fontSize: 8.5, color: COLOR.textFaint, minWidth: 70 },
   tDot: { width: 5, height: 5, borderRadius: "50%", flexShrink: 0 },
   tKind: { fontFamily: "ui-monospace, monospace", fontSize: 9, color: COLOR.textDim, minWidth: 104 },
@@ -281,5 +344,10 @@ const S: Record<string, React.CSSProperties> = {
   tId: { fontFamily: "ui-monospace, monospace", fontSize: 7.5, color: COLOR.textFaint },
 
   empty: { fontSize: 9.5, color: COLOR.textFaint, fontStyle: "italic", lineHeight: 1.6 },
+  selHead: { display: "flex", alignItems: "center", gap: 7, fontSize: 10 },
+  scaleRow: { display: "flex", alignItems: "stretch", gap: 5, flexWrap: "wrap", marginTop: 4 },
+  scaleCell: { display: "inline-flex", flexDirection: "column", gap: 1, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.sm, padding: "3px 8px", maxWidth: 240 },
+  scaleAs: { fontSize: 8, color: COLOR.textFaint, lineHeight: 1.4 },
+  tRowHere: { background: PRODUCT_FAMILY_CUE.bgActive, borderRadius: RADIUS.sm },
   auditSummary: { cursor: "pointer", ...TYPE.micro, fontSize: 8, letterSpacing: 1, color: COLOR.textFaint, padding: "2px 0" },
 };

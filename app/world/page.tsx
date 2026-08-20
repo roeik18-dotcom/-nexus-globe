@@ -20,6 +20,8 @@ import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
 import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePanel";
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
+import { projectSocialSystem } from "@/app/lib/philos/social/socialSystemProjection";
+import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection";
 import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
 import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import SocialChronologyPanel from "@/app/lib/philos/shell/SocialChronologyPanel";
@@ -35,7 +37,12 @@ export const metadata = { title: "Living World — Philos" };
 
 const DATA = path.join(process.cwd(), "data");
 
-export default async function WorldPage() {
+export default async function WorldPage({ searchParams }: {
+  /** Only `sel` is read — the shared social selection, carried by the nav so
+   *  the same object stays selected when the user changes scale. */
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const params = (await searchParams) ?? {};
   // STEP 1 — the ONE shared identity reference. World has no `?subject=`,
   // so this resolves to the designated real subject, exactly as the bare
   // constant did before.
@@ -63,6 +70,7 @@ export default async function WorldPage() {
   // dataset with Marketplace).
   const worldPhilosEvents = await loadPhilosEvents();
   const chronology = await loadSocialChronology().catch(() => []);
+  const socialObjects = projectSocialSystem({ chronology, needGroups: new Map() });
   const worldToday = todayIn(systemClock);
   const worldRealGroup = projectValueGroup(worldPhilosEvents, COMMUNITY_GROUP_ID, worldToday);
   const worldDemoViews = DEMO_COMMUNITIES
@@ -115,6 +123,8 @@ export default async function WorldPage() {
           spine={buildSocialValueSpine({}).links}
           roles={{ action: null, evidence: null, relations: null, meaning: null }}
           chronology={chronology}
+          objects={socialObjects}
+          selection={resolveSocialSelection(params?.sel, socialObjects)}
           audit={<SocialSourceSpinePanel surface="world" />}
         />
         <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 12, padding: "5px 12px", borderRadius: RADIUS.pill, background: STATUS.demo.bg, border: `1px solid ${STATUS.demo.border}` }}>

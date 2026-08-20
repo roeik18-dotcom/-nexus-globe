@@ -53,6 +53,8 @@ import PersonFrameStrip from "@/app/lib/philos/shell/PersonFrameStrip";
 import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePanel";
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
+import { projectSocialSystem } from "@/app/lib/philos/social/socialSystemProjection";
+import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection";
 import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
 import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import SocialChronologyPanel from "@/app/lib/philos/shell/SocialChronologyPanel";
@@ -93,6 +95,10 @@ export default async function PlanetPage({
   // node population and layout (`nodes`/`arcs` above) are unchanged.
   const needGroupDeclarations = await loadNeedGroupLinks().catch(() => []);
   const chronology = await loadSocialChronology().catch(() => []);
+  const socialObjects = projectSocialSystem({
+    chronology,
+    needGroups: new Map(needGroupDeclarations.map((d) => [d.need_id, d.group_id] as const)),
+  });
   const canonActions = await loadActions().catch(() => []);
   const canonEffects = await loadEffects().catch(() => []);
   const canonNeeds = await loadNeeds().catch(() => []);
@@ -302,6 +308,8 @@ export default async function PlanetPage({
               meaning: nodes.filter((n) => n.type === "value").length,
             }}
             chronology={chronology}
+            objects={socialObjects}
+            selection={resolveSocialSelection(params.sel, socialObjects)}
             chronoLimit={5}
             audit={<SocialSourceSpinePanel surface="globe" limit={4} />}
           />
