@@ -59,7 +59,7 @@ export interface SocialSystemState {
     groupVerified: number;
   };
   /** The ten-stage flow, built once from the same numbers. */
-  flow: (over?: { valueGroups?: number | null; memberships?: number | null }) => FlowStage[];
+  flow: (over?: { valueGroups?: number | null; memberships?: number | null; scale?: "GROUP" | "NETWORK" | "SYSTEM" }) => FlowStage[];
 }
 
 export async function loadSocialSystem(): Promise<SocialSystemState> {
@@ -170,6 +170,6 @@ export async function loadSocialSystem(): Promise<SocialSystemState> {
       actions: totals.actions || null,
       effects: totals.effects || null,
       evidence: totals.verifiedEffects || null,
-    }),
+    }, { scale: over?.scale ?? "GROUP" }),
   };
 }

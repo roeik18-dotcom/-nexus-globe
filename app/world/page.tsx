@@ -133,7 +133,7 @@ export default async function WorldPage({ searchParams }: {
           // presence is never accepted as a substitute. UNKNOWN != 0.
           // Same flow builder, same totals, as every other scale. SYSTEM sees
           // no groups of its own, so only those two stages differ.
-          flow={social.flow()}
+          flow={social.flow({ scale: "SYSTEM" })}
           chronology={chronology}
           objects={socialObjects}
           selection={resolveSocialSelection(params?.sel, socialObjects)}

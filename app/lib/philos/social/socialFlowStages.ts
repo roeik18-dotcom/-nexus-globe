@@ -39,8 +39,27 @@ export interface FlowStage {
   key: string;
   label: string;
   label_he: string;
-  /** null renders as UNKNOWN — never as 0. */
+  /**
+   * EXISTS_IN_SOCIAL_MODEL — how many real records of this kind the system
+   * holds. Identical at every scale, because the records are the same records.
+   * null renders as UNKNOWN, never as 0.
+   */
   count: number | null;
+  /**
+   * ELIGIBLE_AT_CURRENT_SCALE — how many of those reach THIS scale.
+   *
+   * The two are deliberately separate. Collapsing them forced a false choice:
+   * show a record's real count at SYSTEM and imply it is system-relevant, or
+   * show UNKNOWN and imply the record does not exist. Both are wrong. A
+   * verified Effect EXISTS as REAL 1 and is NOT ELIGIBLE at SYSTEM, and both
+   * halves of that sentence are true at the same time.
+   *
+   * `undefined` means "eligibility is the same as existence at this scale",
+   * which is the normal case at GROUP.
+   */
+  eligible?: number | null;
+  /** Why the gap, when eligible < count. Absence always carries a reason. */
+  not_eligible_because?: string;
   status: StageStatus;
   /** What the number counts, in the reader's terms. */
   basis: string;
@@ -75,7 +94,20 @@ export interface FlowInput {
   evidence: number | null;
 }
 
-export function buildSocialFlow(i: FlowInput): FlowStage[] {
+export interface ScaleEligibility {
+  /** At SYSTEM nothing is eligible without its own verified wider-system
+   *  evidence. Network presence is never accepted as a substitute. */
+  scale: "GROUP" | "NETWORK" | "SYSTEM";
+}
+
+export function buildSocialFlow(i: FlowInput, opts?: ScaleEligibility): FlowStage[] {
+  const scale = opts?.scale ?? "GROUP";
+  // At SYSTEM the canon tail exists but reaches nothing, and that is stated
+  // per stage rather than by blanking the count.
+  const sysGate = (n: number | null): Pick<FlowStage, "eligible" | "not_eligible_because"> =>
+    scale === "SYSTEM" && n !== null
+      ? { eligible: 0, not_eligible_because: "אין ראיה מערכתית רחבה משלו — קיום ברשת אינו נימוק" }
+      : {};
   const real = (n: number | null): StageStatus => (n === null ? "UNKNOWN" : n > 0 ? "REAL" : "UNKNOWN");
 
   return [
@@ -102,18 +134,18 @@ export function buildSocialFlow(i: FlowInput): FlowStage[] {
     // The seam. Everything left of here is the value model; everything right
     // is the canon pipeline. A Need is not produced by a membership.
     { key: "need", label: "NEED", label_he: "צורך",
-      count: i.needs, status: real(i.needs), basis: "Need קנוני", connector: "MODEL_BOUNDARY" },
+      count: i.needs, ...sysGate(i.needs), status: real(i.needs), basis: "Need קנוני", connector: "MODEL_BOUNDARY" },
 
     { key: "action", label: "ACTION", label_he: "פעולה",
-      count: i.actions, status: real(i.actions), basis: "Action שה-inputs שלו נושאים את ה-Need",
+      count: i.actions, ...sysGate(i.actions), status: real(i.actions), basis: "Action שה-inputs שלו נושאים את ה-Need",
       connector: "RECORDED_REFERENCE" },
 
     { key: "effect", label: "EFFECT", label_he: "אפקט",
-      count: i.effects, status: real(i.effects), basis: "Effect שה-action_ref שלו נושא את ה-Action",
+      count: i.effects, ...sysGate(i.effects), status: real(i.effects), basis: "Effect שה-action_ref שלו נושא את ה-Action",
       connector: "RECORDED_REFERENCE" },
 
     { key: "evidence", label: "EVIDENCE", label_he: "ראיה",
-      count: i.evidence, status: real(i.evidence), basis: "verified_outcome על ה-Effect עצמו",
+      count: i.evidence, ...sysGate(i.evidence), status: real(i.evidence), basis: "verified_outcome על ה-Effect עצמו",
       connector: "RECORDED_REFERENCE" },
   ];
 }

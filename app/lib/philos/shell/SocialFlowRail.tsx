@@ -76,12 +76,25 @@ function Node({ stage, lit }: { stage: FlowStage; lit: boolean }) {
         ...S.node,
         border: `${lit ? 2 : 1}px ${st.dashed ? "dashed" : "solid"} ${lit ? COLOR_ROLE.green : st.border}`,
         background: lit ? "rgba(52,211,153,0.2)" : st.bg,
+        // Records exist but reach nothing here: keep the real count legible
+        // and dim the node, rather than recolouring it as if it were absent.
+        opacity: stage.eligible !== undefined && stage.eligible !== stage.count ? 0.62 : 1,
       }}
     >
       <b style={{ ...S.count, color: stage.count === null ? COLOR.textFaint : st.fg,
-                  fontSize: stage.count === null ? 9 : 15 }}>
+                  fontSize: stage.count === null ? FS.tag : FS.head }}>
         {stage.count === null ? "UNKNOWN" : stage.count}
       </b>
+      {/* ELIGIBLE_AT_CURRENT_SCALE, shown only when it differs from
+          EXISTS_IN_SOCIAL_MODEL. The real count stays visible above it, so the
+          node states both facts at once: the record exists, and it does not
+          reach this scale. Blanking the count would claim the record does not
+          exist; showing only the count would imply it is system-relevant. */}
+      {stage.eligible !== undefined && stage.eligible !== stage.count ? (
+        <span style={S.notEligible} title={stage.not_eligible_because}>
+          {stage.eligible ?? 0} בהיקף זה
+        </span>
+      ) : null}
       <span style={S.label}>{stage.label}</span>
       <span style={{ ...S.status, color: stage.status === "REAL" ? COLOR_ROLE.green : COLOR.textFaint }}>
         {STATUS_META[stage.status].label}
@@ -135,6 +148,7 @@ const S: Record<string, React.CSSProperties> = {
   },
   count: { fontFamily: "ui-monospace, monospace", fontWeight: 700, lineHeight: 1.15, letterSpacing: 0.3 },
   label: { fontSize: FS.tag, fontWeight: 700, letterSpacing: 0.2, color: COLOR.textDim, whiteSpace: "nowrap" },
+  notEligible: { fontSize: FS.tag, color: "#fbbf24", letterSpacing: 0.2, lineHeight: 1.3 },
   status: { fontSize: FS.tag, fontWeight: 600, letterSpacing: 0.6 },
 
   conn: { display: "inline-flex", alignItems: "center", width: 18, position: "relative", justifyContent: "center" },
