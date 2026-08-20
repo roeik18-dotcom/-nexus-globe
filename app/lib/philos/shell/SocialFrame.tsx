@@ -40,6 +40,7 @@ import { atScope, SCOPE_OF_SURFACE, type ChronoEntry, type ChronoScope } from ".
 import { ABSENCE_TEXT, type Scale, type SocialObject } from "../social/socialSystemProjection";
 import { withSelection, type SocialSelection } from "../social/socialSelection";
 import { spineTouchOf } from "../social/spineTouch";
+import { noRoleReason, PURPLE_NEVER_ACTIVATED, roleTouchOf, type InternalRole } from "../social/roleTouch";
 import type { SpineLink } from "../valueSystem/socialValueSpine";
 import { COLOR, COLOR_ROLE, PRODUCT_FAMILY_CUE, RADIUS, SPACE, TYPE } from "./designTokens";
 
@@ -92,6 +93,12 @@ export default function SocialFrame({
   // FLOW: OBJECT -> VALUE. Which spine link the selected record actually
   // instantiates. Usually none, and that is the point — see `spineTouch`.
   const touch = selection?.status === "resolved" ? spineTouchOf(selection.object.kind) : undefined;
+  // FLOW: OBJECT -> ROLES. Which internal roles the selected record activates.
+  // A record may activate more than one (a verified Effect is RED and WHITE).
+  const activated = selection?.status === "resolved"
+    ? roleTouchOf(selection.object.kind, selection.object.verification)
+    : [];
+  const litRoles = new Set<InternalRole>(activated.map((a) => a.role));
   const span = chronology.length > 0
     ? `${chronology[0].at.slice(0, 10)} → ${chronology[chronology.length - 1].at.slice(0, 10)}`
     : "—";
@@ -215,15 +222,28 @@ export default function SocialFrame({
         <span style={S.gutter}>ROLES</span>
         <div style={S.body}>
           <div style={S.roleRow}>
-            <Role glyph="🔴" name="RED" v={roles.action} hex={COLOR_ROLE.red} what="Action / Effect" />
-            <Role glyph="⚪" name="WHITE" v={roles.evidence} hex={COLOR_ROLE.white} what="ראיה / פרובננס" />
-            <Role glyph="🟢" name="GREEN" v={roles.relations ?? null} hex={COLOR_ROLE.green} what="קשרים מתועדים" />
-            <Role glyph="🟣" name="PURPLE" v={roles.meaning ?? null} hex={COLOR_ROLE.purple} what="פרשנות ערך" />
+            <Role glyph="🔴" name="RED" v={roles.action} hex={COLOR_ROLE.red} what="Action / Effect" lit={litRoles.has("RED")} />
+            <Role glyph="⚪" name="WHITE" v={roles.evidence} hex={COLOR_ROLE.white} what="ראיה / פרובננס" lit={litRoles.has("WHITE")} />
+            <Role glyph="🟢" name="GREEN" v={roles.relations ?? null} hex={COLOR_ROLE.green} what="קשרים מתועדים" lit={litRoles.has("GREEN")} />
+            <Role glyph="🟣" name="PURPLE" v={roles.meaning ?? null} hex={COLOR_ROLE.purple} what={PURPLE_NEVER_ACTIVATED} lit={litRoles.has("PURPLE")} />
           </div>
           <div style={S.note}>
             תפקידים בתוך המסוף — לא מסופים ולא זרימה סיבתית בין צבעים.
             GREEN הוא קשר מתועד בלבד; דמיון אינו קשר. <b>UNKNOWN ≠ 0</b>.
           </div>
+          {selection?.status === "resolved" ? (
+            activated.length > 0 ? (
+              <div style={{ ...S.note, color: COLOR.textDim }}>
+                {activated.map((a) => (
+                  <div key={a.role}>
+                    <b style={{ color: ROLE_HEX[a.role] }}>{a.role}</b> — {a.because}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={S.note}>{noRoleReason(selection.object.kind)}</div>
+            )
+          ) : null}
         </div>
         <span style={S.rail}>INTERNAL</span>
       </div>
@@ -285,10 +305,24 @@ export default function SocialFrame({
   );
 }
 
-function Role({ glyph, name, v, hex, what }: { glyph: string; name: string; v: number | null; hex: string; what: string }) {
+const ROLE_HEX: Record<InternalRole, string> = {
+  RED: COLOR_ROLE.red, WHITE: COLOR_ROLE.white, GREEN: COLOR_ROLE.green, PURPLE: COLOR_ROLE.purple,
+};
+
+function Role({ glyph, name, v, hex, what, lit = false }: {
+  glyph: string; name: string; v: number | null; hex: string; what: string;
+  /** The SELECTED record activates this role. Distinct from "has a count":
+   *  a role can hold real records and not be activated by this selection. */
+  lit?: boolean;
+}) {
   const has = v !== null && v > 0;
   return (
-    <span title={what} style={{ ...S.role, borderColor: has ? `${hex}55` : COLOR.border, background: has ? `${hex}10` : "transparent" }}>
+    <span title={what} style={{
+      ...S.role,
+      borderColor: lit ? hex : has ? `${hex}55` : COLOR.border,
+      background: lit ? `${hex}26` : has ? `${hex}10` : "transparent",
+      boxShadow: lit ? `0 0 0 1px ${hex}55` : undefined,
+    }}>
       <span style={{ fontSize: 9 }}>{glyph}</span>
       <span style={{ ...TYPE.micro, fontSize: 7.5, color: has ? hex : COLOR.textFaint }}>{name}</span>
       <b style={{ fontSize: 11, fontFamily: "ui-monospace, monospace", color: has ? COLOR.text : "#8798b8" }}>
