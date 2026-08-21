@@ -40,7 +40,6 @@ import { resolveViewerContextSemantics } from "@/app/lib/philos/context/resolveV
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 
 import { projectGlobeGraph } from "@/app/lib/philos/projectGlobeGraph";
-import { GROUP_ID } from "@/app/lib/philos/valueGroupLog";
 import { loadPhilosEvents } from "@/app/lib/philos-event-store";
 import { resolveSharedContext } from "@/app/lib/philos/sharedContext";
 import { parseSystemContextRef } from "@/app/lib/systemContext";

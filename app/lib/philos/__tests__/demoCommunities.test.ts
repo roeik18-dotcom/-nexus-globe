@@ -9,7 +9,7 @@ import {
   DEMO_NEIGHBORHOOD_SMALL_ID,
   DEMO_NEIGHBORHOOD_SMALL_TODAY,
 } from "../demoCommunities";
-import { GROUP_ID as REAL_GROUP_ID } from "../valueGroupLog";
+import { SEED_GROUP_ID as REAL_GROUP_ID } from "../valueGroupLog";
 
 describe("DEMO communities — real projectValueGroup mechanics, never a parallel schema", () => {
   it("every demo group_id is prefixed demo_ and distinct from the real seeded group", () => {

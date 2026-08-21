@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { buildBaselineComparison, compareCommunities, winningSide } from "../comparison";
 import { projectValueGroup } from "../projectValueGroup";
-import { GROUP_ID, VALUE_GROUP_EVENTS, SEED_TODAY } from "../valueGroupLog";
+import { SEED_GROUP_ID, VALUE_GROUP_EVENTS, SEED_TODAY } from "../valueGroupLog";
 import { DEMO_GREEN_INNOVATION_EVENTS, DEMO_GREEN_INNOVATION_ID, DEMO_GREEN_INNOVATION_TODAY } from "../demoCommunities";
 
 describe("compareCommunities — real, compatible dimensions only, no opaque overall score", () => {
-  const real = projectValueGroup(VALUE_GROUP_EVENTS, GROUP_ID, SEED_TODAY)!;
+  const real = projectValueGroup(VALUE_GROUP_EVENTS, SEED_GROUP_ID, SEED_TODAY)!;
   const demo = projectValueGroup(DEMO_GREEN_INNOVATION_EVENTS, DEMO_GREEN_INNOVATION_ID, DEMO_GREEN_INNOVATION_TODAY)!;
 
   it("returns one metric row per compatible dimension, each independently provenanced", () => {

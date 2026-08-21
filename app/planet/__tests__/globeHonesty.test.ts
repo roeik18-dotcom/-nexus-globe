@@ -20,7 +20,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { projectGlobeGraph } from "@/app/lib/philos/projectGlobeGraph";
-import { GROUP_ID, VALUE_GROUP_EVENTS } from "@/app/lib/philos/valueGroupLog";
+import { SEED_GROUP_ID, VALUE_GROUP_EVENTS } from "@/app/lib/philos/valueGroupLog";
 
 const PLANET = join(process.cwd(), "app", "planet");
 const read = (f: string) => readFileSync(join(PLANET, f), "utf8");
@@ -178,7 +178,7 @@ describe("no ontology reaches the globe", () => {
 // ── 4. every drawn id traces to the projection ───────────────────────────────
 
 describe("every point the globe can draw is a projection node", () => {
-  const graph = projectGlobeGraph(VALUE_GROUP_EVENTS, GROUP_ID);
+  const graph = projectGlobeGraph(VALUE_GROUP_EVENTS, SEED_GROUP_ID);
 
   it("the seed log yields a non-empty graph to check against", () => {
     expect(graph.nodes.length).toBeGreaterThan(0);

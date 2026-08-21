@@ -42,7 +42,6 @@ import { resolveShellIdentityLink } from "@/app/lib/philos/community/resolveShel
 import { loadPhilosEvents } from "@/app/lib/philos-event-store";
 import { buildCapitalTimeline, projectValueGroup, type ValueGroupView } from "@/app/lib/philos/projectValueGroup";
 import type { PhilosEvent } from "@/app/lib/philos/events";
-import { GROUP_ID } from "@/app/lib/philos/valueGroupLog";
 import { DEMO_COMMUNITIES } from "@/app/lib/philos/demoCommunities";
 import { buildDefaultLinkRegistry } from "@/app/lib/philos/bridge/linkRegistry";
 import { linksByRelation } from "@/app/lib/philos/bridge/entityLink";

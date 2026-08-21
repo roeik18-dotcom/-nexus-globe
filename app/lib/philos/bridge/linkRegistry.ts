@@ -14,7 +14,8 @@
  * no separate UNKNOWN provenance value.
  */
 import { projectValueGroup, type ValueGroupView } from "../projectValueGroup";
-import { GROUP_ID, VALUE_GROUP_EVENTS, SEED_TODAY } from "../valueGroupLog";
+import { VALUE_GROUP_EVENTS, SEED_TODAY } from "../valueGroupLog";
+import { discoverGroupIds } from "../community/canonicalValueGroup";
 import { DEMO_COMMUNITIES } from "../demoCommunities";
 import type { PhilosEvent } from "../events";
 import {
@@ -312,21 +313,21 @@ export function buildDefaultLinkRegistry(
     actions?: { action_id: string; inputs: string[] }[];
     /** Explicit Need->group declarations, latest per need_id. */
     needGroupDeclarations?: { need_id: string; group_id: string; link_id: string; created_at: string }[];
-    /** The REAL groups to build links for. Omitted = the historical single
-     *  group, for reference/audit surfaces that are not viewer-scoped. */
+    /** The REAL groups to build links for. Omitted = every group the log
+     *  itself opens, for reference/audit surfaces that are not viewer-scoped. */
     realGroupIds?: readonly string[];
     /** `false` excludes DEMO communities — personal analysis passes this. */
     includeDemo?: boolean;
   },
 ): EntityLink[] {
-  /* WHICH REAL GROUPS. `GROUP_ID` was hardcoded here, so the registry built
-     the same real-group links for every viewer. `realGroupIds` lets the
-     PERSONAL-ANALYSIS caller (`loadSocialSystem`) pass the viewer's own
-     recorded memberships; reference and audit surfaces that pass nothing keep
-     the historical single-group behaviour and are labelled as reference tier.
-     The constant is now a documented default for those, not an assumption
-     buried in a projection call. */
-  const groupIds = canon?.realGroupIds ?? [GROUP_ID];
+  /* WHICH REAL GROUPS. A hardcoded id stood here, so the registry built the
+     same real-group links for every viewer and could never build links for a
+     second group at all. Two separate answers now, neither a constant:
+     PERSONAL ANALYSIS (`loadSocialSystem`) passes the viewer's own recorded
+     memberships; reference and audit surfaces pass nothing and get every group
+     the log ITSELF opens — which is 1 today and N after ingestion, without a
+     further change here. */
+  const groupIds = canon?.realGroupIds ?? discoverGroupIds(realEvents);
   const communities: { group: ValueGroupView; provenance: LinkProvenance }[] = [];
   for (const gid of groupIds) {
     const realGroup = projectValueGroup(realEvents, gid, today);

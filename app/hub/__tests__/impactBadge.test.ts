@@ -19,7 +19,7 @@ import { describe, expect, it } from "vitest";
 
 import { LEVEL_LABEL, LEVEL_MARK, LEVEL_STYLE } from "../ValueHub";
 import { projectValueGroup, type VerificationLevel } from "@/app/lib/philos/projectValueGroup";
-import { GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "@/app/lib/philos/valueGroupLog";
+import { SEED_GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "@/app/lib/philos/valueGroupLog";
 
 /** Every level the domain declares. Kept as a literal so adding one fails here. */
 const ALL_LEVELS: VerificationLevel[] = [
@@ -79,7 +79,7 @@ describe("under_review is visibly its own state", () => {
 
 describe("the seed log's current state renders", () => {
   it("the impact under review resolves to a renderable badge", () => {
-    const v = projectValueGroup(VALUE_GROUP_EVENTS, GROUP_ID, SEED_TODAY);
+    const v = projectValueGroup(VALUE_GROUP_EVENTS, SEED_GROUP_ID, SEED_TODAY);
     expect(v).not.toBeNull();
     for (const i of v!.impact) {
       expect(LEVEL_LABEL[i.verification_level]).toBeTruthy();
@@ -89,7 +89,7 @@ describe("the seed log's current state renders", () => {
   });
 
   it("an impact with an open request exposes the requester and reason", () => {
-    const v = projectValueGroup(VALUE_GROUP_EVENTS, GROUP_ID, SEED_TODAY);
+    const v = projectValueGroup(VALUE_GROUP_EVENTS, SEED_GROUP_ID, SEED_TODAY);
     const reviewing = v!.impact.filter((i) => i.verification_level === "under_review");
     for (const i of reviewing) {
       expect(i.review_request).not.toBeNull();

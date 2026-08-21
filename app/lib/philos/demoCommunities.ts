@@ -272,7 +272,7 @@ export interface DemoCommunityMeta {
 }
 
 /** Every demo community, for a listing/selector screen. Never includes the
- *  real seeded group (`valueGroupLog.ts::GROUP_ID`) — that one is REAL, not
+ *  real seeded group (`valueGroupLog.ts::SEED_GROUP_ID`) — that one is REAL, not
  *  DEMO, and stays in its own separate list. */
 export const DEMO_COMMUNITIES: DemoCommunityMeta[] = [
   { group_id: DEMO_GREEN_INNOVATION_ID, events: DEMO_GREEN_INNOVATION_EVENTS, today: DEMO_GREEN_INNOVATION_TODAY },

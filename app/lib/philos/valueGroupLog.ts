@@ -16,7 +16,17 @@
 
 import type { PhilosEvent } from "./events";
 
-export const GROUP_ID = "vg_ahrayut_kehilatit";
+/**
+ * The id of THIS SEED BUNDLE — not "the group".
+ *
+ * Exported as `GROUP_ID` it was imported by twelve non-test modules across all
+ * seven terminals, which is how the product came to be compiled around one
+ * group. The name is now scoped to what it actually is: the identity of the
+ * events in this file. Which groups EXIST is answered by
+ * `community/valueGroupRegistry.ts`, from data; nothing may import an id from
+ * here to decide that.
+ */
+export const SEED_GROUP_ID = "vg_ahrayut_kehilatit";
 
 /** The reference "today" for this seed. Callers may pass their own. */
 export const SEED_TODAY = "2026-08-01";
@@ -119,7 +129,7 @@ export const VALUE_GROUP_EVENTS: PhilosEvent[] = [
     event_id: "e010",
     actor_id: "p_dana",
     entity_type: "value_group",
-    entity_id: GROUP_ID,
+    entity_id: SEED_GROUP_ID,
     event_type: "group.opened",
     value_tags: ["אחריות"],
     timestamp: OPENED,
@@ -141,7 +151,7 @@ export const VALUE_GROUP_EVENTS: PhilosEvent[] = [
     event_id: "e011",
     actor_id: "p_dana",
     entity_type: "value_group",
-    entity_id: GROUP_ID,
+    entity_id: SEED_GROUP_ID,
     event_type: "leader.appointed",
     value_tags: ["אחריות"],
     timestamp: "2026-07-18T12:15:00+03:00",
@@ -158,7 +168,7 @@ export const VALUE_GROUP_EVENTS: PhilosEvent[] = [
     event_id: "e012",
     actor_id: "p_dana",
     entity_type: "value_group",
-    entity_id: GROUP_ID,
+    entity_id: SEED_GROUP_ID,
     event_type: "leader.appointed",
     value_tags: ["אחריות"],
     timestamp: "2026-07-19T09:30:00+03:00",
@@ -177,7 +187,7 @@ export const VALUE_GROUP_EVENTS: PhilosEvent[] = [
     event_id: "e020",
     actor_id: "p_maya",
     entity_type: "value_group",
-    entity_id: GROUP_ID,
+    entity_id: SEED_GROUP_ID,
     event_type: "member.joined",
     value_tags: ["אחריות"],
     timestamp: "2026-07-20T15:00:00+03:00",
@@ -188,7 +198,7 @@ export const VALUE_GROUP_EVENTS: PhilosEvent[] = [
     event_id: "e021",
     actor_id: "p_noa",
     entity_type: "value_group",
-    entity_id: GROUP_ID,
+    entity_id: SEED_GROUP_ID,
     event_type: "member.joined",
     value_tags: ["אחריות"],
     timestamp: "2026-07-21T09:40:00+03:00",
@@ -199,7 +209,7 @@ export const VALUE_GROUP_EVENTS: PhilosEvent[] = [
     event_id: "e022",
     actor_id: "p_itai",
     entity_type: "value_group",
-    entity_id: GROUP_ID,
+    entity_id: SEED_GROUP_ID,
     event_type: "member.joined",
     value_tags: ["אחריות"],
     timestamp: "2026-07-23T17:00:00+03:00",
@@ -210,7 +220,7 @@ export const VALUE_GROUP_EVENTS: PhilosEvent[] = [
     event_id: "e023",
     actor_id: "p_rina",
     entity_type: "value_group",
-    entity_id: GROUP_ID,
+    entity_id: SEED_GROUP_ID,
     event_type: "member.joined",
     value_tags: ["אחריות"],
     timestamp: "2026-07-26T11:05:00+03:00",
@@ -221,7 +231,7 @@ export const VALUE_GROUP_EVENTS: PhilosEvent[] = [
     event_id: "e024",
     actor_id: "p_tomer",
     entity_type: "value_group",
-    entity_id: GROUP_ID,
+    entity_id: SEED_GROUP_ID,
     event_type: "member.joined",
     value_tags: ["אחריות"],
     timestamp: "2026-07-29T19:20:00+03:00",
@@ -234,7 +244,7 @@ export const VALUE_GROUP_EVENTS: PhilosEvent[] = [
     event_id: "e030",
     actor_id: "p_omer",
     entity_type: "value_group",
-    entity_id: GROUP_ID,
+    entity_id: SEED_GROUP_ID,
     event_type: "resource.received",
     value_tags: ["אחריות"],
     timestamp: "2026-07-24T10:00:00+03:00",
@@ -248,7 +258,7 @@ export const VALUE_GROUP_EVENTS: PhilosEvent[] = [
     event_id: "e031",
     actor_id: "p_dana",
     entity_type: "value_group",
-    entity_id: GROUP_ID,
+    entity_id: SEED_GROUP_ID,
     event_type: "resource.received",
     value_tags: ["אחריות"],
     timestamp: "2026-07-28T20:15:00+03:00",
@@ -361,7 +371,7 @@ export const VALUE_GROUP_EVENTS: PhilosEvent[] = [
     event_id: "e060",
     actor_id: "p_yael",
     entity_type: "value_group",
-    entity_id: GROUP_ID,
+    entity_id: SEED_GROUP_ID,
     event_type: "request.opened",
     value_tags: ["אחריות"],
     timestamp: "2026-08-01T09:20:00+03:00",
@@ -372,7 +382,7 @@ export const VALUE_GROUP_EVENTS: PhilosEvent[] = [
     event_id: "e061",
     actor_id: "p_dana",
     entity_type: "value_group",
-    entity_id: GROUP_ID,
+    entity_id: SEED_GROUP_ID,
     event_type: "update.posted",
     value_tags: ["אחריות"],
     timestamp: "2026-08-01T13:10:00+03:00",
@@ -383,7 +393,7 @@ export const VALUE_GROUP_EVENTS: PhilosEvent[] = [
     event_id: "e062",
     actor_id: "p_yael",
     entity_type: "value_group",
-    entity_id: GROUP_ID,
+    entity_id: SEED_GROUP_ID,
     event_type: "meeting.scheduled",
     value_tags: ["אחריות"],
     timestamp: "2026-08-01T18:00:00+03:00",

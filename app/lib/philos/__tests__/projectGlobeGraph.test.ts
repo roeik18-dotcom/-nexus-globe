@@ -11,10 +11,10 @@ import { describe, expect, it } from "vitest";
 
 import type { PhilosEvent } from "../events";
 import { projectGlobeGraph } from "../projectGlobeGraph";
-import { GROUP_ID, VALUE_GROUP_EVENTS } from "../valueGroupLog";
+import { SEED_GROUP_ID, VALUE_GROUP_EVENTS } from "../valueGroupLog";
 
 const graph = (events: readonly PhilosEvent[] = VALUE_GROUP_EVENTS) =>
-  projectGlobeGraph(events, GROUP_ID);
+  projectGlobeGraph(events, SEED_GROUP_ID);
 
 // ── derived, not hardcoded ───────────────────────────────────────────────────
 
@@ -117,9 +117,9 @@ describe("every arc exposes its provenance", () => {
 describe("nodes come from the same events", () => {
   it("includes the value group itself", () => {
     const g = graph();
-    const group = g.nodes.find((n) => n.id === GROUP_ID);
+    const group = g.nodes.find((n) => n.id === SEED_GROUP_ID);
     expect(group?.type).toBe("value_group");
-    expect(group?.label).not.toBe(GROUP_ID);   // resolved to its real name
+    expect(group?.label).not.toBe(SEED_GROUP_ID);   // resolved to its real name
   });
 
   it("every arc endpoint has a placeable node", () => {

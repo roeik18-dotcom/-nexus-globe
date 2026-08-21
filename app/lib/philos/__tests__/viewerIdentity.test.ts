@@ -15,7 +15,7 @@ import { joinGroup } from "../commands/joinGroup";
 import { fixedClock, fixedIdGenerator } from "../eventStore";
 import { projectValueGroup } from "../projectValueGroup";
 import { isMemberOf, projectViewerIdentity } from "../viewerIdentity";
-import { GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../valueGroupLog";
+import { SEED_GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../valueGroupLog";
 
 const identity = (person: string, name = "מקומי", events = VALUE_GROUP_EVENTS) =>
   projectViewerIdentity(events, person, name);
@@ -23,7 +23,7 @@ const identity = (person: string, name = "מקומי", events = VALUE_GROUP_EVEN
 const joinedLog = (): PhilosEvent[] => {
   const result = joinGroup(
     VALUE_GROUP_EVENTS,
-    { group_id: GROUP_ID, person_id: "p_you", display_name: "את/ה" },
+    { group_id: SEED_GROUP_ID, person_id: "p_you", display_name: "את/ה" },
     { clock: fixedClock(`${SEED_TODAY}T20:00:00+03:00`), ids: fixedIdGenerator() },
   );
   if (!result.ok) throw new Error(result.message);
@@ -79,7 +79,7 @@ describe("a registered viewer", () => {
 
   it("reports the membership and the event that established it", () => {
     expect(maya.memberships).toHaveLength(1);
-    expect(maya.memberships[0].group_id).toBe(GROUP_ID);
+    expect(maya.memberships[0].group_id).toBe(SEED_GROUP_ID);
     expect(maya.memberships[0].group_name).toBe("אחריות קהילתית");
     expect(maya.memberships[0].basis).toBe("joined");
     expect(maya.memberships[0].since).toBe("2026-07-20");
@@ -110,26 +110,26 @@ describe("membership agrees with the group projection", () => {
     const dana = identity("p_dana");
     expect(dana.memberships).toHaveLength(1);
     expect(dana.memberships[0].basis).toBe("founded");
-    expect(isMemberOf(dana, GROUP_ID)).toBe(true);
+    expect(isMemberOf(dana, SEED_GROUP_ID)).toBe(true);
   });
 
   it("counts an appointed leader, who also never emits one", () => {
     const omer = identity("p_omer");
     expect(omer.memberships[0].basis).toBe("appointed");
-    expect(isMemberOf(omer, GROUP_ID)).toBe(true);
+    expect(isMemberOf(omer, SEED_GROUP_ID)).toBe(true);
   });
 
   it("agrees with projectValueGroup for every member it lists", () => {
     // The failure this prevents: a personal screen telling the founder they
     // belong to nothing while the group screen lists them as a member.
-    const view = projectValueGroup(VALUE_GROUP_EVENTS, GROUP_ID, SEED_TODAY);
+    const view = projectValueGroup(VALUE_GROUP_EVENTS, SEED_GROUP_ID, SEED_TODAY);
     for (const member of view!.members) {
-      expect(isMemberOf(identity(member.person_id), GROUP_ID), member.person_id).toBe(true);
+      expect(isMemberOf(identity(member.person_id), SEED_GROUP_ID), member.person_id).toBe(true);
     }
   });
 
   it("agrees in the other direction too — a non-member is not claimed", () => {
-    expect(isMemberOf(identity("p_nobody"), GROUP_ID)).toBe(false);
+    expect(isMemberOf(identity("p_nobody"), SEED_GROUP_ID)).toBe(false);
   });
 
   it("records a group only once, even if joined and later appointed", () => {
@@ -139,7 +139,7 @@ describe("membership agrees with the group projection", () => {
         event_id: "e_lead_maya",
         actor_id: "p_dana",
         entity_type: "value_group",
-        entity_id: GROUP_ID,
+        entity_id: SEED_GROUP_ID,
         event_type: "leader.appointed",
         value_tags: ["אחריות"],
         timestamp: "2026-07-25T09:00:00+03:00",
@@ -164,7 +164,7 @@ describe("after the viewer actually joins", () => {
   });
 
   it("the membership appears with the event that recorded it", () => {
-    expect(isMemberOf(you, GROUP_ID)).toBe(true);
+    expect(isMemberOf(you, SEED_GROUP_ID)).toBe(true);
     expect(you.memberships[0].basis).toBe("joined");
     expect(log.map((e) => e.event_id)).toContain(you.memberships[0].event_id);
   });

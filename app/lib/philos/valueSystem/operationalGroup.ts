@@ -39,7 +39,6 @@ import { buildViewerLinkRegistry } from "@/app/lib/philos/bridge/viewerLinkRegis
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import { systemClock, todayIn } from "@/app/lib/philos/eventStore";
 import { buildCapitalTimeline, buildMembershipTimeline, projectValueGroup, type ValueGroupView } from "@/app/lib/philos/projectValueGroup";
-import { GROUP_ID } from "@/app/lib/philos/valueGroupLog";
 import { buildDefaultLinkRegistry } from "@/app/lib/philos/bridge/linkRegistry";
 import { linksByRelation } from "@/app/lib/philos/bridge/entityLink";
 import { buildCommunityTensions, sortTensions, type TensionItem } from "@/app/lib/philos/tension";

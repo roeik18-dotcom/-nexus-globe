@@ -13,7 +13,7 @@ import { isVerified, VERIFICATION_LEVELS } from "../events";
 import { joinGroup } from "../commands/joinGroup";
 import { fixedClock, fixedIdGenerator } from "../eventStore";
 import { buildActivityFeed, projectValueGroup, type ValueGroupView } from "../projectValueGroup";
-import { GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../valueGroupLog";
+import { SEED_GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../valueGroupLog";
 
 /**
  * The events a guest's join produces, via the command that now owns them.
@@ -24,7 +24,7 @@ import { GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../valueGroupLog";
 function guestJoin(at = `${SEED_TODAY}T20:00:00+03:00`) {
   const result = joinGroup(
     VALUE_GROUP_EVENTS,
-    { group_id: GROUP_ID, person_id: "p_guest", display_name: "אורח/ת" },
+    { group_id: SEED_GROUP_ID, person_id: "p_guest", display_name: "אורח/ת" },
     { clock: fixedClock(at), ids: fixedIdGenerator() },
   );
   if (!result.ok) throw new Error(`join rejected: ${result.message}`);
@@ -32,7 +32,7 @@ function guestJoin(at = `${SEED_TODAY}T20:00:00+03:00`) {
 }
 
 function view(today = SEED_TODAY): ValueGroupView {
-  const v = projectValueGroup(VALUE_GROUP_EVENTS, GROUP_ID, today);
+  const v = projectValueGroup(VALUE_GROUP_EVENTS, SEED_GROUP_ID, today);
   if (!v) throw new Error("projection returned null");
   return v;
 }
@@ -58,7 +58,7 @@ describe("identity", () => {
 
   it("does not depend on the order events arrive in", () => {
     const shuffled = [...VALUE_GROUP_EVENTS].reverse();
-    expect(projectValueGroup(shuffled, GROUP_ID, SEED_TODAY)).toEqual(view());
+    expect(projectValueGroup(shuffled, SEED_GROUP_ID, SEED_TODAY)).toEqual(view());
   });
 });
 
@@ -168,7 +168,7 @@ describe("join", () => {
       ...VALUE_GROUP_EVENTS,
       ...guestJoin(),
     ];
-    const after = projectValueGroup(extended, GROUP_ID, SEED_TODAY);
+    const after = projectValueGroup(extended, SEED_GROUP_ID, SEED_TODAY);
     expect(after?.members).toHaveLength(before + 1);
     expect(after?.members.at(-1)?.display_name).toBe("אורח/ת");
   });
@@ -178,7 +178,7 @@ describe("join", () => {
       ...VALUE_GROUP_EVENTS,
       ...guestJoin(),
     ];
-    const after = projectValueGroup(extended, GROUP_ID, SEED_TODAY);
+    const after = projectValueGroup(extended, SEED_GROUP_ID, SEED_TODAY);
     expect(after?.today.some((t) => t.kind === "join")).toBe(true);
   });
 
@@ -187,7 +187,7 @@ describe("join", () => {
       ...VALUE_GROUP_EVENTS,
       ...guestJoin(),
     ];
-    expect(projectValueGroup(extended, GROUP_ID, SEED_TODAY)?.budget).toEqual(view().budget);
+    expect(projectValueGroup(extended, SEED_GROUP_ID, SEED_TODAY)?.budget).toEqual(view().budget);
   });
 });
 
@@ -209,7 +209,7 @@ describe("verification levels", () => {
 });
 
 describe("buildActivityFeed — whole-log activity, not just today's", () => {
-  const feed = buildActivityFeed(VALUE_GROUP_EVENTS, GROUP_ID);
+  const feed = buildActivityFeed(VALUE_GROUP_EVENTS, SEED_GROUP_ID);
 
   it("includes events from before SEED_TODAY, not only today's activity", () => {
     expect(feed.some((i) => i.date !== SEED_TODAY)).toBe(true);
@@ -224,7 +224,7 @@ describe("buildActivityFeed — whole-log activity, not just today's", () => {
   });
 
   it("respects an explicit limit", () => {
-    const limited = buildActivityFeed(VALUE_GROUP_EVENTS, GROUP_ID, 3);
+    const limited = buildActivityFeed(VALUE_GROUP_EVENTS, SEED_GROUP_ID, 3);
     expect(limited).toHaveLength(3);
     expect(limited).toEqual(feed.slice(0, 3));
   });

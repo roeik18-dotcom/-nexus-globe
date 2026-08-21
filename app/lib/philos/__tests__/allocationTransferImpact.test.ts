@@ -11,10 +11,10 @@ import { describe, expect, it } from "vitest";
 
 import type { PhilosEvent } from "../events";
 import { projectValueGroup } from "../projectValueGroup";
-import { GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../valueGroupLog";
+import { SEED_GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../valueGroupLog";
 
 const view = (events: readonly PhilosEvent[] = VALUE_GROUP_EVENTS) => {
-  const v = projectValueGroup(events, GROUP_ID, SEED_TODAY);
+  const v = projectValueGroup(events, SEED_GROUP_ID, SEED_TODAY);
   if (!v) throw new Error("projection returned null");
   return v;
 };

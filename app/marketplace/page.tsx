@@ -40,7 +40,6 @@ import CreateLearningForm from "@/app/hub/CreateLearningForm";
 import { loadPhilosEvents } from "@/app/lib/philos-event-store";
 import { systemClock, todayIn } from "@/app/lib/philos/eventStore";
 import { projectValueGroup, type ValueGroupView } from "@/app/lib/philos/projectValueGroup";
-import { GROUP_ID as COMMUNITY_GROUP_ID } from "@/app/lib/philos/valueGroupLog";
 import { DEMO_COMMUNITIES } from "@/app/lib/philos/demoCommunities";
 import CanonicalSlicePanel from "@/app/hub/CanonicalSlicePanel";
 import { resolveValueGroups } from "@/app/lib/philos/valueSystem/groupResolver";

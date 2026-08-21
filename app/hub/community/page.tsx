@@ -16,6 +16,9 @@ import { systemClock, todayIn } from "@/app/lib/philos/eventStore";
 import { buildActivityFeed, buildCapitalTimeline, buildContributorRanking, buildMembershipTimeline, projectValueGroup, type ValueGroupView } from "@/app/lib/philos/projectValueGroup";
 import { linksByRelation } from "@/app/lib/philos/bridge/entityLink";
 import ValueGroupsBoard, { type ValueGroupCardData } from "./ValueGroupsBoard";
+import ValueUniversePanel from "./ValueUniversePanel";
+import { loadValueGroupWorld } from "@/app/lib/philos/community/loadValueGroupWorld";
+import { SELECTED_GROUP_PARAM } from "@/app/lib/philos/community/selectedGroupContext";
 import ObservationReadingPanel from "@/app/lib/philos/shell/ObservationReadingPanel";
 import { resolveValueGroups, type ResolverGroupInput } from "@/app/lib/philos/valueSystem/groupResolver";
 import { buildOperationalGroupProfile, deriveLeadingFamily } from "@/app/lib/philos/valueSystem/operationalGroup";
@@ -23,7 +26,6 @@ import { classifyObservationText } from "@/app/lib/philos/valueSystem/classifier
 import { projectCanonDynamics } from "@/app/lib/philos/canon/projectCanonDynamics";
 import OperationalGroupDetail from "./OperationalGroupDetail";
 import { buildCommunityTensions, sortTensions } from "@/app/lib/philos/tension";
-import { GROUP_ID } from "@/app/lib/philos/valueGroupLog";
 import { DEMO_COMMUNITIES } from "@/app/lib/philos/demoCommunities";
 import { buildDefaultLinkRegistry } from "@/app/lib/philos/bridge/linkRegistry";
 import { loadPhilosEvents } from "@/app/lib/philos-event-store";
@@ -85,6 +87,10 @@ export default async function CommunityPage({
   const viewer = await resolveViewer();
   const today = todayIn(systemClock);
   const params = await searchParams;
+  /* The whole group world in one call: registry (0..N), global universe,
+     viewer overlay, inspection selection, relations. No group id is named
+     here — this surface can no longer know one at compile time. */
+  const groupWorld = await loadValueGroupWorld({ requestedGroup: params[SELECTED_GROUP_PARAM] });
   /* Group context, from the viewer's own recorded membership — or from an
      explicit `?community=` the viewer has a relation to. This was
      `projectValueGroup(events, GROUP_ID, today)`: the one real group, shown
@@ -503,6 +509,19 @@ export default async function CommunityPage({
           identityLink={identityLink}
         />
       </div>
+
+      {/* THE UNIVERSE FIRST. Community's top-level object is the whole value
+          landscape; the viewer's own group is a marked position inside it, and
+          the operational pipeline below is what the SELECTED group does. That
+          ordering is the pass: `ALL VALUE GROUPS` + `MY POSITION`, never one
+          standing in for the other. */}
+      <ValueUniversePanel
+        universe={groupWorld.universe}
+        registry={groupWorld.registry}
+        overlay={groupWorld.overlay}
+        selected={groupWorld.selected}
+        relations={groupWorld.relations}
+      />
 
       {/* FAMILY ORIENTATION — where this surface sits in the SOCIAL family.
           Community is the GROUP zoom level. Not navigation (that is the nav

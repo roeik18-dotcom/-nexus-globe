@@ -14,7 +14,7 @@ import type { PhilosEvent } from "../events";
 import { joinGroup } from "../commands/joinGroup";
 import { checkAppend, fixedClock, fixedIdGenerator } from "../eventStore";
 import { projectValueGroup } from "../projectValueGroup";
-import { GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../valueGroupLog";
+import { SEED_GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../valueGroupLog";
 
 const AT = `${SEED_TODAY}T20:00:00+03:00`;
 
@@ -28,7 +28,7 @@ const join = (
   joinGroup(
     stored,
     {
-      group_id: GROUP_ID,
+      group_id: SEED_GROUP_ID,
       person_id: "p_guest",
       display_name: "אורח/ת",
       ...input,
@@ -96,24 +96,24 @@ describe("the projection reads the join back", () => {
   const extended = [...VALUE_GROUP_EVENTS, ...ok(join())];
 
   it("membership grows by exactly one", () => {
-    const before = projectValueGroup(VALUE_GROUP_EVENTS, GROUP_ID, SEED_TODAY);
-    const after = projectValueGroup(extended, GROUP_ID, SEED_TODAY);
+    const before = projectValueGroup(VALUE_GROUP_EVENTS, SEED_GROUP_ID, SEED_TODAY);
+    const after = projectValueGroup(extended, SEED_GROUP_ID, SEED_TODAY);
     expect(after?.members).toHaveLength((before?.members.length ?? 0) + 1);
   });
 
   it("the new member appears with their name", () => {
-    const after = projectValueGroup(extended, GROUP_ID, SEED_TODAY);
+    const after = projectValueGroup(extended, SEED_GROUP_ID, SEED_TODAY);
     expect(after?.members.find((m) => m.person_id === "p_guest")?.display_name).toBe("אורח/ת");
   });
 
   it("the join shows up in that day's activity", () => {
-    const after = projectValueGroup(extended, GROUP_ID, SEED_TODAY);
+    const after = projectValueGroup(extended, SEED_GROUP_ID, SEED_TODAY);
     expect(after?.today.some((t) => t.kind === "join" && t.actor_name === "אורח/ת")).toBe(true);
   });
 
   it("nothing else on the screen moves — no money, no impact", () => {
-    const before = projectValueGroup(VALUE_GROUP_EVENTS, GROUP_ID, SEED_TODAY);
-    const after = projectValueGroup(extended, GROUP_ID, SEED_TODAY);
+    const before = projectValueGroup(VALUE_GROUP_EVENTS, SEED_GROUP_ID, SEED_TODAY);
+    const after = projectValueGroup(extended, SEED_GROUP_ID, SEED_TODAY);
     expect(after?.budget).toEqual(before?.budget);
     expect(after?.impact).toEqual(before?.impact);
   });

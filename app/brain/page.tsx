@@ -34,7 +34,6 @@ import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import path from "path";
 import { DEMO_COMMUNITIES } from "@/app/lib/philos/demoCommunities";
 import { projectValueGroup, type ValueGroupView } from "@/app/lib/philos/projectValueGroup";
-import { GROUP_ID } from "@/app/lib/philos/valueGroupLog";
 import { buildValueRegistry, type GroupProvenance, type PudmValueSource } from "@/app/lib/philos/community/valueRegistry";
 import { buildGroupRegistry } from "@/app/lib/philos/community/groupRegistry";
 import { buildCommunityTensions, sortTensions } from "@/app/lib/philos/tension";

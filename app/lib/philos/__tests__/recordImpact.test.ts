@@ -15,7 +15,7 @@ import { VERIFICATION_LEVELS } from "../events";
 import { recordImpact, REPORTABLE_STATUSES } from "../commands/recordImpact";
 import { checkAppend, fixedClock, fixedIdGenerator } from "../eventStore";
 import { projectValueGroup } from "../projectValueGroup";
-import { GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../valueGroupLog";
+import { SEED_GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../valueGroupLog";
 
 const AT = `${SEED_TODAY}T20:00:00+03:00`;
 
@@ -32,7 +32,7 @@ const record = (
   recordImpact(
     stored,
     {
-      group_id: GROUP_ID,
+      group_id: SEED_GROUP_ID,
       person_id: "p_maya",
       statement: "ארבע משפחות קיבלו ציוד חורף",
       people_affected: 4,
@@ -72,7 +72,7 @@ describe("a member records an impact", () => {
     expect(e.actor_id).toBe("p_maya");
     expect(e.timestamp).toBe(AT);
     expect(e.visibility).toBe("public");
-    expect(e.payload?.group_id).toBe(GROUP_ID);
+    expect(e.payload?.group_id).toBe(SEED_GROUP_ID);
   });
 
   it("produces an event the store will accept", () => {
@@ -142,7 +142,7 @@ describe("the verification ladder", () => {
 
   it("writes nothing that reads as verified on the screen", () => {
     const extended = [...VALUE_GROUP_EVENTS, ...ok(record({ evidence: ["x"] })).events];
-    const view = projectValueGroup(extended, GROUP_ID, SEED_TODAY);
+    const view = projectValueGroup(extended, SEED_GROUP_ID, SEED_TODAY);
     const mine = view?.impact.find((i) => i.statement === "ארבע משפחות קיבלו ציוד חורף");
     expect(mine?.verified).toBe(false);
     expect(mine?.verification_level).toBe("unverified");
@@ -258,7 +258,7 @@ describe("the projection reads the impact back", () => {
   const extended = [...VALUE_GROUP_EVENTS, ...recorded.events];
 
   it("the impact appears with its statement and figures", () => {
-    const view = projectValueGroup(extended, GROUP_ID, SEED_TODAY);
+    const view = projectValueGroup(extended, SEED_GROUP_ID, SEED_TODAY);
     const mine = view?.impact.find((i) => i.impact_id === recorded.impact_id);
     expect(mine).toBeDefined();
     expect(mine?.people_affected).toBe(4);
@@ -268,7 +268,7 @@ describe("the projection reads the impact back", () => {
   });
 
   it("it sits on the reported rung, unverified, with no verification attached", () => {
-    const view = projectValueGroup(extended, GROUP_ID, SEED_TODAY);
+    const view = projectValueGroup(extended, SEED_GROUP_ID, SEED_TODAY);
     const mine = view?.impact.find((i) => i.impact_id === recorded.impact_id);
     expect(mine?.reported_status).toBe("self_report");
     expect(mine?.verified).toBe(false);
@@ -278,15 +278,15 @@ describe("the projection reads the impact back", () => {
   it("it does not raise the group's verified totals", () => {
     // The number that would be the real damage: an unverified report inflating
     // the figure the entry screen labels "אנשים — אומת".
-    const before = projectValueGroup(VALUE_GROUP_EVENTS, GROUP_ID, SEED_TODAY);
-    const after = projectValueGroup(extended, GROUP_ID, SEED_TODAY);
+    const before = projectValueGroup(VALUE_GROUP_EVENTS, SEED_GROUP_ID, SEED_TODAY);
+    const after = projectValueGroup(extended, SEED_GROUP_ID, SEED_TODAY);
     const verifiedPeople = (v: typeof before) =>
       v!.impact.filter((i) => i.verified).reduce((s, i) => s + i.people_affected, 0);
     expect(verifiedPeople(after)).toBe(verifiedPeople(before));
   });
 
   it("it appears in that day's activity as an impact row", () => {
-    const view = projectValueGroup(extended, GROUP_ID, SEED_TODAY);
+    const view = projectValueGroup(extended, SEED_GROUP_ID, SEED_TODAY);
     expect(
       view?.today.some(
         (t) => t.kind === "impact" && t.text === "ארבע משפחות קיבלו ציוד חורף",
@@ -295,8 +295,8 @@ describe("the projection reads the impact back", () => {
   });
 
   it("the budget is untouched — recording an outcome moves no money", () => {
-    const before = projectValueGroup(VALUE_GROUP_EVENTS, GROUP_ID, SEED_TODAY);
-    const after = projectValueGroup(extended, GROUP_ID, SEED_TODAY);
+    const before = projectValueGroup(VALUE_GROUP_EVENTS, SEED_GROUP_ID, SEED_TODAY);
+    const after = projectValueGroup(extended, SEED_GROUP_ID, SEED_TODAY);
     expect(after?.budget).toEqual(before?.budget);
   });
 });

@@ -14,7 +14,7 @@ import type { PhilosEvent } from "../events";
 import { proposeAllocation, standingQuorum } from "../commands/proposeAllocation";
 import { checkAppend, fixedClock, fixedIdGenerator } from "../eventStore";
 import { projectValueGroup } from "../projectValueGroup";
-import { GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../valueGroupLog";
+import { SEED_GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../valueGroupLog";
 
 const AT = `${SEED_TODAY}T20:00:00+03:00`;
 
@@ -31,7 +31,7 @@ const propose = (
   proposeAllocation(
     stored,
     {
-      group_id: GROUP_ID,
+      group_id: SEED_GROUP_ID,
       person_id: "p_omer",
       title: "ליווי חורף לקשישים",
       amount: 4000,
@@ -69,7 +69,7 @@ describe("a member proposes an allocation", () => {
     expect(e.payload?.title).toBe("ליווי חורף לקשישים");
     expect(e.payload?.amount).toBe(4000);
     expect(e.payload?.people_affected_estimate).toBe(8);
-    expect(e.payload?.group_id).toBe(GROUP_ID);
+    expect(e.payload?.group_id).toBe(SEED_GROUP_ID);
   });
 
   it("mints an allocation id that is new to the log", () => {
@@ -104,7 +104,7 @@ describe("a member proposes an allocation", () => {
 
 describe("votes_required", () => {
   it("inherits the group's most recent proposal when not stated", () => {
-    expect(standingQuorum(VALUE_GROUP_EVENTS, GROUP_ID)).toBe(5);
+    expect(standingQuorum(VALUE_GROUP_EVENTS, SEED_GROUP_ID)).toBe(5);
     expect(ok(propose()).events[0].payload?.votes_required).toBe(5);
   });
 
@@ -250,7 +250,7 @@ describe("the projection reads the proposal back", () => {
   const extended = [...VALUE_GROUP_EVENTS, ...proposed.events];
 
   it("the allocation appears, in the voting state, with no votes yet", () => {
-    const view = projectValueGroup(extended, GROUP_ID, SEED_TODAY);
+    const view = projectValueGroup(extended, SEED_GROUP_ID, SEED_TODAY);
     const a = view?.allocations.find((x) => x.allocation_id === proposed.allocation_id);
     expect(a).toBeDefined();
     expect(a?.state).toBe("voting");
@@ -263,13 +263,13 @@ describe("the projection reads the proposal back", () => {
   it("a proposal alone commits nothing — the budget does not move", () => {
     // §9: committed counts APPROVED allocations. Asking is not taking, and this
     // is what makes the absence of a budget ceiling on proposals safe.
-    const before = projectValueGroup(VALUE_GROUP_EVENTS, GROUP_ID, SEED_TODAY);
-    const after = projectValueGroup(extended, GROUP_ID, SEED_TODAY);
+    const before = projectValueGroup(VALUE_GROUP_EVENTS, SEED_GROUP_ID, SEED_TODAY);
+    const after = projectValueGroup(extended, SEED_GROUP_ID, SEED_TODAY);
     expect(after?.budget).toEqual(before?.budget);
   });
 
   it("the allocation cites the events it was derived from", () => {
-    const view = projectValueGroup(extended, GROUP_ID, SEED_TODAY);
+    const view = projectValueGroup(extended, SEED_GROUP_ID, SEED_TODAY);
     const a = view?.allocations.find((x) => x.allocation_id === proposed.allocation_id);
     expect(a?.provenance.source_events).toContain(proposed.events[0].event_id);
   });

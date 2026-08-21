@@ -13,7 +13,7 @@ import { describe, expect, it } from "vitest";
 
 import type { PhilosEvent, VerificationMethod, VerificationResult } from "../events";
 import { projectValueGroup, type ValueGroupView } from "../projectValueGroup";
-import { GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../valueGroupLog";
+import { SEED_GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../valueGroupLog";
 
 const IMPACT_EVENT = "e070";
 
@@ -46,7 +46,7 @@ function verification(
 }
 
 const view = (events: readonly PhilosEvent[]): ValueGroupView => {
-  const v = projectValueGroup(events, GROUP_ID, SEED_TODAY);
+  const v = projectValueGroup(events, SEED_GROUP_ID, SEED_TODAY);
   if (!v) throw new Error("projection returned null");
   return v;
 };

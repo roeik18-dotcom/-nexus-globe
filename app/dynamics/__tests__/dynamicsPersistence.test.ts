@@ -25,7 +25,7 @@ import { buildDynamicsView } from "@/app/lib/philos/dynamicsView";
 import { fixedClock, fixedIdGenerator } from "@/app/lib/philos/eventStore";
 import { projectDynamics } from "@/app/lib/philos/projectDynamics";
 import { FileSystemPhilosEventStore } from "@/app/lib/philos-event-store";
-import { GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "@/app/lib/philos/valueGroupLog";
+import { SEED_GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "@/app/lib/philos/valueGroupLog";
 
 let dataDir: string;
 
@@ -40,7 +40,7 @@ async function persistJoin() {
   const store = freshStore();
   const result = joinGroup(
     await store.load(),
-    { group_id: GROUP_ID, person_id: "p_guest", display_name: "אורח/ת" },
+    { group_id: SEED_GROUP_ID, person_id: "p_guest", display_name: "אורח/ת" },
     { clock: fixedClock(`${SEED_TODAY}T20:00:00+03:00`), ids: fixedIdGenerator() },
   );
   if (!result.ok) throw new Error(`join rejected: ${result.message}`);
@@ -55,7 +55,7 @@ async function persistUpdateAbout(parentIds: string[], idStart = 50) {
   const result = postUpdate(
     await store.load(),
     {
-      group_id: GROUP_ID,
+      group_id: SEED_GROUP_ID,
       person_id: "p_guest",
       text: "עדכון מהשטח",
       about_event_ids: parentIds,
@@ -218,7 +218,7 @@ describe("after a join is persisted and the process restarts", () => {
     const proposed = proposeAllocation(
       await store.load(),
       {
-        group_id: GROUP_ID,
+        group_id: SEED_GROUP_ID,
         person_id: "p_guest",
         title: "ערכות חורף",
         amount: 2500,
@@ -234,7 +234,7 @@ describe("after a join is persisted and the process restarts", () => {
     const recorded = recordImpact(
       await store2.load(),
       {
-        group_id: GROUP_ID,
+        group_id: SEED_GROUP_ID,
         person_id: "p_guest",
         statement: "12 משפחות קיבלו ערכות",
         people_affected: 12,

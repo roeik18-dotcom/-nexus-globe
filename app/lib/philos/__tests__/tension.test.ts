@@ -3,7 +3,7 @@ import { buildCommunityTensions, buildHumanTensions, sortTensions, type TensionI
 import type { OrientationCore } from "../orientationCore";
 import { projectValueGroup } from "../projectValueGroup";
 import { DEMO_GREEN_INNOVATION_EVENTS, DEMO_GREEN_INNOVATION_ID, DEMO_GREEN_INNOVATION_TODAY } from "../demoCommunities";
-import { GROUP_ID, VALUE_GROUP_EVENTS, SEED_TODAY } from "../valueGroupLog";
+import { SEED_GROUP_ID, VALUE_GROUP_EVENTS, SEED_TODAY } from "../valueGroupLog";
 
 function mark(overrides: Partial<{ canon_event_id: string; subject: string; domain: "G" | "E" | "C"; level: number; stability: number; observed_at: string }>) {
   return {
@@ -64,7 +64,7 @@ describe("buildHumanTensions — real deficit domains only, stable id across sur
 
 describe("buildCommunityTensions — real budget/impact signals, provenance from the caller", () => {
   it("the real seeded group (positive budget, no rejected impact) has no tensions", () => {
-    const group = projectValueGroup(VALUE_GROUP_EVENTS, GROUP_ID, SEED_TODAY)!;
+    const group = projectValueGroup(VALUE_GROUP_EVENTS, SEED_GROUP_ID, SEED_TODAY)!;
     expect(buildCommunityTensions(group, "REAL")).toEqual([]);
   });
 

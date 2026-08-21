@@ -63,7 +63,6 @@ import { resolveCoreContext, resolveSharedContext } from "@/app/lib/philos/share
 import { systemClock, todayIn } from "@/app/lib/philos/eventStore";
 import { parseSystemContextRef } from "@/app/lib/systemContext";
 import { buildCapitalTimeline, buildMembershipTimeline, projectValueGroup } from "@/app/lib/philos/projectValueGroup";
-import { GROUP_ID } from "@/app/lib/philos/valueGroupLog";
 import { DEMO_COMMUNITIES } from "@/app/lib/philos/demoCommunities";
 import { buildCommunityTensions, sortTensions } from "@/app/lib/philos/tension";
 import { buildDefaultLinkRegistry } from "@/app/lib/philos/bridge/linkRegistry";

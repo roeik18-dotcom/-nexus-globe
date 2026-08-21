@@ -12,10 +12,10 @@ import { describe, expect, it } from "vitest";
 
 import type { PhilosEvent } from "../events";
 import { projectGlobeGraph, type GlobeArc } from "../projectGlobeGraph";
-import { GROUP_ID, VALUE_GROUP_EVENTS } from "../valueGroupLog";
+import { SEED_GROUP_ID, VALUE_GROUP_EVENTS } from "../valueGroupLog";
 
 const graph = (events: readonly PhilosEvent[] = VALUE_GROUP_EVENTS) =>
-  projectGlobeGraph(events, GROUP_ID);
+  projectGlobeGraph(events, SEED_GROUP_ID);
 
 const transfers = (events?: readonly PhilosEvent[]): GlobeArc[] =>
   graph(events).arcs.filter((a) => a.relation === "transfer.completed");
@@ -73,7 +73,7 @@ describe("financial semantics come from the event", () => {
   it("source is the group and the recipient comes from the approving event", () => {
     const approval = VALUE_GROUP_EVENTS.find((e) => e.event_id === APPROVAL_EVENT)!;
     const arc = transfers()[0];
-    expect(arc.source_id).toBe(GROUP_ID);
+    expect(arc.source_id).toBe(SEED_GROUP_ID);
     expect(arc.target_id).toBe("recipient:tr_elder_support_01");
     const node = graph().nodes.find((n) => n.id === arc.target_id);
     expect(node?.type).toBe("recipient");

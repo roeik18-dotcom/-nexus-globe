@@ -3,13 +3,13 @@ import { linksByRelation, linksForEntity } from "../entityLink";
 import { buildCommunityRegionLink, buildDemoMarketplaceSpatialLinks, spatialContextForCommunity, DEMO_COUNTRY } from "../spatialContext";
 import { buildDefaultLinkRegistry } from "../linkRegistry";
 import { projectValueGroup } from "../../projectValueGroup";
-import { VALUE_GROUP_EVENTS, SEED_TODAY, GROUP_ID } from "../../valueGroupLog";
+import { VALUE_GROUP_EVENTS, SEED_TODAY, SEED_GROUP_ID } from "../../valueGroupLog";
 import { DEMO_GREEN_INNOVATION_EVENTS, DEMO_GREEN_INNOVATION_ID, DEMO_GREEN_INNOVATION_TODAY, DEMO_NEIGHBORHOOD_SMALL_ID } from "../../demoCommunities";
 import { DEMO_NEED } from "../../canon/demoMarketplaceScenario";
 
 describe("spatialContextForCommunity — derived from the real group.region field, not invented", () => {
   it("the REAL seeded community's region is real (תל אביב, from group.opened's own payload)", () => {
-    const group = projectValueGroup(VALUE_GROUP_EVENTS, GROUP_ID, SEED_TODAY)!;
+    const group = projectValueGroup(VALUE_GROUP_EVENTS, SEED_GROUP_ID, SEED_TODAY)!;
     const ctx = spatialContextForCommunity(group, "REAL");
     expect(ctx?.label).toBe("תל אביב");
     expect(ctx?.provenance).toBe("REAL");
@@ -26,7 +26,7 @@ describe("spatialContextForCommunity — derived from the real group.region fiel
 
 describe("buildCommunityRegionLink — REAL and DEMO communities land in different regions", () => {
   it("the real community and a DEMO community resolve to different region ids", () => {
-    const real = projectValueGroup(VALUE_GROUP_EVENTS, GROUP_ID, SEED_TODAY)!;
+    const real = projectValueGroup(VALUE_GROUP_EVENTS, SEED_GROUP_ID, SEED_TODAY)!;
     const demo = projectValueGroup(DEMO_GREEN_INNOVATION_EVENTS, DEMO_GREEN_INNOVATION_ID, DEMO_GREEN_INNOVATION_TODAY)!;
     const realLink = buildCommunityRegionLink(real, "REAL")!;
     const demoLink = buildCommunityRegionLink(demo, "DEMO")!;
@@ -65,7 +65,7 @@ describe("real entities never receive a fabricated spatial link", () => {
   });
 
   it("the two DEMO communities resolve to two different regions", () => {
-    const real = projectValueGroup(VALUE_GROUP_EVENTS, GROUP_ID, SEED_TODAY)!;
+    const real = projectValueGroup(VALUE_GROUP_EVENTS, SEED_GROUP_ID, SEED_TODAY)!;
     void real;
     const registry = buildDefaultLinkRegistry(VALUE_GROUP_EVENTS, SEED_TODAY);
     const communityRegions = linksByRelation(registry, "COMMUNITY_LOCATED_IN_REGION");

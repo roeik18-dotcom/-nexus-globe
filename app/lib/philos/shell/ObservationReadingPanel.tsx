@@ -37,7 +37,6 @@ import { RAW_FAMILIES, SUBVALUES } from "@/app/lib/philos/community/valueUnivers
 import { loadPhilosEvents } from "@/app/lib/philos-event-store";
 import { systemClock, todayIn } from "@/app/lib/philos/eventStore";
 import { projectValueGroup, type ValueGroupView } from "@/app/lib/philos/projectValueGroup";
-import { GROUP_ID } from "@/app/lib/philos/valueGroupLog";
 import { DEMO_COMMUNITIES } from "@/app/lib/philos/demoCommunities";
 import { ProvenanceBadge } from "./provenance";
 import { Epistemic, Measurement, Stance } from "./epistemics";

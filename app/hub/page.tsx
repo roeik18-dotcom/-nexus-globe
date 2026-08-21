@@ -12,7 +12,6 @@ import OrientationCore from "./OrientationCore";
 import { projectValueGroup } from "@/app/lib/philos/projectValueGroup";
 import { projectViewerIdentity } from "@/app/lib/philos/viewerIdentity";
 import { systemClock, todayIn } from "@/app/lib/philos/eventStore";
-import { GROUP_ID } from "@/app/lib/philos/valueGroupLog";
 import { loadPhilosEvents } from "@/app/lib/philos-event-store";
 import { resolveViewer } from "@/app/lib/philos-viewer";
 import { projectCanonDynamics } from "@/app/lib/philos/canon/projectCanonDynamics";

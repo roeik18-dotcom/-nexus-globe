@@ -18,7 +18,7 @@ import { AppendRejectedError, fixedClock, fixedIdGenerator } from "../philos/eve
 import { joinGroup } from "../philos/commands/joinGroup";
 import { projectValueGroup } from "../philos/projectValueGroup";
 import { projectGlobeGraph } from "../philos/projectGlobeGraph";
-import { GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../philos/valueGroupLog";
+import { SEED_GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../philos/valueGroupLog";
 import {
   FileSystemPhilosEventStore,
   PHILOS_LOG_FILENAME,
@@ -38,7 +38,7 @@ const AT = `${SEED_TODAY}T20:00:00+03:00`;
 const guestJoinEvents = (stored: readonly PhilosEvent[]) => {
   const result = joinGroup(
     stored,
-    { group_id: GROUP_ID, person_id: "p_guest", display_name: "אורח/ת" },
+    { group_id: SEED_GROUP_ID, person_id: "p_guest", display_name: "אורח/ת" },
     { clock: fixedClock(AT), ids: fixedIdGenerator() },
   );
   if (!result.ok) throw new Error(`join rejected: ${result.message}`);
@@ -112,11 +112,11 @@ describe("survives a restart", () => {
     const first = freshStore();
     await first.append(guestJoinEvents(await first.load()));
 
-    const view = projectValueGroup(await freshStore().load(), GROUP_ID, SEED_TODAY);
+    const view = projectValueGroup(await freshStore().load(), SEED_GROUP_ID, SEED_TODAY);
     expect(view?.members.some((m) => m.person_id === "p_guest")).toBe(true);
     // This is the sentence the milestone is judged by: the count moved, and it
     // moved because of an event on disk.
-    const seeded = projectValueGroup(VALUE_GROUP_EVENTS, GROUP_ID, SEED_TODAY);
+    const seeded = projectValueGroup(VALUE_GROUP_EVENTS, SEED_GROUP_ID, SEED_TODAY);
     expect(view?.members.length).toBe((seeded?.members.length ?? 0) + 1);
   });
 
@@ -124,8 +124,8 @@ describe("survives a restart", () => {
     const first = freshStore();
     await first.append(guestJoinEvents(await first.load()));
 
-    const before = projectGlobeGraph(VALUE_GROUP_EVENTS, GROUP_ID);
-    const after = projectGlobeGraph(await freshStore().load(), GROUP_ID);
+    const before = projectGlobeGraph(VALUE_GROUP_EVENTS, SEED_GROUP_ID);
+    const after = projectGlobeGraph(await freshStore().load(), SEED_GROUP_ID);
     expect(after.nodes).toHaveLength(before.nodes.length + 1);
     expect(after.arcs).toHaveLength(before.arcs.length + 1);
     expect(after.nodes.some((n) => n.id === "p_guest")).toBe(true);
@@ -134,7 +134,7 @@ describe("survives a restart", () => {
   it("every figure the screen shows still names its source events", async () => {
     const store = freshStore();
     await store.append(guestJoinEvents(await store.load()));
-    const view = projectValueGroup(await freshStore().load(), GROUP_ID, SEED_TODAY);
+    const view = projectValueGroup(await freshStore().load(), SEED_GROUP_ID, SEED_TODAY);
     const provenances = [
       view!.budget.provenance,
       ...view!.allocations.map((a) => a.provenance),
@@ -148,7 +148,7 @@ describe("survives a restart", () => {
     const store = freshStore();
     const events = guestJoinEvents(await store.load());
     await store.append(events);
-    const view = projectValueGroup(await freshStore().load(), GROUP_ID, SEED_TODAY);
+    const view = projectValueGroup(await freshStore().load(), SEED_GROUP_ID, SEED_TODAY);
     expect(view?.event_count).toBe(VALUE_GROUP_EVENTS.length + events.length);
   });
 });

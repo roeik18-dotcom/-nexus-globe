@@ -15,7 +15,7 @@ import { postUpdate, MAX_UPDATE_TEXT } from "../commands/postUpdate";
 import { joinGroup } from "../commands/joinGroup";
 import { checkAppend, fixedClock, fixedIdGenerator } from "../eventStore";
 import { projectValueGroup } from "../projectValueGroup";
-import { GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../valueGroupLog";
+import { SEED_GROUP_ID, SEED_TODAY, VALUE_GROUP_EVENTS } from "../valueGroupLog";
 
 const AT = `${SEED_TODAY}T20:00:00+03:00`;
 
@@ -28,7 +28,7 @@ const post = (
 ) =>
   postUpdate(
     stored,
-    { group_id: GROUP_ID, person_id: "p_maya", text: "עדכון מהשטח", ...input },
+    { group_id: SEED_GROUP_ID, person_id: "p_maya", text: "עדכון מהשטח", ...input },
     deps(at),
   );
 
@@ -50,7 +50,7 @@ describe("a member posts an update", () => {
     const [e] = ok(post());
     expect(e.actor_id).toBe("p_maya");
     expect(e.entity_type).toBe("value_group");
-    expect(e.entity_id).toBe(GROUP_ID);
+    expect(e.entity_id).toBe(SEED_GROUP_ID);
     expect(e.timestamp).toBe(AT);
     expect(e.visibility).toBe("public");
     expect(e.payload?.text).toBe("עדכון מהשטח");
@@ -183,7 +183,7 @@ describe("the projection reads the update back", () => {
   const extended = [...VALUE_GROUP_EVENTS, ...ok(post())];
 
   it("the update appears in that day's activity, as a post", () => {
-    const view = projectValueGroup(extended, GROUP_ID, SEED_TODAY);
+    const view = projectValueGroup(extended, SEED_GROUP_ID, SEED_TODAY);
     const row = view?.today.find((t) => t.text === "עדכון מהשטח");
     expect(row).toBeDefined();
     expect(row?.kind).toBe("post");
@@ -191,8 +191,8 @@ describe("the projection reads the update back", () => {
   });
 
   it("the event count grows by one and nothing else moves", () => {
-    const before = projectValueGroup(VALUE_GROUP_EVENTS, GROUP_ID, SEED_TODAY);
-    const after = projectValueGroup(extended, GROUP_ID, SEED_TODAY);
+    const before = projectValueGroup(VALUE_GROUP_EVENTS, SEED_GROUP_ID, SEED_TODAY);
+    const after = projectValueGroup(extended, SEED_GROUP_ID, SEED_TODAY);
     expect(after?.event_count).toBe((before?.event_count ?? 0) + 1);
     expect(after?.budget).toEqual(before?.budget);
     expect(after?.members).toEqual(before?.members);
@@ -206,7 +206,7 @@ describe("a newly joined member", () => {
   it("may post, because membership is read from the same log the join wrote", () => {
     const join = joinGroup(
       VALUE_GROUP_EVENTS,
-      { group_id: GROUP_ID, person_id: "p_new", display_name: "חדש/ה" },
+      { group_id: SEED_GROUP_ID, person_id: "p_new", display_name: "חדש/ה" },
       deps(),
     );
     if (!join.ok) throw new Error(join.message);
@@ -214,7 +214,7 @@ describe("a newly joined member", () => {
 
     const posted = postUpdate(
       log,
-      { group_id: GROUP_ID, person_id: "p_new", text: "שלום" },
+      { group_id: SEED_GROUP_ID, person_id: "p_new", text: "שלום" },
       { clock: fixedClock(AT), ids: fixedIdGenerator(50) },
     );
     expect(posted.ok).toBe(true);
