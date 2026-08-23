@@ -32,6 +32,7 @@ import SocialScaleNav from "./SocialScaleNav";
 import type { ReactNode } from "react";
 import type { ResolvedViewerContext } from "../context/resolvedViewerContext";
 import OrientationBand, { type ViewScale } from "./OrientationBand";
+import { SELECTED_GROUP_PARAM } from "@/app/lib/philos/community/selectedGroupContext";
 import { COLOR, FS, PRODUCT_FAMILY_CUE, RADIUS, SPACE, STATUS, TERMINAL, TYPE } from "./designTokens";
 
 export interface ShellCommunity {
@@ -118,7 +119,7 @@ const SURFACE_SCALE: Record<ShellSurfaceKey, ViewScale> = {
   community: "GROUP", globe: "NETWORK", world: "SYSTEM",
 };
 
-const NAV: { label: string; href: string; key: ShellSurfaceKey; carriesCtx?: boolean; carriesSubject?: boolean; carriesCommunity?: boolean; family?: "social" }[] = [
+const NAV: { label: string; href: string; key: ShellSurfaceKey; carriesCtx?: boolean; carriesSubject?: boolean; carriesCommunity?: boolean; carriesGroup?: boolean; family?: "social" }[] = [
   { label: "Hub", href: "/hub", key: "hub", carriesSubject: true },
   { label: "Brain", href: "/brain", key: "brain", carriesSubject: true },
   // ROLE-BAND ORDER (ruled by Roei): GREEN sits next to BLUE, and YELLOW sits
@@ -127,11 +128,21 @@ const NAV: { label: string; href: string; key: ShellSurfaceKey; carriesCtx?: boo
   // family to make that true; its route, colour and behaviour are unchanged,
   // and the family stays three consecutive `family: "social"` entries so the
   // capsule still collapses them into one control.
+  /* THE SOCIAL FAMILY ARE THREE LENSES OVER ONE ENTITY. Their hrefs are NOT
+     built here — `SocialScaleNav` renders all three as one client control, and
+     that is where the selected entity is carried across a lens change. The
+     `carries*` flags below therefore never apply to them; `selectedGroup` is
+     handed to `SocialScaleNav` instead. */
   { label: "Community", href: "/hub/community", key: "community", carriesCommunity: true, family: "social" },
   { label: "Globe", href: "/planet", key: "globe", carriesCtx: true, family: "social" },
   { label: "World", href: "/world", key: "world", family: "social" },
-  { label: "Dynamics", href: "/dynamics", key: "dynamics", carriesCtx: true, carriesCommunity: true },
-  { label: "Marketplace", href: "/marketplace", key: "marketplace", carriesCtx: true },
+  /* Dynamics and Marketplace are the CHANGE and POSSIBILITY lenses over the
+     same selected entity, so they carry it exactly as the social three do.
+     Without this the loop Community → … → Marketplace → Community dropped the
+     subject at the fourth step and each of the two fell back to viewer-scoped
+     state — real, but a different question from the one being asked. */
+  { label: "Dynamics", href: "/dynamics", key: "dynamics", carriesCtx: true, carriesCommunity: true, carriesGroup: true },
+  { label: "Marketplace", href: "/marketplace", key: "marketplace", carriesCtx: true, carriesGroup: true },
 ];
 
 type NavItem = (typeof NAV)[number];
@@ -213,7 +224,20 @@ export function SystemShell({
   subject,
   observedCount,
   identityLink,
+  dense,
+  selectedGroup,
 }: {
+  /** COMPACT VARIANT. The orientation band and the status-pill row are the
+   *  shell's REFERENCE tier — right for a reading surface, wrong for one whose
+   *  subject is a map that should own the viewport. `dense` keeps the nav and
+   *  the one-line purpose and moves the rest behind a disclosure, so a
+   *  map-first route is not paying 353px of chrome before its own content.
+   *  Opt-in: every other terminal renders exactly as before. */
+  dense?: boolean;
+  /** THE SELECTED ENTITY, carried across the three social lenses. Every nav
+   *  link in that family appends it, so switching lens never drops the
+   *  subject. `undefined` = nothing selected; links stay bare. */
+  selectedGroup?: string;
   surface: ShellSurfaceKey;
   purpose: string;
   selected?: SelectedContext;
@@ -275,6 +299,7 @@ export function SystemShell({
     if (item.carriesCtx && ctxValue) parts.push(`ctx=${encodeURIComponent(ctxValue)}`);
     if (item.carriesSubject && subjectValue) parts.push(`subject=${encodeURIComponent(subjectValue)}`);
     if (item.carriesCommunity && communityValue) parts.push(`community=${encodeURIComponent(communityValue)}`);
+    if (item.carriesGroup && selectedGroup) parts.push(`${SELECTED_GROUP_PARAM}=${encodeURIComponent(selectedGroup)}`);
     return parts.length > 0 ? `${item.href}?${parts.join("&")}` : item.href;
   };
 
@@ -361,12 +386,17 @@ export function SystemShell({
             // PRODUCT_FAMILY_CUE != CANONICAL_COLOR_ROLE still holds: the bar
             // is tinted with the family cue, and no member's canonical role is
             // restated by it.
-            return <SocialScaleNav key="social-family" />;
+            return <SocialScaleNav key="social-family" selectedGroup={selectedGroup} />;
           })}
         </div>
       </div>
 
-      <p style={{ ...TYPE.body, color: COLOR.textDim, margin: `0 0 ${SPACE.sm}px`, maxWidth: 640 }}>{purpose}</p>
+      {/* The purpose line is orientation prose. A map-first surface states its
+          purpose in the map; `dense` drops the row rather than paying a full
+          text line above the subject. */}
+      {dense ? null : (
+        <p style={{ ...TYPE.body, color: COLOR.textDim, margin: `0 0 ${SPACE.sm}px`, maxWidth: 640 }}>{purpose}</p>
+      )}
 
       {/* THE SHARED ORIENTATION BAND. One implementation, seven terminals.
           It takes the canonical context and the scale this screen reads —
@@ -374,14 +404,16 @@ export function SystemShell({
           pass a semantic override. `ContextStrip` is gone: six equal 10px
           metadata slots, mostly UNKNOWN, competing with the one or two facts
           that were real. */}
-      <OrientationBand
-        ctx={viewerContext}
-        scale={SURFACE_SCALE[surface]}
-        surfaceTitle={terminal.label_he}
-        accent={terminal.accent}
-      />
+      {dense ? null : (
+        <OrientationBand
+          ctx={viewerContext}
+          scale={SURFACE_SCALE[surface]}
+          surfaceTitle={terminal.label_he}
+          accent={terminal.accent}
+        />
+      )}
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: SPACE.sm }}>
+      <div style={{ display: dense ? "none" : "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: SPACE.sm }}>
         {selected?.status === "found" ? (
           <StatusPill label="SELECTED" value={selected.subject ? `${selected.label} · ${selected.subject}` : selected.label} kind="active" />
         ) : null}

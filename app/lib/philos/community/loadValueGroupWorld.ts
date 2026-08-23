@@ -22,6 +22,11 @@ import { buildViewerGroupOverlay, type ViewerGroupOverlay } from "./viewerGroupO
 import { resolveSelectedGroup, type SelectedGroupContext } from "./selectedGroupContext";
 import { buildGroupRelations, type GroupRelation } from "./groupRelations";
 import { loadIngestedGroups, loadValueMappingRulings } from "./valueGroupIngest";
+import { loadGroupEvents } from "./groupEventStore";
+import { projectAllGroupStates, type GroupOperationalState } from "./groupOperationalState";
+import { deriveCandidateMatches, pendingCandidates, type CandidateMatch } from "./needResourceBridge";
+import { deriveEventRelations, type EventRelation } from "./eventGroupRelations";
+import type { GroupEvent } from "./groupEvent";
 
 export interface ValueGroupWorld {
   registry: ValueGroupRegistry;
@@ -32,6 +37,17 @@ export interface ValueGroupWorld {
   /** Ingest lines that failed to parse. Surfaced, never swallowed. */
   ingestRejected: readonly { line: number; because: string }[];
   events: readonly PhilosEvent[];
+
+  /* ── the operational spine ─────────────────────────────────────────────
+     One projection of the group event log, consumed by Community, Network,
+     Marketplace and Dynamics alike. No terminal rebuilds group state. */
+  operational: ReadonlyMap<string, GroupOperationalState>;
+  groupEvents: readonly GroupEvent[];
+  groupEventRejected: readonly { line: number; because: string }[];
+  /** DERIVED need↔resource pairs. A candidate is not an agreement. */
+  candidateMatches: readonly CandidateMatch[];
+  /** Edges the HISTORY justifies, each naming its event ids. */
+  eventRelations: readonly EventRelation[];
 }
 
 export async function loadValueGroupWorld(opts?: {
@@ -53,13 +69,34 @@ export async function loadValueGroupWorld(opts?: {
     today,
   });
   const viewer = await resolveViewerContext();
+
+  /* THE SPINE. Group operational events are a separate, newer log from the
+     original `philos-events.jsonl`; both are append-only and neither is
+     rewritten. The projection is built once here so every consumer reads the
+     same state — four independent reconstructions is how Community, Network
+     and System came to disagree about membership. */
+  const ge = loadGroupEvents();
+  const operational = projectAllGroupStates(ge.events);
+  const allNeeds = [...operational.values()].flatMap((s) => s.needs);
+  const allResources = [...operational.values()].flatMap((s) => s.resources);
+  const allRecorded = [...operational.values()].flatMap((s) => s.matches);
+  const candidateMatches = pendingCandidates(deriveCandidateMatches(allNeeds, allResources), allRecorded);
+  const eventRelations = deriveEventRelations(operational, deriveCandidateMatches(allNeeds, allResources));
+
   return {
     registry,
     universe: buildValueGroupUniverse(registry),
     overlay: buildViewerGroupOverlay(viewer, registry, events),
     selected: resolveSelectedGroup(registry, opts?.requestedGroup),
-    relations: buildGroupRelations(registry, events),
+    // Registry-supported edges plus history-supported edges. Both carry their
+    // own evidence; neither is invented to fill the other's silence.
+    relations: [...buildGroupRelations(registry, events), ...eventRelations],
     ingestRejected: ingest.rejected,
     events,
+    operational,
+    groupEvents: ge.events,
+    groupEventRejected: ge.rejected.map((r) => ({ line: r.line, because: r.because })),
+    candidateMatches,
+    eventRelations,
   };
 }

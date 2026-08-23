@@ -30,9 +30,17 @@ function parse(d?: string | null): number | null {
   const t = Date.parse(d);
   return Number.isNaN(t) ? null : t;
 }
+/* `toLocaleDateString(undefined, …)` resolves the locale from the runtime, and
+   the server's runtime is not the reader's — so the server rendered one string
+   and the client rendered another, which is the hydration mismatch this route
+   has been throwing. A fixed locale and a fixed time zone make the two agree;
+   the date shown is the date recorded, not the date as the reader's machine
+   happens to localise it. */
+const DATE_FMT = new Intl.DateTimeFormat("en-GB", {
+  year: "2-digit", month: "short", day: "numeric", timeZone: "UTC",
+});
 function fmt(t: number): string {
-  const d = new Date(t);
-  return d.toLocaleDateString(undefined, { year: "2-digit", month: "short", day: "numeric" });
+  return DATE_FMT.format(new Date(t));
 }
 
 export default function MissionTimeline({ mission }: { mission: MissionLike }) {

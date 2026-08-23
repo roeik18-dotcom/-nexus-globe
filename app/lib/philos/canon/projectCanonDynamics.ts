@@ -108,10 +108,59 @@ function tooltipOf(event: CanonEvent): string {
  * `canon_event_id` — mirrors `projectDynamics.ts`'s own "no clock, no
  * random" discipline and `inCanonOrder`'s own tie-break shape.
  */
+/**
+ * VIEWER SCOPE. A canon Observation is a PERSONAL record: it carries a
+ * subject, a level, a deficit type and the person's own words in `context`.
+ * This projection loaded every observation in the store and emitted all of
+ * them with `subject=…` and the raw context text in the label — with no viewer
+ * parameter at all. Seven production callers inherited that, and User B's
+ * Dynamics page carried Roei's own observation text in a tooltip. Measured,
+ * not theorised.
+ *
+ * The projection is now scoped by construction and FAILS CLOSED: no resolvable
+ * viewer means no nodes, never "all nodes". A caller that genuinely needs the
+ * whole store — a test, or an audit surface that is not viewer-facing — has to
+ * name `projectCanonDynamicsUnscoped` and thereby say out loud that it is
+ * asking for unscoped data.
+ */
+export interface CanonViewerScope {
+  subject_id?: string;
+  person_id?: string;
+}
+
+/** The one value that opens the gate for everything. Not a viewer id — a
+ *  named, greppable declaration that a call site is deliberately unscoped. */
+export const UNSCOPED: CanonViewerScope = { subject_id: "__UNSCOPED__", person_id: "__UNSCOPED__" };
+
+/** Pure gate, exported so the rule is testable without a store or a session. */
+export function observationVisibleTo(subject: string, viewer: CanonViewerScope | null): boolean {
+  if (!viewer) return false;
+  if (viewer === UNSCOPED) return true;
+  return (
+    (viewer.subject_id !== undefined && subject === viewer.subject_id) ||
+    (viewer.person_id !== undefined && subject === viewer.person_id)
+  );
+}
+
 export async function projectCanonDynamics(
   store: CanonEventStore = canonEventStore(),
+  /** Explicit scope. Omitted = resolved from the session. */
+  viewer?: CanonViewerScope,
 ): Promise<CanonDynamicsGraph> {
-  const events = await store.load();
+  const scope = viewer ?? await (async (): Promise<CanonViewerScope | null> => {
+    try {
+      const { resolveViewerContext } = await import("../identity/viewerContext");
+      const ctx = await resolveViewerContext();
+      return { subject_id: ctx.subject_id, person_id: ctx.person_id };
+    } catch {
+      // No session, no scope, no data. The safe direction.
+      return null;
+    }
+  })();
+
+  const all = await store.load();
+  const events = all.filter((e) =>
+    e.canon_type !== "observation" || observationVisibleTo(e.payload.subject, scope ?? null));
   const observations = events.filter((e) => e.canon_type === "observation");
 
   const nodes: CanonObservationMark[] = observations.map((event) => ({
@@ -146,4 +195,18 @@ export async function projectCanonDynamics(
     nodes,
     summary: { node_count: nodes.length, persisted_count: nodes.length, domains },
   };
+}
+
+/**
+ * THE UNSCOPED DOOR — every observation in the store, for callers that are
+ * genuinely not viewer-facing (tests, and audit tooling that states it is
+ * unscoped). It delegates rather than duplicating the projection, so the two
+ * doors can never drift; only the gate differs. Named so that reading the call
+ * site is enough to know personal records are crossing it. Never call this
+ * from a rendered surface.
+ */
+export async function projectCanonDynamicsUnscoped(
+  store: CanonEventStore = canonEventStore(),
+): Promise<CanonDynamicsGraph> {
+  return projectCanonDynamics(store, UNSCOPED);
 }

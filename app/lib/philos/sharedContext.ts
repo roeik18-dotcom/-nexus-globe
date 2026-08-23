@@ -324,9 +324,13 @@ async function resolveEffectEntityContext(ref: { kind: "effect"; effect_id: stri
   };
 }
 
-async function loadCanonGraphSafely(): Promise<CanonDynamicsGraph> {
+async function loadCanonGraphSafely(viewerId?: string): Promise<CanonDynamicsGraph> {
   try {
-    return await projectCanonDynamics();
+    /* SCOPE. This resolver already knows who is asking — passing it through is
+       strictly better than letting the projection re-resolve a session, and it
+       is what keeps a context lookup from returning another person's
+       observation to whoever happened to hold its id. */
+    return await projectCanonDynamics(undefined, viewerId ? { subject_id: viewerId, person_id: viewerId } : undefined);
   } catch {
     return { source: "canon", nodes: [], summary: { node_count: 0, persisted_count: 0, domains: { G: 0, E: 0, C: 0 } } };
   }
@@ -360,7 +364,7 @@ export async function resolveSharedContext(
   if (ref?.kind === "action") return resolveActionEntityContext(ref);
   if (ref?.kind === "effect") return resolveEffectEntityContext(ref);
 
-  const canon = await loadCanonGraphSafely();
+  const canon = await loadCanonGraphSafely(options?.viewerId);
   const view = await loadLegacyViewSafely(options?.viewerId);
   const core = resolveCoreContext(ref, canon, view);
   if (core.status !== "found") return core;

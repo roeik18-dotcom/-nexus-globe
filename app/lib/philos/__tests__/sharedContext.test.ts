@@ -206,7 +206,7 @@ describe("resolveSharedContext — ORIENTATION → ACTION → EFFECT → LEARNIN
     const effectStoreInstance = (await import("../canon/effectStoreAccessor")).effectStore();
     await effectStoreInstance.append([{ effect: baseEffect(), recorded_at: "2026-08-15T12:00:01Z" }]);
 
-    const result = await resolveSharedContext({ kind: "canon_observation", canon_event_id: "canon_evt_shared_action" });
+    const result = await resolveSharedContext({ kind: "canon_observation", canon_event_id: "canon_evt_shared_action" }, { viewerId: "person_shared_action_x" });
     expect(result.status).toBe("found");
     if (result.status !== "found") throw new Error("unreachable");
 
@@ -220,7 +220,7 @@ describe("resolveSharedContext — ORIENTATION → ACTION → EFFECT → LEARNIN
     const actionStoreInstance = (await import("../canon/actionStoreAccessor")).actionStore();
     await actionStoreInstance.append([{ action: baseAction(), recorded_at: "2026-08-15T10:00:01Z" }]);
 
-    const result = await resolveSharedContext({ kind: "canon_observation", canon_event_id: "canon_evt_shared_action" });
+    const result = await resolveSharedContext({ kind: "canon_observation", canon_event_id: "canon_evt_shared_action" }, { viewerId: "person_shared_action_x" });
     if (result.status !== "found") throw new Error("unreachable");
 
     expect(result.actionLifecycle?.actions[0].verification_state).toBe("no_effect_recorded");
@@ -228,7 +228,7 @@ describe("resolveSharedContext — ORIENTATION → ACTION → EFFECT → LEARNIN
   });
 
   it("a canon subject with no recorded Actions gets an honest empty actionLifecycle, not undefined — context is still preserved", async () => {
-    const result = await resolveSharedContext({ kind: "canon_observation", canon_event_id: "canon_evt_shared_action" });
+    const result = await resolveSharedContext({ kind: "canon_observation", canon_event_id: "canon_evt_shared_action" }, { viewerId: "person_shared_action_x" });
     if (result.status !== "found") throw new Error("unreachable");
 
     expect(result.actionLifecycle).toEqual({

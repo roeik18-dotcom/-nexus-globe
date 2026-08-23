@@ -11,7 +11,7 @@ const entry = (o: Partial<ChronoEntry>): ChronoEntry => ({
 
 describe("SOCIAL_SYSTEM_PROJECTION — one identity, three representations", () => {
   it("keeps ONE record_id across all scales", () => {
-    const [o] = projectSocialSystem({ chronology: [entry({ record_id: "same_id" })], needGroups: new Map() });
+    const [o] = projectSocialSystem({ chronology: [entry({ record_id: "same_id" })], needGroups: new Map(), systemEvidence: new Map() });
     expect(o.record_id).toBe("same_id");
     expect(Object.keys(o.scales).sort()).toEqual(["GROUP", "NETWORK", "SYSTEM"]);
   });
@@ -19,7 +19,7 @@ describe("SOCIAL_SYSTEM_PROJECTION — one identity, three representations", () 
   it("every record is present at GROUP — that is the operational state", () => {
     const objs = projectSocialSystem({
       chronology: [entry({ record_id: "a" }), entry({ record_id: "b", kind: "need" })],
-      needGroups: new Map(),
+      needGroups: new Map(), systemEvidence: new Map(),
     });
     expect(atScaleObjects(objs, "GROUP")).toHaveLength(2);
   });
@@ -27,24 +27,24 @@ describe("SOCIAL_SYSTEM_PROJECTION — one identity, three representations", () 
 
 describe("NETWORK promotion — edges only", () => {
   it("an edge kind reaches NETWORK", () => {
-    const [o] = projectSocialSystem({ chronology: [entry({ kind: "member.joined" })], needGroups: new Map() });
+    const [o] = projectSocialSystem({ chronology: [entry({ kind: "member.joined" })], needGroups: new Map(), systemEvidence: new Map() });
     expect(o.scales.NETWORK.present).toBe(true);
   });
 
   it("a non-edge is absent WITH A REASON, not merely missing", () => {
-    const [o] = projectSocialSystem({ chronology: [entry({ kind: "effect" })], needGroups: new Map() });
+    const [o] = projectSocialSystem({ chronology: [entry({ kind: "effect" })], needGroups: new Map(), systemEvidence: new Map() });
     expect(o.scales.NETWORK.present).toBe(false);
     expect(o.scales.NETWORK.absent_because).toBe("NOT_AN_EDGE");
   });
 
   it("a Need reaches NETWORK only with an explicit group attachment", () => {
-    const bare = projectSocialSystem({ chronology: [entry({ record_id: "n1", kind: "need" })], needGroups: new Map() })[0];
+    const bare = projectSocialSystem({ chronology: [entry({ record_id: "n1", kind: "need" })], needGroups: new Map(), systemEvidence: new Map() })[0];
     expect(bare.scales.NETWORK.present).toBe(false);
     expect(bare.scales.NETWORK.absent_because).toBe("NO_GROUP_ATTACHMENT");
 
     const attached = projectSocialSystem({
       chronology: [entry({ record_id: "n1", kind: "need" })],
-      needGroups: new Map([["n1", "vg_1"]]),
+      systemEvidence: new Map(), needGroups: new Map([["n1", "vg_1"]]),
     })[0];
     expect(attached.scales.NETWORK.present).toBe(true);
   });
@@ -52,7 +52,7 @@ describe("NETWORK promotion — edges only", () => {
 
 describe("SYSTEM promotion — network presence is never a reason", () => {
   it("an edge present at NETWORK is still absent at SYSTEM", () => {
-    const [o] = projectSocialSystem({ chronology: [entry({ kind: "member.joined" })], needGroups: new Map() });
+    const [o] = projectSocialSystem({ chronology: [entry({ kind: "member.joined" })], needGroups: new Map(), systemEvidence: new Map() });
     expect(o.scales.NETWORK.present).toBe(true);
     expect(o.scales.SYSTEM.present).toBe(false);
     expect(o.scales.SYSTEM.absent_because).toBe("NO_SYSTEM_EVIDENCE");
@@ -77,7 +77,7 @@ describe("SYSTEM promotion — network presence is never a reason", () => {
 });
 
 describe("SOCIAL_SELECTION_STATE — the same object across scales", () => {
-  const objs = projectSocialSystem({ chronology: [entry({ record_id: "r1" })], needGroups: new Map() });
+  const objs = projectSocialSystem({ chronology: [entry({ record_id: "r1" })], needGroups: new Map(), systemEvidence: new Map() });
 
   it("resolves to the one object", () => {
     expect(resolveSocialSelection("r1", objs)).toMatchObject({ status: "resolved", record_id: "r1" });
@@ -100,14 +100,14 @@ describe("SOCIAL_SELECTION_STATE — the same object across scales", () => {
 
 describe("provenance and verification survive projection unchanged", () => {
   it("does not upgrade CLAIMED to VERIFIED", () => {
-    const [o] = projectSocialSystem({ chronology: [entry({ verification: "CLAIMED" })], needGroups: new Map() });
+    const [o] = projectSocialSystem({ chronology: [entry({ verification: "CLAIMED" })], needGroups: new Map(), systemEvidence: new Map() });
     expect(o.verification).toBe("CLAIMED");
   });
 
   it("carries only RECORDED references, never chronological neighbours", () => {
     const objs = projectSocialSystem({
       chronology: [entry({ record_id: "a", references: [] }), entry({ record_id: "b", references: ["a"] })],
-      needGroups: new Map(),
+      needGroups: new Map(), systemEvidence: new Map(),
     });
     expect(findObject(objs, "a")!.source_record_ids).toEqual([]);
     expect(findObject(objs, "b")!.source_record_ids).toEqual(["a"]);
@@ -120,7 +120,7 @@ describe("PROVENANCE IS PRESERVED, NEVER PROMOTED", () => {
   // Both branches were identical, so every object became REAL no matter its
   // source. It read like a decision, which is why review never caught it.
   const project = (over: Partial<ChronoEntry>) =>
-    projectSocialSystem({ chronology: [entry(over)], needGroups: new Map() })[0];
+    projectSocialSystem({ chronology: [entry(over)], needGroups: new Map(), systemEvidence: new Map() })[0];
 
   it("DEMO never becomes REAL", () => {
     expect(project({ provenance: "DEMO" }).provenance).toBe("DEMO");

@@ -59,6 +59,7 @@ import { buildDynamicsView } from "@/app/lib/philos/dynamicsView";
 import { projectDynamics } from "@/app/lib/philos/projectDynamics";
 import { loadPhilosEvents } from "@/app/lib/philos-event-store";
 import { resolveViewer } from "@/app/lib/philos-viewer";
+import GroupTrajectory from "./GroupTrajectory";
 import { resolveCoreContext, resolveSharedContext } from "@/app/lib/philos/sharedContext";
 import { systemClock, todayIn } from "@/app/lib/philos/eventStore";
 import { parseSystemContextRef } from "@/app/lib/systemContext";
@@ -67,6 +68,10 @@ import { DEMO_COMMUNITIES } from "@/app/lib/philos/demoCommunities";
 import { buildCommunityTensions, sortTensions } from "@/app/lib/philos/tension";
 import { buildDefaultLinkRegistry } from "@/app/lib/philos/bridge/linkRegistry";
 import { linksByRelation } from "@/app/lib/philos/bridge/entityLink";
+import EntityChainFlow from "@/app/lib/philos/crossTerminal/EntityChainFlow";
+import UnifiedEntitySurface from "@/app/lib/philos/crossTerminal/UnifiedEntitySurface";
+import OperationalTraceFlow from "@/app/lib/philos/crossTerminal/OperationalTraceFlow";
+import { loadSelectedEntity } from "@/app/lib/philos/crossTerminal/loadSelectedEntity";
 import { resolveShellIdentityLink } from "@/app/lib/philos/community/resolveShellIdentityLink";
 import { buildActionLifecycleSummary } from "@/app/lib/philos/canon/actionLifecycle";
 import { resolvePersonRef } from "@/app/lib/philos/person/personRef";
@@ -206,6 +211,22 @@ export default async function DynamicsPage({
     }
   }
 
+  /* Recorded tensions from the group operational spine. Read-only: Dynamics
+     consumes the one projection rather than rebuilding group state. */
+  const spineTensions: { label: string; status: string; detail: string }[] = await (async () => {
+    try {
+      const { loadGroupEvents } = await import("@/app/lib/philos/community/groupEventStore");
+      const { projectAllGroupStates } = await import("@/app/lib/philos/community/groupOperationalState");
+      const states = projectAllGroupStates(loadGroupEvents().events);
+      return [...states.values()].flatMap((st) =>
+        st.tensions.map((t) => ({
+          label: t.description ?? t.tension_id,
+          status: t.pole_a && t.pole_b ? "CONFLICT" : "OBSERVED",
+          detail: `${st.group_id} · ${t.source}`,
+        })));
+    } catch { return []; }
+  })();
+
   const identityLink = await resolveShellIdentityLink();
 
   // Real Action/Effect/Learning lifecycle for the resolved PersonRef, computed
@@ -274,7 +295,64 @@ export default async function DynamicsPage({
     } catch { return null; }
   })();
 
+  /* REAL TIME SERIES for the INSPECTED group. Two aligned panels on one shared
+     x axis — never a dual y-axis, because people and shekels do not share a
+     magnitude.
+     Which group: the cross-terminal `?group=` selection, resolved through the
+     same registry Community uses, so a group selected there is still the
+     subject here. It was previously gated on the legacy `?community=` param,
+     which meant the chart existed but never rendered. Falls back to the
+     viewer's OWN group only — never to a constant, and never to a group the
+     selection did not name. */
+  const trajectorySelection = await (async () => {
+    try {
+      const { loadValueGroupWorld } = await import("@/app/lib/philos/community/loadValueGroupWorld");
+      const { SELECTED_GROUP_PARAM } = await import("@/app/lib/philos/community/selectedGroupContext");
+      const world = await loadValueGroupWorld({ requestedGroup: params[SELECTED_GROUP_PARAM] });
+      const id = world.selected.status === "selected" ? world.selected.group_id : community?.group.group_id;
+      if (!id) return null;
+      const evs = await loadPhilosEvents();
+      const view = projectValueGroup(evs, id, todayIn(systemClock));
+      if (!view) return null;
+      return {
+        name: view.name,
+        currency: view.budget.currency,
+        capital: buildCapitalTimeline(evs),
+        membership: buildMembershipTimeline(evs),
+      };
+    } catch { return null; }
+  })();
+
+  const trajectory = trajectorySelection ? (
+    <div dir="rtl" style={{ margin: "0 0 12px" }}>
+      <GroupTrajectory
+        title={`מסלול הקבוצה — ${trajectorySelection.name}`}
+        series={[
+          { key: "members", title: "חברים", unit: "אנשים", step: true,
+            points: trajectorySelection.membership.map((m) => ({ date: m.date, value: m.count, label: m.person_id })) },
+          { key: "capital", title: "הון", unit: trajectorySelection.currency, step: true,
+            points: trajectorySelection.capital.map((c) => ({ date: c.date, value: c.balance })) },
+        ]}
+      />
+    </div>
+  ) : null;
+
+  /* THE SAME SELECTED ENTITY, in the change lens. One build, shared with
+     every other terminal — Dynamics adds no projection of its own. */
+  const entity = await loadSelectedEntity();
+
   return <DynamicsView
+      selectedGroup={entity?.projection.groupId}
+      connectedSlot={entity ? (
+        <div dir="rtl" style={{ display: "flex", flexDirection: "column",
+          gap: 10, margin: "0 0 12px", minBlockSize: "70vh" }}>
+          <OperationalTraceFlow trace={entity.trace} emphasis="dynamics"
+            title="מה קרה, מה נגרם ממנו, ומה המערכת למדה"
+            subtitle="שרשרת אמיתית בלבד: כל חוליה נקנית במזהה מוצהר על רשומה שמורה. מסלול אינו נבנה מצילומי מצב סטטיים, ולמידה שאין לה רשומה נשארת שבורה ואומרת זאת." />
+          <UnifiedEntitySurface projection={entity.projection} trace={entity.trace} />
+        </div>
+      ) : null}
+      trajectorySlot={trajectory}
       semanticContext={semanticContext}
       causal={traceEdges && causalCounts ? {
         /* Measured cells come from the canon graph the view already holds;
@@ -282,7 +360,21 @@ export default async function DynamicsPage({
            inferred — an empty list is an answer. */
         observedCells: canon.nodes.filter((n) => n.subject === personRef.person_id).length,
         counts: causalCounts,
-        tensions: [],
+        /* THIS WAS `[]`. The community tensions were computed 80 lines above
+           and thrown away, so the causal view said "no contradictions
+           recorded" on every render regardless of what was recorded. Two
+           sources now feed it, both read and neither inferred: the community
+           tensions already built from the resolved group, and any
+           TENSION_OBSERVED events on the operational spine. An empty list is
+           still an answer — it is just no longer a guaranteed one. */
+        tensions: [
+          ...(community?.tensions ?? []).map((t) => ({
+            label: t.label,
+            status: t.status,
+            detail: `${t.current_state} · ${t.evidence_source}`,
+          })),
+          ...spineTensions,
+        ],
         edges: traceEdges,
         window: causalWindow,
       } : null}

@@ -44,9 +44,16 @@ export async function resolveViewer(): Promise<Viewer> {
      the two fields the older call sites use. Those call sites keep working
      unchanged, and there is one place a session lands. */
   const ctx = await resolveViewerContext();
-  return { person_id: ctx.person_id, display_name: CURRENT_VIEWER_DISPLAY_NAME };
+  /* The display name is resolved at RENDER, against the reader, by
+     `person/personLabel.ts`. Stamping "את/ה" here put a rendering decision
+     into the model: every record written through this seam carried a
+     second-person string that any OTHER reader would then see applied to a
+     third person. The viewer's id is the viewer-independent fact; the label
+     is not this function's to decide. */
+  return { person_id: ctx.person_id, display_name: ctx.person_id };
 }
 
-/** The viewer's display name is not yet a recorded fact for any identity —
- *  stated here once rather than implied by a constant that also carried an id. */
-const CURRENT_VIEWER_DISPLAY_NAME = "את/ה";
+/* `CURRENT_VIEWER_DISPLAY_NAME = "את/ה"` stood here. It was the producer of
+   the viewer-relative labels now sitting in the append-only log, so it is
+   gone rather than merely unused: second person is applied by
+   `person/personLabel.ts` at render, where the reader is known. */

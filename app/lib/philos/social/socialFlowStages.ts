@@ -139,8 +139,17 @@ export function buildSocialFlow(i: FlowInput, opts?: ScaleEligibility): FlowStag
     { key: "value_group", label: "VALUE GROUP", label_he: "קבוצת ערך",
       count: i.valueGroups, status: real(i.valueGroups), basis: "קבוצות אמיתיות בלוג", connector: "CONCEPTUAL" },
 
-    { key: "membership", label: "MEMBERSHIP", label_he: "חברות",
-      count: i.memberships, status: real(i.memberships), basis: "חברות מתועדת", connector: "CONCEPTUAL" },
+    /* THE LABEL NAMES THE EVENT, BECAUSE THE NUMBER IS THE EVENT'S.
+       This counted `member.joined` events and called itself MEMBERSHIP, so it
+       rendered `6` under a word the reader resolves as "how many members" —
+       beside a shared spine that says 9 affiliated. Both are true; only the
+       label was wrong. `MEMBER.JOINED` states the scope where the figure
+       appears, so the difference from the roster needs no second component to
+       explain it. The key, and the count, are untouched. */
+    { key: "membership", label: "MEMBER.JOINED", label_he: "חברות",
+      count: i.memberships, status: real(i.memberships),
+      basis: "אירועי member.joined בלבד — מייסד וממונים מסונפים בלי אירוע הצטרפות, ולכן מניין המסונפים גבוה יותר",
+      connector: "CONCEPTUAL" },
 
     // The seam. Everything left of here is the value model; everything right
     // is the canon pipeline. A Need is not produced by a membership.

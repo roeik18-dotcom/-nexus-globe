@@ -1,8 +1,14 @@
 import { mayReadSubject, resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import SurfaceEmptyState from "@/app/lib/philos/shell/SurfaceEmptyState";
 import MarketMatchView from "./MarketMatchView";
+import GroupSpineMarket from "./GroupSpineMarket";
+import { loadValueGroupWorld } from "@/app/lib/philos/community/loadValueGroupWorld";
 import { resolveViewerContextSemantics } from "@/app/lib/philos/context/resolveViewerContextSemantics";
 import SignOutButton from "@/app/signin/SignOutButton";
+import EntityChainFlow from "@/app/lib/philos/crossTerminal/EntityChainFlow";
+import UnifiedEntitySurface from "@/app/lib/philos/crossTerminal/UnifiedEntitySurface";
+import OperationalTraceFlow from "@/app/lib/philos/crossTerminal/OperationalTraceFlow";
+import { loadSelectedEntity } from "@/app/lib/philos/crossTerminal/loadSelectedEntity";
 import { buildViewerLinkRegistry } from "@/app/lib/philos/bridge/viewerLinkRegistry";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
 import path from "path";
@@ -180,6 +186,12 @@ export default async function MarketplacePage({
   // connector layout over the SAME real Need/Offer records already
   // loaded above (scoped to personRef.person_id, same filter
   // `EvaluateMatchForm`/`OpportunityCandidates` below already use). No
+  /* THE SAME SELECTED ENTITY, in the possibility lens. Marketplace was a
+     subject-scoped surface — "my needs, my offers" — which is a different
+     question from "what can this GROUP match". Both are real; only the second
+     belongs to the connected system, and it is the one that was missing. */
+  const entity = await loadSelectedEntity();
+
   // store/lifecycle logic touched; production render below is
   // untouched when this param is absent.
   if (params.view === "prototype") {
@@ -197,6 +209,20 @@ export default async function MarketplacePage({
     );
   }
 
+  /* The group operational spine. Read-only here: Marketplace consumes the
+     canonical objects, it does not re-derive what a group needs. */
+  const spineWorld = await loadValueGroupWorld({ requestedGroup: undefined });
+  const spineStates = [...spineWorld.operational.values()];
+  const spineMarket = {
+    needs: spineStates.flatMap((st) => st.needs),
+    resources: spineStates.flatMap((st) => st.resources),
+    candidates: [...spineWorld.candidateMatches],
+    accepted: spineStates.flatMap((st) => st.matches.filter((m) => m.status === "ACCEPTED")),
+    actions: spineStates.flatMap((st) => st.actions),
+    groupsWithEvents: spineStates.filter((st) => st.counts.events > 0).length,
+    totalGroups: spineWorld.registry.entries.length,
+  };
+
   return (
     // One page-level surface: the blocks below each paint their own
     // background, so the area under the last one fell through to the white
@@ -204,9 +230,11 @@ export default async function MarketplacePage({
     <div style={{ background: "#0b0f1a", minHeight: "100vh" }}>
       <div style={{ padding: "20px 20px 0", background: "#0b0f1a" }}>
         <SystemShell
+          dense
           signOut={<SignOutButton />}
           viewerContext={semanticContext}
           surface="marketplace"
+          selectedGroup={entity?.projection.groupId}
           purpose="מה אני צריך? מי יכול לעזור? למה אפשר או אי אפשר לפעול כרגע?"
           selected={selected}
           subject={personRef.person_id}
@@ -214,8 +242,23 @@ export default async function MarketplacePage({
         />
       </div>
 
-      {/* PRIMARY — real PHILOS canonical graph (Marketplace Legacy
-          Convergence pass). Leads every normal visit, `?ctx=` or not. */}
+      {/* ── PRIMARY LIVING SURFACE · THE POSSIBILITY LENS ────────────────
+          The operational trace first, then the shared spine with NEED /
+          RESOURCE / MATCH / ACTION brought forward. Same components and same
+          objects as Community, Globe and World: Marketplace is a lens on the
+          selected entity, not a seventh dashboard about the viewer. */}
+      {entity ? (
+        <div style={{ padding: "0 20px", display: "flex", flexDirection: "column",
+          gap: 10, minBlockSize: "70vh" }}>
+          <OperationalTraceFlow trace={entity.trace} emphasis="marketplace"
+            title="מה נדרש, מה קיים, ומה באמת ניתן להתאים"
+            subtitle="כל חוליה נוקבת במנגנון הצירוף שלה — איזה שדה על איזו רשומה נושא איזה מזהה. חברוּת אינה צירוף, ודמיון בין טקסטים אינו התאמה." />
+          <UnifiedEntitySurface projection={entity.projection} trace={entity.trace} />
+        </div>
+      ) : null}
+
+      {/* SECONDARY — real PHILOS canonical graph (Marketplace Legacy
+          Convergence pass), subject-scoped. */}
       {personFrame ? (
         /* REFERENCE FRAME, DEMOTED to the context tier on this surface.
            It is the same three cards every terminal shows, and on a surface
@@ -265,6 +308,12 @@ export default async function MarketplacePage({
           } : null,
         }} />
         )}
+
+        {/* GROUP SCALE. The chain above is the viewer's PERSONAL canon slice;
+            this is the same market at group scale, read from the one
+            operational projection Community reads. Two scales, one model —
+            not two marketplaces. */}
+        <GroupSpineMarket input={spineMarket} />
       </div>
 
       <RealMarketplace

@@ -142,7 +142,36 @@ export default function SocialFrame({
      one tier and one was deleted outright as a duplicate. */
   return (
     <section dir="rtl" style={S.frame}>
-      {/* ══ A. ORIENTATION ═══════════════════════════════════════════════ */}
+      {/* ══ A. ORIENTATION — NOW COLLAPSED ══════════════════════════════
+          The scale row (GROUP ⇄ NETWORK ⇄ SYSTEM) and the four orienting
+          figures moved INTO the CONTEXT drawer below. They are real and
+          unchanged, but they are the same three numbers on all three routes,
+          repeated above every terminal's actual answer — the reader met the
+          product's scale HUD before ever meeting the product. The chain the
+          routes now render says where the selected object sits; this states
+          how big each scale is, which is audit, not orientation. */}
+      {/* ══ B. PRIMARY ═══════════════════════════════════════════════════
+          The OBJECT lane that used to sit here is DELETED. It showed the
+          selected record's kind, id, verification, provenance and its verdict
+          at all three scales — every one of which the stage's OBJECT / STATUS
+          / PROVENANCE / SCALE cells now show. Two readings of one record,
+          stacked, was the clearest single instance of the duplication. */}
+      {primary ? <div style={S.primary}>{primary}</div> : null}
+
+      {/* ══ C. CONTEXT ═══════════════════════════════════════════════════
+          Timeline, value model and scale-wide role counts. All three are real
+          and unchanged; none of them is the answer this terminal exists to
+          give, so none of them precedes it any more. */}
+      <details style={S.context}>
+        <summary style={S.contextSummary}>
+          ציר זמן · מודל הערך · תפקידים — CONTEXT
+          <span style={S.contextCount}>{here.length}/{chronology.length}</span>
+        </summary>
+
+        <div style={S.contextBody}>
+          {/* The scale HUD and the orienting figures, in their one place. */}
+          <div style={S.ctxBlock}>
+            <div style={S.ctxHead}>קנה-מידה · SCALE</div>
       <div style={S.orient}>
         <div style={S.zoomRow}>
           {ZOOM.map((z, i) => (
@@ -176,25 +205,8 @@ export default function SocialFrame({
         ) : null}
       </div>
 
-      {/* ══ B. PRIMARY ═══════════════════════════════════════════════════
-          The OBJECT lane that used to sit here is DELETED. It showed the
-          selected record's kind, id, verification, provenance and its verdict
-          at all three scales — every one of which the stage's OBJECT / STATUS
-          / PROVENANCE / SCALE cells now show. Two readings of one record,
-          stacked, was the clearest single instance of the duplication. */}
-      {primary ? <div style={S.primary}>{primary}</div> : null}
+          </div>
 
-      {/* ══ C. CONTEXT ═══════════════════════════════════════════════════
-          Timeline, value model and scale-wide role counts. All three are real
-          and unchanged; none of them is the answer this terminal exists to
-          give, so none of them precedes it any more. */}
-      <details style={S.context}>
-        <summary style={S.contextSummary}>
-          ציר זמן · מודל הערך · תפקידים — CONTEXT
-          <span style={S.contextCount}>{here.length}/{chronology.length}</span>
-        </summary>
-
-        <div style={S.contextBody}>
           {/* TIMELINE — the ONE place time appears in the product. */}
           <div style={S.ctxBlock}>
             <div style={S.ctxHead}>ציר זמן · TIMELINE</div>

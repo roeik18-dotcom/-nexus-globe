@@ -479,7 +479,14 @@ function starShadows(n: number, seed: number) {
   return out.join(",");
 }
 
-export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry, identityLink, personContext, canonActions, canonEffects, canonNeeds, canonOffers, canonicalSlice, observationStrip, personFrameSlot, bridgeLinks, gate, socialSelection, primaryCtx, viewerSubject, semanticContext }: {
+export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry, identityLink, personContext, canonActions, canonEffects, canonNeeds, canonOffers, canonicalSlice, observationStrip, personFrameSlot, bridgeLinks, gate, socialSelection, primaryCtx, viewerSubject, semanticContext,
+  suppressScene,
+}: {
+  /** Skip this component's own 3D globe. `/planet` renders `WorldExplorer`'s
+   *  map above it, and two react-globe.gl instances on one page is both
+   *  wasteful and ambiguous about which map is the subject. Everything else
+   *  this component provides — shell, HUD, panels, audit — still renders. */
+  suppressScene?: boolean;
   nodes: GlobeNode[]; arcs: GlobeArc[]; selected?: SelectedContext; registry?: EntityLink[]; identityLink?: ShellIdentityLink;
   /** STEP 2 — the frame this screen's readings are relative to (canon §19). */
   personContext?: PersonContext;
@@ -682,7 +689,7 @@ export default function WorldGlobe({ nodes, arcs: eventArcs, selected, registry,
 
       {/* layer 3+4 — the globe (THE object) */}
       <div ref={wrapRef} style={S.stage}>
-        {Globe && size.w > 0 && (
+        {!suppressScene && Globe && size.w > 0 && (
           <Globe
             ref={globeRef} width={size.w} height={size.h}
             backgroundColor="rgba(0,0,0,0)"

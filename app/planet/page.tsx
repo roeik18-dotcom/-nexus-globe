@@ -33,6 +33,15 @@
  * stated as UNKNOWN rather than plotted.
  */
 
+import { scopeToViewer, ACTION_OWNER, EFFECT_OWNER, NEED_OWNER, OFFER_OWNER } from "@/app/lib/philos/canon/viewerScopedCanon";
+import WorldExplorer from "./WorldExplorer";
+import EntityChainFlow from "@/app/lib/philos/crossTerminal/EntityChainFlow";
+import UnifiedEntitySurface from "@/app/lib/philos/crossTerminal/UnifiedEntitySurface";
+import TerminalPage, { type TerminalSection } from "@/app/lib/philos/shell/TerminalPage";
+import { loadSelectedEntity } from "@/app/lib/philos/crossTerminal/loadSelectedEntity";
+import NetworkPositionMap from "./NetworkPositionMap";
+import { loadWorldView } from "@/app/lib/philos/geo/loadWorldView";
+import { SELECTED_GROUP_PARAM } from "@/app/lib/philos/community/selectedGroupContext";
 import { connection } from "next/server";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
 import SignOutButton from "@/app/signin/SignOutButton";
@@ -58,13 +67,11 @@ import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel"
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
 import { loadSocialSystem } from "@/app/lib/philos/social/loadSocialSystem";
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
-import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection";
 import { ABSENCE_TEXT } from "@/app/lib/philos/social/socialSystemProjection";
 import { roleTouchOf } from "@/app/lib/philos/social/roleTouch";
 import { buildSocialFlow } from "@/app/lib/philos/social/socialFlowStages";
 import VerifiedRelationInventory from "@/app/lib/philos/shell/VerifiedRelationInventory";
 import { COLOR, FS, RADIUS, TYPE } from "@/app/lib/philos/shell/designTokens";
-import { buildSocialPrimaryContext } from "@/app/lib/philos/social/socialPrimaryContext";
 import SocialFrame from "@/app/lib/philos/shell/SocialFrame";
 import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueSpine";
 import SocialChronologyPanel from "@/app/lib/philos/shell/SocialChronologyPanel";
@@ -115,13 +122,26 @@ export default async function PlanetPage({
   // after another, so the route paid the sum of six round trips before it
   // could render — measured as ~1s to a visible canvas. Loading them together
   // pays the slowest, not the total.
-  const [needGroupDeclarations, canonActions, canonEffects, canonNeeds, canonOffers] = await Promise.all([
+  const [needGroupDeclarations, allActions, allEffects, allNeeds, allOffers] = await Promise.all([
     loadNeedGroupLinks().catch(() => []),
     loadActions().catch(() => []),
     loadEffects().catch(() => []),
     loadNeeds().catch(() => []),
     loadOffers().catch(() => []),
   ]);
+
+  /* SCOPED AT THE BOUNDARY, before anything downstream can read them. These
+     four stores are PERSON-OWNED canon; loaded whole, their distinct
+     owner/subject/source set is exactly what `CanonActivityPanel` prints as
+     RELATED PEOPLE — which is how `person_roei` reached User B's Globe. Fail
+     closed: no viewer, no records. Same rule `projectCanonDynamics` applies to
+     Observations. */
+  const canonViewer = await resolveViewerContext();
+  const canonScope = { subject_id: canonViewer.subject_id, person_id: canonViewer.person_id };
+  const canonActions = scopeToViewer(allActions, ACTION_OWNER, canonScope);
+  const canonEffects = scopeToViewer(allEffects, EFFECT_OWNER, canonScope);
+  const canonNeeds = scopeToViewer(allNeeds, NEED_OWNER, canonScope);
+  const canonOffers = scopeToViewer(allOffers, OFFER_OWNER, canonScope);
 
 
   // ONE authority, same as Community and World.
@@ -175,41 +195,13 @@ export default async function PlanetPage({
   // An empty projection means the log holds nothing placeable. Saying so is the
   // honest state: the previous fallback ("No world data.") described the
   // ontology files, which this route no longer reads.
-  if (nodes.length === 0) {
-    /* AN EMPTY GLOBE IS STILL A TERMINAL.
-       This returned a bare sentence on a blank page — no shell, no nav, no
-       orientation. A viewer with no recorded relations therefore landed on a
-       screen that could not tell them where they were or let them navigate
-       away, which is precisely the state every NEW user arrives in. The band
-       renders here for the same reason it renders everywhere: "nothing to
-       draw" is an answer, not an absence of a screen. */
-    return (
-      <div style={{ background: COLOR.bg, minHeight: "100vh" }}>
-        <div style={{ padding: "12px 20px 0" }}>
-          <SystemShell
-            signOut={<SignOutButton />}
-            viewerContext={semanticContext}
-            surface="globe"
-            purpose="Where this exists in the system, and what flows between whom — layout, not geography, until location is real."
-          />
-        </div>
-        <div dir="rtl" style={{ padding: "24px 20px" }}>
-          <div style={{
-            border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.md,
-            padding: "20px 22px", background: COLOR.bgRaised, maxWidth: 560,
-          }}>
-            <div style={{ ...TYPE.title, color: COLOR.text, marginBottom: 6 }}>
-              אין ישויות לצייר
-            </div>
-            <div style={{ fontSize: FS.read, color: COLOR.textDim, lineHeight: 1.7 }}>
-              אין ברשומות אף קשר שניתן להציב על הכדור. זו תשובה — לא מסך שבור:
-              קשר נוצר מאירוע מתועד, ולא מדמיון או מהשתייכות משוערת.
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  /* THE EARLY RETURN IS GONE. A viewer with no recorded relations returned
+     here, before `WorldExplorer` existed further down — so the person with
+     nothing of their own was the one person who could not reach the map of
+     everything else. The empty-state text below is preserved and now renders
+     as a NOTE inside the normal page instead of replacing it. */
+  const emptyNodeNote = nodes.length === 0;
+
 
   const identityLink = await resolveShellIdentityLink();
 
@@ -317,122 +309,153 @@ export default async function PlanetPage({
      (that is a NETWORK-only question), but it is no longer the source of the
      OBJECT / STATUS / ROLES / PROVENANCE readout — the stage is, identically
      to the other two scales. */
-  const primaryCtx = buildSocialPrimaryContext({
-    scale: "NETWORK",
-    viewer,
-    title: "הרשת · NETWORK",
-    subtitle: "איך הישויות והקשרים פרוסים — פריסה, לא גאוגרפיה, עד שמיקום יהיה אמיתי.",
-    objects: socialObjects,
-    bridgeLinks: registry,
-    selection: resolveSocialSelection(params.sel, socialObjects),
-    arcs,
-    density: "hud",
-    audit: (
-      <>
-        <VerifiedRelationInventory arcs={arcs} bridgeLinks={bridgeRows} gate={gateReport} />
-        <div style={{ marginTop: 8 }}>
-          <CanonActivityPanel canonActions={canonActions} canonEffects={canonEffects}
-                              canonNeeds={canonNeeds} canonOffers={canonOffers} />
-        </div>
-        <div style={{ marginTop: 8 }}>
-          <RegionLayerPanel registry={registry} />
-        </div>
-      </>
-    ),
-  });
+  /* THE THREE PANELS BELOW WERE BEING BUILT AND THROWN AWAY.
+     They lived in `buildSocialPrimaryContext({ audit: … })`, and when the
+     shared stage stopped being rendered on this route the context object kept
+     being constructed — so `CanonActivityPanel`, `RegionLayerPanel` and
+     `VerifiedRelationInventory` were computed on every request and mounted
+     nowhere. That is content loss with no diff to point at, which is the worst
+     kind. They are rendered directly now, and the dead context builder is
+     gone. Each is UNIQUE to Globe: canon activity at network scale, the
+     bridge's region layer, and the network truth gate. */
+  const networkAudit = (
+    <>
+      <VerifiedRelationInventory arcs={arcs} bridgeLinks={bridgeRows} gate={gateReport} />
+      <div style={{ marginTop: 8 }}>
+        <CanonActivityPanel canonActions={canonActions} canonEffects={canonEffects}
+                            canonNeeds={canonNeeds} canonOffers={canonOffers} />
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <RegionLayerPanel registry={registry} />
+      </div>
+      {personFrame ? (
+        <div style={{ marginTop: 8 }}><PersonFrameStrip frame={personFrame} compact /></div>
+      ) : null}
+    </>
+  );
+
+  /* The world view: 177 reference countries, the resolved-geography model,
+     four statistical levels and the search index. Server-side because it reads
+     the reference dataset and the registry; the polygons themselves are
+     fetched by the client from /public so they never enter this render. */
+  const world = await loadWorldView({ requestedGroup: params[SELECTED_GROUP_PARAM] });
+
+  /* THE SHARED CROSS-TERMINAL OBJECT — same function, same stores, same result
+     as Community and World. Both already-loaded inputs are handed over, so the
+     group is joined by id once and no store is read twice on this route. */
+  const entity = await loadSelectedEntity({ social, operational: world.group.operational });
+  const selectedEntity = entity?.projection ?? null;
+
+
+  /* TWO WEBGL GLOBES ON ONE PAGE FIGHT. `WorldGlobe` already owns a
+     react-globe.gl instance inside its own scene container; mounting the
+     explorer's globe as a slot INSIDE it left one canvas alive and the other
+     black. The explorer is a SIBLING above it instead — its own container, its
+     own instance, no shared scene. */
+  /* /planet IS the geographic World Explorer now: app shell, then one
+     surface. The header, KPI rail and audit drawer live INSIDE the explorer
+     so the page is a single composition rather than a stack of sections. */
+  /* ── TIERED COMPOSITION ────────────────────────────────────────────────
+     GLOBE'S PRIMARY IS ONE WORKSPACE WITH TWO VIEWS OF THE SAME QUESTION.
+     "Where is this entity, and what relationships matter" has a relational
+     answer and a spatial answer, and they were stacked: the network map at
+     y=222 and the sphere at y=822, so the terminal's namesake view never
+     appeared above the fold and 722px of near-empty canvas (measured
+     information density 0.07) sat under a dense one. Side by side they stop
+     competing — the reader sees both at once and reads them as one place
+     rather than two screens. Neither is demoted and neither is hidden: the
+     globe keeps its full explorer, controls and drawer. */
+  const secondary: TerminalSection[] = [
+    {
+      id: "network-audit",
+      title: "שער אמת רשתי · פעילות קנונית · שכבת מרחב · מסגרת אדם",
+      summary: "NETWORK AUDIT — קשרים מאומתים, כיסוי הרזולבר ומסגרת האדם",
+      children: (
+        <div style={{ position: "relative" }}>{networkAudit}</div>
+      ),
+    },
+  ];
 
   return (
-    <WorldGlobe
-      semanticContext={semanticContext}
-      viewerSubject={personRef.person_id}
-      nodes={nodes}
-      arcs={arcs}
-      selected={selected}
-      registry={registry}
-      gate={gateReport}
-      primaryCtx={primaryCtx}
-      socialSelection={(() => {
-        const sel = resolveSocialSelection(params.sel, socialObjects);
-        if (sel.status !== "resolved") return undefined;
-        const o = sel.object;
-        const net = o.scales.NETWORK;
-        return {
-          record_id: o.record_id, kind: o.kind, at: o.at,
-          verification: o.verification, provenance: o.provenance,
-          network_present: net.present,
-          absent_reason: net.absent_because ? ABSENCE_TEXT[net.absent_because] : undefined,
-          roles: roleTouchOf(o.kind, o.verification),
-          source_record_ids: o.source_record_ids,
-        };
-      })()}
-      bridgeLinks={bridgeRows}
-      identityLink={identityLink}
-      personContext={personContext}
-      canonActions={canonActions}
-      canonEffects={canonEffects}
-      canonNeeds={canonNeeds}
-      canonOffers={canonOffers}
-      personFrameSlot={
-        <>
-          {personFrame ? <PersonFrameStrip frame={personFrame} compact /> : null}
-          {/* Globe's own zoom position. It sits INSIDE the collapsed frame
-              disclosure rather than in the open band: the band is capped at
-              34vh over the canvas, and Globe is the one surface whose primary
-              content is the sphere itself. The nav capsule already shows Globe
-              as the active family member above the fold. */}
-          {/* Same frame as Community and World. On Globe it lives inside the
-              collapsed disclosure, because here the sphere is the primary
-              content and the frame is reference. */}
-          <SocialFrame
-            surface="globe"
-            spine={buildSocialValueSpine({ valueGroups: nodes.filter((n) => n.type === "value_group").length }).links}
-            roles={{
-              action: canonActions.length,
-              evidence: canonEffects.filter((e) => !!e.effect.verified_outcome).length,
-              relations: arcs.length,
-              meaning: nodes.filter((n) => n.type === "value").length,
-            }}
-            // Counted once in `loadSocialSystem`. Globe used to count NODES
-            // and ARCS here — facts about its own drawing, not about the
-            // records — and reported 6 where Community reported 9.
-            flow={social.flow()}
-            chronology={chronology}
-            objects={socialObjects}
-            selection={resolveSocialSelection(params.sel, socialObjects)}
-            chronoLimit={5}
-            // AUDIT — everything Globe used to float in its own grammar now
-            // lives in the frame's one audit lane: the verified-relation
-            // inventory with its truth-gate verdict, canon activity, and the
-            // region/related layer. Same disclosure, same lane, same
-            // vocabulary as Community and World.
-            audit={
-              <>
-                <VerifiedRelationInventory arcs={arcs} bridgeLinks={bridgeRows} gate={gateReport} />
-                <div style={{ marginTop: 8 }}>
-                  <CanonActivityPanel canonActions={canonActions} canonEffects={canonEffects}
-                                      canonNeeds={canonNeeds} canonOffers={canonOffers} />
-                </div>
-                <div style={{ marginTop: 8 }}>
-                  <RegionLayerPanel registry={registry} />
-                </div>
-                <div style={{ marginTop: 8 }}>
-                  <SocialSourceSpinePanel surface="globe" limit={4} />
-                </div>
-              </>
-            }
-          />
-        </>
+    <TerminalPage
+      background="#0a0e17"
+      nav={
+        <SystemShell
+                  signOut={<SignOutButton />}
+                  viewerContext={semanticContext}
+                  surface="globe"
+                  selectedGroup={selectedEntity?.groupId}
+                  dense
+                  purpose="מפת הערכים, הקבוצות והגאוגרפיה של PHILOS."
+                  subject={personRef.person_id}
+                  identityLink={identityLink}
+                />
       }
-      observationStrip={observationStrip}
-      canonicalSlice={
-        <>
-          {/* 7-terminal propagation — the SAME shared Observation reading;
-              on Globe only the Value/Value-Group relation matters, and the
-              record has no coordinate — no geography is invented for it. */}
-          <div dir="rtl"><ObservationReadingPanel subject={personRef.person_id} surface="GLOBE" /></div>
-          <CanonicalSlicePanel subject={personRef.person_id} asOf={systemClock.now()} />
-        </>
+      entity={selectedEntity ? (
+        <UnifiedEntitySurface projection={entity!.projection} trace={entity!.trace} compact />
+      ) : undefined}
+      primary={
+        <div style={{
+          display: "grid",
+          /* The spatial view gets marginally the larger share — a sphere needs
+             the room to read as one; the relational view is a fixed-height
+             diagram and does not. Both columns are `minmax(0, …)` so neither
+             can be pushed past the viewport by its own content. */
+          gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.08fr)",
+          gap: 12, alignItems: "start",
+        }}>
+          <NetworkPositionMap
+                    nodes={nodes}
+                    arcs={arcs}
+                    centerId={selectedEntity?.groupId ?? null}
+                    reach={{
+                      countriesWithPresence: world.global.countries_with_presence,
+                      totalCountries: world.global.countries_in_reference,
+                      groupsLocated: world.global.groups,
+                      membersLocated: world.global.members,
+                      plottable: world.global.groups_plottable,
+                      precision: selectedEntity?.location.precision ?? null,
+                      countryName: selectedEntity?.location.country_name ?? null,
+                    }}
+                  />
+          <WorldExplorer
+                    global={world.global}
+                    byContinent={world.byContinent}
+                    byCountry={world.byCountry}
+                    searchIndex={world.search}
+                    resolver={world.resolverCoverage}
+                    initialGroup={world.group.selected.status === "selected" ? world.group.selected.group_id
+                      : selectedEntity?.groupId ?? null}
+                    /* THE RESOLVED AREA, NEVER A POINT. `selectedEntity.location` is a
+                       CITY-precision DERIVED resolution with `plottable === false` — no
+                       coordinate was ever recorded. The globe therefore opens on the
+                       country POLYGON, and a marker is not drawn under any circumstance:
+                       `country_code` is passed, latitude/longitude are not, and there is
+                       no path from here to one. */
+                    initialCountry={selectedEntity && !selectedEntity.plottable
+                      ? selectedEntity.location.country_code ?? null : null}
+                    emptyNodeNote={emptyNodeNote}
+                    groups={world.located.map((g) => ({
+                      group_id: g.entry.group.group_id,
+                      name: g.entry.group.name,
+                      provenance: g.entry.group.provenance,
+                      mine: (world.group.overlay.relationOf(g.entry.group.group_id) ?? "NONE") !== "NONE",
+                      members: g.state && g.state.channels.members === "MEASURED"
+                        ? g.state.members.filter((m) => m.active).length
+                        : g.entry.group.members.length,
+                      precision: g.geo.precision,
+                      raw_label: g.geo.raw_label,
+                      country_code: g.geo.country_code,
+                      country_name: g.geo.country_name,
+                      continent: g.geo.continent,
+                      resolver: g.geo.resolver,
+                      confidence: g.geo.confidence,
+                      because: g.geo.because,
+                    }))}
+                  />
+        </div>
       }
+      secondary={secondary}
     />
   );
 }

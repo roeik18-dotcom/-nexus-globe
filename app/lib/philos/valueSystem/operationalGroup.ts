@@ -158,8 +158,12 @@ export async function buildOperationalGroupProfile(): Promise<OperationalGroupPr
   const capitalTl = buildCapitalTimeline(events);
   const membershipTl = buildMembershipTimeline(events);
   const lastCap = capitalTl[capitalTl.length - 1];
+  /* The membership half of this line used to read "N חברים" while carrying the
+     JOIN-EVENT count, so it printed 6 beside a roster of 9 and read as a
+     contradiction. Same number, correct noun: these are joins, not members.
+     `members.length` remains the affiliation total. */
   const trend = lastCap
-    ? `הון ${lastCap.balance} ${lastCap.currency} (Δ אחרון ${lastCap.delta >= 0 ? "+" : ""}${lastCap.delta}) · ${membershipTl.length > 0 ? `${membershipTl[membershipTl.length - 1].count} חברים` : "אין אירועי הצטרפות"}`
+    ? `הון ${lastCap.balance} ${lastCap.currency} (Δ אחרון ${lastCap.delta >= 0 ? "+" : ""}${lastCap.delta}) · ${membershipTl.length > 0 ? `${membershipTl[membershipTl.length - 1].count} הצטרפויות` : "אין אירועי הצטרפות"}`
     : "אין אירוע כספי — אין מגמת הון";
 
   // TRACE — every hop a real stored reference; stop honestly where none.

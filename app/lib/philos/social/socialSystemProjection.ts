@@ -80,11 +80,18 @@ export interface ProjectionInput {
   needGroups: ReadonlyMap<string, string>;
   /** record_id -> verified wider-system evidence ref. Empty today, and that
    *  emptiness is the honest state of the data, not a stub. */
-  systemEvidence?: ReadonlyMap<string, string>;
+  /**
+   * REQUIRED. This was optional, and its only caller omitted it — so the map
+   * was always empty and every record was rejected with NO_SYSTEM_EVIDENCE
+   * unconditionally. "No evidence channel" is no longer structurally possible:
+   * a caller that supplies nothing must now say so by passing an empty map,
+   * which is a different statement from forgetting.
+   */
+  systemEvidence: ReadonlyMap<string, string>;
 }
 
 export function projectSocialSystem(input: ProjectionInput): SocialObject[] {
-  const sysEv = input.systemEvidence ?? new Map<string, string>();
+  const sysEv = input.systemEvidence;
 
   return input.chronology.map((e): SocialObject => {
     const isEdge = EDGE_KINDS.has(e.kind);

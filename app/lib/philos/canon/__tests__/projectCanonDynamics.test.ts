@@ -7,7 +7,7 @@
 import { describe, expect, it } from "vitest";
 import type { CanonEvent } from "../canonEvent";
 import { InMemoryCanonEventStore } from "../canonEventStore";
-import { projectCanonDynamics } from "../projectCanonDynamics";
+import { projectCanonDynamics, projectCanonDynamicsUnscoped, observationVisibleTo, UNSCOPED } from "../projectCanonDynamics";
 import type { Observation } from "../observation";
 
 function baseObservation(overrides: Partial<Observation> = {}): Observation {
@@ -40,7 +40,7 @@ function canonEvent(id: string, observation: Observation, recordedAt: string): C
 describe("projectCanonDynamics", () => {
   it("returns no nodes for an empty store — no fabrication", async () => {
     const store = new InMemoryCanonEventStore([]);
-    const graph = await projectCanonDynamics(store);
+    const graph = await projectCanonDynamicsUnscoped(store);
     expect(graph.nodes).toEqual([]);
     expect(graph.summary.node_count).toBe(0);
   });
@@ -50,7 +50,7 @@ describe("projectCanonDynamics", () => {
     const store = new InMemoryCanonEventStore([
       canonEvent("canon_evt_1", obs, "2026-08-14T15:00:00.000Z"),
     ]);
-    const graph = await projectCanonDynamics(store);
+    const graph = await projectCanonDynamicsUnscoped(store);
     expect(graph.nodes).toHaveLength(1);
     const n = graph.nodes[0];
     expect(n.canon_event_id).toBe("canon_evt_1");
@@ -69,8 +69,8 @@ describe("projectCanonDynamics", () => {
     const store = new InMemoryCanonEventStore([
       canonEvent("canon_evt_stable", baseObservation(), "2026-08-14T15:00:00.000Z"),
     ]);
-    const g1 = await projectCanonDynamics(store);
-    const g2 = await projectCanonDynamics(store);
+    const g1 = await projectCanonDynamicsUnscoped(store);
+    const g2 = await projectCanonDynamicsUnscoped(store);
     expect(g1.nodes[0].id).toBe("canon_evt_stable");
     expect(g1.nodes[0].id).toBe(g2.nodes[0].id);
   });
@@ -79,7 +79,7 @@ describe("projectCanonDynamics", () => {
     const store = new InMemoryCanonEventStore([
       canonEvent("canon_evt_2", baseObservation({ provenance: "self_reported" }), "2026-08-14T15:00:00.000Z"),
     ]);
-    const graph = await projectCanonDynamics(store);
+    const graph = await projectCanonDynamicsUnscoped(store);
     expect(graph.nodes[0].provenance).toBe("self_reported");
   });
 
@@ -87,7 +87,7 @@ describe("projectCanonDynamics", () => {
     const store = new InMemoryCanonEventStore([
       canonEvent("canon_evt_3", baseObservation(), "2026-08-14T15:00:00.000Z"),
     ]);
-    const graph = await projectCanonDynamics(store);
+    const graph = await projectCanonDynamicsUnscoped(store);
     expect(graph.nodes[0].persisted_or_derived).toBe("persisted");
   });
 
@@ -96,7 +96,7 @@ describe("projectCanonDynamics", () => {
       canonEvent("a", baseObservation({ subject: "person_1" }), "2026-08-14T15:00:00.000Z"),
       canonEvent("b", baseObservation({ subject: "person_1" }), "2026-08-14T15:05:00.000Z"),
     ]);
-    const graph = await projectCanonDynamics(store);
+    const graph = await projectCanonDynamicsUnscoped(store);
     expect("edges" in graph).toBe(false);
   });
 
@@ -106,7 +106,7 @@ describe("projectCanonDynamics", () => {
       canonEvent("a_earlier_id", baseObservation({ time: "2026-08-14T09:00:00Z" }), "2026-08-14T09:00:01Z"),
       canonEvent("b_same_time", baseObservation({ time: "2026-08-14T10:00:00Z" }), "2026-08-14T10:00:02Z"),
     ]);
-    const graph = await projectCanonDynamics(store);
+    const graph = await projectCanonDynamicsUnscoped(store);
     expect(graph.nodes.map((n) => n.canon_event_id)).toEqual(["a_earlier_id", "b_same_time", "z_later_id"]);
   });
 
@@ -116,7 +116,7 @@ describe("projectCanonDynamics", () => {
       canonEvent("e1", baseObservation({ domain: "E" }), "2026-08-14T10:01:00Z"),
       canonEvent("e2", baseObservation({ domain: "E" }), "2026-08-14T10:02:00Z"),
     ]);
-    const graph = await projectCanonDynamics(store);
+    const graph = await projectCanonDynamicsUnscoped(store);
     expect(graph.summary.domains).toEqual({ G: 1, E: 2, C: 0 });
     expect(graph.summary.node_count).toBe(3);
     expect(graph.summary.persisted_count).toBe(3);
@@ -132,7 +132,7 @@ describe("projectCanonDynamics", () => {
       appendCalled = true;
       return originalAppend(events);
     };
-    await projectCanonDynamics(store);
+    await projectCanonDynamicsUnscoped(store);
     expect(appendCalled).toBe(false);
   });
 
@@ -140,7 +140,59 @@ describe("projectCanonDynamics", () => {
     const obs = baseObservation();
     const weird = { canon_event_id: "weird", canon_type: "not_observation", payload: obs, recorded_at: "2026-08-14T10:00:00Z" } as unknown as CanonEvent;
     const store = new InMemoryCanonEventStore([weird]);
-    const graph = await projectCanonDynamics(store);
+    const graph = await projectCanonDynamicsUnscoped(store);
     expect(graph.nodes).toEqual([]);
+  });
+});
+
+describe("viewer scope — the projection may not emit another person's observations", () => {
+  it("emits nothing for a subject that is not the resolved viewer", async () => {
+    // The test process resolves a LOCAL_DEV viewer, so the default call is
+    // scoped rather than blind — an observation belonging to nobody in this
+    // session produces no node at all, and its text never enters the graph.
+    const store = new InMemoryCanonEventStore([
+      canonEvent("c1", baseObservation({ subject: "person_someone_else", context: "טקסט פרטי" }), "2026-08-12T20:00:00Z"),
+    ]);
+    const graph = await projectCanonDynamics(store);
+    expect(graph.nodes).toHaveLength(0);
+    expect(JSON.stringify(graph)).not.toContain("טקסט פרטי");
+  });
+
+  it("emits nothing at all when the scope is explicitly absent", async () => {
+    const store = new InMemoryCanonEventStore([
+      canonEvent("c1", baseObservation({ subject: "person_roei" }), "2026-08-12T20:00:00Z"),
+    ]);
+    // An empty scope object matches no subject — the fail-closed direction.
+    const graph = await projectCanonDynamics(store, {});
+    expect(graph.nodes).toHaveLength(0);
+  });
+
+  it("emits only the viewer's own observations", async () => {
+    const store = new InMemoryCanonEventStore([
+      canonEvent("c1", baseObservation({ subject: "person_roei" }), "2026-08-12T20:00:00Z"),
+      canonEvent("c2", baseObservation({ subject: "person_bet" }), "2026-08-12T21:00:00Z"),
+    ]);
+    const forBet = await projectCanonDynamics(store, { subject_id: "person_bet", person_id: "p_bet" });
+    expect(forBet.nodes.map((n) => n.subject)).toEqual(["person_bet"]);
+    // The other person's subject, label and tooltip are all absent — not
+    // merely hidden downstream.
+    expect(JSON.stringify(forBet)).not.toContain("person_roei");
+  });
+
+  it("the unscoped door is the only way to get everything", async () => {
+    const store = new InMemoryCanonEventStore([
+      canonEvent("c1", baseObservation({ subject: "person_roei" }), "2026-08-12T20:00:00Z"),
+      canonEvent("c2", baseObservation({ subject: "person_bet" }), "2026-08-12T21:00:00Z"),
+    ]);
+    expect((await projectCanonDynamicsUnscoped(store)).nodes).toHaveLength(2);
+  });
+
+  it("the gate is pure and total", () => {
+    expect(observationVisibleTo("person_roei", null)).toBe(false);
+    expect(observationVisibleTo("person_roei", {})).toBe(false);
+    expect(observationVisibleTo("person_roei", { subject_id: "person_bet" })).toBe(false);
+    expect(observationVisibleTo("person_roei", { subject_id: "person_roei" })).toBe(true);
+    expect(observationVisibleTo("p_you", { person_id: "p_you" })).toBe(true);
+    expect(observationVisibleTo("anything", UNSCOPED)).toBe(true);
   });
 });

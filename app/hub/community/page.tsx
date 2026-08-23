@@ -15,8 +15,16 @@ import { joinGroupAction, postUpdateAction, proposeAllocationAction, recordImpac
 import { systemClock, todayIn } from "@/app/lib/philos/eventStore";
 import { buildActivityFeed, buildCapitalTimeline, buildContributorRanking, buildMembershipTimeline, projectValueGroup, type ValueGroupView } from "@/app/lib/philos/projectValueGroup";
 import { linksByRelation } from "@/app/lib/philos/bridge/entityLink";
-import ValueGroupsBoard, { type ValueGroupCardData } from "./ValueGroupsBoard";
-import ValueUniversePanel from "./ValueUniversePanel";
+import { type ValueGroupCardData } from "./ValueGroupsBoard";
+import CommunityDiscovery from "./CommunityDiscovery";
+import TerminalPage, { type TerminalSection } from "@/app/lib/philos/shell/TerminalPage";
+import GroupSpectrumPosition from "./GroupSpectrumPosition";
+import { BASE_VALUES } from "@/app/lib/philos/valueSystem/baseValueRegistry";
+import EntityChainFlow from "@/app/lib/philos/crossTerminal/EntityChainFlow";
+import UnifiedEntitySurface from "@/app/lib/philos/crossTerminal/UnifiedEntitySurface";
+import { loadSelectedEntity } from "@/app/lib/philos/crossTerminal/loadSelectedEntity";
+import GroupOperationsPanel from "./GroupOperationsPanel";
+import { packageManifest } from "@/app/lib/philos/community/valuePackage";
 import { loadValueGroupWorld } from "@/app/lib/philos/community/loadValueGroupWorld";
 import { SELECTED_GROUP_PARAM } from "@/app/lib/philos/community/selectedGroupContext";
 import ObservationReadingPanel from "@/app/lib/philos/shell/ObservationReadingPanel";
@@ -44,8 +52,6 @@ import SocialSourceSpinePanel from "@/app/lib/philos/shell/SocialSourceSpinePane
 import SocialValueSpinePanel from "@/app/lib/philos/shell/SocialValueSpinePanel";
 import SocialRoleStrip from "@/app/lib/philos/shell/SocialRoleStrip";
 import { loadSocialSystem } from "@/app/lib/philos/social/loadSocialSystem";
-import SocialPrimaryStage from "@/app/lib/philos/shell/SocialPrimaryStage";
-import { buildSocialPrimaryContext } from "@/app/lib/philos/social/socialPrimaryContext";
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { resolveSocialSelection } from "@/app/lib/philos/social/socialSelection";
 import { buildSocialFlow } from "@/app/lib/philos/social/socialFlowStages";
@@ -214,25 +220,27 @@ export default async function CommunityPage({
   /* SHARED PRIMARY CONTEXT — same builder, same loader, same derivations as
      NETWORK and SYSTEM. Community supplies only its title and its audit node;
      it draws no arcs, and 0 there is a measured fact about the drawing. */
-  const primaryCtx = buildSocialPrimaryContext({
-    scale: "GROUP",
-    viewer: socialViewer,
-    title: "קבוצות ערך · VALUE GROUPS",
-    subtitle: "מי מחובר סביב איזה ערך, ומה הקבוצה עושה בפועל.",
-    objects: socialObjects,
-    bridgeLinks,
-    selection: socialSelection,
-    audit: (
-      <>
-        <SocialSourceSpinePanel surface="community" observationText={latestObservationText} />
-        <div style={{ marginTop: 8 }}>
-          <AuditSection title="מצב אדם / ערך · PERSON / VALUE STATE" note="Phase 4 · CANON — זהה לכל שאר המסופים">
-            <CanonicalSlicePanel subject={personRef.person_id} asOf={systemClock.now()} />
-          </AuditSection>
-        </div>
-      </>
-    ),
-  });
+  /* THE SHARED CROSS-TERMINAL OBJECT — same function, same stores, same result
+     as Globe and World. The operational states this page already projected are
+     handed over, so the group is joined by id exactly once. */
+  const entity = await loadSelectedEntity({ operational: groupWorld.operational });
+  const selected = entity?.projection ?? null;
+
+  /* The shared PRIMARY CONTEXT builder is no longer called here: Community's
+     primary is the value-group universe, and the six context cells it used to
+     head a duplicate board with are already read from the same objects by the
+     spectrum, the network and the group deep view. What was NOT duplicated is
+     its audit node — kept verbatim, rendered once, inside the single drawer. */
+  const communityAudit = (
+    <>
+      <SocialSourceSpinePanel surface="community" observationText={latestObservationText} />
+      <div style={{ marginTop: 8 }}>
+        <AuditSection title="מצב אדם / ערך · PERSON / VALUE STATE" note="Phase 4 · CANON — זהה לכל שאר המסופים">
+          <CanonicalSlicePanel subject={personRef.person_id} asOf={systemClock.now()} />
+        </AuditSection>
+      </div>
+    </>
+  );
 
   const personFrame = await resolvePersonFrame({
     subject: personRef.person_id,
@@ -493,251 +501,364 @@ export default async function CommunityPage({
      this page — see `resolveViewerContextSemantics`. */
   const semanticContext = await resolveViewerContextSemantics(socialViewer);
 
-  return (
-    // One page-level surface: the blocks below each paint their own
-    // background, so the area under the last one fell through to the white
-    // body. Same fix Hub already carries.
-    <div style={{ background: "#0b0f1a", minHeight: "100vh" }}>
-      <div style={{ padding: "12px 20px 0", background: "#0b0f1a" }}>
-        <SystemShell
-          signOut={<SignOutButton />}
-          viewerContext={semanticContext}
-          surface="community"
-          purpose="עולם הערכים והקבוצות של PHILOS — לא קבוצה אחת בלבד."
-          community={showingGroupDetail && terminalGroup ? { group_id: terminalGroup.group_id, label: terminalGroup.name, provenance: terminalProvenance } : undefined}
-          subject={personRef.person_id}
-          identityLink={identityLink}
-        />
-      </div>
+  /* ── TIERED COMPOSITION ────────────────────────────────────────────────
+     Community's page announced the UNIVERSE ("עולם קבוצות הערך", plus a
+     prose line) and then rendered an 825px ontology map, a 680px inspector
+     and a 471px workspace at the same visual weight — 2841px, 3.2 screens,
+     with the terminal's own question starting at y=351. The material is
+     unchanged and none of it is removed. What changed is that the page now
+     says which of it is the question and which is the depth behind it:
+     GROUP OPERATION is the workspace, and the spectrum, the group network,
+     the operational inspector and the universe explorer are one click below
+     it, each drawer labelled with the figures it holds. The h2 and its prose
+     line are gone as PRESENTATION only — their claim ("the whole spectrum,
+     not only your groups") is now the spectrum drawer's own summary, where
+     it describes something the reader can act on. */
+  const secondary: TerminalSection[] = [];
 
-      {/* THE UNIVERSE FIRST. Community's top-level object is the whole value
-          landscape; the viewer's own group is a marked position inside it, and
-          the operational pipeline below is what the SELECTED group does. That
-          ordering is the pass: `ALL VALUE GROUPS` + `MY POSITION`, never one
-          standing in for the other. */}
-      <ValueUniversePanel
-        universe={groupWorld.universe}
-        registry={groupWorld.registry}
-        overlay={groupWorld.overlay}
-        selected={groupWorld.selected}
-        relations={groupWorld.relations}
-      />
-
-      {/* FAMILY ORIENTATION — where this surface sits in the SOCIAL family.
-          Community is the GROUP zoom level. Not navigation (that is the nav
-          capsule) and not a causal chain. */}
-      <div style={{ margin: "10px 20px 0" }}>
-        {/* ONE frame for the whole social layer. Previously six sibling
-            bands; now one structure with lanes on a shared column grid, the
-            same one Globe and World render. The source spine moves inside it
-            as the collapsed AUDIT lane rather than a seventh box. */}
-        <SocialFrame
-          surface="community"
-          spine={buildSocialValueSpine({
-            verifiedGroupRelations: identityLink.status === "VERIFIED_SAME_PERSON"
-              ? groupsWithProvenance.filter((g) => g.provenance === "REAL"
-                  && g.view.members.some((m) => m.person_id === identityLink.community_member_id)).length
-              : 0,
-            valueGroups: groupsWithProvenance.filter((g) => g.provenance === "REAL").length,
-          }).links}
-          roles={{
-            action: groupsWithProvenance.filter((g) => g.provenance === "REAL")
-              .reduce((n, g) => n + g.view.impact.length, 0),
-            evidence: groupsWithProvenance.filter((g) => g.provenance === "REAL")
-              .reduce((n, g) => n + g.view.impact.filter((i) => i.verified).length, 0),
-            relations: groupCards.filter((g) => g.provenance === "REAL")
-              .reduce((n, g) => n + g.view.members.length + g.resolvedRelations.length, 0),
-            meaning: groupCards.filter((g) => g.provenance === "REAL" && g.leadingFamily).length,
-          }}
-          // Same flow builder and the SAME canon totals as Globe and World.
-          // Only the two value-model stages are scale-specific.
-          // The two value-model counts are no longer passed in: they are
-          // counted once inside `loadSocialSystem`. This call site used to
-          // send a roster total under a label that means recorded joins.
-          flow={social.flow()}
-          chronology={chronology}
-          chronoLimit={12}
-          objects={socialObjects}
-          selection={socialSelection}
-          // NOW — this surface's own primary content, INSIDE the frame. The
-          // board used to sit below it, which made the frame a header rather
-          // than the surface. One object on screen, not a header plus a page.
-          primary={!showingGroupDetail ? (
-            /* SHARED PRIMARY COMPOSITION CONTRACT — identical stage, identical
-               six context cells, identical audit entry as NETWORK and SYSTEM.
-               Community owns ONLY the board below. The vitals it used to head
-               itself with are the stage's headline and context rail now. */
-            <SocialPrimaryStage ctx={primaryCtx}>
-              {/* GROUP_UNIQUE_ONLY — the operational community board. */}
-              <ValueGroupsBoard
-                groups={groupCards}
-                linkedSubject={identityLink.status === "VERIFIED_SAME_PERSON" ? personRef.person_id : undefined}
-              />
-            </SocialPrimaryStage>
-          ) : undefined}
-          // AUDIT — passed to the shared stage as its AUDIT ENTRY primitive,
-          // not rendered a second time here. One audit node per scale.
-        />
-      </div>
-
-      {entityContext.status === "found_entity" ? (
-        <div dir="rtl" style={{ margin: "12px 20px 0" }}>
-          <EntityContextPanel selected={entityContext} here="community" />
-        </div>
-      ) : entityContext.status === "unknown" || entityContext.status === "not_found" ? (
-        <div dir="rtl" style={{ margin: "12px 20px 0", padding: "10px 14px", borderRadius: 8, border: "1px solid #5a4a2a", fontSize: 13, color: "#cfe0f5" }}>
-          {entityContext.status === "unknown" ? entityContext.raw : ctxRaw} — {entityContext.status === "unknown" ? "לא זוהה כמזהה תקין. לא ידוע." : "לא נמצאה רשומה תואמת (Action/Effect קנוני בלבד נתמכים כרגע ב-Community). לא ידוע."}
-        </div>
-      ) : null}
-
-      {/* Phase 6A — the SAME shared Person/Value runtime state Hub/Dynamics/
-          Brain already render (`CanonicalSlicePanel`, unmodified). Real
-          canon Action/Effect/Evidence for personRef.person_id are already
-          shown elsewhere on this page (`realActionsCount`, `actionsSection`
-          etc.) — this adds the Phase 4 Human/Music/Color source_refs +
-          current_state/history/evidence layer Community did not read
-          before. Collapsed — not primary flow content. */}
-
-      {/* PRIMARY — the Value Groups board. Everything on it is a fold over
-          data this page already loaded; the universe explorer below keeps
-          every capability it had, one fold down. */}
-      {!showingGroupDetail ? (
+  if (entityContext.status === "found_entity" || entityContext.status === "unknown" || entityContext.status === "not_found") {
+    secondary.push({
+      id: "entity-context",
+      title: "הישות שהגעת ממנה · ENTITY CONTEXT",
+      summary: entityContext.status === "found_entity" ? "רשומה מקושרת נמצאה" : "מזהה לא זוהה",
+      defaultOpen: true,
+      children: (
         <>
-          {/* 7-terminal propagation — the SAME shared Observation reading;
-              on Community the VALUE GROUP relation row is the point: a real
-              join or UNRESOLVED, never an invented membership. */}
-          {/* STEP 5/6 — same product/audit split as Hub. Community's PRIMARY
-              is the Value Groups board above; the ontology reading is real,
-              unchanged, one click away. §9: technical below product. */}
-          <div style={{ margin: "0 20px" }}>
-            <AuditHeading accent="#34d399" />
-            <AuditSection
-              title="קריאת התצפית האחרונה · OBSERVATION READING"
-              note="6 אזכורים, ערכי בסיס, משפחות ערך, ניגודים, Color Roles, DEMO"
-            >
-              <ObservationReadingPanel subject={personRef.person_id} surface="COMMUNITY" />
-            </AuditSection>
-          </div>
+          {entityContext.status === "found_entity" ? (
+                  <div dir="rtl" style={{ margin: "12px 20px 0" }}>
+                    <EntityContextPanel selected={entityContext} here="community" />
+                  </div>
+                ) : entityContext.status === "unknown" || entityContext.status === "not_found" ? (
+                  <div dir="rtl" style={{ margin: "12px 20px 0", padding: "10px 14px", borderRadius: 8, border: "1px solid #5a4a2a", fontSize: 13, color: "#cfe0f5" }}>
+                    {entityContext.status === "unknown" ? entityContext.raw : ctxRaw} — {entityContext.status === "unknown" ? "לא זוהה כמזהה תקין. לא ידוע." : "לא נמצאה רשומה תואמת (Action/Effect קנוני בלבד נתמכים כרגע ב-Community). לא ידוע."}
+                  </div>
+                ) : null}
         </>
-      ) : null}
+      ),
+    });
+  }
 
-      {/* SECONDARY — the full Value/Group Universe explorer (values,
-          relations, quality, people, needs, resources, activity, impact
-          modes). Unchanged internally; auto-opens whenever the viewer
-          explicitly navigated into one of its modes via `?mode=`. */}
-      {!showingGroupDetail ? (
-        <details open={mode !== "overview"} style={{ margin: "0 20px 12px" }}>
-          <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: 1, color: "#6c86b5", padding: "10px 0", borderTop: "1px solid rgba(90,120,180,0.15)" }} dir="rtl">
-            UNIVERSE / AUDIT — חקר עולם הערכים המלא ({valueRegistry.length} ערכים · {groupRegistry.length} קבוצות · {SUBVALUES.length} תתי-ערכים)
-          </summary>
-        <CommunityUniverse
-          mode={mode}
-          selectedValueId={selectedValueId}
-          selectedConceptType={selectedConceptType}
-          valueRegistry={valueRegistry}
-          valueRelations={valueRelations}
-          groupRegistry={groupRegistry}
-          possibleGroups={possibleGroups}
-          people={people}
-          realNeedsCount={realNeedsCount}
-          declarableNeeds={declarableNeeds}
-          subjectId={personRef.person_id}
-          realOffersCount={realOffersCount}
-          realActionsCount={actions.length}
-          activity={activityAll}
-          impact={impactAll}
-          identityLink={identityLink}
-          groupsWithProvenance={groupsWithProvenance}
-          canonActions={actions}
-          canonEffects={effects}
-          universeFamilies={RAW_FAMILIES}
-          universeSubvalues={universeSubvalues}
-          universeSourceEntries={RAW_SOURCE_ENTRIES}
-          universeFilters={universeFilters}
-          universeFamilyCandidates={universeFamilyCandidates}
-          bridgeLinks={bridgeLinks}
+  /* SPECTRUM POSITION INPUTS — all READS, no new resolution.
+     The registry entry carries the mapping outcome and its candidate list;
+     the profile carries the base-value-derived family; `BASE_VALUES` carries
+     that base value's own recorded status. Nothing here maps, ranks or
+     resolves — the three are handed to the component exactly as stored so it
+     can show that they disagree. */
+  const selectedEntryForSpectrum = selected
+    ? groupWorld.registry.entries.find((e) => e.group.group_id === selected.groupId) ?? null
+    : null;
+  const canonicalFamily = entity?.profile.leading_family ?? null;
+  const canonicalBaseValueStatus = canonicalFamily
+    ? BASE_VALUES.find((b) => b.id === canonicalFamily.via_base_value.split(" ")[0])?.status ?? "UNKNOWN"
+    : "UNKNOWN";
+  const familyLabels = Object.fromEntries(RAW_FAMILIES.map((f) => [f.id, f.name_he]));
+
+  secondary.push({
+    id: "spectrum-network-detail",
+    title: "ספקטרום הערכים · רשת הקבוצות · המערכת התפעולית",
+    summary: `כל הספקטרום — ${groupWorld.universe.coverage.family_count} משפחות · ${groupWorld.universe.coverage.subvalue_count} תתי-ערכים · ${groupWorld.universe.coverage.populated_subvalue_count} מאוכלסים · ${groupWorld.registry.entries.length} קבוצות. מה שאתה חבר בו מסומן בתוך המפה ולא מחליף אותה.`,
+    children: (
+      <>
+      {/* WHERE THIS GROUP SITS — three separate answers, before the map that
+          answers none of them. The treemap below is the ontology; it is fully
+          unpopulated, so without this the reader would place the group
+          somewhere inside it. */}
+      {selectedEntryForSpectrum ? (
+        <GroupSpectrumPosition
+          groupName={selectedEntryForSpectrum.group.name}
+          groupId={selectedEntryForSpectrum.group.group_id}
+          canonical={canonicalFamily}
+          canonicalStatus={canonicalBaseValueStatus}
+          mappingStatus={selectedEntryForSpectrum.group.value_mapping_status}
+          mappingBecause={selectedEntryForSpectrum.mapping.because}
+          candidates={selectedEntryForSpectrum.mapping.candidates}
+          familyLabels={familyLabels}
+          populatedSubvalues={groupWorld.universe.coverage.populated_subvalue_count}
+          totalSubvalues={groupWorld.universe.coverage.subvalue_count}
+          totalFamilies={groupWorld.universe.coverage.family_count}
         />
-        </details>
       ) : null}
-
-      {/* GROUP DETAIL — reached only via GROUPS landscape drill-down
-          (ledger §40). REAL group reuses `CommunityLivingView` (§38); a
-          DEMO group reuses the existing `CommunityCommandTerminal`. */}
-      {showingGroupDetail && !demoMatch && group ? (
-        <>
-          <a href="?mode=groups" style={{ display: "block", margin: "8px 20px 0", fontSize: 13, color: "#5b9cf6", textDecoration: "none" }} dir="rtl">← נוף הקבוצות</a>
-          {/* Operational-groups pass — the 13-section detail + acceptance
-              trace, from the ONE shared profile assembler. */}
-          {operationalProfile ? <OperationalGroupDetail profile={operationalProfile} /> : null}
-          <CommunityLivingView
-            group={group}
-            activity={activityFeed}
-            contributors={buildContributorRanking(events)}
-            identityLink={identityLink}
-            provenance="REAL"
-            realNeedsCount={realNeedsCount}
-            realOffersCount={realOffersCount}
-            valueFamilyLabel={valueFamilyForCentralValue(group.central_value)}
-          />
-          <details dir="rtl" style={{ margin: "0 20px 16px" }}>
-            <summary style={{ cursor: "pointer", fontSize: 13, letterSpacing: 1, color: "#6c86b5", padding: "4px 0" }}>DETAILS / AUDIT</summary>
-            <div style={{ marginTop: 8 }}>
-              <PersonCommunityLinkPanel
-                personId={identityLink.person_id}
-                communityMemberId={identityLink.community_member_id}
-                communityMemberDisplayName={viewer.display_name}
-                communityId={viewerGroupId ?? ""}
-                initialStatus={identityLink.status}
+      <CommunityDiscovery
+                universe={groupWorld.universe}
+                entries={groupWorld.registry.entries}
+                relations={groupWorld.relations}
+                overlay={Object.fromEntries(groupWorld.overlay.entries.map((e) => [e.group_id, e.relation]))}
+                /* Land on the viewer's OWN group when nothing was explicitly picked.
+                   The right-hand slot used to open empty ("לא נבחרה קבוצה"), so half
+                   the one screen said nothing until you clicked. `memberGroupIds`
+                   comes from the viewer's own recorded events (`viewerGroupOverlay`),
+                   so this is a DEFAULT SELECTION of existing data — it invents no
+                   membership, and a viewer with no group still opens empty. */
+                initialGroup={groupWorld.selected.status === "selected"
+                  ? groupWorld.selected.group_id
+                  : groupWorld.overlay.memberGroupIds[0] ?? null}
+                operational={Object.fromEntries(groupWorld.operational)}
+                /* ONE AUTHORITY FOR THE 9-vs-6 SPLIT. The roster row in the deep
+                   view used to attribute all nine affiliated members to
+                   `member.joined`. The real join count is already computed once, by
+                   the projection the shared surface renders — so it is handed down
+                   rather than derived a second time here. */
+                joinEvents={selected ? { group_id: selected.groupId, count: selected.membershipHistoryCount } : undefined}
+                viewerIds={[semanticContext.viewer_id, personRef.person_id, identityLink.community_member_id]}
+                quality={{
+                  families: groupWorld.universe.coverage.family_count,
+                  subvalues: groupWorld.universe.coverage.subvalue_count,
+                  populatedFamilies: groupWorld.universe.coverage.populated_family_count,
+                  populatedSubvalues: groupWorld.universe.coverage.populated_subvalue_count,
+                  groups: groupWorld.registry.entries.length,
+                  real: groupWorld.registry.real_count,
+                  demo: groupWorld.registry.demo_count,
+                  derived: 0,
+                  unresolvedMappings: groupWorld.registry.entries.filter((e) => e.group.value_mapping_status !== "RESOLVED").length,
+                  relations: groupWorld.relations.length,
+                  withBudget: groupWorld.registry.entries.filter((e) => e.group.budget).length,
+                  withNeeds: groupWorld.registry.entries.filter((e) => e.group.needs?.length).length,
+                  withOffers: groupWorld.registry.entries.filter((e) => e.group.offers?.length).length,
+                  withActions: groupWorld.registry.entries.filter((e) => e.group.actions?.length).length,
+                  withEffects: groupWorld.registry.entries.filter((e) => e.group.effect_count).length,
+                  withEvidence: groupWorld.registry.entries.filter((e) => e.group.evidence_count).length,
+                  withRoles: groupWorld.registry.entries.filter((e) => e.group.members.some((m) => m.role)).length,
+                  packageFiles: packageManifest(),
+                  ingestRejected: groupWorld.ingestRejected.length + groupWorld.groupEventRejected.length,
+                  groupEvents: groupWorld.groupEvents.length,
+                  candidateMatches: groupWorld.candidateMatches.length,
+                  eventRelations: groupWorld.eventRelations.length,
+                }}
               />
+      </>
+    ),
+  });
+
+  if (!showingGroupDetail) {
+    secondary.push({
+      id: "universe-explorer",
+      title: "חקר עולם הערכים המלא · UNIVERSE",
+      summary: `${valueRegistry.length} ערכים · ${groupRegistry.length} קבוצות · ${SUBVALUES.length} תתי-ערכים — הצהרת ערך, שיוך צורך, מפת יחסים ואיכות`,
+      /* WRITE PATHS. `?mode=` navigation targets the forms inside this
+         explorer, so an explicit mode must open it — folding it shut on a
+         mode link would put three write interactions out of reach. */
+      defaultOpen: mode !== "overview",
+      children: (
+        <>
+        <div style={{ margin: "8px 0" }}>
+                    <AuditHeading accent="#34d399" />
+                    {communityAudit}
+                    <AuditSection
+                      title="קריאת התצפית האחרונה · OBSERVATION READING"
+                      note="6 אזכורים, ערכי בסיס, משפחות ערך, ניגודים, Color Roles, DEMO"
+                    >
+                      <ObservationReadingPanel subject={personRef.person_id} surface="COMMUNITY" />
+                    </AuditSection>
+                  </div>
+                <CommunityUniverse
+                  mode={mode}
+                  selectedValueId={selectedValueId}
+                  selectedConceptType={selectedConceptType}
+                  valueRegistry={valueRegistry}
+                  valueRelations={valueRelations}
+                  groupRegistry={groupRegistry}
+                  possibleGroups={possibleGroups}
+                  people={people}
+                  realNeedsCount={realNeedsCount}
+                  declarableNeeds={declarableNeeds}
+                  subjectId={personRef.person_id}
+                  realOffersCount={realOffersCount}
+                  realActionsCount={actions.length}
+                  activity={activityAll}
+                  impact={impactAll}
+                  identityLink={identityLink}
+                  groupsWithProvenance={groupsWithProvenance}
+                  canonActions={actions}
+                  canonEffects={effects}
+                  universeFamilies={RAW_FAMILIES}
+                  universeSubvalues={universeSubvalues}
+                  universeSourceEntries={RAW_SOURCE_ENTRIES}
+                  universeFilters={universeFilters}
+                  universeFamilyCandidates={universeFamilyCandidates}
+                  bridgeLinks={bridgeLinks}
+                />
+        </>
+      ),
+    });
+  }
+
+  const audit: TerminalSection[] = [
+    {
+      id: "social-frame",
+      title: "מיקום במשפחת SOCIAL · CONTEXT / SCALE",
+      summary: "ציר זמן · מודל הערך · תפקידים — Community הוא זום GROUP של אותו מודל",
+      children: (
+        <SocialFrame
+                  surface="community"
+                  spine={buildSocialValueSpine({
+                    verifiedGroupRelations: identityLink.status === "VERIFIED_SAME_PERSON"
+                      ? groupsWithProvenance.filter((g) => g.provenance === "REAL"
+                          && g.view.members.some((m) => m.person_id === identityLink.community_member_id)).length
+                      : 0,
+                    valueGroups: groupsWithProvenance.filter((g) => g.provenance === "REAL").length,
+                  }).links}
+                  roles={{
+                    action: groupsWithProvenance.filter((g) => g.provenance === "REAL")
+                      .reduce((n, g) => n + g.view.impact.length, 0),
+                    evidence: groupsWithProvenance.filter((g) => g.provenance === "REAL")
+                      .reduce((n, g) => n + g.view.impact.filter((i) => i.verified).length, 0),
+                    relations: groupCards.filter((g) => g.provenance === "REAL")
+                      .reduce((n, g) => n + g.view.members.length + g.resolvedRelations.length, 0),
+                    meaning: groupCards.filter((g) => g.provenance === "REAL" && g.leadingFamily).length,
+                  }}
+                  // Same flow builder and the SAME canon totals as Globe and World.
+                  // Only the two value-model stages are scale-specific.
+                  // The two value-model counts are no longer passed in: they are
+                  // counted once inside `loadSocialSystem`. This call site used to
+                  // send a roster total under a label that means recorded joins.
+                  flow={social.flow()}
+                  chronology={chronology}
+                  chronoLimit={12}
+                  objects={socialObjects}
+                  selection={socialSelection}
+                  // NOW — this surface's own primary content, INSIDE the frame. The
+                  // board used to sit below it, which made the frame a header rather
+                  // than the surface. One object on screen, not a header plus a page.
+                  // primary REMOVED. `SocialPrimaryStage` + `ValueGroupsBoard` rendered
+                  // the SAME three groups — value, members, budget, needs, offers,
+                  // actions, effects, evidence — that `CommunityDiscovery` below
+                  // already renders as a selection-driven deep view. Two boards over
+                  // one dataset, stacked, is why this surface read as a ledger of
+                  // repeats. The frame keeps only what is NOT duplicated: cross-scale
+                  // orientation (GROUP 34 ⇄ NETWORK 10 ⇄ SYSTEM 0).
+                  // AUDIT — passed to the shared stage as its AUDIT ENTRY primitive,
+                  // not rendered a second time here. One audit node per scale.
+                />
+      ),
+    },
+  ];
+
+  /* THE PRIMARY FOLLOWS THE PAGE STATE. Drilling into one group makes that
+     group's detail the workspace; otherwise the workspace is the selected
+     group's operation. Exactly one primary either way. */
+  const primary = showingGroupDetail && !demoMatch && group ? (
+    <>
+              <a href="?mode=groups" style={{ display: "block", margin: "8px 20px 0", fontSize: 13, color: "#5b9cf6", textDecoration: "none" }} dir="rtl">← נוף הקבוצות</a>
+              {/* Operational-groups pass — the 13-section detail + acceptance
+                  trace, from the ONE shared profile assembler. */}
+              {operationalProfile ? <OperationalGroupDetail profile={operationalProfile} /> : null}
+              <CommunityLivingView
+                group={group}
+                activity={activityFeed}
+                contributors={buildContributorRanking(events)}
+                identityLink={identityLink}
+                provenance="REAL"
+                realNeedsCount={realNeedsCount}
+                realOffersCount={realOffersCount}
+                valueFamilyLabel={valueFamilyForCentralValue(group.central_value)}
+              />
+              <details dir="rtl" style={{ margin: "0 20px 16px" }}>
+                <summary style={{ cursor: "pointer", fontSize: 13, letterSpacing: 1, color: "#6c86b5", padding: "4px 0" }}>DETAILS / AUDIT</summary>
+                <div style={{ marginTop: 8 }}>
+                  <PersonCommunityLinkPanel
+                    personId={identityLink.person_id}
+                    communityMemberId={identityLink.community_member_id}
+                    communityMemberDisplayName={viewer.display_name}
+                    communityId={viewerGroupId ?? ""}
+                    initialStatus={identityLink.status}
+                  />
+                  <CommunityCommandTerminal
+                    group={terminalGroup!}
+                    capital={buildCapitalTimeline(terminalEvents)}
+                    contributors={buildContributorRanking(terminalEvents)}
+                    tensions={sortTensions(buildCommunityTensions(terminalGroup!, terminalProvenance))}
+                    provenance={terminalProvenance}
+                    bridgeLinks={bridgeLinks}
+                    valueFamilyLabel={valueFamilyForCentralValue(terminalGroup!.central_value)}
+                  />
+                  {otherGroup && otherEntry ? (
+                    <CommunityComparison current={terminalGroup!} currentProvenance={terminalProvenance} other={otherGroup} otherProvenance={otherEntry.provenance} />
+                  ) : null}
+                  <ActionCollectiveContext actions={actions} identityLink={identityLink} />
+                </div>
+              </details>
+              <ValueHub
+                events={events}
+                groupId={viewerGroupId ?? ""}
+                today={today}
+                viewerId={viewer.person_id}
+                joinAction={joinGroupAction}
+                postAction={postUpdateAction}
+                proposeAction={proposeAllocationAction}
+                impactAction={recordImpactAction}
+              />
+            </>
+  ) : showingGroupDetail && demoMatch && terminalGroup ? (
+    <>
+              <a href="?mode=groups" style={{ display: "block", margin: "8px 20px 0", fontSize: 13, color: "#5b9cf6", textDecoration: "none" }} dir="rtl">← נוף הקבוצות</a>
               <CommunityCommandTerminal
-                group={terminalGroup!}
+                group={terminalGroup}
                 capital={buildCapitalTimeline(terminalEvents)}
                 contributors={buildContributorRanking(terminalEvents)}
-                tensions={sortTensions(buildCommunityTensions(terminalGroup!, terminalProvenance))}
+                tensions={sortTensions(buildCommunityTensions(terminalGroup, terminalProvenance))}
                 provenance={terminalProvenance}
                 bridgeLinks={bridgeLinks}
-                valueFamilyLabel={valueFamilyForCentralValue(terminalGroup!.central_value)}
+                valueFamilyLabel={valueFamilyForCentralValue(terminalGroup.central_value)}
               />
               {otherGroup && otherEntry ? (
-                <CommunityComparison current={terminalGroup!} currentProvenance={terminalProvenance} other={otherGroup} otherProvenance={otherEntry.provenance} />
+                <CommunityComparison current={terminalGroup} currentProvenance={terminalProvenance} other={otherGroup} otherProvenance={otherEntry.provenance} />
               ) : null}
-              <ActionCollectiveContext actions={actions} identityLink={identityLink} />
-            </div>
-          </details>
-          <ValueHub
-            events={events}
-            groupId={viewerGroupId ?? ""}
-            today={today}
-            viewerId={viewer.person_id}
-            joinAction={joinGroupAction}
-            postAction={postUpdateAction}
-            proposeAction={proposeAllocationAction}
-            impactAction={recordImpactAction}
-          />
-        </>
-      ) : null}
+              <div dir="rtl" style={{ margin: "16px 20px", padding: "14px 18px", borderRadius: 12, border: "1px solid rgba(251,191,36,0.3)", background: "rgba(251,191,36,0.06)", fontSize: 13, color: "#8fa3c9", lineHeight: 1.7 }}>
+                <b style={{ color: "#fbbf24" }}>DEMO</b> — קהילת הדגמה זו לקריאה בלבד. פעולות כתיבה פועלות רק על הקבוצה האמיתית.{" "}
+                <a href="?mode=groups" style={{ color: "#5b9cf6" }}>חזרה לנוף הקבוצות →</a>
+              </div>
+            </>
+  ) : selected && entity ? (
+    <GroupOperationsPanel
+                profile={entity.profile}
+                state={entity.state}
+                spine={{ memberCount: selected.memberCount, budgetTransactionCount: selected.budgetTransactionCount }}
+              />
+  ) : null;
 
-      {showingGroupDetail && demoMatch && terminalGroup ? (
-        <>
-          <a href="?mode=groups" style={{ display: "block", margin: "8px 20px 0", fontSize: 13, color: "#5b9cf6", textDecoration: "none" }} dir="rtl">← נוף הקבוצות</a>
-          <CommunityCommandTerminal
-            group={terminalGroup}
-            capital={buildCapitalTimeline(terminalEvents)}
-            contributors={buildContributorRanking(terminalEvents)}
-            tensions={sortTensions(buildCommunityTensions(terminalGroup, terminalProvenance))}
-            provenance={terminalProvenance}
-            bridgeLinks={bridgeLinks}
-            valueFamilyLabel={valueFamilyForCentralValue(terminalGroup.central_value)}
-          />
-          {otherGroup && otherEntry ? (
-            <CommunityComparison current={terminalGroup} currentProvenance={terminalProvenance} other={otherGroup} otherProvenance={otherEntry.provenance} />
-          ) : null}
-          <div dir="rtl" style={{ margin: "16px 20px", padding: "14px 18px", borderRadius: 12, border: "1px solid rgba(251,191,36,0.3)", background: "rgba(251,191,36,0.06)", fontSize: 13, color: "#8fa3c9", lineHeight: 1.7 }}>
-            <b style={{ color: "#fbbf24" }}>DEMO</b> — קהילת הדגמה זו לקריאה בלבד. פעולות כתיבה פועלות רק על הקבוצה האמיתית.{" "}
-            <a href="?mode=groups" style={{ color: "#5b9cf6" }}>חזרה לנוף הקבוצות →</a>
-          </div>
-        </>
-      ) : null}
-    </div>
+  return (
+    <TerminalPage
+      background="#0b0f1a"
+      nav={
+        <SystemShell
+                  dense
+                  signOut={<SignOutButton />}
+                  viewerContext={semanticContext}
+                  surface="community"
+                  selectedGroup={selected?.groupId}
+                  purpose="מה הקבוצה הנבחרת עושה — מי בה, לאן זז הכסף, ומה מצב העבודה. הספקטרום המלא נשאר נגיש מתחת."
+                  community={showingGroupDetail && terminalGroup ? { group_id: terminalGroup.group_id, label: terminalGroup.name, provenance: terminalProvenance } : undefined}
+                  subject={personRef.person_id}
+                  identityLink={identityLink}
+                />
+      }
+      entity={selected ? (
+        <UnifiedEntitySurface projection={entity!.projection} trace={entity!.trace} compact />
+      ) : undefined}
+      primary={primary}
+      actions={
+        <nav dir="rtl" style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBlockEnd: 12 }}
+                  aria-label="פעולות קהילה">
+                  {[
+                    { m: "values", label: "הצהרת ערך" },
+                    { m: "needs", label: "צורך · שיוך לקבוצה" },
+                    { m: "resources", label: "משאבים" },
+                    { m: "relations", label: "מפת יחסים" },
+                    { m: "people", label: "אנשים" },
+                    { m: "quality", label: "איכות" },
+                  ].map((x) => (
+                    <a key={x.m} href={`?mode=${x.m}`} style={{
+                      fontSize: 12.5, padding: "6px 12px", minBlockSize: 32, display: "inline-flex",
+                      alignItems: "center", borderRadius: 999, textDecoration: "none",
+                      color: mode === x.m ? "#02101f" : "#c2d1e8",
+                      background: mode === x.m ? "#34d399" : "rgba(17,23,42,0.7)",
+                      border: "1px solid rgba(120,150,220,0.2)",
+                    }}>{x.label}</a>
+                  ))}
+                </nav>
+      }
+      secondary={secondary}
+      audit={audit}
+    />
   );
 }

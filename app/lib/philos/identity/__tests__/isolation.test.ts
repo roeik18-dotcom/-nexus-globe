@@ -65,7 +65,7 @@ describe("ISOLATION — chronology carries ownership so it CAN be filtered", () 
       chron({ record_id: "b1", owner_subject: "person_b", kind: "need" }),
     ];
     const forB = all.filter((e) => mayReadSubject(B, e.owner_subject));
-    const objects = projectSocialSystem({ chronology: forB, needGroups: new Map() });
+    const objects = projectSocialSystem({ chronology: forB, needGroups: new Map(), systemEvidence: new Map() });
     expect(objects).toHaveLength(1);
     expect(objects[0].record_id).toBe("b1");
     expect(objects.some((o) => o.record_id === "a1")).toBe(false);
@@ -77,7 +77,7 @@ describe("ISOLATION — chronology carries ownership so it CAN be filtered", () 
       chron({ record_id: "b_effect", owner_subject: "person_b", kind: "effect", references: ["a_action"] }),
     ];
     const forB = all.filter((e) => mayReadSubject(B, e.owner_subject));
-    const objects = projectSocialSystem({ chronology: forB, needGroups: new Map() });
+    const objects = projectSocialSystem({ chronology: forB, needGroups: new Map(), systemEvidence: new Map() });
     expect(objects[0].source_record_ids).toEqual(["a_action"]);
     expect(objects.map((o) => o.record_id)).not.toContain("a_action");
   });

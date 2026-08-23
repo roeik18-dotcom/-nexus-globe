@@ -508,7 +508,7 @@ export default async function HubPage({
           <details id="record-observation" dir="rtl" style={{ margin: "0 0 14px" }}>
             <summary style={SUMMARY_ACTION}>＋ תצפית עצמית חדשה · NEW SELF-OBSERVATION</summary>
             <div style={{ marginTop: 10 }}>
-              <CreateObservationForm />
+              <CreateObservationForm subject={personRef.person_id} />
             </div>
           </details>
 

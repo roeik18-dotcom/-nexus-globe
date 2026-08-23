@@ -69,6 +69,7 @@ import { buildActivePersonRefs } from "@/app/lib/philos/canonical/activeConfig";
 import { buildDomainConfigBaselines, resolveSelectedDomain } from "@/app/lib/philos/canonical/domainConfigRegistry";
 import ObservationReadingPanel from "@/app/lib/philos/shell/ObservationReadingPanel";
 import GroupOpsPanel from "@/app/lib/philos/shell/GroupOpsPanel";
+import { personLabel } from "@/app/lib/philos/person/personLabel";
 import { COLOR, TYPE } from "@/app/lib/philos/shell/designTokens";
 import { isNormalModeSubject } from "@/app/lib/philos/subjectRegistry";
 import type { ResolvedViewerContext } from "@/app/lib/philos/context/resolvedViewerContext";
@@ -1164,6 +1165,9 @@ export default function DynamicsView({
   defaultLifecycle,
   domainStates,
   personFrameSlot,
+  trajectorySlot,
+  connectedSlot,
+  selectedGroup,
 }: {
   /** The ONE canonical semantic context, resolved server-side. */
   semanticContext: ResolvedViewerContext;
@@ -1180,6 +1184,15 @@ export default function DynamicsView({
    *  chronology it is a frame for; it never enters the causal chain, never
    *  becomes a stage, and never fills STATE(t0)/STATE(t1). */
   personFrameSlot?: React.ReactNode;
+  /** Real time series for the resolved group. Server-built (it reads the
+   *  event log) and threaded in as a slot, same reason as `personFrameSlot`. */
+  trajectorySlot?: React.ReactNode;
+  /** THE SHARED CONNECTED SURFACE — the operational trace with TENSION →
+   *  ACTION → EFFECT → EVIDENCE → LEARNING brought forward, plus the same
+   *  14-cell spine every other lens renders. Built on the server; Dynamics
+   *  places it, and does not re-derive any of it. */
+  connectedSlot?: React.ReactNode;
+  selectedGroup?: string;
   canon?: CanonDynamicsGraph;
   selected?: SelectedContext;
   timeRange?: TimeRangeSummary;
@@ -1257,7 +1270,9 @@ export default function DynamicsView({
   return (
     <div style={{ fontFamily: "system-ui", background: "#0b0f1a", color: "#e6ebf5", minHeight: "100vh", padding: 20 }}>
       <SystemShell
+        dense
           viewerContext={semanticContext}
+        selectedGroup={selectedGroup}
         surface="dynamics"
         purpose="What changed, when, and what do we know about why — a time/causality view of the system."
         selected={selected}
@@ -1291,6 +1306,12 @@ export default function DynamicsView({
           frame the chronology is OF. Reference only: it never enters the
           causal chain, never becomes a stage, and never fills
           STATE(t0)/STATE(t1) — those still read real Observations only. */}
+      {/* ── PRIMARY LIVING SURFACE · THE CHANGE/CONSEQUENCE LENS ──────────
+          The connected trace leads. The trajectory chart and the reference
+          frame follow it — they are real, and neither is the question this
+          terminal exists to answer. */}
+      {connectedSlot}
+      {trajectorySlot}
       {personFrameSlot}
 
       {/* PRIMARY — the one causal timeline. Ledger §33: with no explicit
@@ -1428,7 +1449,12 @@ export default function DynamicsView({
                 strokeWidth={isHighlighted ? 3 : 1.5}
               >
                 <title>
-                  {`${n.label}\n${n.tooltip}\nactor ${n.actor_id}${isUnresolved ? "\n(unresolved — no verified relationship touches this event)" : ""}`}
+                  {/* The node label is a stored display name, and one of the
+                      real ones is literally "את/ה". Echoed raw, a chronology
+                      dot tells EVERY reader that a third person is them —
+                      measured on this surface for User B. The resolver returns
+                      second person only to the person it actually refers to. */}
+                  {`${personLabel(n.actor_id ?? "", n.label, [viewerSubject]).text}\n${n.tooltip}\nactor ${n.actor_id}${isUnresolved ? "\n(unresolved — no verified relationship touches this event)" : ""}`}
                 </title>
               </circle>
             </g>

@@ -151,10 +151,17 @@ describe("no ontology reaches the globe", () => {
 
   it("passes the projection's nodes straight through, unmixed", () => {
     expect(PAGE_CODE).toContain("projectGlobeGraph");
-    // `allNodes` was the concatenation of ontology and event nodes
+    // `allNodes` was the concatenation of ontology and event nodes.
     expect(PAGE_CODE).not.toMatch(/allNodes/);
-    expect(PAGE_CODE).toMatch(/nodes=\{nodes\}/);
-    expect(PAGE_CODE).toMatch(/arcs=\{arcs\}/);
+  });
+
+  it("no longer mounts the legacy WorldGlobe on /planet", () => {
+    // The route is the geographic World Explorer now. The legacy component's
+    // 911px of second nav shell, person frame, Network HUD, provenance rail
+    // and audit legend are NOT RENDERED — removed from the composition, not
+    // hidden with CSS. Its source file is untouched and still exists.
+    expect(PAGE_CODE).not.toMatch(/<WorldGlobe/);
+    expect(PAGE_CODE).toMatch(/<WorldExplorer/);
   });
 
   it("reports no counts the screen is not drawing", () => {

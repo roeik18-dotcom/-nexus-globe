@@ -19,7 +19,16 @@ const FRAMES: { value: "I" | "R"; label: string }[] = [
   { value: "R", label: "יחסי · Relational" },
 ];
 
-export default function CreateObservationForm() {
+export default function CreateObservationForm({ subject }: {
+  /** The CURRENT viewer's canon subject, resolved server-side. The label was
+   *  the literal string "(person_roei)", so every viewer — including one who
+   *  is not Roei — was told the form writes as Roei. The write path itself was
+   *  always correct (`createObservationForCurrentUser` resolves the session),
+   *  which is exactly why the label had to be fixed rather than trusted: a
+   *  screen that names the wrong author is a leak whether or not the write
+   *  follows it. */
+  subject?: string;
+}) {
   const [result, setResult] = useState<CreateObservationResult | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -34,7 +43,7 @@ export default function CreateObservationForm() {
         });
       }}
     >
-      <div style={{ fontSize: 13, letterSpacing: 0.5, color: "#8fa3c9" }}>תצפית עצמית חדשה · NEW SELF-OBSERVATION (person_roei)</div>
+      <div style={{ fontSize: 13, letterSpacing: 0.5, color: "#8fa3c9" }}>תצפית עצמית חדשה · NEW SELF-OBSERVATION{subject ? ` (${subject})` : ""}</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <select name="domain" required style={selectStyle}>
           {DOMAINS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}

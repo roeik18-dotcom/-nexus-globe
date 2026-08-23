@@ -25,6 +25,7 @@
  */
 import type { ValueGroupView } from "../projectValueGroup";
 import type { PhilosEvent } from "../events";
+import { isViewerRelativeLabel } from "../person/personLabel";
 
 /** How this group entered the registry. Never a quality judgement — a source. */
 export type GroupProvenanceTag = "REAL" | "DEMO";
@@ -135,7 +136,13 @@ export function fromProjection(
     value_mapping_status: mapping.status,
     members: view.members.map((m) => ({
       person_id: m.person_id,
-      display_name: m.display_name,
+      /* A stored display name that means "whoever is reading" is a rendering
+         token, not a fact about this person, and it must not leave the
+         projection — it was crossing the wire in the roster payload where no
+         render-time resolver could reach it. Dropped here so the canonical
+         record carries no viewer-relative language at all; second person is
+         applied at render by `personLabel`, against the actual reader. */
+      display_name: isViewerRelativeLabel(m.display_name) ? undefined : m.display_name,
       role: roles.get(m.person_id),
       joined_at: (m as { joined_at?: string }).joined_at,
     })),

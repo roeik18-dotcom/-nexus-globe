@@ -17,7 +17,7 @@
  * that, and keeping them apart is what lets a viewer inspect the whole
  * landscape without any of it being claimed as theirs.
  */
-import { RAW_FAMILIES, SUBVALUES } from "./valueUniverse328";
+import { loadFamilies, loadSubvalues } from "./valuePackage";
 import type { RegistryEntry, ValueGroupRegistry } from "./valueGroupRegistry";
 
 export interface SubvalueNode {
@@ -62,6 +62,9 @@ export interface ValueGroupUniverse {
 }
 
 export function buildValueGroupUniverse(registry: ValueGroupRegistry): ValueGroupUniverse {
+  // Read from the canonical data package, not from a TypeScript literal.
+  const RAW_FAMILIES = loadFamilies();
+  const SUBVALUES = loadSubvalues();
   const bySv = new Map<string, RegistryEntry[]>();
   const placed = new Set<string>();
   for (const e of registry.entries) {
@@ -87,9 +90,9 @@ export function buildValueGroupUniverse(registry: ValueGroupRegistry): ValueGrou
   });
 
   const families: FamilyNode[] = RAW_FAMILIES.map((f) => {
-    const subs = nodes.filter((n) => n.family_id === f.id);
+    const subs = nodes.filter((n) => n.family_id === f.family_id);
     return {
-      family_id: f.id,
+      family_id: f.family_id,
       name_he: f.name_he,
       content_he: f.content_he,
       subvalues: subs,

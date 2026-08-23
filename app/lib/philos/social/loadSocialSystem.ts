@@ -22,6 +22,9 @@
  *
  * Loads are parallel where independent, and each store is read ONCE.
  */
+import { buildWorldDataContract } from "../world/worldDataContract";
+import { projectSystemEvidence } from "../world/systemEvidenceProjection";
+import { loadGroupEvidence } from "../community/valuePackage";
 import { loadPhilosEvents } from "@/app/lib/philos-event-store";
 import { systemClock, todayIn } from "../eventStore";
 import { loadNeeds } from "../canon/needStoreAccessor";
@@ -47,6 +50,12 @@ import { CONTRADICTION_MASTER } from "../valueSystem/contradictionMaster";
 import { DIRECT_CONTRADICTION_VALUE_RELATIONS } from "../valueSystem/socialValueSpine";
 
 export interface SocialSystemState {
+  /** The World data contract for this load. Present even when every array in
+   *  it is empty — that is the difference between "asked and none" and "never
+   *  wired". */
+  world: import("../world/worldDataContract").WorldDataContract;
+  /** The raw evidence projection, so a caller can show rejection detail. */
+  systemEvidence: import("../world/systemEvidenceProjection").SystemEvidenceResult;
   chronology: ChronoEntry[];
   objects: SocialObject[];
   bridgeLinks: EntityLink[];
@@ -197,7 +206,30 @@ export async function loadSocialSystem(viewer: ViewerContext): Promise<SocialSys
   for (const d of declarations) if (visibleNeedIds.has(d.need_id)) needGroups.set(d.need_id, d.group_id);
   for (const n of visibleNeeds) if (n.origin_group_id) needGroups.set(n.need.need_id, n.origin_group_id);
 
-  const objects = projectSocialSystem({ chronology, needGroups });
+  /* SYSTEM EVIDENCE — supplied, at last. This call omitted the map entirely,
+     so the gate downstream rejected every record with NO_SYSTEM_EVIDENCE no
+     matter what the data said. The gate is unchanged; it is finally being
+     asked a real question. */
+  const systemEv = projectSystemEvidence(chronology, loadGroupEvidence().map((e) => ({
+    evidence_id: e.evidence_id,
+    effect_id: e.effect_id,
+    level: e.level,
+    provenance: e.provenance,
+    source: e.source,
+    verified_by: e.verified_by,
+  })));
+
+  const objects = projectSocialSystem({ chronology, needGroups, systemEvidence: systemEv.systemEvidence });
+
+  /* The World contract. Built here because this is where every input already
+     exists; exposed so a screen can state WHY system is what it is instead of
+     printing a bare 0. */
+  const worldContract = buildWorldDataContract({
+    chronology, systemEvidence: systemEv.systemEvidence,
+    rejections: systemEv.rejections, unresolvedCandidates: systemEv.unresolvedCandidates,
+    objects, evidence: loadGroupEvidence().map((e) => ({
+      evidence_id: e.evidence_id, effect_id: e.effect_id, level: e.level, provenance: e.provenance })),
+  });
 
   // The registry gets the FULL canon input every time. Community used to omit
   // needs and actions here, which is why its cards showed no links.
@@ -278,6 +310,8 @@ export async function loadSocialSystem(viewer: ViewerContext): Promise<SocialSys
   const membershipCount = chronology.filter((e) => e.kind === "member.joined").length;
 
   return {
+    world: worldContract,
+    systemEvidence: systemEv,
     chronology, objects, bridgeLinks, needGroups, counts, totals, values,
     // Only the two value-model stages differ by scale (a scale may see no
     // groups); every canon stage comes from the SAME totals everywhere.
