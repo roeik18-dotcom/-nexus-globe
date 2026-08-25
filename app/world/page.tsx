@@ -18,6 +18,7 @@ import type { ProviderCapabilityRelation } from "@/app/lib/provider-capability-r
 import WorldView from "./WorldView";
 import SystemGateVisual from "./SystemGateVisual";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
+import PersonEventOrientationHeader from "@/app/lib/philos/analysis/PersonEventOrientationHeader";
 import { COLOR, FS, RADIUS, STATUS, TYPE } from "@/app/lib/philos/shell/designTokens";
 import TerminalPage, { type TerminalSection } from "@/app/lib/philos/shell/TerminalPage";
 import { loadPhilosEvents } from "@/app/lib/philos-event-store";
@@ -367,7 +368,7 @@ export default async function WorldPage({ searchParams }: {
     <TerminalPage
       background={COLOR.bg}
       nav={
-        <SystemShell
+        <><SystemShell
                   dense
                   signOut={<SignOutButton />}
                   viewerContext={semanticContext}
@@ -375,7 +376,7 @@ export default async function WorldPage({ searchParams }: {
                   selectedGroup={selected?.groupId}
                   purpose="מה נצפה בקנה-מידה מערכתי, ומה קיים אך אינו מגיע לכאן."
                   subject={personRef.person_id}
-                />
+                /><PersonEventOrientationHeader terminal="world" /></>
       }
       entity={selected ? (
         <UnifiedEntitySurface projection={entity!.projection} trace={entity!.trace} compact />

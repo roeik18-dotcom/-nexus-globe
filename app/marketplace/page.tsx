@@ -28,6 +28,7 @@ import RealMarketplace from "./RealMarketplace";
 import { findKnownResource, resolveSelectedContext, VALUE_DIMENSIONS } from "./resolveActionSpace";
 import { parseSystemContextRef } from "@/app/lib/systemContext";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
+import PersonEventOrientationHeader from "@/app/lib/philos/analysis/PersonEventOrientationHeader";
 import { AuditHeading, AuditSection } from "@/app/lib/philos/shell/epistemics";
 import { resolveShellIdentityLink } from "@/app/lib/philos/community/resolveShellIdentityLink";
 import { loadNeeds } from "@/app/lib/philos/canon/needStoreAccessor";
@@ -200,12 +201,19 @@ export default async function MarketplacePage({
     const myOffers = mineOffers
       .map((o) => ({ offer_id: o.offer.offer_id, available_resource: o.offer.available_resource, resource_type: o.offer.resource_type, amount_or_capacity: o.offer.amount_or_capacity, source: o.offer.source }));
   return (
+      <>
+      {/* THE HEADER IS NOT OPTIONAL ON ANY MARKETPLACE PATH. This early
+          return is the `?view=prototype` visual checkpoint; it rendered
+          without the shared band, which made one Marketplace route show the
+          event and the other not. */}
+      <PersonEventOrientationHeader terminal="marketplace" />
       <MarketplacePrototype
         needs={myNeeds} offers={myOffers} actionsCount={mineActions.length} effectsCount={mineEffects.length}
         identityLinked={identityLink.status === "VERIFIED_SAME_PERSON"}
         realGroupName={philosGroupsRealView?.name}
         realGroupCentralValue={philosGroupsRealView?.central_value}
       />
+      </>
     );
   }
 
@@ -221,6 +229,12 @@ export default async function MarketplacePage({
     actions: spineStates.flatMap((st) => st.actions),
     groupsWithEvents: spineStates.filter((st) => st.counts.events > 0).length,
     totalGroups: spineWorld.registry.entries.length,
+    // Match→authority gate (Marketplace visual-acceptance follow-up): a real
+    // MATCH_PROPOSED with no decision yet, and a real MATCH_REJECTED — the
+    // two states `accepted` above doesn't already cover. Same `matches` array,
+    // no second derivation.
+    pendingRequests: spineStates.flatMap((st) => st.matches.filter((m) => m.status === "CANDIDATE")),
+    rejectedRequests: spineStates.flatMap((st) => st.matches.filter((m) => m.status === "REJECTED")),
   };
 
   return (
@@ -240,6 +254,7 @@ export default async function MarketplacePage({
           subject={personRef.person_id}
           identityLink={identityLink}
         />
+        <PersonEventOrientationHeader terminal="marketplace" />
       </div>
 
       {/* ── PRIMARY LIVING SURFACE · THE POSSIBILITY LENS ────────────────

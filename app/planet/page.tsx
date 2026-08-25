@@ -44,6 +44,7 @@ import { loadWorldView } from "@/app/lib/philos/geo/loadWorldView";
 import { SELECTED_GROUP_PARAM } from "@/app/lib/philos/community/selectedGroupContext";
 import { connection } from "next/server";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
+import PersonEventOrientationHeader from "@/app/lib/philos/analysis/PersonEventOrientationHeader";
 import SignOutButton from "@/app/signin/SignOutButton";
 import { resolveViewerContextSemantics } from "@/app/lib/philos/context/resolveViewerContextSemantics";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
@@ -380,7 +381,7 @@ export default async function PlanetPage({
     <TerminalPage
       background="#0a0e17"
       nav={
-        <SystemShell
+        <><SystemShell
                   signOut={<SignOutButton />}
                   viewerContext={semanticContext}
                   surface="globe"
@@ -389,7 +390,7 @@ export default async function PlanetPage({
                   purpose="מפת הערכים, הקבוצות והגאוגרפיה של PHILOS."
                   subject={personRef.person_id}
                   identityLink={identityLink}
-                />
+                /><PersonEventOrientationHeader terminal="planet" /></>
       }
       entity={selectedEntity ? (
         <UnifiedEntitySurface projection={entity!.projection} trace={entity!.trace} compact />

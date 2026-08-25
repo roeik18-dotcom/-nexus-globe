@@ -12,6 +12,7 @@ import { buildActionLifecycleSummary, type ActionLifecycleSummary } from "@/app/
 import { findKnownNeeds, needsRequiringAction } from "@/app/lib/philos/sharedContext";
 import type { KnownNeedResult } from "@/app/lib/systemContext";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
+import PersonEventOrientationHeader from "@/app/lib/philos/analysis/PersonEventOrientationHeader";
 import { AuditHeading, AuditSection } from "@/app/lib/philos/shell/epistemics";
 import { buildDefaultLinkRegistry } from "@/app/lib/philos/bridge/linkRegistry";
 import { linksForEntity } from "@/app/lib/philos/bridge/entityLink";
@@ -169,6 +170,7 @@ export default async function BrainPage({
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#080b13" }}>
       <div style={{ padding: "12px 20px 0", background: "#080b13" }}>
         <SystemShell
+          dense
           signOut={<SignOutButton />}
           viewerContext={semanticContext}
           surface="brain"
@@ -176,6 +178,12 @@ export default async function BrainPage({
           subject={subject}
           identityLink={identityLink}
         />
+        <PersonEventOrientationHeader terminal="brain" legacy={
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+            <span style={{ fontSize: 13, color: "#9fb0d0" }}>מסגרת האדם הקודמת נשמרה כאן.</span>
+            <SignOutButton />
+          </div>
+        } />
         {entityContext.status === "found_entity" ? (
           <div dir="rtl" style={{ marginTop: 10 }}>
             <EntityContextPanel selected={entityContext} here="brain" />

@@ -81,6 +81,7 @@ import { buildSystemTrace } from "@/app/lib/philos/systemTrace";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import { findDomainStatesForSubject } from "@/app/lib/philos/canon/domainStateStoreAccessor";
+import PersonEventOrientationHeader from "@/app/lib/philos/analysis/PersonEventOrientationHeader";
 import DynamicsView, { type CommunityCapitalContext, type SelectedContext, type TimeRangeSummary } from "./DynamicsView";
 
 /**
@@ -342,6 +343,7 @@ export default async function DynamicsPage({
   const entity = await loadSelectedEntity();
 
   return <DynamicsView
+    eventHeaderSlot={<PersonEventOrientationHeader terminal="dynamics" />}
       selectedGroup={entity?.projection.groupId}
       connectedSlot={entity ? (
         <div dir="rtl" style={{ display: "flex", flexDirection: "column",

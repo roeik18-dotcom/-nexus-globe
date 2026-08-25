@@ -37,6 +37,7 @@ import type { MeasuredStateSpace } from "@/app/lib/philos/orientationCore";
 import type { TensionItem } from "@/app/lib/philos/tension";
 import type { KnownNeedResult } from "@/app/lib/systemContext";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
+import PersonEventOrientationHeader from "@/app/lib/philos/analysis/PersonEventOrientationHeader";
 import EntityContextPanel from "@/app/lib/philos/shell/EntityContextPanel";
 import StateDiffPanel from "@/app/lib/philos/shell/StateDiffPanel";
 import { buildCarryForward, buildDayClosingQuestions } from "@/app/lib/philos/dayClosingFusion";
@@ -419,6 +420,7 @@ export default async function HubPage({
     <div style={{ background: "#0b0f1a", minHeight: "100vh" }}>
       <div style={{ padding: "12px 20px 0" }}>
         <SystemShell
+          dense
           signOut={<SignOutButton />}
           viewerContext={semanticContext}
           surface="hub"
@@ -427,6 +429,12 @@ export default async function HubPage({
           subject={resolvedSubject ?? personRef.person_id}
           identityLink={identityLink}
         />
+        <PersonEventOrientationHeader terminal="hub" legacy={
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+            <span style={{ fontSize: 13, color: "#9fb0d0" }}>מה חשוב עכשיו, מה השתנה, ולאן ללכת משם.</span>
+            <SignOutButton />
+          </div>
+        } />
       </div>
       {commandCenterSection ? (
           <div style={{ padding: "20px 20px 0" }}>

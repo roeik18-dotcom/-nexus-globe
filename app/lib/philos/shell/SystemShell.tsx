@@ -27,13 +27,12 @@
 import { encodeSystemContextRef, type ContextSurface, type SelectedContext } from "@/app/lib/systemContext";
 import Link from "next/link";
 
-import SocialScaleNav from "./SocialScaleNav";
 
 import type { ReactNode } from "react";
 import type { ResolvedViewerContext } from "../context/resolvedViewerContext";
 import OrientationBand, { type ViewScale } from "./OrientationBand";
 import { SELECTED_GROUP_PARAM } from "@/app/lib/philos/community/selectedGroupContext";
-import { COLOR, FS, PRODUCT_FAMILY_CUE, RADIUS, SPACE, STATUS, TERMINAL, TYPE } from "./designTokens";
+import { COLOR, COLOR_ROLE, FS, SPACE, STATUS, TERMINAL, TYPE } from "./designTokens";
 
 export interface ShellCommunity {
   group_id: string;
@@ -146,6 +145,33 @@ const NAV: { label: string; href: string; key: ShellSurfaceKey; carriesCtx?: boo
 ];
 
 type NavItem = (typeof NAV)[number];
+
+/**
+ * THE SEVEN ROLE CONTROLS. One per colour role, in reading order. `href` is a
+ * function so route members can go through `hrefFor` (which carries context,
+ * subject and group across a move) while lens members return a plain anchor.
+ */
+const ROLE_BAR: {
+  id: string; label: string; hue: string;
+  surfaceKey?: ShellSurfaceKey;
+  href: (h: (i: NavItem) => string) => string;
+}[] = [
+  { id: "purple", label: "אדם", hue: COLOR_ROLE.purple, surfaceKey: "hub",
+    href: (h) => h(NAV[0]) },
+  { id: "blue", label: "מוח", hue: COLOR_ROLE.blue, surfaceKey: "brain",
+    href: (h) => h(NAV[1]) },
+  { id: "green", label: "מערכת חברתית", hue: COLOR_ROLE.green, href: () => "#lens-green" },
+  { id: "yellow", label: "דינמיקה", hue: COLOR_ROLE.yellow, surfaceKey: "dynamics",
+    href: (h) => h(NAV[5]) },
+  { id: "orange", label: "שוק", hue: COLOR_ROLE.orange, surfaceKey: "marketplace",
+    href: (h) => h(NAV[6]) },
+  /* RED and WHITE are LAYERS OF EXISTING TERMINALS, not new terminals.
+     They point at a stable anchor inside the terminal that already owns
+     the objects — Dynamics owns Action/Effect/Learning, Brain owns
+     Claims/Evidence — so no eighth or ninth canonical terminal is created. */
+  { id: "red", label: "פעולה", hue: COLOR_ROLE.red, href: () => "/dynamics#action-layer" },
+  { id: "white", label: "מקור וראיות", hue: COLOR_ROLE.white, href: () => "/brain#evidence" },
+];
 
 /**
  * NAVIGATION GROUPING — the nav is a list of GROUPS, not a flat list of
@@ -332,61 +358,46 @@ export function SystemShell({
           </span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap" }}>
-          {NAV_GROUPS.map((group) => {
-            if (group.kind === "item") {
-              const item = group.items[0];
-              const here = item.key === surface;
-              /* HEADER ROLE BAND.
-                 Every terminal already owns a canonical accent in `TERMINAL`,
-                 but the nav painted it only on the ACTIVE item — so six of the
-                 seven roles were invisible and the header carried no colour
-                 structure at all. Each item now shows its own accent as a
-                 2px seat under the label, dim when elsewhere and solid when
-                 here. Read left to right the band is the role sequence the
-                 nav order encodes: Hub PURPLE, then BLUE -> GREEN
-                 (the social capsule) -> YELLOW -> ORANGE.
+        {/* ── THE ROLE BAR — SEVEN CONTROLS, ONE PER COLOUR ROLE ──────────
+            PURPLE·אדם  BLUE·מוח  GREEN·מערכת חברתית  YELLOW·דינמיקה
+            ORANGE·שוק  RED·פעולה  WHITE·מקור וראיות
 
-                 A seat rather than a fill: seven filled pills would make the
-                 header a colour chart and destroy the one thing the active
-                 state has to communicate. `Cell_ID != Color_ID` is unaffected
-                 — this paints a terminal's own declared accent, and derives
-                 nothing from it. */
-              const accent = TERMINAL[item.key].accent;
-              return here ? (
-                <span
-                  key={item.label}
-                  style={{ fontSize: FS.meta, fontWeight: 700, padding: "6px 14px", borderRadius: 8, color: "#02101f", background: accent, boxShadow: `inset 0 -2px 0 0 ${accent}` }}
-                >
-                  {item.label}
-                </span>
-              ) : (
-                <Link
-                  key={item.label}
-                  href={hrefFor(item)}
-                  style={{
-                    fontSize: FS.meta, fontWeight: 500, padding: "6px 14px", borderRadius: 8,
-                    color: COLOR.textDim, textDecoration: "none",
-                    boxShadow: `inset 0 -2px 0 0 ${accent}55`,
-                  }}
-                >
-                  {item.label}
-                </Link>
-              );
-            }
+            The four green destinations (Community, Globe, World, Social) are
+            NOT four controls. They were, and the bar read as though the
+            social system were four separate products competing with Hub and
+            Brain for the same rank. They are now four LENSES inside one green
+            surface, opened by the single control below.
 
-            // SOCIAL-VALUE FAMILY — rendered by `SocialScaleNav`, a CLIENT
-            // control, because changing scale must behave like changing a
-            // view rather than leaving for another product. It uses
-            // `next/link` with prefetch; the plain `<a href>` this replaced
-            // made every scale change a FULL PAGE RELOAD that tore down and
-            // rebuilt the 3D globe. It also carries the current selection
-            // across the change, so one object stays selected through a zoom.
-            //
-            // PRODUCT_FAMILY_CUE != CANONICAL_COLOR_ROLE still holds: the bar
-            // is tinted with the family cue, and no member's canonical role is
-            // restated by it.
-            return <SocialScaleNav key="social-family" selectedGroup={selectedGroup} />;
+            GREEN, RED and WHITE are in-page lenses rather than routes: they
+            read the shared scenario the header already loaded, so leaving the
+            page to see them would be a navigation that changes nothing. They
+            open via `:target` — one anchor, no client state, and exactly one
+            surface visible at a time because only one element can be the
+            target. PURPLE, BLUE, YELLOW and ORANGE stay real routes. */}
+        {/* ONE ROW, capped height. Seven controls fit 1280px without wrapping;
+            narrower viewports scroll the BAR rather than reflowing the page. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "nowrap",
+          maxBlockSize: 56, overflowX: "auto", overflowY: "hidden", scrollbarWidth: "none" }}>
+          {ROLE_BAR.map((r) => {
+            const here = r.surfaceKey !== undefined && r.surfaceKey === surface;
+            const common: React.CSSProperties = {
+              fontSize: 15, fontWeight: here ? 700 : 500,
+              padding: "8px 14px", borderRadius: 8, textDecoration: "none",
+              whiteSpace: "nowrap", flex: "0 0 auto",
+              color: here ? COLOR.text : COLOR.textDim,
+              background: "transparent",
+              /* ONE indicator, not three. The active lens is named by a solid
+                 seat in its own role colour; the rest show a dim seat. No
+                 fill, no border, no nested capsule. */
+              boxShadow: `inset 0 -3px 0 0 ${here ? r.hue : r.hue + "44"}`,
+            };
+            return here ? (
+              <span key={r.id} data-role-control={r.id} style={common}>{r.label}</span>
+            ) : (
+              <Link key={r.id} data-role-control={r.id} href={r.href(hrefFor)} style={common}>
+                {r.label}
+              </Link>
+            );
           })}
         </div>
       </div>

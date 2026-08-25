@@ -60,6 +60,7 @@ import { buildSocialValueSpine } from "@/app/lib/philos/valueSystem/socialValueS
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
+import PersonEventOrientationHeader from "@/app/lib/philos/analysis/PersonEventOrientationHeader";
 import { AuditHeading, AuditSection } from "@/app/lib/philos/shell/epistemics";
 import { resolveShellIdentityLink } from "@/app/lib/philos/community/resolveShellIdentityLink";
 import { buildValueRegistry, buildValueRelations, type GroupProvenance, type PudmValueSource, type ValueScope } from "@/app/lib/philos/community/valueRegistry";
@@ -820,7 +821,7 @@ export default async function CommunityPage({
     <TerminalPage
       background="#0b0f1a"
       nav={
-        <SystemShell
+        <><SystemShell
                   dense
                   signOut={<SignOutButton />}
                   viewerContext={semanticContext}
@@ -830,7 +831,7 @@ export default async function CommunityPage({
                   community={showingGroupDetail && terminalGroup ? { group_id: terminalGroup.group_id, label: terminalGroup.name, provenance: terminalProvenance } : undefined}
                   subject={personRef.person_id}
                   identityLink={identityLink}
-                />
+                /><PersonEventOrientationHeader terminal="community" /></>
       }
       entity={selected ? (
         <UnifiedEntitySurface projection={entity!.projection} trace={entity!.trace} compact />

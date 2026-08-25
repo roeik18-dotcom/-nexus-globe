@@ -1165,6 +1165,7 @@ export default function DynamicsView({
   defaultLifecycle,
   domainStates,
   personFrameSlot,
+  eventHeaderSlot,
   trajectorySlot,
   connectedSlot,
   selectedGroup,
@@ -1184,6 +1185,10 @@ export default function DynamicsView({
    *  chronology it is a frame for; it never enters the causal chain, never
    *  becomes a stage, and never fills STATE(t0)/STATE(t1). */
   personFrameSlot?: React.ReactNode;
+  /** The shared PERSON·EVENT band. Threaded in as a slot for the same
+   *  reason as `personFrameSlot`: this is a client component, and the
+   *  band is server-rendered. It must sit directly UNDER the nav. */
+  eventHeaderSlot?: React.ReactNode;
   /** Real time series for the resolved group. Server-built (it reads the
    *  event log) and threaded in as a slot, same reason as `personFrameSlot`. */
   trajectorySlot?: React.ReactNode;
@@ -1279,6 +1284,8 @@ export default function DynamicsView({
         subject={selected?.status === "found" && selected.subject ? selected.subject : viewerSubject}
         identityLink={identityLink}
       />
+
+      {eventHeaderSlot}
 
       {/* ── PRIMARY · the causal reading ─────────────────────────────────
           Replaces a 15-row `from → to · linkage · status · ids · basis`
