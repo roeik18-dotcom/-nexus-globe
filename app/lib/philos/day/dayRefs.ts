@@ -32,7 +32,7 @@
  * Everything here is pure. The records are loaded by the caller and passed
  * in, so the projection stays testable without a disk.
  */
-import type { CanonEvent } from "../canon/canonEvent";
+import { recordOriginOf, validateCanonEvent, type CanonEvent } from "../canon/canonEvent";
 import type { DomainStateRecord } from "../canon/domainStateStore";
 
 /** The stored records a day's refs are checked against. */
@@ -150,10 +150,27 @@ export function resolveStateRefs(
 /**
  * Resolve the Event/Observation pair.
  *
- * Both must be present, both must name a stored canon event, that event must
- * carry an Observation whose subject is this day's subject, and — the actual
- * relationship check — the observation ref must name the SAME record as the
- * event ref, because the observation only exists as that event's payload.
+ * Both must be present, both must name the SAME stored canon event, that
+ * event must be an Observation, it must carry this day's subject, its
+ * `record_origin` must be explicitly REAL, and its payload must validate.
+ *
+ * WHY ORIGIN IS CHECKED HERE AND NOT ONLY AT WRITE TIME. `openDayCore` proves
+ * all of this before appending, so no NEW day.opened can cite anything else.
+ * But this function projects records that already exist — including every
+ * opening written before the write-time check existed, and any line that
+ * reached the log another way. Without the origin test the gate would report
+ * MET for a day anchored to a DEMO fixture or to a legacy record nobody
+ * vouched for, and "MET" would mean two different things depending on when
+ * the record happened to be written. The projection has to be at least as
+ * strict as the writer, or the writer's guarantee is only about the future.
+ *
+ * NOTHING IS MIGRATED. A stored record that now fails these tests is left
+ * exactly as it is on disk; only what the gate SAYS about it changes, and it
+ * changes from a claim that was never earned to an explicit reason.
+ *
+ * EVERY REFUSAL NAMES ITS CAUSE. A gate that says "missing" tells a person
+ * nothing they can act on — the reasons below say which record, which check,
+ * and what the record actually carries.
  */
 export function resolveEventObservation(
   event_ref: string | undefined,
@@ -176,9 +193,30 @@ export function resolveEventObservation(
     );
   }
 
+  if (ev.canon_type !== "observation") {
+    return fail(
+      `${event_ref} is a ${ev.canon_type} record, not an observation — the day's anchor must be an Observation`,
+    );
+  }
+
   const subject = ev.payload?.subject;
   if (subject !== subject_id) {
     return fail(`observation belongs to ${subject ?? "an unrecorded subject"}, not ${subject_id}`);
+  }
+
+  /* Missing and explicit UNKNOWN both arrive here as UNKNOWN — `recordOriginOf`
+     makes them the same answer — so a record written before the field existed
+     is refused for the same stated reason as one that declared it knew
+     nothing. Neither is evidence about this person. */
+  const origin = recordOriginOf(ev);
+  if (origin !== "REAL") {
+    return fail(
+      `observation ${event_ref} carries record origin ${origin}, not REAL — only a person's own recorded observation anchors a day`,
+    );
+  }
+
+  if (!validateCanonEvent(ev).valid) {
+    return fail(`observation ${event_ref} is stored but does not validate as a CanonEvent`);
   }
 
   return {

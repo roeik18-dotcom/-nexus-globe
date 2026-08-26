@@ -102,7 +102,9 @@ function world(t1: Record<string, unknown> = {}): DayRefWorld {
       { state_id: T1_ID, recorded_at: EFFECT_AT, caused_by_ref: "effect_1", state: { subject: SUBJECT }, ...t1 },
     ],
     canonEvents: [
-      { canon_event_id: OBS_ID, canon_type: "observation", recorded_at: `${DATE}T07:30:00.000Z`, payload: { subject: SUBJECT } },
+      { canon_event_id: OBS_ID, canon_type: "observation", record_origin: "REAL",
+        recorded_at: `${DATE}T07:30:00.000Z`,
+        payload: { subject: SUBJECT, domain: "E", frame: "I", reference: "self_baseline", context: "fixture", time: `${DATE}T07:30:00.000Z`, provenance: "self_reported", confidence: 0.8, expiry: `${DATE}T23:30:00.000Z`, level: -1, stability: 0, deficitType: "RELATIVE" } },
     ],
   } as unknown as DayRefWorld;
 }

@@ -64,7 +64,9 @@ function refWorld(over: Partial<DayRefWorld> = {}): DayRefWorld {
       { state_id: T1_ID, recorded_at: EFFECT_AT, caused_by_ref: "effect_1", state: { subject: SUBJECT } },
     ],
     canonEvents: [
-      { canon_event_id: OBS_ID, canon_type: "observation", recorded_at: `${DATE}T07:30:00.000Z`, payload: { subject: SUBJECT } },
+      { canon_event_id: OBS_ID, canon_type: "observation", record_origin: "REAL",
+        recorded_at: `${DATE}T07:30:00.000Z`,
+        payload: { subject: SUBJECT, domain: "E", frame: "I", reference: "self_baseline", context: "fixture", time: `${DATE}T07:30:00.000Z`, provenance: "self_reported", confidence: 0.8, expiry: `${DATE}T23:30:00.000Z`, level: -1, stability: 0, deficitType: "RELATIVE" } },
     ],
     ...over,
   } as unknown as DayRefWorld;
@@ -477,8 +479,9 @@ describe("forged and missing refs keep the day PARTIAL", () => {
       ...closedInput(),
       refWorld: refWorld({
         canonEvents: [{
-          canon_event_id: OBS_ID, canon_type: "observation",
-          recorded_at: `${DATE}T07:30:00.000Z`, payload: { subject: "person_someone_else" },
+          canon_event_id: OBS_ID, canon_type: "observation", record_origin: "REAL",
+          recorded_at: `${DATE}T07:30:00.000Z`,
+          payload: { subject: "person_someone_else", domain: "E", frame: "I", reference: "self_baseline", context: "fixture", time: `${DATE}T07:30:00.000Z`, provenance: "self_reported", confidence: 0.8, expiry: `${DATE}T23:30:00.000Z`, level: -1, stability: 0, deficitType: "RELATIVE" },
         }],
       } as never),
     });
@@ -492,8 +495,12 @@ describe("forged and missing refs keep the day PARTIAL", () => {
       events: [opened({ observation_ref: "canonev_2" }), closed()],
       refWorld: refWorld({
         canonEvents: [
-          { canon_event_id: OBS_ID, canon_type: "observation", recorded_at: `${DATE}T07:30:00.000Z`, payload: { subject: SUBJECT } },
-          { canon_event_id: "canonev_2", canon_type: "observation", recorded_at: `${DATE}T07:40:00.000Z`, payload: { subject: SUBJECT } },
+          { canon_event_id: OBS_ID, canon_type: "observation", record_origin: "REAL",
+            recorded_at: `${DATE}T07:30:00.000Z`,
+            payload: { subject: SUBJECT, domain: "E", frame: "I", reference: "self_baseline", context: "fixture", time: `${DATE}T07:30:00.000Z`, provenance: "self_reported", confidence: 0.8, expiry: `${DATE}T23:30:00.000Z`, level: -1, stability: 0, deficitType: "RELATIVE" } },
+          { canon_event_id: "canonev_2", canon_type: "observation", record_origin: "REAL",
+            recorded_at: `${DATE}T07:40:00.000Z`,
+            payload: { subject: SUBJECT, domain: "E", frame: "I", reference: "self_baseline", context: "fixture", time: `${DATE}T07:30:00.000Z`, provenance: "self_reported", confidence: 0.8, expiry: `${DATE}T23:30:00.000Z`, level: -1, stability: 0, deficitType: "RELATIVE" } },
         ],
       } as never),
     });
