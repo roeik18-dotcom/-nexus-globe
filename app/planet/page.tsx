@@ -44,7 +44,8 @@ import { loadWorldView } from "@/app/lib/philos/geo/loadWorldView";
 import { SELECTED_GROUP_PARAM } from "@/app/lib/philos/community/selectedGroupContext";
 import { connection } from "next/server";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
-import PersonEventOrientationHeader from "@/app/lib/philos/analysis/PersonEventOrientationHeader";
+import DemoSimulationSection from "@/app/lib/philos/analysis/DemoSimulationSection";
+import RealDataGapPanel, { factFromCount, factFromRecords } from "@/app/lib/philos/day/RealDataGapPanel";
 import SignOutButton from "@/app/signin/SignOutButton";
 import { resolveViewerContextSemantics } from "@/app/lib/philos/context/resolveViewerContextSemantics";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
@@ -396,7 +397,24 @@ export default async function PlanetPage({
                   purpose="מפת הערכים, הקבוצות והגאוגרפיה של PHILOS."
                   subject={personRef.person_id}
                   identityLink={identityLink}
-                /><PersonEventOrientationHeader terminal="planet" /><DayStatusStrip session={daySession} /></>
+                /><DayStatusStrip session={daySession} /><RealDataGapPanel session={daySession} terminal="planet" facts={[
+                  /* `arcs`/`nodes` come from projectGlobeGraph over
+                     loadPhilosEvents(), whose log is "bootstrap ++ appended" —
+                     it contains the 42-event hand-authored seed. GlobeNode and
+                     GlobeArc carry NO provenance field, so REAL cannot be
+                     established from the records and the count is reported as
+                     UNKNOWN provenance rather than as the person's own data. */
+                  factFromCount("Globe arcs", "projectGlobeGraph → arcs (loadPhilosEvents: bootstrap ++ appended)",
+                    arcs.length, "אין קשת — לא נמצאה רשומה"),
+                  factFromCount("Globe nodes", "projectGlobeGraph → nodes (loadPhilosEvents: bootstrap ++ appended)",
+                    nodes.length, "אין צומת — לא נמצאה רשומה"),
+                  /* EntityLink DOES declare provenance, so this one can be
+                     counted honestly: DEMO links are tallied but never added
+                     to the REAL figure. */
+                  factFromRecords("Bridge links", "buildDefaultLinkRegistry → bridgeRows",
+                    bridgeRows, (l) => l.provenance,
+                    "אין קישור גשר REAL — לא נמצאה רשומה ברישום הקישורים"),
+                ]} /><DemoSimulationSection terminal="planet" /></>
       }
       entity={selectedEntity ? (
         <UnifiedEntitySurface projection={entity!.projection} trace={entity!.trace} compact />

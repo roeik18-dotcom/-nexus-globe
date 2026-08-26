@@ -35,16 +35,31 @@ const render = (terminal: string) =>
   renderToStaticMarkup(createElement(PersonEventOrientationHeader, { terminal: terminal as TerminalName }));
 
 describe("one shared source, seven terminals", () => {
-  it("every terminal imports the ONE header and states no scenario data of its own", () => {
+  it("every terminal reaches the ONE scenario source and states no scenario data of its own", () => {
+    /* STILL ONE SOURCE, ONE MOUNT — reached through the quarantine boundary
+       rather than imported page-by-page. `DemoSimulationSection` renders
+       `PersonEventOrientationHeader` and nothing else does, so "seven
+       terminals, one object" is now enforced by there being a single import
+       of the header in the whole app. */
     for (const [name, rel] of Object.entries(TERMINALS)) {
       const src = readFileSync(join(ROOT, rel), "utf8");
-      expect(src, `${name} must import the shared header`)
-        .toContain("analysis/PersonEventOrientationHeader");
-      expect(src, `${name} must render it`).toContain("<PersonEventOrientationHeader");
+      expect(src, `${name} must mount the shared DEMO section`)
+        .toContain("analysis/DemoSimulationSection");
+      expect(src, `${name} must render it`).toContain("<DemoSimulationSection");
       /* NO MANUAL COPY. A page that hard-codes the ids has stopped reading
          the shared source, which is the exact failure this phase prevents. */
       expect(src, `${name} must not hard-code the event id`).not.toContain(SCENARIO_EVENT_ID);
       expect(src, `${name} must not hard-code the observation id`).not.toContain(SCENARIO_OBSERVATION_ID);
+    }
+  });
+
+  it("the scenario header is imported in exactly one place in the app", () => {
+    const boundary = readFileSync(
+      join(ROOT, "app/lib/philos/analysis/DemoSimulationSection.tsx"), "utf8");
+    expect(boundary).toContain('from "./PersonEventOrientationHeader"');
+    for (const rel of Object.values(TERMINALS)) {
+      expect(readFileSync(join(ROOT, rel), "utf8"))
+        .not.toContain("analysis/PersonEventOrientationHeader");
     }
   });
 

@@ -28,7 +28,8 @@ import RealMarketplace from "./RealMarketplace";
 import { findKnownResource, resolveSelectedContext, VALUE_DIMENSIONS } from "./resolveActionSpace";
 import { parseSystemContextRef } from "@/app/lib/systemContext";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
-import PersonEventOrientationHeader from "@/app/lib/philos/analysis/PersonEventOrientationHeader";
+import DemoSimulationSection from "@/app/lib/philos/analysis/DemoSimulationSection";
+import RealDataGapPanel, { factFromCount } from "@/app/lib/philos/day/RealDataGapPanel";
 import { AuditHeading, AuditSection } from "@/app/lib/philos/shell/epistemics";
 import { resolveShellIdentityLink } from "@/app/lib/philos/community/resolveShellIdentityLink";
 import { loadNeeds } from "@/app/lib/philos/canon/needStoreAccessor";
@@ -208,17 +209,19 @@ export default async function MarketplacePage({
       .map((o) => ({ offer_id: o.offer.offer_id, available_resource: o.offer.available_resource, resource_type: o.offer.resource_type, amount_or_capacity: o.offer.amount_or_capacity, source: o.offer.source }));
   return (
       <>
-      {/* THE HEADER IS NOT OPTIONAL ON ANY MARKETPLACE PATH. This early
-          return is the `?view=prototype` visual checkpoint; it rendered
-          without the shared band, which made one Marketplace route show the
-          event and the other not. */}
-      <PersonEventOrientationHeader terminal="marketplace" />
+      {/* THE DEMO SECTION IS NOT OPTIONAL ON ANY MARKETPLACE PATH, but it is
+          no longer FIRST on either. This early return is the
+          `?view=prototype` visual checkpoint; it is mutually exclusive with
+          the default route below (that route is only reached when this guard
+          does not fire), so each route mounts exactly one section — neither
+          is a duplicate of the other. */}
       <MarketplacePrototype
         needs={myNeeds} offers={myOffers} actionsCount={mineActions.length} effectsCount={mineEffects.length}
         identityLinked={identityLink.status === "VERIFIED_SAME_PERSON"}
         realGroupName={philosGroupsRealView?.name}
         realGroupCentralValue={philosGroupsRealView?.central_value}
       />
+      <DemoSimulationSection terminal="marketplace" />
       </>
     );
   }
@@ -261,7 +264,17 @@ export default async function MarketplacePage({
           identityLink={identityLink}
         />
         <DayStatusStrip session={daySession} />
-        <PersonEventOrientationHeader terminal="marketplace" />
+        <RealDataGapPanel session={daySession} terminal="marketplace" facts={[
+          /* Arrays this page already loaded and already renders. */
+          factFromCount("Need", "findNeedsForSubject → mineNeeds", mineNeeds.length,
+            "אין צורך רשום — לא נמצאה רשומה ב־needStore"),
+          factFromCount("Offer", "findOffersForSource → mineOffers", mineOffers.length,
+            "אין הצעה רשומה — לא נמצאה רשומה ב־offerStore"),
+          factFromCount("Action", "loadActions → mineActions", mineActions.length,
+            "אין פעולה רשומה — לא נמצאה רשומה ב־actionStore"),
+          factFromCount("Effect", "loadEffects → mineEffects", mineEffects.length,
+            "אין תוצאה רשומה — לא נמצאה רשומה ב־effectStore"),
+        ]} />
       </div>
 
       {/* ── PRIMARY LIVING SURFACE · THE POSSIBILITY LENS ────────────────
@@ -464,12 +477,20 @@ export default async function MarketplacePage({
         </AuditSection>
       </div>
 
-      {/* DEMO — the existing, already-labeled compost lifecycle. Explicit
-          secondary section, never primary. */}
+      {/* DEMO — the existing, already-labeled compost lifecycle. It carried a
+          DEMO badge and a caption, but rendered OPEN, so `/marketplace` was
+          the one default route still painting DEMO strings
+          ("[DEMO] קרן חדשנות ירוקה") without a disclosure. Collapsing it is a
+          presentation change only: the component, its data and its selectors
+          are untouched. */}
       <div dir="rtl" style={{ margin: "8px 20px 0" }}>
-        <div style={{ fontSize: 12, letterSpacing: 1, color: "#6c86b5", marginBottom: 5 }}>דוגמה · DEMO FLOW</div>
+        <details>
+          <summary style={{ fontSize: 12, letterSpacing: 1, color: "#6c86b5", marginBottom: 5, cursor: "pointer" }}>
+            דוגמה · DEMO FLOW — כלי בדיקה, אינו נתון המשתמש
+          </summary>
+          <DemoMarketplaceFlow />
+        </details>
       </div>
-      <DemoMarketplaceFlow />
 
       {/* LEGACY / AUDIT — the PUDM/Fashion catalog, collapsed always
           (never primary regardless of `?ctx=`), plus the classification
@@ -496,6 +517,11 @@ export default async function MarketplacePage({
             </div>
           </details>
         )}
+      </div>
+      {/* Below all REAL marketplace content, collapsed. The prototype route
+          above mounts its own; the two routes are mutually exclusive. */}
+      <div style={{ padding: "0 20px 20px" }}>
+        <DemoSimulationSection terminal="marketplace" />
       </div>
     </div>
   );

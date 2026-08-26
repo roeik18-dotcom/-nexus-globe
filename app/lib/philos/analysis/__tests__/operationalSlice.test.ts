@@ -314,8 +314,12 @@ describe("DEMO is never rendered as REAL", () => {
   });
 });
 
-describe("prototype Marketplace carries the shared header", () => {
-  it("renders it in the early-return branch too", () => {
+describe("prototype Marketplace carries the shared scenario section", () => {
+  /* The property this has always protected — the prototype route is not a
+     route where the scenario silently disappears — is unchanged. What changed
+     is the MOUNT: the scenario is now reached through `DemoSimulationSection`,
+     collapsed and below the route's real content, on both routes alike. */
+  it("mounts the shared DEMO section in the early-return branch too", () => {
     const src = readFileSync(join(__dirname, "../../../../marketplace/page.tsx"), "utf8");
     const start = src.indexOf('params.view === "prototype"');
     expect(start).toBeGreaterThan(-1);
@@ -324,7 +328,14 @@ describe("prototype Marketplace carries the shared header", () => {
        region and passes or fails for the wrong reason. */
     const proto = src.slice(start, start + 1400);
     expect(proto).toContain("<MarketplacePrototype");
-    expect(proto).toContain("PersonEventOrientationHeader");
+    expect(proto).toContain("DemoSimulationSection");
+  });
+
+  it("puts the real prototype content BEFORE the scenario section", () => {
+    const src = readFileSync(join(__dirname, "../../../../marketplace/page.tsx"), "utf8");
+    const start = src.indexOf('params.view === "prototype"');
+    const proto = src.slice(start, start + 1400);
+    expect(proto.indexOf("<MarketplacePrototype")).toBeLessThan(proto.indexOf("<DemoSimulationSection"));
   });
 });
 

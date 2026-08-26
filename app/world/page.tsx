@@ -18,7 +18,8 @@ import type { ProviderCapabilityRelation } from "@/app/lib/provider-capability-r
 import WorldView from "./WorldView";
 import SystemGateVisual from "./SystemGateVisual";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
-import PersonEventOrientationHeader from "@/app/lib/philos/analysis/PersonEventOrientationHeader";
+import DemoSimulationSection from "@/app/lib/philos/analysis/DemoSimulationSection";
+import RealDataGapPanel, { factFromCount, factFromRecords } from "@/app/lib/philos/day/RealDataGapPanel";
 import { COLOR, FS, RADIUS, STATUS, TYPE } from "@/app/lib/philos/shell/designTokens";
 import TerminalPage, { type TerminalSection } from "@/app/lib/philos/shell/TerminalPage";
 import { loadPhilosEvents } from "@/app/lib/philos-event-store";
@@ -382,7 +383,21 @@ export default async function WorldPage({ searchParams }: {
                   selectedGroup={selected?.groupId}
                   purpose="מה נצפה בקנה-מידה מערכתי, ומה קיים אך אינו מגיע לכאן."
                   subject={personRef.person_id}
-                /><PersonEventOrientationHeader terminal="world" /><DayStatusStrip session={daySession} /></>
+                /><DayStatusStrip session={daySession} /><RealDataGapPanel session={daySession} terminal="world" facts={[
+                  /* These two record shapes are {record_id, evidence_id} and
+                     {record_id, as} — no provenance field, so the count cannot
+                     claim REAL. */
+                  factFromCount("System-eligible records", "loadSocialSystem → world.system_eligible_records",
+                    social.world.system_eligible_records.length, "אין רשומה כשירה — לא נמצאה רשומה מבנית"),
+                  factFromCount("System-observed records", "loadSocialSystem → world.system_observed_records",
+                    social.world.system_observed_records.length, "אין רשומה נצפית — לא נמצאה רשומה מבנית"),
+                  /* SocialObject DOES declare provenance (REAL | DERIVED_REAL |
+                     DEMO | REFERENCE | UNKNOWN), so this is counted per class
+                     and DEMO never raises the REAL figure. */
+                  factFromRecords("Social objects", "loadSocialSystem → objects",
+                    socialObjects, (o) => o.provenance,
+                    "אין אובייקט חברתי REAL — לא נמצאה רשומה ב־loadSocialSystem"),
+                ]} /><DemoSimulationSection terminal="world" /></>
       }
       entity={selected ? (
         <UnifiedEntitySurface projection={entity!.projection} trace={entity!.trace} compact />

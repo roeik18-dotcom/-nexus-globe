@@ -37,7 +37,8 @@ import type { MeasuredStateSpace } from "@/app/lib/philos/orientationCore";
 import type { TensionItem } from "@/app/lib/philos/tension";
 import type { KnownNeedResult } from "@/app/lib/systemContext";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
-import PersonEventOrientationHeader from "@/app/lib/philos/analysis/PersonEventOrientationHeader";
+import DemoSimulationSection from "@/app/lib/philos/analysis/DemoSimulationSection";
+import RealDataGapPanel, { factFromCount } from "@/app/lib/philos/day/RealDataGapPanel";
 import EntityContextPanel from "@/app/lib/philos/shell/EntityContextPanel";
 import StateDiffPanel from "@/app/lib/philos/shell/StateDiffPanel";
 import { buildCarryForward, buildDayClosingQuestions } from "@/app/lib/philos/dayClosingFusion";
@@ -453,12 +454,22 @@ export default async function HubPage({
         <DayStatusStrip session={daySession} />
         <DayChainSummary session={daySession} />
         <DayOpeningPanel session={daySession} readOnly={!dayIsToday} />
-        <PersonEventOrientationHeader terminal="hub" legacy={
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-            <span style={{ fontSize: 13, color: "#9fb0d0" }}>מה חשוב עכשיו, מה השתנה, ולאן ללכת משם.</span>
-            <SignOutButton />
-          </div>
-        } />
+        <RealDataGapPanel session={daySession} terminal="hub" facts={[
+          factFromCount("State(t0)", "DaySession.state_t0", daySession.state_t0.value?.length ?? null,
+            daySession.state_t0.unresolved_reason ?? "לא נמצאה רשומה"),
+          factFromCount("State(t1)", "DaySession.state_t1", daySession.state_t1.value?.length ?? null,
+            daySession.state_t1.unresolved_reason ?? "לא נמצאה רשומה"),
+          factFromCount("Event/Observation", "DaySession.event_observation_refs",
+            daySession.event_observation_refs.value?.length ?? null,
+            daySession.event_observation_refs.unresolved_reason ?? "לא נמצאה רשומה"),
+        ]} />
+        {/* REAL chrome, hoisted OUT of the DEMO section: sign-out is a real
+            control and must not sit behind a label saying the content below
+            is not the user's data. */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+          <span style={{ fontSize: 13, color: "#9fb0d0" }}>מה חשוב עכשיו, מה השתנה, ולאן ללכת משם.</span>
+          <SignOutButton />
+        </div>
       </div>
       {commandCenterSection ? (
           <div style={{ padding: "20px 20px 0" }}>
@@ -664,8 +675,11 @@ export default async function HubPage({
       />
       </details>
       {/* LAST on Hub, by the required render order: opening → orientation →
-          priority → next action → terminal content → closing. */}
+          priority → next action → terminal content → closing. The DEMO
+          section sits below all REAL content and above the closing, so the
+          operational act stays the final thing on the page. */}
       <div style={{ padding: "0 20px 20px" }}>
+        <DemoSimulationSection terminal="hub" />
         <DayClosingPanel session={daySession} readOnly={!dayIsToday} />
       </div>
     </div>

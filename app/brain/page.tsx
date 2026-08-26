@@ -12,7 +12,8 @@ import { buildActionLifecycleSummary, type ActionLifecycleSummary } from "@/app/
 import { findKnownNeeds, needsRequiringAction } from "@/app/lib/philos/sharedContext";
 import type { KnownNeedResult } from "@/app/lib/systemContext";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
-import PersonEventOrientationHeader from "@/app/lib/philos/analysis/PersonEventOrientationHeader";
+import DemoSimulationSection from "@/app/lib/philos/analysis/DemoSimulationSection";
+import RealDataGapPanel, { factFromCount } from "@/app/lib/philos/day/RealDataGapPanel";
 import { AuditHeading, AuditSection } from "@/app/lib/philos/shell/epistemics";
 import { buildDefaultLinkRegistry } from "@/app/lib/philos/bridge/linkRegistry";
 import { linksForEntity } from "@/app/lib/philos/bridge/entityLink";
@@ -185,12 +186,22 @@ export default async function BrainPage({
           identityLink={identityLink}
         />
         <DayStatusStrip session={daySession} />
-        <PersonEventOrientationHeader terminal="brain" legacy={
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-            <span style={{ fontSize: 13, color: "#9fb0d0" }}>מסגרת האדם הקודמת נשמרה כאן.</span>
-            <SignOutButton />
-          </div>
-        } />
+        <RealDataGapPanel session={daySession} terminal="brain" facts={[
+          factFromCount("Observation nodes", "projectCanonDynamics → canon.nodes", canon.nodes.length,
+            "אין תצפית — לא נמצאה רשומה ב־canonEventStore"),
+          factFromCount("Reality nodes", "buildRealityGraph → worldEvents", worldEvents.length,
+            "אין צומת מציאות — לא נמצאה רשומה ב־brainGraph"),
+          /* UNRESOLVED, not EMPTY: analysisUnit.ts has no runtime derivation at
+             all, so the source cannot answer — that is not a count of zero. */
+          { label: "Analysis Units", source: "analysisUnit.ts", provenance: "UNKNOWN",
+            status: "UNRESOLVED",
+            unsupported_reason: "אין נגזרת ריצה מתצפית ל־AnalysisUnitReading · אין עדיין write path" },
+        ]} />
+        {/* REAL chrome stays outside the DEMO section. */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+          <span style={{ fontSize: 13, color: "#9fb0d0" }}>מסגרת האדם הקודמת נשמרה כאן.</span>
+          <SignOutButton />
+        </div>
         {entityContext.status === "found_entity" ? (
           <div dir="rtl" style={{ marginTop: 10 }}>
             <EntityContextPanel selected={entityContext} here="brain" />
@@ -251,6 +262,8 @@ export default async function BrainPage({
             <BrainV2 subject={subject} core={core} knownNeeds={knownNeeds} lifecycle={lifecycle} worldEvents={worldEvents} knowledge={knowledge} bridgeLinkCount={bridgeLinkCount} pendingNeeds={needsRequiringAction(knownNeeds, lifecycle)} valueContext={valueContext} />
           </div>
         </details>
+        {/* Below every REAL Brain surface, collapsed by default. */}
+        <DemoSimulationSection terminal="brain" />
       </div>
     </div>
   );

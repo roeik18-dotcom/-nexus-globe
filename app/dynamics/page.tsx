@@ -81,7 +81,8 @@ import { buildSystemTrace } from "@/app/lib/philos/systemTrace";
 import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor";
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import { findDomainStatesForSubject } from "@/app/lib/philos/canon/domainStateStoreAccessor";
-import PersonEventOrientationHeader from "@/app/lib/philos/analysis/PersonEventOrientationHeader";
+import DemoSimulationSection from "@/app/lib/philos/analysis/DemoSimulationSection";
+import RealDataGapPanel, { factFromCount } from "@/app/lib/philos/day/RealDataGapPanel";
 import DynamicsView, { type CommunityCapitalContext, type SelectedContext, type TimeRangeSummary } from "./DynamicsView";
 import DayStatusStrip from "@/app/lib/philos/day/DayStatusStrip";
 import { loadDaySession } from "@/app/lib/philos/day/loadDaySession";
@@ -353,8 +354,20 @@ export default async function DynamicsPage({
      full-bleed drawing surface below it. */
   return <>
     <DayStatusStrip session={daySession} />
+    <RealDataGapPanel session={daySession} terminal="dynamics" facts={[
+      /* The day-scoped chain, already projected. `null` here means the
+         projection could not resolve it — UNRESOLVED, never zero. */
+      factFromCount("Action", "DaySession.action_refs", daySession.action_refs.value?.length ?? null,
+        daySession.action_refs.unresolved_reason ?? "לא נמצאה רשומה"),
+      factFromCount("Effect", "DaySession.effect_refs", daySession.effect_refs.value?.length ?? null,
+        daySession.effect_refs.unresolved_reason ?? "לא נמצאה רשומה"),
+      factFromCount("Evidence", "DaySession.evidence_refs", daySession.evidence_refs.value?.length ?? null,
+        daySession.evidence_refs.unresolved_reason ?? "לא נמצאה רשומה"),
+      factFromCount("Learning", "DaySession.learning_refs", daySession.learning_refs.value?.length ?? null,
+        daySession.learning_refs.unresolved_reason ?? "לא נמצאה רשומה"),
+    ]} />
     <DynamicsView
-    eventHeaderSlot={<PersonEventOrientationHeader terminal="dynamics" />}
+    eventHeaderSlot={<DemoSimulationSection terminal="dynamics" />}
       selectedGroup={entity?.projection.groupId}
       connectedSlot={entity ? (
         <div dir="rtl" style={{ display: "flex", flexDirection: "column",
