@@ -39,6 +39,8 @@ import type { KnownNeedResult } from "@/app/lib/systemContext";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
 import DemoSimulationSection from "@/app/lib/philos/analysis/DemoSimulationSection";
 import RealDataGapPanel, { factFromCount } from "@/app/lib/philos/day/RealDataGapPanel";
+import { loadCanonEvents } from "@/app/lib/philos/canon/canonEventStoreAccessor";
+import { selectRealUnitReadings } from "@/app/lib/philos/analysis/realUnitReadings";
 import EntityContextPanel from "@/app/lib/philos/shell/EntityContextPanel";
 import StateDiffPanel from "@/app/lib/philos/shell/StateDiffPanel";
 import { buildCarryForward, buildDayClosingQuestions } from "@/app/lib/philos/dayClosingFusion";
@@ -125,6 +127,11 @@ export default async function HubPage({
 
   // STEP 1 — the ONE shared identity reference.
   const personRef = resolvePersonRef(await resolveViewerContext(), params.subject);
+  /* REAL unit readings — one shared selector, never a per-page derivation. */
+  const realUnitReadings = selectRealUnitReadings({
+    events: await loadCanonEvents(),
+    subject_id: personRef.person_id,
+  });
   // `resolvePersonRef` already applied this exact `typeof` check; kept as a
   // local alias so the canon-scoped block below reads unchanged.
   const requestedSubject: string | undefined = typeof params.subject === "string" ? params.subject : undefined;
@@ -454,7 +461,7 @@ export default async function HubPage({
         <DayStatusStrip session={daySession} />
         <DayChainSummary session={daySession} />
         <DayOpeningPanel session={daySession} readOnly={!dayIsToday} />
-        <RealDataGapPanel session={daySession} terminal="hub" facts={[
+        <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="hub" facts={[
           factFromCount("State(t0)", "DaySession.state_t0", daySession.state_t0.value?.length ?? null,
             daySession.state_t0.unresolved_reason ?? "לא נמצאה רשומה"),
           factFromCount("State(t1)", "DaySession.state_t1", daySession.state_t1.value?.length ?? null,

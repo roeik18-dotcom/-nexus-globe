@@ -30,6 +30,7 @@ import { parseSystemContextRef } from "@/app/lib/systemContext";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
 import DemoSimulationSection from "@/app/lib/philos/analysis/DemoSimulationSection";
 import RealDataGapPanel, { factFromCount } from "@/app/lib/philos/day/RealDataGapPanel";
+import { selectRealUnitReadings } from "@/app/lib/philos/analysis/realUnitReadings";
 import { AuditHeading, AuditSection } from "@/app/lib/philos/shell/epistemics";
 import { resolveShellIdentityLink } from "@/app/lib/philos/community/resolveShellIdentityLink";
 import { loadNeeds } from "@/app/lib/philos/canon/needStoreAccessor";
@@ -146,6 +147,11 @@ export default async function MarketplacePage({
      semantic context both read it, rather than each resolving their own. */
   const viewer = await resolveViewerContext();
   const personRef = resolvePersonRef(viewer, params.subject);
+  /* REAL unit readings — one shared selector, never a per-page derivation. */
+  const realUnitReadings = selectRealUnitReadings({
+    events: await loadCanonEvents(),
+    subject_id: personRef.person_id,
+  });
   /* THE ONE semantic context — hoisted to the component scope so BOTH render
      branches use the same result rather than one branch resolving its own. */
   const semanticContext = await resolveViewerContextSemantics(viewer);
@@ -264,7 +270,7 @@ export default async function MarketplacePage({
           identityLink={identityLink}
         />
         <DayStatusStrip session={daySession} />
-        <RealDataGapPanel session={daySession} terminal="marketplace" facts={[
+        <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="marketplace" facts={[
           /* Arrays this page already loaded and already renders. */
           factFromCount("Need", "findNeedsForSubject → mineNeeds", mineNeeds.length,
             "אין צורך רשום — לא נמצאה רשומה ב־needStore"),

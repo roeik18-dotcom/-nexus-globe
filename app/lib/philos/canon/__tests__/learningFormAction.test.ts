@@ -6,7 +6,7 @@ import { _setEffectStore } from "../effectStoreAccessor";
 import { InMemoryEffectStore } from "../effectStore";
 import { _setLearningStore } from "../learningStoreAccessor";
 import { InMemoryLearningStore } from "../learningStore";
-import { recordObservationAction } from "../observationIngestion";
+import { recordObservationAction } from "../observationWriter";
 import { createLearningForCurrentUserCore } from "../learningFormAction";
 import { REAL_CURRENT_SUBJECT } from "@/app/lib/philos/subjectRegistry";
 import type { Observation } from "../observation";

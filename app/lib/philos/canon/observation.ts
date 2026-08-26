@@ -34,6 +34,10 @@
 // Event-Domain (the 9 event-log categories in projectDynamics.ts) or Merlin-Domain
 // (the 7 voice-gateway routing categories) — see PHILOS-COLOR-SYSTEM-MASTER.md
 // Part II for the three-way collision this repo already has around "Domain".
+import {
+  ANALYSIS_UNIT_IDS, type AnalysisUnitId, isAnalysisUnitId,
+} from "../analysisUnitIds";
+
 export type Domain = "G" | "E" | "C";
 
 /** Frame: reference space (canon §3). */
@@ -87,6 +91,28 @@ export interface Observation {
    */
   stability: number;
   deficitType: DeficitType;
+  /**
+   * WHICH ANALYSIS UNITS A PERSON EXPLICITLY SAID THIS OBSERVATION BEARS ON.
+   *
+   * A SELECTION, NOT A MEASUREMENT. Listing a unit here means "this
+   * observation is relevant to this unit" and nothing further — not that the
+   * unit was measured, not a direction, not a magnitude, not a confidence,
+   * and not a judgement about the person. Nothing reads this field and infers
+   * a value from it.
+   *
+   * OPTIONAL, AND OLD RECORDS STAY VALID. Every Observation written before
+   * this field existed simply has no key here; `validateObservation` treats
+   * absent and empty identically, so no stored record became invalid when
+   * this was added.
+   *
+   * NEVER DERIVED. There is no code path that fills this from `context`,
+   * `domain`, `frame` or any keyword: a unit appears here because a human
+   * ticked it, or it does not appear.
+   *
+   * The id type comes from `../analysisUnitIds`, a neutral module, so canon
+   * does not depend on the synthesis layer that gives these units meaning.
+   */
+  analysis_unit_ids?: AnalysisUnitId[];
   /** Required iff frame === "S" (canon §18); optional and unconstrained otherwise
    *  — canon requires it FOR S, it does not forbid it elsewhere, and this
    *  validator does not invent a prohibition canon never states. */
@@ -109,7 +135,11 @@ export type ObservationError =
   | { field: "stability"; reason: "not_finite" }
   | { field: "deficitType"; reason: "invalid" }
   | { field: "systemicChannel"; reason: "required_when_frame_is_S" }
-  | { field: "systemicChannel"; reason: "invalid" };
+  | { field: "systemicChannel"; reason: "invalid" }
+  | { field: "analysis_unit_ids"; reason: "not_an_array" }
+  | { field: "analysis_unit_ids"; reason: "unknown_id" }
+  | { field: "analysis_unit_ids"; reason: "duplicate_id" }
+  | { field: "analysis_unit_ids"; reason: "too_many" };
 
 export interface ValidationResult {
   valid: boolean;
@@ -159,6 +189,25 @@ export function parseOffsetInstant(s: unknown): number | null {
  */
 export function validateObservation(o: Observation): ValidationResult {
   const errors: ObservationError[] = [];
+
+  /* ANALYSIS UNITS — optional. Absent and empty are the same thing, which is
+     what keeps every Observation written before this field existed valid.
+     Present means it must be a real array of real ids, each once. */
+  if (o.analysis_unit_ids !== undefined) {
+    if (!Array.isArray(o.analysis_unit_ids)) {
+      errors.push({ field: "analysis_unit_ids", reason: "not_an_array" });
+    } else {
+      if (o.analysis_unit_ids.length > ANALYSIS_UNIT_IDS.length) {
+        errors.push({ field: "analysis_unit_ids", reason: "too_many" });
+      }
+      if (o.analysis_unit_ids.some((id) => !isAnalysisUnitId(id))) {
+        errors.push({ field: "analysis_unit_ids", reason: "unknown_id" });
+      }
+      if (new Set(o.analysis_unit_ids).size !== o.analysis_unit_ids.length) {
+        errors.push({ field: "analysis_unit_ids", reason: "duplicate_id" });
+      }
+    }
+  }
 
   if (typeof o.subject !== "string" || o.subject.trim() === "") {
     errors.push({ field: "subject", reason: "empty" });

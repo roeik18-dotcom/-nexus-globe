@@ -39,12 +39,16 @@
  *     is a reading, and ten readings do not add up to a verdict on a person.
  */
 
-/** The ten unit ids, in the DEFINED DISPLAY ORDER: FOUNDATION 4, then
- *  DEPARTMENTS 6. This order is a presentation convention chosen here, not a
- *  canonical ordering derived from any source. */
-export type AnalysisUnitId =
-  | "time" | "matter" | "space_gap" | "energy"
-  | "emotional" | "cognitive" | "physical" | "personal" | "social" | "systemic";
+/**
+ * The ten unit ids come from `../analysisUnitIds` — a neutral module with no
+ * imports — so `canon/` can record a person's classification without taking a
+ * dependency on this synthesis layer. Re-exported here so every existing
+ * reader keeps its import unchanged.
+ */
+import type { AnalysisUnitId } from "../analysisUnitIds";
+
+export type { AnalysisUnitId };
+export { ANALYSIS_UNIT_IDS, isAnalysisUnitId, normalizeAnalysisUnitIds } from "../analysisUnitIds";
 
 /**
  * Reading status. `unknown` is NOT zero and NOT a low value — it is the

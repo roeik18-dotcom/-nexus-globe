@@ -46,6 +46,8 @@ import { connection } from "next/server";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
 import DemoSimulationSection from "@/app/lib/philos/analysis/DemoSimulationSection";
 import RealDataGapPanel, { factFromCount, factFromRecords } from "@/app/lib/philos/day/RealDataGapPanel";
+import { loadCanonEvents } from "@/app/lib/philos/canon/canonEventStoreAccessor";
+import { selectRealUnitReadings } from "@/app/lib/philos/analysis/realUnitReadings";
 import SignOutButton from "@/app/signin/SignOutButton";
 import { resolveViewerContextSemantics } from "@/app/lib/philos/context/resolveViewerContextSemantics";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
@@ -189,6 +191,11 @@ export default async function PlanetPage({
   const params = await searchParams;
   // STEP 1 — the ONE shared identity reference.
   const personRef = resolvePersonRef(viewer, params.subject);
+  /* REAL unit readings — one shared selector, never a per-page derivation. */
+  const realUnitReadings = selectRealUnitReadings({
+    events: await loadCanonEvents(),
+    subject_id: personRef.person_id,
+  });
   /* THE ONE semantic context — at component scope so every render branch of
      this surface uses the same result. Resolved server-side and passed into
      the client component; a client may never resolve context of its own. */
@@ -397,7 +404,7 @@ export default async function PlanetPage({
                   purpose="מפת הערכים, הקבוצות והגאוגרפיה של PHILOS."
                   subject={personRef.person_id}
                   identityLink={identityLink}
-                /><DayStatusStrip session={daySession} /><RealDataGapPanel session={daySession} terminal="planet" facts={[
+                /><DayStatusStrip session={daySession} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="planet" facts={[
                   /* `arcs`/`nodes` come from projectGlobeGraph over
                      loadPhilosEvents(), whose log is "bootstrap ++ appended" —
                      it contains the 42-event hand-authored seed. GlobeNode and

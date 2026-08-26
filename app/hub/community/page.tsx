@@ -65,6 +65,8 @@ import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
 import DemoSimulationSection from "@/app/lib/philos/analysis/DemoSimulationSection";
 import RealDataGapPanel, { factFromCount } from "@/app/lib/philos/day/RealDataGapPanel";
+import { loadCanonEvents } from "@/app/lib/philos/canon/canonEventStoreAccessor";
+import { selectRealUnitReadings } from "@/app/lib/philos/analysis/realUnitReadings";
 import { AuditHeading, AuditSection } from "@/app/lib/philos/shell/epistemics";
 import { resolveShellIdentityLink } from "@/app/lib/philos/community/resolveShellIdentityLink";
 import { buildValueRegistry, buildValueRelations, type GroupProvenance, type PudmValueSource, type ValueScope } from "@/app/lib/philos/community/valueRegistry";
@@ -122,6 +124,11 @@ export default async function CommunityPage({
   const viewerGroupId = groupCtx.context.status === "resolved" ? groupCtx.context.group_id : null;
   // STEP 1 — the ONE shared identity reference.
   const personRef = resolvePersonRef(await resolveViewerContext(), params.subject);
+  /* REAL unit readings — one shared selector, never a per-page derivation. */
+  const realUnitReadings = selectRealUnitReadings({
+    events: await loadCanonEvents(),
+    subject_id: personRef.person_id,
+  });
   // STEP 2 — the frame this screen's readings are relative to (canon §19).
   const personContext = resolvePersonContext({ person: personRef, asOf: systemClock.now() });
   const isPrototypeView = params.view === "prototype";
@@ -854,7 +861,7 @@ export default async function CommunityPage({
                   community={showingGroupDetail && terminalGroup ? { group_id: terminalGroup.group_id, label: terminalGroup.name, provenance: terminalProvenance } : undefined}
                   subject={personRef.person_id}
                   identityLink={identityLink}
-                /><DayStatusStrip session={daySession} /><RealDataGapPanel session={daySession} terminal="community" facts={[
+                /><DayStatusStrip session={daySession} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="community" facts={[
                   {
                     label: "Identity link", source: "resolveShellIdentityLink → personCommunityLinkStore",
                     /* A VERIFIED link is a real record written by the two-step

@@ -27,11 +27,13 @@ import { InMemoryCanonEventStore } from "../canonEventStore";
 import { _setCanonEventStore, canonEventStore } from "../canonEventStoreAccessor";
 import type { Observation } from "../observation";
 import * as ingestionModule from "../observationIngestion";
-import { ingestObservation, recordObservationAction } from "../observationIngestion";
+import { ingestObservation } from "../observationIngestion";
+import { recordObservationAction } from "../observationWriter";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CANON_DIR = join(__dirname, "..");
 const INGESTION_SOURCE = readFileSync(join(CANON_DIR, "observationIngestion.ts"), "utf-8");
+const WRITER_SOURCE = readFileSync(join(CANON_DIR, "observationWriter.ts"), "utf-8");
 const ROUTE_SOURCE = readFileSync(
   join(CANON_DIR, "../../../api/canon/observations/route.ts"),
   "utf-8",
@@ -120,8 +122,22 @@ describe("NO_DUPLICATE_APPEND_LOGIC", () => {
     expect(ROUTE_SOURCE).toMatch(/ingestObservation\(/);
   });
 
-  it("recordObservationAction's own source calls ingestObservation, not canonEventStore().append — SERVER_ACTION_DELEGATES_TO_CORE", () => {
-    expect(INGESTION_SOURCE).toMatch(/await ingestObservation\(event\)/);
+  it("the writer's own source calls ingestObservation, not canonEventStore().append — SERVER_ACTION_DELEGATES_TO_CORE", () => {
+    expect(WRITER_SOURCE).toMatch(/await ingestObservation\(event\)/);
+    expect(WRITER_SOURCE).not.toMatch(/canonEventStore\(\)\.append/);
+  });
+
+  it("the REAL-granting writer is NOT in a \"use server\" module — it must not be a client-addressable Server Action", () => {
+    expect(WRITER_SOURCE).toContain("recordAuthenticatedObservation");
+    expect(WRITER_SOURCE.trimStart().startsWith('"use server"')).toBe(false);
+    expect(INGESTION_SOURCE).not.toContain("recordAuthenticatedObservation");
+  });
+
+  it("no public writer takes a record_origin argument — origin cannot be requested", () => {
+    for (const fn of ["recordAuthenticatedObservation", "recordObservationAction"]) {
+      const sig = WRITER_SOURCE.slice(WRITER_SOURCE.indexOf(`export async function ${fn}(`));
+      expect(sig.slice(0, sig.indexOf(")")), fn).not.toContain("record_origin");
+    }
   });
 });
 

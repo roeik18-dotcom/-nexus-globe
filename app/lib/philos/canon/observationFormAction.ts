@@ -26,9 +26,10 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
-import { recordObservationAction } from "./observationIngestion";
+import { recordAuthenticatedObservation } from "./observationWriter";
 import { projectCanonDynamics } from "./projectCanonDynamics";
 import type { Domain, Frame, Observation } from "./observation";
+import { normalizeAnalysisUnitIds } from "../analysisUnitIds";
 
 /** LOOP A005/A006 — the real prior state for this SAME (subject, domain,
  *  frame) cell, if one exists. `null` means genuinely checked, none found
@@ -99,6 +100,10 @@ export async function recordObservationFromForm(formData: FormData): Promise<Cre
   const levelRaw = formData.get("level");
   const confidenceRaw = formData.get("confidence");
   const context = String(formData.get("context") ?? "").trim();
+  /* EXPLICIT HUMAN CLASSIFICATION. Whatever checkboxes the person ticked,
+     normalised: unknown ids dropped, duplicates collapsed, canonical order.
+     Absent or empty is a legitimate answer and stays absent on the record. */
+  const analysisUnits = normalizeAnalysisUnitIds(formData.getAll("analysis_unit_ids"));
 
   if (!isDomain(domainRaw)) return { ok: false, message: "domain חייב להיות אחד מ-G/E/C" };
   if (!isFrame(frameRaw)) return { ok: false, message: "frame חייב להיות I או R בטופס זה (S דורש systemicChannel — לולאה נפרדת)" };
@@ -127,10 +132,26 @@ export async function recordObservationFromForm(formData: FormData): Promise<Cre
     level,
     stability: 0,
     deficitType: "RELATIVE",
+    /* Omitted entirely when nothing was selected, so an unclassified
+       Observation is byte-identical to one written before this field. */
+    ...(analysisUnits.length > 0 ? { analysis_unit_ids: analysisUnits } : {}),
   };
 
   const canon_event_id = randomUUID();
-  const result = await recordObservationAction(canon_event_id, observation, now.toISOString());
+  /* THE ONE WRITER PERMITTED TO DECLARE `REAL`, and the reasons it qualifies:
+     this is a `"use server"` action, so it runs server-side only; `subject`
+     is `viewer.subject_id` resolved server-side by `resolveViewerContext()`
+     and never accepted from the client; and the content is a person's own
+     self-report submitted through the real form.
+
+     `record_origin` is NOT read from `formData` — not here, not anywhere. A
+     client that posts `record_origin=REAL` in the form body changes nothing,
+     because the value below is a literal and the submitted field is never
+     consulted. That is the whole spoof defence: not a filter that strips a
+     client value, but a writer that never looks. */
+  const result = await recordAuthenticatedObservation(
+    canon_event_id, observation, now.toISOString(),
+  );
   if (!result.ok) return { ok: false, message: result.message };
 
   // LOOP A005/A006 — the real prior state for this SAME cell, found the

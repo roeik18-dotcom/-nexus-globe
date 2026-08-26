@@ -70,6 +70,7 @@ import {
   parseOffsetInstant,
   validateObservation,
 } from "./observation";
+import { isRecordOrigin, type RecordOrigin } from "../recordOrigin";
 
 /**
  * Single-value literal this pass — see module header. A `CanonEvent` is
@@ -86,6 +87,44 @@ export interface CanonEvent {
   payload: Observation;
   /** When this event-representation record was created — distinct from `payload.time`. */
   recorded_at: string;
+  /**
+   * WHERE THIS RECORD CAME FROM — written by the trusted writer, never by a
+   * client, and never inferred from the directory, store, route, subject or
+   * environment the record was found in.
+   *
+   * OPTIONAL, AND EVERY EXISTING RECORD STAYS VALID. Records written before
+   * this field existed simply have no key here. Absent and an explicit
+   * `"UNKNOWN"` are read identically by `recordOriginOf` — the same
+   * absent-equals-empty discipline `analysis_unit_ids` already uses, and the
+   * reason no stored JSONL needs migrating, rewriting or relabelling.
+   *
+   * DISTINCT FROM `payload.provenance`, which is canon §6 MEASUREMENT
+   * provenance (`self_reported | inferred | third_party`) — how the
+   * measurement was obtained, not where the record originated. Both can be
+   * present and they answer different questions. Neither is derived from
+   * the other.
+   *
+   * PRESENT MEANS VALID. An unrecognised value is a validation ERROR, not a
+   * silent downgrade to UNKNOWN: a writer that declared an origin this build
+   * does not know is a writer whose record must not be quietly accepted with
+   * its claim discarded.
+   */
+  record_origin?: RecordOrigin;
+}
+
+/**
+ * The origin this record actually carries.
+ *
+ * The ONE reader. Nothing else may re-implement "is this real?", and in
+ * particular nothing may answer it from where the record was found.
+ *
+ * Missing → `UNKNOWN`. Explicit `UNKNOWN` → `UNKNOWN`. A declared valid value
+ * → itself. Total and never throws, so an unvalidated record read straight
+ * off disk still yields an answer — and that answer is `UNKNOWN`, the one
+ * value that grants nothing.
+ */
+export function recordOriginOf(event: CanonEvent): RecordOrigin {
+  return isRecordOrigin(event?.record_origin) ? event.record_origin : "UNKNOWN";
 }
 
 export type CanonEventError =
@@ -93,7 +132,8 @@ export type CanonEventError =
   | { field: "canon_type"; reason: "invalid" }
   | { field: "recorded_at"; reason: "invalid_or_no_offset" }
   | { field: "payload"; reason: "not_an_object" }
-  | { field: "payload"; reason: "invalid"; errors: ObservationError[] };
+  | { field: "payload"; reason: "invalid"; errors: ObservationError[] }
+  | { field: "record_origin"; reason: "invalid" };
 
 export interface ValidationResult {
   valid: boolean;
@@ -148,6 +188,14 @@ export function validateCanonEvent(e: CanonEvent): ValidationResult {
   const recordedAtMs = parseOffsetInstant(e.recorded_at);
   if (recordedAtMs === null) {
     errors.push({ field: "recorded_at", reason: "invalid_or_no_offset" });
+  }
+
+  /* ORIGIN — optional, so absent is fine and keeps every pre-existing record
+     valid. But PRESENT means valid: an unrecognised value is rejected rather
+     than silently read as UNKNOWN, so a writer cannot have its origin claim
+     quietly discarded while its record is still accepted. */
+  if (e.record_origin !== undefined && !isRecordOrigin(e.record_origin)) {
+    errors.push({ field: "record_origin", reason: "invalid" });
   }
 
   if (!isObject(e.payload)) {

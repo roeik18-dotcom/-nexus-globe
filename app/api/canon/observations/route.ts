@@ -137,11 +137,31 @@ export async function POST(request: Request): Promise<Response> {
 
   // 4. Event-shape the measurement. `recorded_at` is when this record was
   //    created — deliberately distinct from `payload.time` (canon §6/§8).
+  //    `record_origin` is a SERVER-SET LITERAL, and it is `UNKNOWN`.
+  //
+  //    Why not REAL: the bearer token authenticates a SECRET HOLDER, not a
+  //    person. There is no session and no `resolveViewerContext()` here, and
+  //    `subject` arrives in the request body — so the caller chooses whose
+  //    observation this is. Nothing about that can establish that a person
+  //    recorded it. Reaching the real canon store establishes nothing either.
+  //
+  //    Why not IMPORTED: IMPORTED means ingested across a NAMED external
+  //    boundary. This route names no producer and no dataset — its own header
+  //    calls it "internal-only", and any holder of the token may post any
+  //    subject. Labelling it IMPORTED would assume exactly the boundary an
+  //    audit is supposed to prove, so it stays UNKNOWN until a specific
+  //    importer with a named source exists.
+  //
+  //    A `record_origin` in the request body is NOT read — not here, not by
+  //    the destructure above, which takes only `observation` and
+  //    `canon_event_id`. The envelope is built entirely server-side, so a
+  //    client cannot influence origin by supplying one.
   const event: CanonEvent = {
     canon_event_id: suppliedId ?? randomUUID(),
     canon_type: "observation",
     payload: candidate,
     recorded_at: new Date().toISOString(),
+    record_origin: "UNKNOWN",
   };
 
   // 5. Delegate to the one canonical ingestion function — this route no

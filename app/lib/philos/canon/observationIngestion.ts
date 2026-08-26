@@ -67,7 +67,6 @@ import {
   type CanonEventStore,
 } from "./canonEventStore";
 import { canonEventStore } from "./canonEventStoreAccessor";
-import type { Observation } from "./observation";
 
 export type IngestObservationResult =
   | { ok: true; canon_event_id: string; event: CanonEvent }
@@ -83,6 +82,12 @@ export type IngestObservationResult =
  *
  * Never generates `canon_event_id`. Never generates `recorded_at`. Both are
  * read verbatim from `event` and nothing else.
+ *
+ * ORIGIN PASSES THROUGH; IT IS NOT CONFERRED HERE. `record_origin` is part of
+ * the envelope this function validates and persists, so the field round-trips
+ * — but reaching this function proves nothing about where a record came from,
+ * and reaching the real store proves nothing either. A record is REAL because
+ * a trusted writer said so before calling, never because it was appended.
  */
 export async function ingestObservation(
   event: CanonEvent,
@@ -102,57 +107,4 @@ export async function ingestObservation(
     }
     throw err;
   }
-}
-
-export type RecordObservationResult =
-  | { ok: true; canon_event_id: string }
-  | { ok: false; message: string };
-
-/**
- * A one-line, human-readable description of a `CanonEventError`, flattening
- * the nested `Observation`-level errors (present only on the `payload`/
- * `"invalid"` variant) so a caller sees which Observation field actually
- * failed, not just "payload: invalid".
- */
-function describeCanonEventError(e: CanonEventError): string {
-  if (e.field === "payload" && e.reason === "invalid") {
-    const inner = e.errors.map((ie) => `${ie.field}: ${ie.reason}`).join(", ");
-    return `payload invalid (${inner})`;
-  }
-  return `${e.field}: ${e.reason}`;
-}
-
-/**
- * Explicit input only — no inference, no defaulting, no generated identity.
- * `canon_event_id`, the full `Observation`, and `recorded_at` are all
- * caller-supplied. Builds the `CanonEvent` and delegates to
- * `ingestObservation` — the only append path this function has.
- */
-export async function recordObservationAction(
-  canon_event_id: string,
-  observation: Observation,
-  recorded_at: string,
-): Promise<RecordObservationResult> {
-  const event: CanonEvent = {
-    canon_event_id,
-    canon_type: "observation",
-    payload: observation,
-    recorded_at,
-  };
-
-  const result = await ingestObservation(event);
-
-  if (result.ok) {
-    return { ok: true, canon_event_id: result.canon_event_id };
-  }
-  if (result.reason === "invalid") {
-    return {
-      ok: false,
-      message: `observation rejected: ${result.errors.map(describeCanonEventError).join("; ")}`,
-    };
-  }
-  return {
-    ok: false,
-    message: `observation not appended: ${result.rejections.map((r) => r.message).join("; ")}`,
-  };
 }

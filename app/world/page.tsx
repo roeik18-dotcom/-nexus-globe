@@ -20,6 +20,8 @@ import SystemGateVisual from "./SystemGateVisual";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
 import DemoSimulationSection from "@/app/lib/philos/analysis/DemoSimulationSection";
 import RealDataGapPanel, { factFromCount, factFromRecords } from "@/app/lib/philos/day/RealDataGapPanel";
+import { loadCanonEvents } from "@/app/lib/philos/canon/canonEventStoreAccessor";
+import { selectRealUnitReadings } from "@/app/lib/philos/analysis/realUnitReadings";
 import { COLOR, FS, RADIUS, STATUS, TYPE } from "@/app/lib/philos/shell/designTokens";
 import TerminalPage, { type TerminalSection } from "@/app/lib/philos/shell/TerminalPage";
 import { loadPhilosEvents } from "@/app/lib/philos-event-store";
@@ -68,6 +70,11 @@ export default async function WorldPage({ searchParams }: {
   // so this resolves to the designated real subject, exactly as the bare
   // constant did before.
   const personRef = resolvePersonRef(await resolveViewerContext());
+  /* REAL unit readings — one shared selector, never a per-page derivation. */
+  const realUnitReadings = selectRealUnitReadings({
+    events: await loadCanonEvents(),
+    subject_id: personRef.person_id,
+  });
   // STEP 2 — the frame this screen's readings are relative to (canon §19).
   const personContext = resolvePersonContext({ person: personRef, asOf: systemClock.now() });
   // SAME shared accessor as Hub/Brain — this surface resolves no
@@ -383,7 +390,7 @@ export default async function WorldPage({ searchParams }: {
                   selectedGroup={selected?.groupId}
                   purpose="מה נצפה בקנה-מידה מערכתי, ומה קיים אך אינו מגיע לכאן."
                   subject={personRef.person_id}
-                /><DayStatusStrip session={daySession} /><RealDataGapPanel session={daySession} terminal="world" facts={[
+                /><DayStatusStrip session={daySession} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="world" facts={[
                   /* These two record shapes are {record_id, evidence_id} and
                      {record_id, as} — no provenance field, so the count cannot
                      claim REAL. */

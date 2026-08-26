@@ -7,6 +7,7 @@
  * next load (server components, revalidated by the action itself).
  */
 import { useState, useTransition } from "react";
+import { DEPARTMENTS_6, FOUNDATION_4 } from "@/app/lib/philos/analysis/analysisUnit";
 import { createObservationForCurrentUser, type CreateObservationResult } from "@/app/lib/philos/canon/observationFormAction";
 
 const DOMAINS: { value: "G" | "E" | "C"; label: string }[] = [
@@ -55,6 +56,35 @@ export default function CreateObservationForm({ subject }: {
         <input name="confidence" type="number" step="0.05" min={0} max={1} placeholder="confidence (0–1)" required style={inputStyle} />
       </div>
       <input name="context" type="text" placeholder="context — מה בפועל נצפה?" required style={{ ...inputStyle, width: "100%" }} />
+
+      {/* ── EXPLICIT CLASSIFICATION · optional, nothing preselected ───────
+          Checkboxes and nothing else: no slider and no percentage, because
+          the answer is "does this bear on that unit", which has no magnitude.
+          All ten share one field name, so the action receives whatever was
+          ticked and normalises it. */}
+      <fieldset data-unit-selector dir="rtl" style={fieldsetStyle}>
+        <legend style={legendStyle}>
+          יחידות ניתוח <span style={{ color: "#8fa3c9", fontWeight: 400 }}>· לא חובה</span>
+        </legend>
+        <p style={hintStyle}>
+          סיווג מפורש של התצפית, לא ציון על האדם. בחירה אומרת שהתצפית נוגעת ליחידה —
+          לא שנמדדה, לא כיוון ולא עוצמה.
+        </p>
+        {UNIT_GROUPS.map((g) => (
+          <div key={g.title} style={{ marginTop: 8 }}>
+            <div style={groupTitleStyle}>{g.title}</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {g.units.map((u) => (
+                <label key={u.id} style={chipStyle}>
+                  <input type="checkbox" name="analysis_unit_ids" value={u.id}
+                    style={{ accentColor: "#5b9cf6" }} />
+                  <span>{u.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        ))}
+      </fieldset>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <button type="submit" disabled={pending} style={btnStyle}>{pending ? "רושם…" : "רשום תצפית · RECORD"}</button>
       </div>
@@ -91,3 +121,21 @@ export default function CreateObservationForm({ subject }: {
 const selectStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 13 };
 const inputStyle: React.CSSProperties = { background: "#0b0f1a", color: "#e8edf6", border: "1px solid #2a3550", borderRadius: 6, padding: "6px 8px", fontSize: 13, flex: 1, minWidth: 140 };
 const btnStyle: React.CSSProperties = { background: "#5b9cf6", color: "#0b0f1a", fontWeight: 600, fontSize: 13, border: "none", borderRadius: 6, padding: "7px 14px", cursor: "pointer" };
+
+/** The 4 + 6 grouping, read from the one place that defines it. */
+const UNIT_GROUPS = [
+  { title: "משתני יסוד · 4", units: FOUNDATION_4 },
+  { title: "מחלקות ניגוד · 6", units: DEPARTMENTS_6 },
+] as const;
+
+const fieldsetStyle: React.CSSProperties = {
+  border: "1px solid rgba(120,150,220,0.2)", borderRadius: 8,
+  padding: "10px 12px", margin: 0,
+};
+const legendStyle: React.CSSProperties = { fontSize: 14, color: "#cfe0f5", fontWeight: 700, padding: "0 6px" };
+const hintStyle: React.CSSProperties = { fontSize: 13, color: "#8fa3c9", lineHeight: 1.5, margin: "2px 0 0" };
+const groupTitleStyle: React.CSSProperties = { fontSize: 12, color: "#8fa3c9", marginBottom: 4 };
+const chipStyle: React.CSSProperties = {
+  display: "inline-flex", alignItems: "center", gap: 5, fontSize: 14, color: "#cfe0f5",
+  border: "1px solid rgba(120,150,220,0.22)", borderRadius: 6, padding: "5px 9px", cursor: "pointer",
+};

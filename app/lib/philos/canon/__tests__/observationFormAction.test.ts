@@ -1,7 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import { _setCanonEventStore } from "../canonEventStoreAccessor";
-import { InMemoryCanonEventStore } from "../canonEventStore";
+import {
+  CANON_STORE_FILENAME, FileSystemCanonEventStore, InMemoryCanonEventStore,
+} from "../canonEventStore";
+import { recordOriginOf } from "../canonEvent";
+import { recordObservationAction } from "../observationWriter";
+import { selectRealUnitReadings } from "@/app/lib/philos/analysis/realUnitReadings";
 import { recordObservationFromForm } from "../observationFormAction";
 import { REAL_CURRENT_SUBJECT } from "@/app/lib/philos/subjectRegistry";
 
@@ -106,5 +115,158 @@ describe("recordObservationFromForm — LOOP 1, the first UI-reachable Observati
     await recordObservationFromForm(formData({ domain: "G", frame: "I", level: "1", confidence: "0.5", context: "second" }));
     const stored = await store.load();
     expect(stored).toHaveLength(2);
+  });
+});
+
+/**
+ * TRUSTED WRITER — what the form may claim, and what a client may not.
+ *
+ * The claim under test is narrow and total: `REAL` is produced by the
+ * authenticated form writer and by nothing else a client can reach.
+ */
+describe("record_origin — the trusted write boundary", () => {
+  let store: InMemoryCanonEventStore;
+
+  beforeEach(() => {
+    store = new InMemoryCanonEventStore();
+    _setCanonEventStore(store);
+  });
+  afterEach(() => { _setCanonEventStore(null); });
+
+  const valid = {
+    domain: "E", frame: "I", level: "-1", confidence: "0.8",
+    context: "self-report through the real form",
+  };
+
+  it("the authenticated form writes record_origin REAL", async () => {
+    const result = await recordObservationFromForm(formData(valid));
+    expect(result.ok).toBe(true);
+    const [stored] = await store.load();
+    expect(stored.record_origin).toBe("REAL");
+    expect(recordOriginOf(stored)).toBe("REAL");
+  });
+
+  it("a client submitting record_origin=DEMO cannot downgrade the record", async () => {
+    await recordObservationFromForm(formData({ ...valid, record_origin: "DEMO" }));
+    const [stored] = await store.load();
+    expect(stored.record_origin).toBe("REAL");
+  });
+
+  /* The spoof that matters most is the one that GRANTS: a client posting
+     REAL through a path that is not the authenticated form. The general
+     writer is reachable, so it is the one that must refuse to confer. */
+  it("the unattributed writer cannot be made to write REAL — it writes UNKNOWN", async () => {
+    const observation = {
+      subject: REAL_CURRENT_SUBJECT, domain: "E", frame: "I",
+      reference: "self_baseline", context: "posted directly, not through the form",
+      time: "2026-08-25T10:00:00Z", provenance: "self_reported", confidence: 0.8,
+      expiry: "2026-09-25T10:00:00Z", level: -1, stability: 0,
+      deficitType: "RELATIVE", analysis_unit_ids: ["time"],
+      /* A client-supplied origin, planted INSIDE the payload — the only place
+         a caller of this function could put one. It must not surface on the
+         envelope, which is where the selector reads. */
+      record_origin: "REAL",
+    } as unknown as Parameters<typeof recordObservationAction>[1];
+
+    const result = await recordObservationAction("ce_spoof", observation, "2026-08-25T10:00:00Z");
+    expect(result.ok).toBe(true);
+    const [stored] = await store.load();
+    expect(stored.record_origin).toBe("UNKNOWN");
+    expect(recordOriginOf(stored)).toBe("UNKNOWN");
+  });
+
+  it("a spoofed payload origin never reaches the readings", async () => {
+    const observation = {
+      subject: REAL_CURRENT_SUBJECT, domain: "E", frame: "I",
+      reference: "self_baseline", context: "spoof attempt",
+      time: "2026-08-25T10:00:00Z", provenance: "self_reported", confidence: 0.8,
+      expiry: "2026-09-25T10:00:00Z", level: -1, stability: 0,
+      deficitType: "RELATIVE", analysis_unit_ids: ["time", "social", "systemic"],
+      record_origin: "REAL",
+    } as unknown as Parameters<typeof recordObservationAction>[1];
+
+    await recordObservationAction("ce_spoof_2", observation, "2026-08-25T10:00:00Z");
+    const readings = selectRealUnitReadings({
+      events: await store.load(), subject_id: REAL_CURRENT_SUBJECT,
+    });
+    expect(readings.classifiedCount).toBe(0);
+    expect(readings.recordOrigin).toBeNull();
+  });
+
+  /* END-TO-END, through the real form and the real selector: the one path
+     that is supposed to work, still works. */
+  it("a form-written record is the one thing the selector accepts", async () => {
+    const fd = formData({ ...valid, context: "three units" });
+    for (const id of ["time", "social", "systemic"]) fd.append("analysis_unit_ids", id);
+    await recordObservationFromForm(fd);
+
+    const readings = selectRealUnitReadings({
+      events: await store.load(), subject_id: REAL_CURRENT_SUBJECT,
+    });
+    expect(readings.classifiedCount).toBe(3);
+    expect(readings.recordOrigin).toBe("REAL");
+    expect(readings.readings.filter((r) => r.status === "unknown")).toHaveLength(7);
+    for (const r of readings.readings) {
+      expect(r.direction).toBeNull();
+      expect(r.intensity).toBeNull();
+      expect(r.confidence).toBeNull();
+    }
+  });
+
+  /* STORE ROUND-TRIP through the real filesystem store: the envelope field
+     must survive JSONL serialisation, not merely exist in memory. */
+  it("record_origin survives a filesystem store round-trip", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "origin-roundtrip-"));
+    try {
+      const fsStore = new FileSystemCanonEventStore(dir);
+      _setCanonEventStore(fsStore);
+      await recordObservationFromForm(formData(valid));
+
+      /* A SECOND store over the same directory — reading back from disk,
+         not from the writer's own memory. */
+      const [reloaded] = await new FileSystemCanonEventStore(dir).load();
+      expect(reloaded.record_origin).toBe("REAL");
+      expect(recordOriginOf(reloaded)).toBe("REAL");
+
+      const raw = readFileSync(join(dir, CANON_STORE_FILENAME), "utf-8").trim();
+      expect(JSON.parse(raw).record_origin).toBe("REAL");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("a legacy field-less line loads as UNKNOWN and is not rewritten", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "origin-legacy-"));
+    try {
+      /* Written the way a pre-field record actually looks on disk. */
+      const legacy = {
+        canon_event_id: "ce_legacy_disk", canon_type: "observation",
+        recorded_at: "2026-08-20T10:00:00Z",
+        payload: {
+          subject: REAL_CURRENT_SUBJECT, domain: "E", frame: "I",
+          reference: "self_baseline", context: "written before the field existed",
+          time: "2026-08-20T10:00:00Z", provenance: "self_reported", confidence: 0.8,
+          expiry: "2026-09-20T10:00:00Z", level: -1, stability: 0,
+          deficitType: "RELATIVE", analysis_unit_ids: ["time"],
+        },
+      };
+      const file = join(dir, CANON_STORE_FILENAME);
+      const before = JSON.stringify(legacy) + "\n";
+      writeFileSync(file, before, "utf-8");
+
+      const [loaded] = await new FileSystemCanonEventStore(dir).load();
+      expect(loaded.record_origin).toBeUndefined();
+      expect(recordOriginOf(loaded)).toBe("UNKNOWN");
+
+      /* NOT REWRITTEN. Loading is a read; the bytes on disk are untouched. */
+      expect(readFileSync(file, "utf-8")).toBe(before);
+
+      /* And it contributes nothing, despite naming the viewer's own subject. */
+      const readings = selectRealUnitReadings({
+        events: [loaded], subject_id: REAL_CURRENT_SUBJECT });
+      expect(readings.classifiedCount).toBe(0);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

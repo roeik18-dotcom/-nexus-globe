@@ -254,7 +254,10 @@ describe("SEPARATION — legacy store, projections, Dynamics untouched", () => {
     const body = await res.json();
     expect(Object.keys(body)).toEqual(["event"]);
     expect(Object.keys(body.event).sort()).toEqual(
-      ["canon_event_id", "canon_type", "payload", "recorded_at"].sort(),
+      ["canon_event_id", "canon_type", "payload", "record_origin", "recorded_at"].sort(),
     );
+    // The route is not an authenticated human boundary: a bearer token
+    // identifies a secret holder, and `subject` comes from the body.
+    expect(body.event.record_origin).toBe("UNKNOWN");
   });
 });

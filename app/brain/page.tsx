@@ -14,6 +14,8 @@ import type { KnownNeedResult } from "@/app/lib/systemContext";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
 import DemoSimulationSection from "@/app/lib/philos/analysis/DemoSimulationSection";
 import RealDataGapPanel, { factFromCount } from "@/app/lib/philos/day/RealDataGapPanel";
+import { loadCanonEvents } from "@/app/lib/philos/canon/canonEventStoreAccessor";
+import { selectRealUnitReadings } from "@/app/lib/philos/analysis/realUnitReadings";
 import { AuditHeading, AuditSection } from "@/app/lib/philos/shell/epistemics";
 import { buildDefaultLinkRegistry } from "@/app/lib/philos/bridge/linkRegistry";
 import { linksForEntity } from "@/app/lib/philos/bridge/entityLink";
@@ -84,6 +86,11 @@ export default async function BrainPage({
   const params = await searchParams;
   // STEP 1 — the ONE shared identity reference.
   const personRef = resolvePersonRef(await resolveViewerContext(), params.subject);
+  /* REAL unit readings — one shared selector, never a per-page derivation. */
+  const realUnitReadings = selectRealUnitReadings({
+    events: await loadCanonEvents(),
+    subject_id: personRef.person_id,
+  });
   // STEP 2 — the frame this screen's readings are relative to (canon §19).
   const personContext = resolvePersonContext({ person: personRef, asOf: systemClock.now() });
   // `resolvePersonRef` performs exactly the same two steps this line used to
@@ -186,7 +193,7 @@ export default async function BrainPage({
           identityLink={identityLink}
         />
         <DayStatusStrip session={daySession} />
-        <RealDataGapPanel session={daySession} terminal="brain" facts={[
+        <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="brain" facts={[
           factFromCount("Observation nodes", "projectCanonDynamics → canon.nodes", canon.nodes.length,
             "אין תצפית — לא נמצאה רשומה ב־canonEventStore"),
           factFromCount("Reality nodes", "buildRealityGraph → worldEvents", worldEvents.length,

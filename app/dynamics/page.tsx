@@ -83,6 +83,8 @@ import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import { findDomainStatesForSubject } from "@/app/lib/philos/canon/domainStateStoreAccessor";
 import DemoSimulationSection from "@/app/lib/philos/analysis/DemoSimulationSection";
 import RealDataGapPanel, { factFromCount } from "@/app/lib/philos/day/RealDataGapPanel";
+import { loadCanonEvents } from "@/app/lib/philos/canon/canonEventStoreAccessor";
+import { selectRealUnitReadings } from "@/app/lib/philos/analysis/realUnitReadings";
 import DynamicsView, { type CommunityCapitalContext, type SelectedContext, type TimeRangeSummary } from "./DynamicsView";
 import DayStatusStrip from "@/app/lib/philos/day/DayStatusStrip";
 import { loadDaySession } from "@/app/lib/philos/day/loadDaySession";
@@ -168,6 +170,11 @@ export default async function DynamicsPage({
   const params = await searchParams;
   // STEP 1 — the ONE shared identity reference.
   const personRef = resolvePersonRef(await resolveViewerContext(), params.subject);
+  /* REAL unit readings — one shared selector, never a per-page derivation. */
+  const realUnitReadings = selectRealUnitReadings({
+    events: await loadCanonEvents(),
+    subject_id: personRef.person_id,
+  });
   /* THE ONE semantic context — at component scope so every render branch of
      this surface uses the same result. Resolved server-side and passed into
      the client component; a client may never resolve context of its own. */
@@ -354,7 +361,7 @@ export default async function DynamicsPage({
      full-bleed drawing surface below it. */
   return <>
     <DayStatusStrip session={daySession} />
-    <RealDataGapPanel session={daySession} terminal="dynamics" facts={[
+    <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="dynamics" facts={[
       /* The day-scoped chain, already projected. `null` here means the
          projection could not resolve it — UNRESOLVED, never zero. */
       factFromCount("Action", "DaySession.action_refs", daySession.action_refs.value?.length ?? null,

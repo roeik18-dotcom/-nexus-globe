@@ -20,14 +20,22 @@
  * "אין עדיין write path" and offers no control. A button that cannot write is
  * worse than an absence: it implies the gap is the user's to close.
  *
- * THE TEN ANALYSIS UNITS ARE UNKNOWN FOR EVERY REAL SUBJECT, and this panel
- * says so in four+six compact rows rather than ten empty cards.
- * `analysisUnit.ts` states it plainly: no runtime derivation produces an
- * `AnalysisUnitReading` from an Observation. The only readings that exist
- * anywhere belong to the DEMO acceptance scenario, and reusing one for
- * `person_roei` would be presenting a fixture as the person.
+ * THE TEN ANALYSIS UNITS NOW READ FROM REAL OBSERVATIONS. A unit is OBSERVED
+ * when the viewer explicitly ticked it on one of their own Observations, and
+ * UNKNOWN otherwise — with the reason stated, not left blank. The readings
+ * come from `selectRealUnitReadings`, one pure selector shared by every
+ * terminal, so no page derives its own.
+ *
+ * WHAT AN OBSERVED UNIT STILL DOES NOT CARRY: direction, intensity or
+ * confidence. A tick says "this observation bears on this unit" and stops
+ * there. DEMO readings remain the acceptance scenario's own and never appear
+ * here — the selector filters on the viewer's subject, so a fixture cannot
+ * satisfy a real person.
  */
-import { DEPARTMENTS_6, FOUNDATION_4, type AnalysisUnitMeta } from "../analysis/analysisUnit";
+import {
+  DEPARTMENTS_6, FOUNDATION_4, type AnalysisUnitMeta, type AnalysisUnitReading,
+} from "../analysis/analysisUnit";
+import type { RealUnitReadings } from "../analysis/realUnitReadings";
 import { COLOR, COLOR_ROLE, FS, RADIUS, SPACE, TYPE } from "../shell/designTokens";
 import { DAY_GATES, type DayGate, type DaySession } from "./daySession";
 
@@ -241,12 +249,15 @@ export default function RealDataGapPanel({
   session,
   terminal,
   facts = [],
+  realUnits,
 }: {
   session: DaySession;
   /** Which terminal is asking — labels the panel, changes no logic. */
   terminal: string;
   /** REAL counts/statuses the terminal already loaded. */
   facts?: readonly TerminalRealFacts[];
+  /** REAL unit readings from `selectRealUnitReadings`. One selector, shared. */
+  realUnits?: RealUnitReadings;
 }) {
   const unmet = session.gates.filter((g) => !g.met);
 
@@ -269,7 +280,7 @@ export default function RealDataGapPanel({
       {/* ONE recommended next action — the first unmet gate, because
           everything after it is blocked by it. */}
       {first ? (
-        <div style={S.next}>
+        <div data-gate={first.gate} data-gate-met="false" style={S.next}>
           <span style={S.nextLabel}>הפעולה המומלצת</span>
           <b style={S.gateName}>{first.gate}</b>
           <span style={S.reason}>{first.reason}</span>
@@ -295,7 +306,7 @@ export default function RealDataGapPanel({
           <summary style={S.summary}>שאר הפערים ביום · {unmet.length - (first ? 1 : 0)}</summary>
           <ul style={S.list}>
             {unmet.filter((g) => g.gate !== first?.gate).map((g) => (
-              <li key={g.gate} style={S.row}>
+              <li key={g.gate} data-gate={g.gate} data-gate-met="false" style={S.row}>
                 <b style={S.gateName}>{g.gate}</b>
                 <span style={S.state}>UNKNOWN</span>
                 <span style={S.reason}>{g.reason}</span>
@@ -342,7 +353,7 @@ export default function RealDataGapPanel({
         </ul>
       )}
 
-      <UnitsStrip />
+      <UnitsStrip real={realUnits} />
     </section>
   );
 }
@@ -352,37 +363,76 @@ export default function RealDataGapPanel({
  * departments, two labelled groups — never a flat list of ten, which
  * `analysisUnit.ts` calls out as itself the error.
  */
-function UnitsStrip() {
+function UnitsStrip({ real }: { real?: RealUnitReadings }) {
+  const byId = new Map<string, AnalysisUnitReading>(
+    (real?.readings ?? []).map((r) => [r.unitId, r]));
+  const n = real?.classifiedCount ?? 0;
+
   return (
-    <details style={S.details}>
+    /* `data-record-origin` is the SELECTOR'S answer, rendered — never this
+       component's guess. It appears only when records actually contributed,
+       and every contributor passed the record-level REAL gate. When nothing
+       contributed the attribute is absent entirely rather than empty or
+       "UNKNOWN": there is no origin to claim, and a marker that is always
+       present is a marker that proves nothing. */
+    <details data-real-units data-record-origin={real?.recordOrigin ?? undefined}
+      style={S.details}>
       <summary style={S.summary}>
-        10 יחידות ניתוח · 4+6 — כולן UNKNOWN עבור נושא אמיתי
+        10 יחידות ניתוח · 4+6 — <b>{n}/10</b> סווגו במפורש
       </summary>
+      {/* Provenance said once, at the top, so no chip has to repeat it. */}
       <p style={S.note}>
-        אין נגזרת ריצה שמייצרת קריאה מתוך תצפית (<code style={S.code}>analysisUnit.ts</code>).
-        הקריאות היחידות שקיימות שייכות לתרחיש ה-DEMO ואינן משמשות כאן.
+        {real
+          ? real.recordOrigin === "REAL"
+            ? <>מקור: תצפיות אמיתיות של המשתמש · record origin <b>REAL</b>
+                {` · ${real.sourceEventIds.length} תצפיות תורמות.`}</>
+            : <>טרם סווגה אף תצפית עם מקור <b>REAL</b> מאומת ברמת הרשומה.</>
+          : "לא הועברו קריאות אמיתיות למסוף זה."}
       </p>
-      <UnitRow title="4 משתני יסוד · FOUNDATION" units={FOUNDATION_4} />
-      <UnitRow title="6 מחלקות ניגוד · DEPARTMENTS" units={DEPARTMENTS_6} />
+      <UnitRow title="4 משתני יסוד · FOUNDATION" units={FOUNDATION_4} byId={byId} />
+      <UnitRow title="6 מחלקות ניגוד · DEPARTMENTS" units={DEPARTMENTS_6} byId={byId} />
     </details>
   );
 }
 
-function UnitRow({ title, units }: { title: string; units: readonly AnalysisUnitMeta[] }) {
+function UnitRow({ title, units, byId }: {
+  title: string; units: readonly AnalysisUnitMeta[];
+  byId: Map<string, AnalysisUnitReading>;
+}) {
   return (
     <div style={S.unitGroup}>
       <span style={S.eyebrow}>{title}</span>
       <div style={S.chips}>
-        {units.map((u) => (
-          <span key={u.id} style={{ ...S.chip, borderColor: COLOR_ROLE[u.colorRole] }}>
-            <b style={S.chipLabel}>{u.label}</b>
-            <span style={S.chipUnknown}>UNKNOWN</span>
-          </span>
-        ))}
+        {units.map((u) => {
+          const r = byId.get(u.id);
+          const observed = r?.status === "observed";
+          return (
+            /* `data-real-ref` carries the contributing canon_event_id in
+               full. The visible chip truncates it to stay readable, so
+               without this an audit could only scrape a shortened string
+               out of the label — which is not the same claim as "these
+               seven terminals cite the SAME record". */
+            <span key={u.id} data-real-unit={u.id} data-real-status={r?.status ?? "unknown"}
+              data-real-ref={observed ? r?.sourceRefs.join(" ") : undefined}
+              style={{ ...S.chip, borderColor: COLOR_ROLE[u.colorRole] }}>
+              <b style={S.chipLabel}>{u.label}</b>
+              <span style={observed ? S.chipObserved : S.chipUnknown}>
+                {observed ? "OBSERVED" : "UNKNOWN"}
+              </span>
+              {/* The source ref for an observed unit; the reason for a gap. */}
+              {observed && r ? (
+                <span dir="ltr" style={S.chipRef}>{r.sourceRefs[0]?.slice(0, 10)}…</span>
+              ) : null}
+            </span>
+          );
+        })}
       </div>
-      <span style={S.note}>
-        מקור נדרש: Observation + נגזרת קריאה · {NO_WRITER}
-      </span>
+      {/* Per-unit gap reasons, so UNKNOWN is never a bare word. */}
+      {units.some((u) => byId.get(u.id)?.status !== "observed") ? (
+        <span style={S.note}>
+          יחידה ללא סיווג: אף תצפית של המשתמש לא סומנה כנוגעת לה. הסיווג נעשה בטופס התצפית.
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -433,5 +483,11 @@ const S = {
     padding: `1px ${SPACE.sm}px`,
   },
   chipLabel: { fontSize: FS.meta, color: COLOR.text },
+  chipObserved: {
+    fontSize: FS.tag, color: "#8fd7ff", letterSpacing: 0.4,
+  },
+  chipRef: {
+    fontSize: FS.tag, color: COLOR.textFaint,
+  },
   chipUnknown: { ...TYPE.micro, color: "#fbbf24" },
 } as const;
