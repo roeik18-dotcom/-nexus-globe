@@ -2,6 +2,9 @@ import path from "path";
 import { resolveViewerContextSemantics } from "@/app/lib/philos/context/resolveViewerContextSemantics";
 import SignOutButton from "@/app/signin/SignOutButton";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
+import { resolveRealGroupLeaders } from "@/app/lib/philos/community/groupAuthority";
+import { projectAllInvitations } from "@/app/lib/philos/community/invitation";
+import InvitePanel from "./InvitePanel";
 import { connection } from "next/server";
 
 import ValueHub from "../ValueHub";
@@ -115,6 +118,19 @@ export default async function CommunityPage({
   // STEP 2 — the frame this screen's readings are relative to (canon §19).
   const personContext = resolvePersonContext({ person: personRef, asOf: systemClock.now() });
   const isPrototypeView = params.view === "prototype";
+
+  /* INVITATIONS — projected from the same group event log the rest of this
+     terminal reads. `canInvite` is resolved from REAL appointments here so
+     the control is not offered to someone the server will refuse; the
+     actions re-check it regardless. */
+  const inviteList = viewerGroupId
+    ? projectAllInvitations(groupWorld.groupEvents, systemClock.now())
+        .filter((i) => i.group_id === viewerGroupId)
+    : [];
+  const canInvite = viewerGroupId
+    ? (await resolveRealGroupLeaders(viewerGroupId))
+        .some((l) => l.person_id === personRef.person_id)
+    : false;
 
   const mode: Mode = (typeof params.mode === "string" && MODE_KEYS.includes(params.mode as Mode) ? (params.mode as Mode) : "overview");
   const hasExplicitCommunity = typeof params.community === "string";
@@ -837,7 +853,8 @@ export default async function CommunityPage({
         <UnifiedEntitySurface projection={entity!.projection} trace={entity!.trace} compact />
       ) : undefined}
       primary={primary}
-      actions={
+      actions={<>
+        <InvitePanel groupId={viewerGroupId} canInvite={canInvite} invitations={inviteList} />
         <nav dir="rtl" style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBlockEnd: 12 }}
                   aria-label="פעולות קהילה">
                   {[
@@ -857,7 +874,7 @@ export default async function CommunityPage({
                     }}>{x.label}</a>
                   ))}
                 </nav>
-      }
+      </>}
       secondary={secondary}
       audit={audit}
     />

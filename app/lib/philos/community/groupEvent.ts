@@ -32,6 +32,14 @@ export const GROUP_EVENT_TYPES = [
   "TENSION_OBSERVED",
   "VALUE_MAPPING_PROPOSED", "VALUE_MAPPING_CONFIRMED",
   "MATCH_PROPOSED", "MATCH_ACCEPTED", "MATCH_REJECTED",
+  /* INVITATION — the join path, recorded in this same log rather than in a
+     store of its own. The spine already carries MEMBER_JOINED and already
+     preserves unrecognised types, so an invitation is a sequence of group
+     events like any other. There is no EXPIRED event: expiry is the passage
+     of time, not an act anyone performs, so it is DERIVED from `expires_at`
+     at read time and never written. */
+  "INVITATION_ISSUED", "INVITATION_VIEWED",
+  "INVITATION_ACCEPTED", "INVITATION_DECLINED", "INVITATION_REVOKED",
 ] as const;
 
 export type GroupEventType = (typeof GROUP_EVENT_TYPES)[number];
