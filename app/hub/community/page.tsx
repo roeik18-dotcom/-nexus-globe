@@ -81,6 +81,8 @@ import CommunityExperience, { type FamilyGroupLink, type NetworkStats } from "./
 import CanonicalSlicePanel from "@/app/hub/CanonicalSlicePanel";
 import CommunityPrototype, { type PrototypeLiveData, type PrototypeLiveFamilyGroup } from "./CommunityPrototype";
 import { SOURCE_VALUE_RELATIONS } from "@/app/lib/philos/community/sourceValueModel";
+import DayStatusStrip from "@/app/lib/philos/day/DayStatusStrip";
+import { loadDaySession } from "@/app/lib/philos/day/loadDaySession";
 
 export const metadata = { title: "Philos — קבוצת ערך" };
 
@@ -92,6 +94,10 @@ export default async function CommunityPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   await connection();
+  /* THE SHARED OPERATIONAL DAY — one projection, seven terminals. Loaded
+     here rather than assembled per-page so every terminal shows the same
+     day_id, the same identity pair and the same derived gate results. */
+  const daySession = await loadDaySession();
 
   const events = await loadPhilosEvents();
   const viewer = await resolveViewer();
@@ -847,7 +853,7 @@ export default async function CommunityPage({
                   community={showingGroupDetail && terminalGroup ? { group_id: terminalGroup.group_id, label: terminalGroup.name, provenance: terminalProvenance } : undefined}
                   subject={personRef.person_id}
                   identityLink={identityLink}
-                /><PersonEventOrientationHeader terminal="community" /></>
+                /><PersonEventOrientationHeader terminal="community" /><DayStatusStrip session={daySession} /></>
       }
       entity={selected ? (
         <UnifiedEntitySurface projection={entity!.projection} trace={entity!.trace} compact />

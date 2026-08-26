@@ -55,7 +55,26 @@ export type EventType =
   // impact
   | "impact.recorded"
   | "verification.requested"
-  | "impact.verified";
+  | "impact.verified"
+  /* day — the operational day's two HUMAN ACTS, and only those two.
+     A person opening a day and recording its closing are things a person
+     DOES, so they are recorded here like any other act. The passage of
+     time is not: there is no `day.expired`, no midnight event and no
+     stored completion status, because a day ending is not an act anyone
+     performs. OPEN/PARTIAL/CLOSED is DERIVED at read time from explicit
+     gates (`day/daySession.ts`) and never written — the same rule the
+     invitation path already follows for expiry.
+
+     These live on `PhilosEvent` rather than `GroupEvent` because a day
+     belongs to a PERSON, not a group: `entity_type: "person"` carries
+     them with no group_id, and inventing one to satisfy a group-scoped
+     log would be a false claim about who the record concerns.
+
+     Their payloads are NOT free-form: `day/dayEvent.ts` defines
+     `DayOpenedPayload` / `DayClosingRecordedPayload` and validates them
+     before append. */
+  | "day.opened"
+  | "day.closing_recorded";
 
 /**
  * Outcome of one verification attempt.

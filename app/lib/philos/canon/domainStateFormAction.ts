@@ -47,6 +47,10 @@ export async function createDomainStateForCurrentUserCore(formData: FormData): P
   const levelRaw = formData.get("level");
   const confidenceRaw = formData.get("confidence");
   const evidence = String(formData.get("evidence") ?? "").trim();
+  /* The Action/Effect this state was recorded as the outcome of. Optional and
+     backward compatible: a form that does not send it writes a state with no
+     declared cause, exactly as before this field existed. */
+  const caused_by_ref = String(formData.get("caused_by_ref") ?? "").trim();
 
   if (!domain_id) return { ok: false, message: "domain_id is required" };
   if (!parameter_id) return { ok: false, message: "parameter_id is required" };
@@ -72,6 +76,7 @@ export async function createDomainStateForCurrentUserCore(formData: FormData): P
     state_id: createIdGenerator().next("dstate"),
     state,
     recorded_at: now,
+    ...(caused_by_ref !== "" ? { caused_by_ref } : {}),
   };
 
   try {

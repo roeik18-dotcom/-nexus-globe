@@ -46,6 +46,8 @@ import CanonicalSlicePanel from "@/app/hub/CanonicalSlicePanel";
 import ObservationReadingPanel from "@/app/lib/philos/shell/ObservationReadingPanel";
 import { AuditHeading, AuditSection } from "@/app/lib/philos/shell/epistemics";
 import { buildOperationalGroupProfile } from "@/app/lib/philos/valueSystem/operationalGroup";
+import DayStatusStrip from "@/app/lib/philos/day/DayStatusStrip";
+import { loadDaySession } from "@/app/lib/philos/day/loadDaySession";
 
 export const metadata = { title: "Living World — Philos" };
 
@@ -56,6 +58,10 @@ export default async function WorldPage({ searchParams }: {
    *  the same object stays selected when the user changes scale. */
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  /* THE SHARED OPERATIONAL DAY — one projection, seven terminals. Loaded
+     here rather than assembled per-page so every terminal shows the same
+     day_id, the same identity pair and the same derived gate results. */
+  const daySession = await loadDaySession();
   const params = (await searchParams) ?? {};
   // STEP 1 — the ONE shared identity reference. World has no `?subject=`,
   // so this resolves to the designated real subject, exactly as the bare
@@ -376,7 +382,7 @@ export default async function WorldPage({ searchParams }: {
                   selectedGroup={selected?.groupId}
                   purpose="מה נצפה בקנה-מידה מערכתי, ומה קיים אך אינו מגיע לכאן."
                   subject={personRef.person_id}
-                /><PersonEventOrientationHeader terminal="world" /></>
+                /><PersonEventOrientationHeader terminal="world" /><DayStatusStrip session={daySession} /></>
       }
       entity={selected ? (
         <UnifiedEntitySurface projection={entity!.projection} trace={entity!.trace} compact />

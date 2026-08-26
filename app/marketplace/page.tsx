@@ -53,6 +53,8 @@ import { resolveValueGroups } from "@/app/lib/philos/valueSystem/groupResolver";
 import { buildDefaultLinkRegistry } from "@/app/lib/philos/bridge/linkRegistry";
 import { linksByRelation } from "@/app/lib/philos/bridge/entityLink";
 import { buildCommunityTensions, sortTensions } from "@/app/lib/philos/tension";
+import DayStatusStrip from "@/app/lib/philos/day/DayStatusStrip";
+import { loadDaySession } from "@/app/lib/philos/day/loadDaySession";
 
 export const metadata = { title: "Marketplace — Philos" };
 
@@ -101,6 +103,10 @@ export default async function MarketplacePage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  /* THE SHARED OPERATIONAL DAY — one projection, seven terminals. Loaded
+     here rather than assembled per-page so every terminal shows the same
+     day_id, the same identity pair and the same derived gate results. */
+  const daySession = await loadDaySession();
   const missions     = readJsonStore<Mission>                    (path.join(DATA, "missions.json"));
   const gaps         = readJsonStore<Gap>                        (path.join(DATA, "gaps.json"));
   const values       = readJsonStore<Value>                      (path.join(DATA, "values.json"));
@@ -254,6 +260,7 @@ export default async function MarketplacePage({
           subject={personRef.person_id}
           identityLink={identityLink}
         />
+        <DayStatusStrip session={daySession} />
         <PersonEventOrientationHeader terminal="marketplace" />
       </div>
 

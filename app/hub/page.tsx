@@ -67,6 +67,11 @@ import CanonicalSlicePanel from "./CanonicalSlicePanel";
 import PersonNowPanel from "./PersonNowPanel";
 import ObservationReadingPanel from "@/app/lib/philos/shell/ObservationReadingPanel";
 import WeeklyLearningPanel from "./WeeklyLearningPanel";
+import DayStatusStrip from "@/app/lib/philos/day/DayStatusStrip";
+import { DayOpeningPanel, DayClosingPanel } from "./DayPanels";
+import { loadDaySession, nextDate, parseDateParam, previousDate } from "@/app/lib/philos/day/loadDaySession";
+import DayDateNav from "@/app/lib/philos/day/DayDateNav";
+import DayChainSummary from "@/app/lib/philos/day/DayChainSummary";
 
 export const metadata = { title: "Philos — היום" };
 
@@ -107,6 +112,16 @@ export default async function HubPage({
   // real, checked, never silently ignored when absent (falls back to the
   // same deterministic default as before).
   const params = await searchParams;
+
+  /* THE SHARED OPERATIONAL DAY — one projection, seven terminals.
+     `?date=` is READ-ONLY: it selects which day to project and nothing else.
+     Strictly parsed, so `2026-02-31` or junk falls back to today rather than
+     rolling over into a day the user did not ask for. */
+  const dayToday = todayIn(systemClock);
+  const viewedDate = parseDateParam(params.date, dayToday);
+  const daySession = await loadDaySession({ date: viewedDate });
+  const dayIsToday = viewedDate === dayToday;
+
   // STEP 1 — the ONE shared identity reference.
   const personRef = resolvePersonRef(await resolveViewerContext(), params.subject);
   // `resolvePersonRef` already applied this exact `typeof` check; kept as a
@@ -429,6 +444,15 @@ export default async function HubPage({
           subject={resolvedSubject ?? personRef.person_id}
           identityLink={identityLink}
         />
+        <DayDateNav
+          date={viewedDate}
+          today={dayToday}
+          previous={previousDate(viewedDate)}
+          next={nextDate(viewedDate)}
+        />
+        <DayStatusStrip session={daySession} />
+        <DayChainSummary session={daySession} />
+        <DayOpeningPanel session={daySession} readOnly={!dayIsToday} />
         <PersonEventOrientationHeader terminal="hub" legacy={
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
             <span style={{ fontSize: 13, color: "#9fb0d0" }}>מה חשוב עכשיו, מה השתנה, ולאן ללכת משם.</span>
@@ -639,6 +663,11 @@ export default async function HubPage({
         canonSection={<CanonOrientationLookup />}
       />
       </details>
+      {/* LAST on Hub, by the required render order: opening → orientation →
+          priority → next action → terminal content → closing. */}
+      <div style={{ padding: "0 20px 20px" }}>
+        <DayClosingPanel session={daySession} readOnly={!dayIsToday} />
+      </div>
     </div>
   );
 }

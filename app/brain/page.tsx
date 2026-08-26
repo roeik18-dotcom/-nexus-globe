@@ -40,6 +40,8 @@ import { buildGroupRegistry } from "@/app/lib/philos/community/groupRegistry";
 import { buildCommunityTensions, sortTensions } from "@/app/lib/philos/tension";
 import { readJsonStore } from "@/app/lib/json-store";
 import type { Value } from "@/app/lib/value/schema";
+import DayStatusStrip from "@/app/lib/philos/day/DayStatusStrip";
+import { loadDaySession } from "@/app/lib/philos/day/loadDaySession";
 
 export const metadata = { title: "Philos — Brain" };
 
@@ -57,6 +59,10 @@ export default async function BrainPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   await connection();
+  /* THE SHARED OPERATIONAL DAY — one projection, seven terminals. Loaded
+     here rather than assembled per-page so every terminal shows the same
+     day_id, the same identity pair and the same derived gate results. */
+  const daySession = await loadDaySession();
   let canon: CanonDynamicsGraph;
   try {
     canon = await projectCanonDynamics();
@@ -178,6 +184,7 @@ export default async function BrainPage({
           subject={subject}
           identityLink={identityLink}
         />
+        <DayStatusStrip session={daySession} />
         <PersonEventOrientationHeader terminal="brain" legacy={
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
             <span style={{ fontSize: 13, color: "#9fb0d0" }}>מסגרת האדם הקודמת נשמרה כאן.</span>

@@ -78,6 +78,26 @@ export interface Action {
   inputs: string[];
   /** Optional — an Action may exist before any Effect is measured (§24 pipeline order). */
   effect_ref?: string;
+  /**
+   * OPTIONAL DAY LINK — the `day_id` of the operational day this Action was
+   * taken within. Absent on every Action recorded before this field existed,
+   * and absent is UNKNOWN: it means "not linked to a day", never "belongs to
+   * today".
+   *
+   * WHY A NEW FIELD RATHER THAN REUSING ONE. `inputs` is inspected by the
+   * Match→Action authority gate for `need_`/`offer_` prefixes
+   * (`actionFormAction.ts`), so putting a day id there would put a
+   * non-input into the array the permit logic reads. `provenance` is free
+   * prose. `time` is chronology, and this directory's own rule is that a
+   * link is a declared reference, never a timestamp comparison
+   * (`actionLifecycle.ts`: effects are found via `action_ref`, "never
+   * chronology"). A declared ref is the only honest way to say which day an
+   * Action belongs to.
+   *
+   * Same optional-but-non-empty discipline as `effect_ref` and
+   * `observed_in_ref`: if present it must name something.
+   */
+  day_ref?: string;
   reversibility: string;
   time: string;
   provenance: string;
@@ -91,6 +111,7 @@ export type ActionError =
   | { field: "consent"; reason: "not_true" }
   | { field: "inputs"; reason: "not_an_array" }
   | { field: "effect_ref"; reason: "empty_if_present" }
+  | { field: "day_ref"; reason: "empty_if_present" }
   | { field: "reversibility"; reason: "empty" }
   | { field: "time"; reason: "invalid_or_no_offset" }
   | { field: "provenance"; reason: "empty" };
@@ -129,6 +150,10 @@ export function validateAction(a: Action): ValidationResult {
 
   if (a.effect_ref !== undefined && !nonEmpty(a.effect_ref)) {
     errors.push({ field: "effect_ref", reason: "empty_if_present" });
+  }
+
+  if (a.day_ref !== undefined && !nonEmpty(a.day_ref)) {
+    errors.push({ field: "day_ref", reason: "empty_if_present" });
   }
 
   if (!nonEmpty(a.reversibility)) {

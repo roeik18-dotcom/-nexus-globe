@@ -83,6 +83,8 @@ import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import { findDomainStatesForSubject } from "@/app/lib/philos/canon/domainStateStoreAccessor";
 import PersonEventOrientationHeader from "@/app/lib/philos/analysis/PersonEventOrientationHeader";
 import DynamicsView, { type CommunityCapitalContext, type SelectedContext, type TimeRangeSummary } from "./DynamicsView";
+import DayStatusStrip from "@/app/lib/philos/day/DayStatusStrip";
+import { loadDaySession } from "@/app/lib/philos/day/loadDaySession";
 
 /**
  * Real time-range counts over the real canon Observation log — computed
@@ -145,6 +147,10 @@ export default async function DynamicsPage({
   // The log changes between requests, so this render must wait for one rather
   // than be captured at build time — the pattern the other three routes use.
   await connection();
+  /* THE SHARED OPERATIONAL DAY — one projection, seven terminals. Loaded
+     here rather than assembled per-page so every terminal shows the same
+     day_id, the same identity pair and the same derived gate results. */
+  const daySession = await loadDaySession();
 
   // The projection is viewer-scoped and nothing was passing a viewer, so the
   // gate in the UI contract (§5) was declared but never exercised. Passing it
@@ -342,7 +348,12 @@ export default async function DynamicsPage({
      every other terminal — Dynamics adds no projection of its own. */
   const entity = await loadSelectedEntity();
 
-  return <DynamicsView
+  /* Dynamics has no SystemShell — the shared Day Status is placed above
+     the causal view itself, in a fragment, so the terminal keeps its own
+     full-bleed drawing surface below it. */
+  return <>
+    <DayStatusStrip session={daySession} />
+    <DynamicsView
     eventHeaderSlot={<PersonEventOrientationHeader terminal="dynamics" />}
       selectedGroup={entity?.projection.groupId}
       connectedSlot={entity ? (
@@ -399,5 +410,6 @@ export default async function DynamicsPage({
             right form for checking one edge against the store, and the wrong
             form for finding out whether anything is wrong. */}
       </>
-    } view={view} canon={canon} selected={selected} timeRange={timeRange} community={community} today={todayIn(systemClock)} identityLink={identityLink} personContext={personContext} defaultLifecycle={defaultLifecycle} domainStates={domainStates} />;
+    } view={view} canon={canon} selected={selected} timeRange={timeRange} community={community} today={todayIn(systemClock)} identityLink={identityLink} personContext={personContext} defaultLifecycle={defaultLifecycle} domainStates={domainStates} />
+  </>;
 }

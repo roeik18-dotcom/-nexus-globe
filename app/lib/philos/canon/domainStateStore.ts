@@ -47,6 +47,28 @@ export interface DomainStateRecord {
   state_id: string;
   state: DomainState;
   recorded_at: string;
+  /**
+   * OPTIONAL CAUSAL LINK — the `action_id` or `effect_id` this state was
+   * recorded as the outcome of. Absent on every record written before this
+   * field existed, and absent means UNKNOWN: "not linked to a cause", never
+   * "caused by whatever happened nearby".
+   *
+   * WHY NOT `DomainState.source_refs`. That field is documented and consumed
+   * as `CanonicalRef` taxonomy citations (`HUMAN:12`, `MUSIC:…`) — see
+   * `valueDomainConfig.ts` and `canonical/brainDerivation.ts`, which flat-map
+   * it into `parseCanonicalRef`. Putting an `action_…` id there would feed a
+   * non-CanonicalRef string to those readers. Two different meanings need two
+   * different fields.
+   *
+   * WHY THIS EXISTS. Ordering alone cannot establish causality. A State(t1)
+   * recorded in the SAME millisecond as the Effect it followed is
+   * indistinguishable, by timestamp, from one recorded before it — and
+   * machines are fast enough that this is the normal case, not the edge case.
+   * A declared reference says which record this state followed; the timestamp
+   * then only has to be not-earlier, which is a fact a clock can actually
+   * establish.
+   */
+  caused_by_ref?: string;
 }
 
 export const DOMAIN_STATE_APPEND_REJECTION_CODES = [

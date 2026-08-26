@@ -79,16 +79,23 @@ export default function CommunityFlow({
 
               {seg.active ? (
                 <div style={S.group}>
-                  {seg.items.map((idx, k) => (
-                    <Fragment key={nodes[idx].key}>
-                      {/* Inside a run both sides are active by construction. */}
-                      {k > 0 ? <Connector kind={CONNECTORS[idx - 1]} active /> : null}
-                      <FlowNode {...nodes[idx]} connected />
-                    </Fragment>
-                  ))}
+                  {seg.items.map((idx, k) => {
+                    /* `key` is React's, not FlowNode's. Spreading the whole
+                       node object passed it through as a prop, which React
+                       warns about because a spread key is invisible to the
+                       reconciler. Extract it, spread the rest. */
+                    const { key, ...nodeProps } = nodes[idx];
+                    return (
+                      <Fragment key={key}>
+                        {/* Inside a run both sides are active by construction. */}
+                        {k > 0 ? <Connector kind={CONNECTORS[idx - 1]} active /> : null}
+                        <FlowNode {...nodeProps} connected />
+                      </Fragment>
+                    );
+                  })}
                 </div>
               ) : (
-                <FlowNode {...nodes[seg.items[0]]} />
+                <FlowNode {...stripKey(nodes[seg.items[0]])} />
               )}
             </Fragment>
           );
@@ -96,6 +103,13 @@ export default function CommunityFlow({
       </div>
     </div>
   );
+}
+
+/** Drop React's `key` before spreading — it is the reconciler's, not a prop. */
+function stripKey<T extends { key: string }>(node: T): Omit<T, "key"> {
+  const rest: Partial<T> = { ...node };
+  delete rest.key;
+  return rest as Omit<T, "key">;
 }
 
 /**

@@ -31,7 +31,26 @@ import {
 /** The domains a node can belong to — only the five that have real event types. */
 export type Domain = "people" | "community" | "activity" | "resources" | "impact";
 
-/** event_type → domain. Exhaustive over the 16-type union (TS-enforced). */
+/**
+ * event_type → domain. Exhaustive over the EventType union (TS-enforced).
+ *
+ * THE TWO `day.*` ENTRIES ARE LEGACY OPERATIONAL ROUTING METADATA — nothing
+ * more. They exist so this five-value routing map stays exhaustive; they do
+ * NOT classify the person, and they do NOT classify the day.
+ *
+ * They are routed to `"activity"` because a day opening/closing is an act
+ * someone performed, and `"activity"` is the existing member for acts. The
+ * canon-side sense of these events is domain `C` (COGNITIVE) in the
+ * Observation model's own `G`/`E`/`C` vocabulary (`canon/observation.ts`) —
+ * a DIFFERENT `Domain` type from this one, and the collision between the two
+ * is real, pre-existing and documented at `canon/canonEvent.ts:14-22`. This
+ * map is not widened to carry a cognitive member: adding one would change the
+ * old five-value Domain model, which this phase explicitly does not do. The
+ * canonical C sense is recorded in `day/dayEvent.ts` instead.
+ *
+ * Routing metadata is not classification. Neither entry replaces, summarises
+ * or stands in for the 10-unit analysis model.
+ */
 const DOMAIN_OF: Record<EventType, Domain> = {
   "person.registered": "people",
   "leader.appointed": "people",
@@ -49,6 +68,9 @@ const DOMAIN_OF: Record<EventType, Domain> = {
   "impact.recorded": "impact",
   "verification.requested": "impact",
   "impact.verified": "impact",
+  // Legacy routing only — see the header above. Not a classification.
+  "day.opened": "activity",
+  "day.closing_recorded": "activity",
 };
 
 export interface DynamicsNode {

@@ -91,6 +91,8 @@ import { linksByRelation } from "@/app/lib/philos/bridge/entityLink";
 import { VERIFIED_STATUSES } from "@/app/lib/philos/events";
 import { projectValueGroup } from "@/app/lib/philos/projectValueGroup";
 import WorldGlobe, { CanonActivityPanel, RegionLayerPanel } from "./WorldGlobe";
+import DayStatusStrip from "@/app/lib/philos/day/DayStatusStrip";
+import { loadDaySession } from "@/app/lib/philos/day/loadDaySession";
 
 export const metadata = { title: "Philos — Globe" };
 
@@ -102,6 +104,10 @@ export default async function PlanetPage({
   // The events now arrive from the store rather than a constant, so a join
   // recorded on the value-group screen draws its node and arc here too.
   await connection();
+  /* THE SHARED OPERATIONAL DAY — one projection, seven terminals. Loaded
+     here rather than assembled per-page so every terminal shows the same
+     day_id, the same identity pair and the same derived gate results. */
+  const daySession = await loadDaySession();
   const events = await loadPhilosEvents();
   /* The sphere's nodes and arcs came from `GROUP_ID`, so every viewer's globe
      drew Roei's group. It draws the viewer's own group, or nothing — an empty
@@ -390,7 +396,7 @@ export default async function PlanetPage({
                   purpose="מפת הערכים, הקבוצות והגאוגרפיה של PHILOS."
                   subject={personRef.person_id}
                   identityLink={identityLink}
-                /><PersonEventOrientationHeader terminal="planet" /></>
+                /><PersonEventOrientationHeader terminal="planet" /><DayStatusStrip session={daySession} /></>
       }
       entity={selectedEntity ? (
         <UnifiedEntitySurface projection={entity!.projection} trace={entity!.trace} compact />

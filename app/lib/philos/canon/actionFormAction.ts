@@ -34,6 +34,10 @@ export async function createActionForCurrentUserCore(formData: FormData): Promis
   const reversibility = String(formData.get("reversibility") ?? "").trim();
   const provenance = String(formData.get("provenance") ?? "").trim();
   const consent = formData.get("consent") === "on";
+  /* The operational day this Action belongs to. Optional and backward
+     compatible: a form that does not send it produces an Action with no day
+     link, exactly as before this field existed. */
+  const day_ref = String(formData.get("day_ref") ?? "").trim();
   const inputs = formData.getAll("inputs").map(String).filter((s) => s.trim() !== "");
 
   if (!ACTION_TYPES.includes(type as ActionType)) return { ok: false, message: "type must be transfer or non_transfer" };
@@ -79,6 +83,7 @@ export async function createActionForCurrentUserCore(formData: FormData): Promis
     reversibility,
     time: systemClock.now(),
     provenance: provenanceWithAudit,
+    ...(day_ref !== "" ? { day_ref } : {}),
   };
 
   try {
