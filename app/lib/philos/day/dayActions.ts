@@ -35,6 +35,8 @@ import { revalidatePath } from "next/cache";
 
 import { loadPhilosEvents, philosEventStore } from "@/app/lib/philos-event-store";
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
+import { loadCanonEvents } from "@/app/lib/philos/canon/canonEventStoreAccessor";
+import { resolveSubmittedObservationRef } from "./linkableObservations";
 import { systemClock, todayIn } from "@/app/lib/philos/eventStore";
 import type { PhilosEvent } from "@/app/lib/philos/events";
 import {
@@ -77,16 +79,46 @@ export async function openDayCore(formData: FormData): Promise<DayWriteResult> {
     state_t0_refs: refs(formData, "state_t0_refs"),
     /* The Event/Observation anchor. Omitted entirely when absent rather than
        stored as "", so "not anchored" stays distinguishable from "anchored to
-       nothing" — and the validator's empty-if-present rule stays meaningful. */
-    ...(() => {
-      const e = String(formData.get("event_ref") ?? "").trim();
-      const o = String(formData.get("observation_ref") ?? "").trim();
-      return { ...(e ? { event_ref: e } : {}), ...(o ? { observation_ref: o } : {}) };
-    })(),
+       nothing" — and the validator's empty-if-present rule stays meaningful.
+       Filled in below, from the store, never from the submitted string. */
     carry_forward_refs: refs(formData, "carry_forward_refs"),
     consent: formData.get("consent") === "on" ? true : undefined,
     sourceRefs: refs(formData, "sourceRefs"),
   };
+
+  /* ── THE OBSERVATION LINK, PROVEN AGAINST THE STORE BEFORE ANY APPEND ──
+     The person picks ONE observation. Everything about that pick is untrusted
+     until this block has re-read the canon store and proven it.
+
+     `event_ref` is DERIVED, never read from the form. An Observation has no id
+     of its own — it exists only as the payload of a CanonEvent — so the event
+     and the observation are necessarily the same record, and asking a client
+     for both invites a mismatch that could only ever be a forgery or a
+     mistake. A submitted `event_ref` is ignored outright; there is no code
+     path that reads it.
+
+     Nothing here trusts `subject_id`, `person_id` or `record_origin` from the
+     form either: the subject is `viewer.subject_id`, resolved server-side
+     above, and the origin is read off the STORED record, not off the request.
+
+     No selection is a legitimate answer. The day opens PARTIAL, both refs stay
+     absent, and `EventObservationLinked` remains honestly unresolved — an
+     invented link would be worse than a missing one. */
+  const submittedRef = String(formData.get("observation_ref") ?? "").trim();
+  if (submittedRef !== "") {
+    const resolved = resolveSubmittedObservationRef(
+      submittedRef,
+      await loadCanonEvents(),
+      viewer.subject_id,
+    );
+    if (!resolved.ok) {
+      /* Refused BEFORE the append. Nothing is written, and the reason names
+         what was actually wrong rather than a generic failure. */
+      return { ok: false, message: `day.opened refused: ${resolved.reason} — ${resolved.message}` };
+    }
+    candidate.event_ref = resolved.canon_event_id;
+    candidate.observation_ref = resolved.canon_event_id;
+  }
 
   const validation = validateDayOpenedPayload(candidate);
   if (!validation.valid || !validation.payload) {

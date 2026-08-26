@@ -41,6 +41,7 @@ import DemoSimulationSection from "@/app/lib/philos/analysis/DemoSimulationSecti
 import RealDataGapPanel, { factFromCount } from "@/app/lib/philos/day/RealDataGapPanel";
 import { loadCanonEvents } from "@/app/lib/philos/canon/canonEventStoreAccessor";
 import { selectRealUnitReadings } from "@/app/lib/philos/analysis/realUnitReadings";
+import { selectLinkableObservations } from "@/app/lib/philos/day/linkableObservations";
 import EntityContextPanel from "@/app/lib/philos/shell/EntityContextPanel";
 import StateDiffPanel from "@/app/lib/philos/shell/StateDiffPanel";
 import { buildCarryForward, buildDayClosingQuestions } from "@/app/lib/philos/dayClosingFusion";
@@ -128,8 +129,16 @@ export default async function HubPage({
   // STEP 1 — the ONE shared identity reference.
   const personRef = resolvePersonRef(await resolveViewerContext(), params.subject);
   /* REAL unit readings — one shared selector, never a per-page derivation. */
+  const canonEventsForViewer = await loadCanonEvents();
   const realUnitReadings = selectRealUnitReadings({
-    events: await loadCanonEvents(),
+    events: canonEventsForViewer,
+    subject_id: personRef.person_id,
+  });
+  /* The Observations this person may link to today's opening. Selected
+     server-side from the same store the writer re-reads, so the options and
+     the accepted set are the same set. */
+  const linkableObservations = selectLinkableObservations({
+    events: canonEventsForViewer,
     subject_id: personRef.person_id,
   });
   // `resolvePersonRef` already applied this exact `typeof` check; kept as a
@@ -460,7 +469,7 @@ export default async function HubPage({
         />
         <DayStatusStrip session={daySession} />
         <DayChainSummary session={daySession} />
-        <DayOpeningPanel session={daySession} readOnly={!dayIsToday} />
+        <DayOpeningPanel session={daySession} readOnly={!dayIsToday} linkable={linkableObservations} />
         <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="hub" facts={[
           factFromCount("State(t0)", "DaySession.state_t0", daySession.state_t0.value?.length ?? null,
             daySession.state_t0.unresolved_reason ?? "לא נמצאה רשומה"),

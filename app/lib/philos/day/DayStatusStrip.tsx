@@ -91,9 +91,25 @@ export default function DayStatusStrip({
       {missing.length > 0 && (
         <ul style={S.gateList}>
           {session.gates.filter((g) => !g.met).map((g) => (
-            <li key={g.gate} style={S.gateItem}>
+            <li key={g.gate} data-gate={g.gate} data-gate-met="false" style={S.gateItem}>
               <b style={S.gateName}>{g.gate}</b>
               <span style={S.gateReason}>{g.reason}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* WHAT IS ALREADY TRUE. The strip listed only what was missing, which
+          made a gate that had just been satisfied simply disappear — the
+          person got no confirmation that the thing they did counted, and a
+          met gate had no rendering at all. Same list, same row shape; the
+          only claim added is that these are done. */}
+      {session.gates.some((g) => g.met) && (
+        <ul style={S.gateList} data-gates-met>
+          {session.gates.filter((g) => g.met).map((g) => (
+            <li key={g.gate} data-gate={g.gate} data-gate-met="true" style={S.gateItem}>
+              <b style={S.gateName}>{g.gate}</b>
+              <span style={S.gateMet}>MET</span>
             </li>
           ))}
         </ul>
@@ -211,6 +227,7 @@ const S = {
     fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
   },
   gateReason: { fontSize: FS.meta, color: COLOR.textFaint, overflowWrap: "anywhere" as const, minWidth: 0 },
+  gateMet: { fontSize: FS.meta, color: "#34d399", fontWeight: 700 },
   carry: { borderTop: `1px solid ${COLOR.border}`, paddingTop: SPACE.xs },
   carrySummary: { ...TYPE.micro, color: COLOR.textDim, cursor: "pointer" },
   unresolved: {

@@ -35,6 +35,7 @@ export default function CreateObservationForm({ subject }: {
 
   return (
     <form
+      id="observation-form"
       dir="rtl"
       style={{ display: "flex", flexDirection: "column", gap: 8, background: "rgba(90,120,180,0.06)", borderRadius: 10, padding: 12, marginBottom: 12 }}
       action={(formData) => {

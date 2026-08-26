@@ -22,6 +22,7 @@ import { useState, useTransition } from "react";
 
 import { openDay, recordDayClosing } from "@/app/lib/philos/day/dayActions";
 import type { DaySession } from "@/app/lib/philos/day/daySession";
+import type { LinkableObservation } from "@/app/lib/philos/day/linkableObservations";
 import { COLOR, FS, RADIUS, SPACE, TYPE } from "@/app/lib/philos/shell/designTokens";
 
 function useDayForm() {
@@ -31,9 +32,19 @@ function useDayForm() {
   return { err, setErr, ok, setOk, pending, start };
 }
 
-export function DayOpeningPanel({ session, readOnly = false }: { session: DaySession; readOnly?: boolean }) {
+export function DayOpeningPanel({ session, readOnly = false, linkable = [] }: {
+  session: DaySession;
+  readOnly?: boolean;
+  /** The viewer's own eligible Observations, selected SERVER-side. The panel
+   *  renders this list and never derives its own — the writer re-derives the
+   *  same predicate from the store, so the two cannot drift apart. */
+  linkable?: readonly LinkableObservation[];
+}) {
   const { err, setErr, ok, setOk, pending, start } = useDayForm();
   const alreadyOpen = session.opened_at.value !== null;
+  /* The resolved anchor, if the projection could resolve one. `null` means
+     genuinely unlinked — never a placeholder. */
+  const linkedRef = session.event_observation_refs.value?.[0] ?? null;
 
   /* Another day is VIEWED, never written. Backdating an opening a person did
      not perform would put a false record in a log that has no correction. */
@@ -61,6 +72,17 @@ export function DayOpeningPanel({ session, readOnly = false }: { session: DaySes
         <p style={S.line}>
           <span style={S.k}>הקשר</span>
           <span style={S.v}>{session.context.value ?? "—"}</span>
+        </p>
+        {/* WHAT THIS DAY IS ANCHORED TO. Rendered from the resolved session
+            field, not from anything the form remembered. When nothing was
+            linked it says so plainly rather than showing an empty row. */}
+        <p style={S.line} data-day-observation-link={linkedRef ?? undefined}>
+          <span style={S.k}>תצפית מקושרת</span>
+          <span style={S.v}>
+            {linkedRef
+              ? <>{linkedRef.slice(0, 8)}… · record origin <b>REAL</b></>
+              : "ללא קישור — EventObservationLinked נותר לא פתור"}
+          </span>
         </p>
         <p style={S.note}>יום זה כבר נפתח. פתיחה שנייה נדחית — הלוג הוא append-only.</p>
       </section>
@@ -98,6 +120,42 @@ export function DayOpeningPanel({ session, readOnly = false }: { session: DaySes
           <span style={S.k}>State(t0) refs</span>
           <input name="state_t0_refs" style={S.input} placeholder="obs_… (מזהה קיים)" />
         </label>
+
+        {/* ── THE OBSERVATION LINK — ONE CONTROL, NOT TWO RAW IDS ──────────
+            The options are the server's own eligible list, so what a person
+            can pick is exactly what the writer will accept. There is no
+            free-text id field: an Observation has no id of its own, and the
+            server derives BOTH refs from this single selection.
+
+            Empty is a legitimate answer and stays the default — the day opens
+            PARTIAL and the gate stays honestly unresolved. */}
+        {linkable.length > 0 ? (
+          <label style={S.label}>
+            <span style={S.k}>תצפית קיימת לקישור</span>
+            <select name="observation_ref" defaultValue="" data-observation-link style={S.input}>
+              <option value="">— ללא קישור (היום ייפתח חלקי) —</option>
+              {linkable.map((o) => (
+                <option key={o.canon_event_id} value={o.canon_event_id}>
+                  {o.observed_at.slice(0, 16).replace("T", " ")}
+                  {o.context ? ` · ${o.context.slice(0, 48)}` : ""}
+                  {` · ${o.classifiedUnitCount}/10 יחידות`}
+                  {` · ${o.canon_event_id.slice(0, 8)}…`}
+                </option>
+              ))}
+            </select>
+            <span style={S.small}>
+              נבחרת תצפית אחת. השרת גוזר ממנה את שתי ההפניות ומאמת אותן מול המאגר.
+            </span>
+          </label>
+        ) : (
+          /* No fake option, and no zero presented as evidence — a real link to
+             the one place an eligible Observation can come from. */
+          <div data-observation-link-empty style={S.carry}>
+            <span style={S.k}>תצפית קיימת לקישור</span>
+            <span style={S.small}>אין תצפית REAL זמינה</span>
+            <a href="#observation-form" style={S.link}>רישום תצפית חדשה ←</a>
+          </div>
+        )}
 
         {session.carry_forward.length > 0 && (
           <div style={S.carry}>
@@ -296,6 +354,7 @@ const S = {
   k: { ...TYPE.micro, color: COLOR.textFaint },
   v: { fontSize: FS.read, color: COLOR.text, overflowWrap: "anywhere" as const, minWidth: 0 },
   small: { fontSize: FS.meta, color: COLOR.textDim, overflowWrap: "anywhere" as const, minWidth: 0 },
+  link: { fontSize: FS.base, color: "#5b9cf6", textDecoration: "underline" },
   unknown: { fontSize: FS.meta, color: "#fbbf24", overflowWrap: "anywhere" as const },
   note: { fontSize: FS.meta, color: COLOR.textFaint, margin: 0 },
   err: { fontSize: FS.meta, color: "#f2635c", margin: 0 },
