@@ -100,6 +100,22 @@ export function visibleAssuranceReason(
 }
 
 /**
+ * THE ONE-LINE QUALIFIER that must accompany the label wherever the badge has
+ * room for a second phrase.
+ *
+ * `shortAssurance` says "אין אימות עצמאי" for BOTH self tiers, which is true
+ * but under-informative for a declaration: the thing a half-finished link is
+ * missing is not an outside verifier, it is the subject's own second step.
+ * So the two self tiers get DIFFERENT qualifiers, and the two tiers that need
+ * no caveat get none — an empty string, never a placeholder dash.
+ */
+export function assuranceQualifier(tier: AssuranceTier): string {
+  if (tier === "SELF_ATTESTED_SAME_PERSON") return NO_INDEPENDENT_VERIFICATION;
+  if (tier === "SELF_DECLARED_SAME_PERSON") return SECOND_STEP_PENDING;
+  return "";
+}
+
+/**
  * The short form for a badge or an empty-state line, where a full sentence
  * does not fit. Same vocabulary, fewer words — never a different claim.
  */

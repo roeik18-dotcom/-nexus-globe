@@ -15,7 +15,7 @@ import { confirmSamePersonAction, declareSamePersonAction, type IdentityLinkActi
 import type { AssuranceTier } from "@/app/lib/philos/community/personCommunityLink";
 import {
   ASSURANCE_LABEL, ASSURANCE_TONE, NO_INDEPENDENT_VERIFICATION, SECOND_STEP_PENDING,
-  isSelfTier, storedStatusLine,
+  isLinkedTier, isSelfTier, storedStatusLine,
 } from "@/app/lib/philos/community/identityAssuranceVocabulary";
 
 /**
@@ -125,8 +125,13 @@ export default function PersonCommunityLinkPanel({
             {pending ? "…" : "אשר שוב — שלב 2/2"}
           </button>
         ) : null}
-        {status === "VERIFIED_SAME_PERSON"
-          ? <span style={{ color: "#34d399", fontSize: 13, fontWeight: 700 }}>✓ {ASSURANCE_LABEL.SELF_ATTESTED_SAME_PERSON}</span>
+        {/* THE TICK FOLLOWS THE TIER, NOT THE STORED WORD. Gating on
+            `status === "VERIFIED_SAME_PERSON"` hardcoded the attested tier:
+            a DEMO-provenance VERIFIED record resolves to assurance NONE, and
+            this line would still have printed "✓ קישור זהות בהצהרה עצמית"
+            under it — a conclusion the resolver had already refused. */}
+        {isLinkedTier(assurance)
+          ? <span style={{ color: ASSURANCE_TONE[assurance], fontSize: 13, fontWeight: 700 }}>✓ {ASSURANCE_LABEL[assurance]}</span>
           : null}
       </div>
     </section>

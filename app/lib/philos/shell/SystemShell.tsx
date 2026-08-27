@@ -46,6 +46,9 @@ export interface ShellCommunity {
  *  here. `undefined` = the page did not resolve one (not the same as
  *  NOT_LINKED, which IS a real resolved status and renders). */
 import type { AssuranceTier } from "@/app/lib/philos/community/personCommunityLink";
+import {
+  ASSURANCE_LABEL, ASSURANCE_TONE, assuranceQualifier, isLinkedTier,
+} from "@/app/lib/philos/community/identityAssuranceVocabulary";
 
 export interface ShellIdentityLink {
   /**
@@ -213,7 +216,17 @@ export const NAV_GROUPS: { kind: "item" | "family"; items: NavItem[] }[] = NAV.r
   [] as { kind: "item" | "family"; items: NavItem[] }[],
 );
 
-function StatusPill({ label, value, kind }: { label: string; value: string; kind: "real" | "demo" | "unknown" | "blocked" | "verified" | "claimed" | "needs_attention" | "active" | "completed" }) {
+function StatusPill({ label, value, kind, tagText, tagColor, qualifier }: {
+  label: string; value: string;
+  kind: "real" | "demo" | "unknown" | "blocked" | "verified" | "claimed" | "needs_attention" | "active" | "completed";
+  /* THE PILL WORD, when the caller owns the vocabulary. `STATUS[kind].label`
+     is a machine status ("VERIFIED", "REAL"); an identity CONCLUSION is prose
+     the caller must supply, because only the caller knows the tier. */
+  tagText?: string;
+  tagColor?: string;
+  /* A short caveat printed after the tag — what the conclusion does NOT mean. */
+  qualifier?: string;
+}) {
   const s = STATUS[kind];
   return (
     <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 12px", borderRadius: 8, background: COLOR.bgRaised, border: `1px solid ${COLOR.border}` }}>
@@ -223,9 +236,12 @@ function StatusPill({ label, value, kind }: { label: string; value: string; kind
           fixed advance width is the point. A status WORD is prose, and the
           mono face on VERIFIED / UNKNOWN / REAL is most of what made these
           screens read as console output rather than as a product. */}
-      <span style={{ fontSize: FS.tag, fontWeight: 800, letterSpacing: 0.6, padding: "1px 6px", borderRadius: 999, background: s.bg, border: `1px solid ${s.border}`, color: s.text }}>
-        {s.label}
+      <span style={{ fontSize: FS.tag, fontWeight: 800, letterSpacing: 0.6, padding: "1px 6px", borderRadius: 999, background: s.bg, border: `1px solid ${s.border}`, color: tagColor ?? s.text }}>
+        {tagText ?? s.label}
       </span>
+      {qualifier ? (
+        <span style={{ fontSize: FS.tag, fontWeight: 600, color: COLOR.textFaint }}>{qualifier}</span>
+      ) : null}
     </div>
   );
 }
@@ -323,11 +339,21 @@ export function SystemShell({
   const subjectValue = subject ?? (selected?.status === "found" ? selected.subject : undefined);
   const communityValue = community?.group_id;
 
-  const identityKind =
-    identityLink?.status === "VERIFIED_SAME_PERSON" ? "verified" :
-    identityLink?.status === "CONFLICT" ? "blocked" :
-    identityLink?.status === "DECLARED_SAME_PERSON" ? "active" :
-    identityLink?.status === "UNVERIFIED" ? "claimed" : "unknown";
+  /* THE BADGE READS THE TIER, NEVER THE STORED STATUS.
+     This used to switch on `identityLink.status`, so a two-step SELF-REPORT
+     rendered as a green `VERIFIED` pill on every terminal — the exact claim
+     the assurance model exists to refuse, printed by the one component that
+     appears on all of them. `assurance` is resolved once by
+     `resolvePersonCommunityLink` and carried here; the only job left is to
+     put it into words, which `identityAssuranceVocabulary` owns.
+
+     Chrome only (background/border) comes from this kind; the WORD comes from
+     ASSURANCE_LABEL, so no code path can reach the string "VERIFIED" again. */
+  const identityChrome: "verified" | "active" | "unknown" =
+    !identityLink ? "unknown"
+    : isLinkedTier(identityLink.assurance) ? "verified"
+    : identityLink.assurance === "SELF_DECLARED_SAME_PERSON" ? "active"
+    : "unknown";
 
   // Terminal identity — the locked per-surface colour role
   // (`PHILOS-SYSTEM-LANGUAGE.md` §8). Routing metadata for the surface, never
@@ -448,7 +474,14 @@ export function SystemShell({
           <StatusPill label="COMMUNITY" value={community.label} kind={community.provenance === "DEMO" ? "demo" : "real"} />
         ) : null}
         {identityLink ? (
-          <StatusPill label="IDENTITY" value={`${identityLink.person_id} ↔ ${identityLink.community_member_id}`} kind={identityKind} />
+          <StatusPill
+            label="IDENTITY"
+            value={`${identityLink.person_id} ↔ ${identityLink.community_member_id}`}
+            kind={identityChrome}
+            tagText={ASSURANCE_LABEL[identityLink.assurance]}
+            tagColor={ASSURANCE_TONE[identityLink.assurance]}
+            qualifier={assuranceQualifier(identityLink.assurance)}
+          />
         ) : null}
         {/* Sign out, as a SLOT. `SystemShell` is imported by client
             components (WorldGlobe, DynamicsView), so anything it imports ends
