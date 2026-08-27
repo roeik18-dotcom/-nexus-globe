@@ -92,6 +92,8 @@ import DayStatusStrip from "@/app/lib/philos/day/DayStatusStrip";
 import { loadDaySession } from "@/app/lib/philos/day/loadDaySession";
 import { loadActionEffectProjection } from "@/app/lib/philos/crossTerminal/loadActionEffectProjection";
 import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel";
+import { loadRealOrientationFrame } from "@/app/lib/philos/analysis/loadRealOrientationFrame";
+import RealOrientationPanel from "@/app/lib/philos/analysis/RealOrientationPanel";
 
 /**
  * Real time-range counts over the real canon Observation log — computed
@@ -179,6 +181,9 @@ export default async function DynamicsPage({
      nothing at all elsewhere. This terminal interprets; it does not
      re-decide which records count. */
   const aeProjection = await loadActionEffectProjection(personRef.person_id);
+  /* THE PHILOS MATERIAL. Anchored to the day's own Observation — never the
+     latest — so a day already opened keeps meaning what it meant. */
+  const orientationFrame = await loadRealOrientationFrame(personRef.person_id, todayIn(systemClock));
   /* REAL unit readings — one shared selector, never a per-page derivation. */
   const realUnitReadings = selectRealUnitReadings({
     events: await loadCanonEvents(),
@@ -379,7 +384,7 @@ export default async function DynamicsPage({
      the causal view itself, in a fragment, so the terminal keeps its own
      full-bleed drawing surface below it. */
   return <>
-    <DayStatusStrip session={daySession} /><ActionEffectPanel terminal="dynamics" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
+    <DayStatusStrip session={daySession} /><RealOrientationPanel terminal="dynamics" frame={orientationFrame} /><ActionEffectPanel terminal="dynamics" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
     <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="dynamics" facts={[
       /* The day-scoped chain, already projected. `null` here means the
          projection could not resolve it — UNRESOLVED, never zero. */

@@ -53,6 +53,8 @@ import DayStatusStrip from "@/app/lib/philos/day/DayStatusStrip";
 import { loadDaySession } from "@/app/lib/philos/day/loadDaySession";
 import { loadActionEffectProjection } from "@/app/lib/philos/crossTerminal/loadActionEffectProjection";
 import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel";
+import { loadRealOrientationFrame } from "@/app/lib/philos/analysis/loadRealOrientationFrame";
+import RealOrientationPanel from "@/app/lib/philos/analysis/RealOrientationPanel";
 
 export const metadata = { title: "Living World — Philos" };
 
@@ -77,6 +79,9 @@ export default async function WorldPage({ searchParams }: {
      nothing at all elsewhere. This terminal interprets; it does not
      re-decide which records count. */
   const aeProjection = await loadActionEffectProjection(personRef.person_id);
+  /* THE PHILOS MATERIAL. Anchored to the day's own Observation — never the
+     latest — so a day already opened keeps meaning what it meant. */
+  const orientationFrame = await loadRealOrientationFrame(personRef.person_id, todayIn(systemClock));
   /* REAL unit readings — one shared selector, never a per-page derivation. */
   const realUnitReadings = selectRealUnitReadings({
     events: await loadCanonEvents(),
@@ -397,7 +402,7 @@ export default async function WorldPage({ searchParams }: {
                   selectedGroup={selected?.groupId}
                   purpose="מה נצפה בקנה-מידה מערכתי, ומה קיים אך אינו מגיע לכאן."
                   subject={personRef.person_id}
-                /><DayStatusStrip session={daySession} /><ActionEffectPanel terminal="world" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="world" facts={[
+                /><DayStatusStrip session={daySession} /><RealOrientationPanel terminal="world" frame={orientationFrame} /><ActionEffectPanel terminal="world" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="world" facts={[
                   /* These two record shapes are {record_id, evidence_id} and
                      {record_id, as} — no provenance field, so the count cannot
                      claim REAL. */

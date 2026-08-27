@@ -80,6 +80,8 @@ import DayDateNav from "@/app/lib/philos/day/DayDateNav";
 import DayChainSummary from "@/app/lib/philos/day/DayChainSummary";
 import { loadActionEffectProjection } from "@/app/lib/philos/crossTerminal/loadActionEffectProjection";
 import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel";
+import { loadRealOrientationFrame } from "@/app/lib/philos/analysis/loadRealOrientationFrame";
+import RealOrientationPanel from "@/app/lib/philos/analysis/RealOrientationPanel";
 
 export const metadata = { title: "Philos — היום" };
 
@@ -137,6 +139,9 @@ export default async function HubPage({
      nothing at all elsewhere. This terminal interprets; it does not
      re-decide which records count. */
   const aeProjection = await loadActionEffectProjection(personRef.person_id);
+  /* THE PHILOS MATERIAL. Anchored to the day's own Observation — never the
+     latest — so a day already opened keeps meaning what it meant. */
+  const orientationFrame = await loadRealOrientationFrame(personRef.person_id, viewedDate);
   /* REAL unit readings — one shared selector, never a per-page derivation. */
   const canonEventsForViewer = await loadCanonEvents();
   const realUnitReadings = selectRealUnitReadings({
@@ -482,7 +487,7 @@ export default async function HubPage({
           previous={previousDate(viewedDate)}
           next={nextDate(viewedDate)}
         />
-        <DayStatusStrip session={daySession} /><ActionEffectPanel terminal="hub" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
+        <DayStatusStrip session={daySession} /><RealOrientationPanel terminal="hub" frame={orientationFrame} /><ActionEffectPanel terminal="hub" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
         <DayChainSummary session={daySession} />
         <DayOpeningPanel session={daySession} readOnly={!dayIsToday} linkable={linkableObservations} linkableStates={linkableStates} />
         <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="hub" facts={[

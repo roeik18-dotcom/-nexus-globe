@@ -61,6 +61,8 @@ import { actionOriginOf } from "@/app/lib/philos/canon/actionStore";
 import { effectOriginOf } from "@/app/lib/philos/canon/effectStore";
 import { loadActionEffectProjection } from "@/app/lib/philos/crossTerminal/loadActionEffectProjection";
 import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel";
+import { loadRealOrientationFrame } from "@/app/lib/philos/analysis/loadRealOrientationFrame";
+import RealOrientationPanel from "@/app/lib/philos/analysis/RealOrientationPanel";
 
 export const metadata = { title: "Marketplace — Philos" };
 
@@ -155,6 +157,9 @@ export default async function MarketplacePage({
      nothing at all elsewhere. This terminal interprets; it does not
      re-decide which records count. */
   const aeProjection = await loadActionEffectProjection(viewer.subject_id);
+  /* THE PHILOS MATERIAL. Anchored to the day's own Observation — never the
+     latest — so a day already opened keeps meaning what it meant. */
+  const orientationFrame = await loadRealOrientationFrame(viewer.subject_id, todayIn(systemClock));
   const personRef = resolvePersonRef(viewer, params.subject);
   /* REAL unit readings — one shared selector, never a per-page derivation. */
   const realUnitReadings = selectRealUnitReadings({
@@ -278,7 +283,7 @@ export default async function MarketplacePage({
           subject={personRef.person_id}
           identityLink={identityLink}
         />
-        <DayStatusStrip session={daySession} /><ActionEffectPanel terminal="marketplace" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
+        <DayStatusStrip session={daySession} /><RealOrientationPanel terminal="marketplace" frame={orientationFrame} /><ActionEffectPanel terminal="marketplace" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
         <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="marketplace" facts={[
           /* Arrays this page already loaded and already renders. */
           factFromCount("Need", "findNeedsForSubject → mineNeeds", mineNeeds.length,

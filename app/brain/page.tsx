@@ -47,6 +47,8 @@ import DayStatusStrip from "@/app/lib/philos/day/DayStatusStrip";
 import { loadDaySession } from "@/app/lib/philos/day/loadDaySession";
 import { loadActionEffectProjection } from "@/app/lib/philos/crossTerminal/loadActionEffectProjection";
 import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel";
+import { loadRealOrientationFrame } from "@/app/lib/philos/analysis/loadRealOrientationFrame";
+import RealOrientationPanel from "@/app/lib/philos/analysis/RealOrientationPanel";
 
 export const metadata = { title: "Philos — Brain" };
 
@@ -93,6 +95,9 @@ export default async function BrainPage({
      nothing at all elsewhere. This terminal interprets; it does not
      re-decide which records count. */
   const aeProjection = await loadActionEffectProjection(personRef.person_id);
+  /* THE PHILOS MATERIAL. Anchored to the day's own Observation — never the
+     latest — so a day already opened keeps meaning what it meant. */
+  const orientationFrame = await loadRealOrientationFrame(personRef.person_id, todayIn(systemClock));
   /* REAL unit readings — one shared selector, never a per-page derivation. */
   const realUnitReadings = selectRealUnitReadings({
     events: await loadCanonEvents(),
@@ -199,7 +204,7 @@ export default async function BrainPage({
           subject={subject}
           identityLink={identityLink}
         />
-        <DayStatusStrip session={daySession} /><ActionEffectPanel terminal="brain" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
+        <DayStatusStrip session={daySession} /><RealOrientationPanel terminal="brain" frame={orientationFrame} /><ActionEffectPanel terminal="brain" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
         <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="brain" facts={[
           factFromCount("Observation nodes", "projectCanonDynamics → canon.nodes", canon.nodes.length,
             "אין תצפית — לא נמצאה רשומה ב־canonEventStore"),
