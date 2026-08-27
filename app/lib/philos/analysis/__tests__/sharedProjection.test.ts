@@ -326,35 +326,52 @@ describe("the role bar and the three lenses", () => {
   });
 });
 
-describe("navigation — seven lenses over seven canonical terminals", () => {
+/* CONTRACT CHANGED, ON INSTRUCTION. The seven-lens ROLE_BAR is gone. It had
+   grown into three competing controls — the bar, a separate SOCIAL capsule and
+   a loose HUMAN CONFIG button — with "מערכת חברתית" appearing twice, the more
+   prominent copy being an anchor that navigated nowhere. `PhilosNav` replaces
+   all three with FOUR families and NINE real destinations. The guarantee these
+   tests protect is unchanged: every canonical terminal stays reachable, and no
+   destination is an in-page anchor. */
+describe("navigation — four families, nine destinations, no dead controls", () => {
+  const nav = readFileSync(join(ROOT, "app/lib/philos/shell/PhilosNav.tsx"), "utf8");
   const shell = readFileSync(join(ROOT, "app/lib/philos/shell/SystemShell.tsx"), "utf8");
-  const bar = shell.slice(shell.indexOf("const ROLE_BAR"), shell.indexOf("];", shell.indexOf("const ROLE_BAR")));
+  const hrefs = [...nav.matchAll(/href:\s*"([^"]+)"/g)].map((m) => m[1]);
 
-  it("declares exactly seven role controls", () => {
-    expect((bar.match(/\{ id: "/g) ?? [])).toHaveLength(7);
-    for (const id of ["purple", "blue", "green", "yellow", "orange", "red", "white"]) {
-      expect(bar, id).toContain(`id: "${id}"`);
+  it("declares exactly four families", () => {
+    for (const id of ["person", "action", "social", "evidence"]) {
+      expect(nav, id).toContain(`id: "${id}"`);
     }
+    expect((nav.match(/^\s*\{ id: "/gm) ?? [])).toHaveLength(4);
   });
 
-  it("makes GREEN one control, not four", () => {
-    expect((bar.match(/id: "green"/g) ?? [])).toHaveLength(1);
-    /* Community, Globe and World are not role controls. */
-    for (const label of ["Community", "Globe", "World"]) {
-      expect(bar, label).not.toContain(`label: "${label}"`);
-    }
-  });
-
-  it("keeps all seven canonical terminal routes intact", () => {
+  it("keeps all seven canonical terminal routes reachable", () => {
     for (const r of ["/hub", "/brain", "/dynamics", "/hub/community",
       "/marketplace", "/planet", "/world"]) {
-      expect(shell, r).toContain(`"${r}"`);
+      expect(hrefs, r).toContain(r);
     }
   });
 
-  it("points RED and WHITE at layers of existing terminals, not new ones", () => {
-    expect(bar).toContain('"/dynamics#action-layer"');
-    expect(bar).toContain('"/brain#evidence"');
+  it("files Human Config under אדם, never under the green social family", () => {
+    const person = nav.slice(nav.indexOf('id: "person"'), nav.indexOf('id: "action"'));
+    const social = nav.slice(nav.indexOf('id: "social"'), nav.indexOf('id: "evidence"'));
+    expect(person).toContain("/hub/human-config");
+    expect(social).not.toContain("/hub/human-config");
+  });
+
+  it("shows מערכת חברתית exactly once, and never as an anchor", () => {
+    /* Asserted on LABELS, not on file text: the file's header comment
+       explains the duplicate that was removed, and naming a defect is not
+       committing it. */
+    const labels = [...nav.matchAll(/label:\s*"([^"]+)"/g)].map((m) => m[1]);
+    expect(labels.filter((l) => l === "מערכת חברתית")).toHaveLength(1);
+    for (const h of hrefs) expect(h.startsWith("#"), h).toBe(false);
+  });
+
+  it("the superseded controls are removed from the shell, not merely unused", () => {
+    expect(shell).not.toContain("const ROLE_BAR");
+    expect(shell).not.toContain("<SocialScaleNav");
+    expect(shell).toContain("<PhilosNav");
   });
 });
 

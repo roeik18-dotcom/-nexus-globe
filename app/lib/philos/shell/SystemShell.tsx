@@ -28,12 +28,12 @@ import { encodeSystemContextRef, type ContextSurface, type SelectedContext } fro
 import Link from "next/link";
 
 
-import { Suspense, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { ResolvedViewerContext } from "../context/resolvedViewerContext";
 import OrientationBand, { type ViewScale } from "./OrientationBand";
 import { SELECTED_GROUP_PARAM } from "@/app/lib/philos/community/selectedGroupContext";
 import { COLOR, COLOR_ROLE, FS, SPACE, STATUS, TERMINAL, TYPE } from "./designTokens";
-import SocialScaleNav from "./SocialScaleNav";
+import PhilosNav from "./PhilosNav";
 
 export interface ShellCommunity {
   group_id: string;
@@ -171,27 +171,8 @@ type NavItem = (typeof NAV)[number];
  * function so route members can go through `hrefFor` (which carries context,
  * subject and group across a move) while lens members return a plain anchor.
  */
-const ROLE_BAR: {
-  id: string; label: string; hue: string;
-  surfaceKey?: ShellSurfaceKey;
-  href: (h: (i: NavItem) => string) => string;
-}[] = [
-  { id: "purple", label: "אדם", hue: COLOR_ROLE.purple, surfaceKey: "hub",
-    href: (h) => h(NAV[0]) },
-  { id: "blue", label: "מוח", hue: COLOR_ROLE.blue, surfaceKey: "brain",
-    href: (h) => h(NAV[1]) },
-  { id: "green", label: "מערכת חברתית", hue: COLOR_ROLE.green, href: () => "#lens-green" },
-  { id: "yellow", label: "דינמיקה", hue: COLOR_ROLE.yellow, surfaceKey: "dynamics",
-    href: (h) => h(NAV[5]) },
-  { id: "orange", label: "שוק", hue: COLOR_ROLE.orange, surfaceKey: "marketplace",
-    href: (h) => h(NAV[6]) },
-  /* RED and WHITE are LAYERS OF EXISTING TERMINALS, not new terminals.
-     They point at a stable anchor inside the terminal that already owns
-     the objects — Dynamics owns Action/Effect/Learning, Brain owns
-     Claims/Evidence — so no eighth or ninth canonical terminal is created. */
-  { id: "red", label: "פעולה", hue: COLOR_ROLE.red, href: () => "/dynamics#action-layer" },
-  { id: "white", label: "מקור וראיות", hue: COLOR_ROLE.white, href: () => "/brain#evidence" },
-];
+/* ROLE_BAR removed — `PhilosNav` is now the single navigation. */
+
 
 /**
  * NAVIGATION GROUPING — the nav is a list of GROUPS, not a flat list of
@@ -361,16 +342,6 @@ export function SystemShell({
   // a state, never a value, never a cell (`Cell_ID ≠ Color_ID`).
   const terminal = TERMINAL[surface];
 
-  // Query-parameter carry rules per nav item — shared by standalone items and
-  // by the social-family sub-tabs so both preserve context identically.
-  const hrefFor = (item: NavItem) => {
-    const parts: string[] = [];
-    if (item.carriesCtx && ctxValue) parts.push(`ctx=${encodeURIComponent(ctxValue)}`);
-    if (item.carriesSubject && subjectValue) parts.push(`subject=${encodeURIComponent(subjectValue)}`);
-    if (item.carriesCommunity && communityValue) parts.push(`community=${encodeURIComponent(communityValue)}`);
-    if (item.carriesGroup && selectedGroup) parts.push(`${SELECTED_GROUP_PARAM}=${encodeURIComponent(selectedGroup)}`);
-    return parts.length > 0 ? `${item.href}?${parts.join("&")}` : item.href;
-  };
 
   return (
     <div style={{ fontFamily: "system-ui" }}>
@@ -401,85 +372,11 @@ export function SystemShell({
           </span>
         </div>
 
-        {/* ── THE ROLE BAR — SEVEN CONTROLS, ONE PER COLOUR ROLE ──────────
-            PURPLE·אדם  BLUE·מוח  GREEN·מערכת חברתית  YELLOW·דינמיקה
-            ORANGE·שוק  RED·פעולה  WHITE·מקור וראיות
-
-            The four green destinations (Community, Globe, World, Social) are
-            NOT four controls. They were, and the bar read as though the
-            social system were four separate products competing with Hub and
-            Brain for the same rank. They are now four LENSES inside one green
-            surface, opened by the single control below.
-
-            GREEN, RED and WHITE are in-page lenses rather than routes: they
-            read the shared scenario the header already loaded, so leaving the
-            page to see them would be a navigation that changes nothing. They
-            open via `:target` — one anchor, no client state, and exactly one
-            surface visible at a time because only one element can be the
-            target. PURPLE, BLUE, YELLOW and ORANGE stay real routes. */}
-        {/* THE GREEN UMBRELLA RENDERS ITS CHILDREN.
-            `a83d90a` folded Community, Globe and World into one green control
-            whose href is the in-page anchor `#lens-green`, on the stated
-            reasoning that "leaving the page to see them would be a navigation
-            that changes nothing". That premise does not hold: the three are
-            separate terminals with separate loaders, and the anchor shows a
-            summary panel rather than any of them. The measurable result was
-            that /world became reachable from NO route in the product, /planet
-            only from /world, and the green control navigated nowhere.
-
-            `SocialScaleNav` — which already existed, already carried `sel` and
-            the selected group across a lens change, and already had a passing
-            test — was left in the tree without a single caller. It is simply
-            mounted here, so the umbrella's three destinations are visible and
-            clickable from every terminal, on every viewport. */}
-        {/* ONE ROW, capped height. Seven controls fit 1280px without wrapping;
-            narrower viewports scroll the BAR rather than reflowing the page. */}
-        <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "nowrap",
-          maxBlockSize: 56, overflowX: "auto", overflowY: "hidden", scrollbarWidth: "none" }}>
-          {ROLE_BAR.map((r) => {
-            const here = r.surfaceKey !== undefined && r.surfaceKey === surface;
-            const common: React.CSSProperties = {
-              fontSize: 15, fontWeight: here ? 700 : 500,
-              padding: "8px 14px", borderRadius: 8, textDecoration: "none",
-              whiteSpace: "nowrap", flex: "0 0 auto",
-              color: here ? COLOR.text : COLOR.textDim,
-              background: "transparent",
-              /* ONE indicator, not three. The active lens is named by a solid
-                 seat in its own role colour; the rest show a dim seat. No
-                 fill, no border, no nested capsule. */
-              boxShadow: `inset 0 -3px 0 0 ${here ? r.hue : r.hue + "44"}`,
-            };
-            return here ? (
-              <span key={r.id} data-role-control={r.id} style={common}>{r.label}</span>
-            ) : (
-              <Link key={r.id} data-role-control={r.id} href={r.href(hrefFor)} style={common}>
-                {r.label}
-              </Link>
-            );
-          })}
-        </div>
-        {/* The umbrella's three destinations, always visible. */}
-        <Suspense fallback={null}>
-          <SocialScaleNav selectedGroup={selectedGroup} />
-        </Suspense>
-        {/* HUMAN CONFIG WAS REACHABLE FROM NO ROUTE IN THE PRODUCT.
-            It owns the DomainState writer — the State(t0)/State(t1) form the
-            Day lifecycle depends on — so a person could open a Day that
-            required a State they had no visible way to record. The Observation
-            writer lives on /hub and was always reachable; this is the other
-            half of the same pair. */}
-        <Link
-          href="/hub/human-config"
-          data-nav-human-config
-          style={{
-            fontSize: FS.tag, fontWeight: 600, padding: "6px 12px", borderRadius: 8,
-            textDecoration: "none", whiteSpace: "nowrap", flex: "0 0 auto",
-            color: surface === "hub" ? COLOR.text : COLOR.textDim,
-            border: `1px solid ${COLOR.border}`,
-          }}
-        >
-          אדם · HUMAN CONFIG
-        </Link>
+        {/* ONE NAVIGATION. Three competing controls used to live here — a
+            seven-lens role bar, a separate SOCIAL capsule and a loose HUMAN
+            CONFIG button — with "מערכת חברתית" appearing twice, the more
+            prominent copy being an anchor that navigated nowhere. */}
+        <PhilosNav />
       </div>
 
       {/* The purpose line is orientation prose. A map-first surface states its

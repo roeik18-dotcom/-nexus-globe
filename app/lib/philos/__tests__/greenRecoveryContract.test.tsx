@@ -106,20 +106,37 @@ describe("6. Community, Globe and World stay reachable", () => {
   const shell = read("lib/philos/shell/SystemShell.tsx");
   const scales = read("lib/philos/shell/SocialScaleNav.tsx");
 
-  it("the shell MOUNTS the social nav — an orphaned component is how this broke", () => {
-    expect(shell).toContain("<SocialScaleNav");
-    expect(shell).toContain('import SocialScaleNav');
+  /* CONTRACT CHANGED. `SocialScaleNav` was the fix for an orphaned social
+     family, but it then COMPETED with the role bar: "מערכת חברתית" appeared
+     twice, and the more prominent copy was an anchor that navigated nowhere.
+     One `PhilosNav` now owns all four families. The guarantee is unchanged —
+     the three social terminals must be reachable — only its owner moved. */
+  it("the shell MOUNTS the one navigation", () => {
+    expect(shell).toContain("<PhilosNav");
+    expect(shell).toContain('import PhilosNav');
+    /* And the superseded controls are gone, not merely unused. */
+    expect(shell).not.toContain("ROLE_BAR.map");
+    expect(shell).not.toContain("<SocialScaleNav");
   });
 
   it("all three destinations are real routes, not in-page anchors", () => {
+    const nav = read("lib/philos/shell/PhilosNav.tsx");
     for (const href of ["/hub/community", "/planet", "/world"]) {
-      expect(scales, href).toContain(`href: "${href}"`);
+      expect(nav, href).toContain(`href: "${href}"`);
     }
-    /* The regression itself: the green control was `#lens-green`. */
-    expect(scales).not.toContain("#lens-green");
+    /* The regression itself: the green control's href was an in-page anchor.
+       Asserted on HREFS, not on the file text — the file explains the bug in
+       a comment, and a comment naming the defect is not the defect. */
+    const hrefs = [...nav.matchAll(/href:\s*"([^"]+)"/g)].map((x) => x[1]);
+    expect(hrefs.length).toBeGreaterThanOrEqual(9);
+    for (const h of hrefs) expect(h.startsWith("#"), h).toBe(false);
   });
 
-  it("Human Config — which owns the DomainState writer — is linked", () => {
-    expect(shell).toContain('href="/hub/human-config"');
+  it("Human Config — which owns the DomainState writer — is linked, under אדם", () => {
+    const nav = read("lib/philos/shell/PhilosNav.tsx");
+    expect(nav).toContain('href: "/hub/human-config"');
+    /* It belongs to the PERSON family, never to the green social one. */
+    const person = nav.slice(nav.indexOf('id: "person"'), nav.indexOf('id: "action"'));
+    expect(person).toContain("/hub/human-config");
   });
 });

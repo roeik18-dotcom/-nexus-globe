@@ -12,10 +12,14 @@
  * says which of the eleven conditions failed, in words, and shows nothing
  * else: an unresolved frame is a real state, not an empty decoration.
  */
-import { UnitRow, T } from "./analysisUnitSections";
-import { FOUNDATION_4, DEPARTMENTS_6 } from "./analysisUnit";
+
+import { UnitRow } from "./analysisUnitSections";
+import { FOUNDATION_4, DEPARTMENTS_6, type AnalysisUnitReading } from "./analysisUnit";
+import { MODEL_EXPLANATION } from "./unitMeaning";
+import { terminalMeaning } from "./terminalMeaning";
+import Link from "next/link";
 import type { OrientationFrameResult } from "./realOrientationFrame";
-import { COLOR, RADIUS, SPACE } from "../shell/designTokens";
+import { COLOR, COLOR_ROLE, RADIUS, SPACE } from "../shell/designTokens";
 
 /** What this terminal reads the same anchored frame as meaning. */
 export type OrientationTerminal =
@@ -60,80 +64,112 @@ export default function RealOrientationPanel({
   }
 
   const o = frame.observation as unknown as Record<string, unknown>;
+  const label = (r: AnalysisUnitReading) =>
+    [...FOUNDATION_4, ...DEPARTMENTS_6].find((u) => u.id === r.unitId)!.label;
+  const marked = frame.readings.filter((r) => r.status !== "unknown");
+  const unmarked = frame.readings.filter((r) => r.status === "unknown");
+  const m = terminalMeaning(terminal, marked.map(label), unmarked.map(label));
+
   return (
     <section dir="rtl" data-real-orientation={terminal} data-frame="resolved"
              data-canon-event-id={frame.canon_event_id} data-state-t0-id={frame.state_t0_id}
              style={S.card}>
-      <div style={S.head}>
-        <span style={S.eyebrow}>התמצאות · ORIENTATION</span>
-        <span style={S.counts}>
-          <b style={{ color: "#8fd7ff" }}>{frame.observedCount} OBSERVED</b>
-          {" · "}
-          <span style={{ color: COLOR.textDim }}>{frame.unknownCount} UNKNOWN</span>
-        </span>
-      </div>
 
-      <h2 style={S.title}>{p.title}</h2>
-      <div style={S.note}>{p.note}</div>
-
-      {/* THE ANCHORED OBSERVATION, as stored. Not re-interpreted. */}
-      <div style={S.reading}>
-        <span style={S.k}>תצפית מעוגנת</span>
-        <span style={S.v}>
-          {String(o.domain)}/{String(o.frame)} · level {String(o.level)} · confidence {String(o.confidence)}
-        </span>
-      </div>
+      {/* 1. מה קרה — the sentence the person wrote, first, unaltered. */}
+      <h2 style={S.title}>{m.title}</h2>
       {typeof o.context === "string" && o.context ? (
-        <div style={S.context}>{o.context}</div>
+        <blockquote style={S.quote}>{o.context}</blockquote>
       ) : null}
-      <div style={S.reading}>
-        <span style={S.k}>מצב פתיחה</span>
-        <span style={S.v}>
-          {frame.state.domain_id}/{frame.state.parameter_id} · level {frame.state.level}
-        </span>
+
+      {/* 2. איך PHILOS מסדרת את זה — only Hub carries the full explanation;
+          repeating it on all seven was what made six terminals redundant. */}
+      {m.full ? <p style={S.body}>{MODEL_EXPLANATION}</p> : null}
+
+      {/* 3. מה זה אומר במסוף הזה — the materially distinct part. */}
+      <p style={S.body}>{m.hereMeans}</p>
+
+      {/* THE TEN, in words. `סומן` / `לא סווג`, never OBSERVED / UNKNOWN. */}
+      <div style={S.groups}>
+        {/* THE SAME COMPONENT the demo header draws, in its plain variant —
+            one implementation, so the ten units cannot be drawn two ways. */}
+        <UnitRow group="FOUNDATION" title="משתני יסוד" note="הבסיס: זמן, חומר, מרווח, אנרגיה"
+                 units={FOUNDATION_4} readings={byId(frame.readings)}
+                 variant="plain" full={m.full} />
+        <UnitRow group="DEPARTMENTS" title="מחלקות ניגוד" note="ההקשר: רגש, שכל, גוף, אישי, חברתי, מערכתי"
+                 units={DEPARTMENTS_6} readings={byId(frame.readings)}
+                 variant="plain" full={m.full} />
       </div>
 
-      {/* THE TEN — the same component the demo header draws. */}
-      <UnitRow group="FOUNDATION" title="משתני יסוד" note="4"
-               units={FOUNDATION_4} readings={byId(frame.readings)} />
-      <UnitRow group="DEPARTMENTS" title="מחלקות ניגוד" note="6"
-               units={DEPARTMENTS_6} readings={byId(frame.readings)} />
-
-      {/* AUDIT — the two ids every terminal must be checkable against. */}
-      <div style={S.audit} dir="ltr">
-        <div><b>canon_event_id</b> {frame.canon_event_id}</div>
-        <div><b>state_t0_id</b> {frame.state_t0_id}</div>
-        <div><b>day_id</b> {frame.day_id}</div>
+      {/* 4. מה עדיין לא ידוע */}
+      <div style={S.unknownBox}>
+        <span style={S.boxLabel}>מה עדיין לא ידוע</span>
+        <span style={S.body}>{m.stillUnknown}</span>
       </div>
+
+      {/* 5. מה אפשר לעשות עכשיו — exactly one, or an honest none. */}
+      <div style={S.nextBox}>
+        <span style={S.boxLabel}>מה אפשר לעשות עכשיו</span>
+        {m.nextAction
+          ? <Link href={m.nextAction.href} style={S.nextLink}>{m.nextAction.label} ←</Link>
+          : <span style={S.body}>במסוף הזה אין כרגע פעולה זמינה. זה לא חוסר — פשוט אין מה לעשות כאן עד שיירשם מידע נוסף.</span>}
+      </div>
+
+      {/* G. TECHNICAL AUDIT LAST — closed, and named for what it is. */}
+      <details style={S.audit}>
+        <summary style={S.auditSummary}>פרטי ביקורת טכניים</summary>
+        <div dir="ltr" style={S.auditBody}>
+          <div><b>canon_event_id</b> {frame.canon_event_id}</div>
+          <div><b>state_t0_id</b> {frame.state_t0_id}</div>
+          <div><b>day_id</b> {frame.day_id}</div>
+          <div><b>observation</b> {String(o.domain)}/{String(o.frame)} · level {String(o.level)} · confidence {String(o.confidence)}</div>
+          <div><b>state</b> {frame.state.domain_id}/{frame.state.parameter_id} · level {frame.state.level}</div>
+          <div><b>units</b> {frame.observedCount} OBSERVED · {frame.unknownCount} UNKNOWN</div>
+        </div>
+      </details>
     </section>
   );
 }
 
 /** `UnitRow` indexes by unit id; the frame carries an ordered array. */
-function byId(readings: { unitId: string }[]) {
+function byId(readings: AnalysisUnitReading[]) {
   return Object.fromEntries(readings.map((r) => [r.unitId, r])) as never;
 }
 
 const S: Record<string, React.CSSProperties> = {
-  /* `minmax(0, 1fr)` is load-bearing: a grid item defaults to `min-width:
-     auto`, so long Hebrew sentences and the wide unit cards refused to shrink
-     and pushed 64px outside the card on a 390px screen — clipping "OBSERVED"
-     to "ED" while the PAGE still reported no horizontal overflow. */
   card: { border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.lg,
     background: COLOR.bgRaised, padding: SPACE.md, display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr)", gap: 6, overflowWrap: "anywhere" },
-  head: { display: "flex", justifyContent: "space-between", alignItems: "baseline",
-    gap: 8, flexWrap: "wrap" },
-  eyebrow: { fontSize: 11, letterSpacing: 1, color: COLOR.textFaint, fontWeight: 700 },
-  counts: { fontSize: T.meta, fontWeight: 800, whiteSpace: "nowrap" },
-  title: { fontSize: T.section, color: COLOR.text, fontWeight: 800, margin: 0 },
-  note: { fontSize: T.body, color: COLOR.textDim, lineHeight: T.lh },
-  reading: { display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap", marginTop: 4 },
-  k: { fontSize: T.micro, color: COLOR.textFaint, fontWeight: 700 },
-  v: { fontSize: T.body, color: COLOR.text, fontWeight: 600 },
-  context: { fontSize: T.body, color: COLOR.textDim, lineHeight: T.lh,
-    borderInlineStart: `3px solid ${COLOR.border}`, paddingInlineStart: 10 },
+    gridTemplateColumns: "minmax(0, 1fr)", gap: 12, overflowWrap: "anywhere" },
+  title: { fontSize: 24, color: COLOR.text, fontWeight: 800, margin: 0, lineHeight: 1.3 },
+  /* The person's own sentence, set as a quotation — it is the only text on
+     the screen that PHILOS did not write. */
+  quote: { margin: 0, paddingInlineStart: 12, borderInlineStart: `3px solid ${COLOR_ROLE.purple}`,
+    fontSize: 16, lineHeight: 1.6, color: COLOR.text },
+  body: { fontSize: 15, lineHeight: 1.65, color: COLOR.textDim, margin: 0 },
+  groups: { display: "grid", gap: 14, gridTemplateColumns: "minmax(0, 1fr)" },
+  group: { display: "grid", gap: 6, gridTemplateColumns: "minmax(0, 1fr)" },
+  groupHead: { display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" },
+  groupTitle: { fontSize: 17, color: COLOR.text, fontWeight: 800 },
+  groupNote: { fontSize: 13, color: COLOR.textFaint },
+  unit: { display: "grid", gap: 2, paddingBlock: 7,
+    borderTop: `1px solid ${COLOR.border}`, gridTemplateColumns: "minmax(0, 1fr)" },
+  unitHead: { display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" },
+  unitName: { fontSize: 15, fontWeight: 700 },
+  unitStatus: { fontSize: 13, fontWeight: 600 },
+  unitMeans: { fontSize: 14, lineHeight: 1.55, color: COLOR.textDim },
+  unitNote: { fontSize: 13, lineHeight: 1.55, color: COLOR.textFaint },
+  unknownBox: { display: "grid", gap: 3, padding: 10, borderRadius: 8,
+    border: `1px solid rgba(251,191,36,0.28)`, gridTemplateColumns: "minmax(0, 1fr)" },
+  nextBox: { display: "grid", gap: 3, padding: 10, borderRadius: 8,
+    border: `1px solid rgba(52,211,153,0.28)`, gridTemplateColumns: "minmax(0, 1fr)" },
+  boxLabel: { fontSize: 11, fontWeight: 800, letterSpacing: 0.8, color: COLOR.textFaint },
+  nextLink: { fontSize: 15, fontWeight: 700, color: "#34d399", textDecoration: "none" },
+  audit: { marginTop: 4, borderTop: `1px solid ${COLOR.border}`, paddingTop: 8 },
+  auditSummary: { cursor: "pointer", listStyle: "none", display: "block",
+    fontSize: 12, fontWeight: 700, color: COLOR.textFaint },
+  auditBody: { marginTop: 6, fontSize: 11.5, color: "#9fd0ff", textAlign: "left",
+    wordBreak: "break-all", display: "grid", gap: 2 },
   unresolved: { fontSize: 11, fontWeight: 800, color: "#f2635c", letterSpacing: 0.4 },
-  audit: { marginTop: 12, paddingTop: 8, borderTop: `1px solid ${COLOR.border}`,
-    fontSize: T.micro, color: "#9fd0ff", textAlign: "left", wordBreak: "break-all" },
+  head: { display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" },
+  eyebrow: { fontSize: 11, letterSpacing: 1, color: COLOR.textFaint, fontWeight: 700 },
+  note: { fontSize: 15, lineHeight: 1.6, color: COLOR.textDim },
 };

@@ -1,5 +1,5 @@
 /**
- * THE 4+6 ANALYSIS-UNIT SECTIONS — ONE IMPLEMENTATION, TWO CALLERS.
+ * THE 4+6 ANALYSIS-UNIT SECTIONS — ONE IMPLEMENTATION, TWO PRESENTATIONS.
  *
  * `PersonEventOrientationHeader` renders the four fundamentals and the six
  * opposition classes, and it is bound to `loadAcceptanceScenario()` — a
@@ -14,11 +14,20 @@
  * from — they take an `AnalysisUnitReading` — which is exactly why one
  * implementation can serve a fixture and a real record without either being
  * able to impersonate the other.
+ *
+ * TWO VARIANTS, NOT TWO COMPONENTS. The demo header needs the TECHNICAL card —
+ * status enums, evidence counts, an Audit line with `sourceRefs` — because its
+ * reader is auditing a fixture. A person reading their own day needs the PLAIN
+ * row: what the unit MEANS, then whether they marked it, in words. Writing a
+ * second component for that produced two drawings of the same ten units that
+ * could drift apart. `variant` keeps them one function with one status source;
+ * only the wording and the density differ.
  */
 import {
   type AnalysisUnitMeta, type AnalysisUnitReading,
 } from "./analysisUnit";
 import { unitGap } from "./acceptanceScenario";
+import { UNIT_MEANING } from "./unitMeaning";
 import { COLOR, COLOR_ROLE, RADIUS } from "../shell/designTokens";
 
 /** The type scale these cards were designed at. Shared so both agree. */
@@ -38,10 +47,36 @@ export const STATUS_HE: Record<string, string> = {
   inferred: "הוסק", contradictory: "סותר", not_applicable: "לא רלוונטי",
 };
 
-export function UnitCard({ meta, reading, gap }: {
+export type UnitVariant = "technical" | "plain";
+
+export function UnitCard({ meta, reading, gap, variant = "technical", full = true }: {
   meta: AnalysisUnitMeta; reading: AnalysisUnitReading;
   gap: { evidenceCount: number; missingReason: string; collectionAction: string };
+  variant?: UnitVariant;
+  /** PLAIN only: whether to add the "what a mark does not establish" line. */
+  full?: boolean;
 }) {
+  /* PLAIN — the definition first, because a status is meaningless to someone
+     who does not yet know what the unit is. No enum, no id, no source path. */
+  if (variant === "plain") {
+    const marked = reading.status !== "unknown";
+    const meaning = UNIT_MEANING[meta.id];
+    return (
+      <div data-unit={meta.id} data-marked={marked} style={P.unit}>
+        <div style={P.head}>
+          <b style={{ ...P.name, color: marked ? COLOR.text : COLOR.textDim }}>{meta.label}</b>
+          <span style={{ ...P.status, color: marked ? "#8fd7ff" : "#fbbf24" }}>
+            {marked ? "סומן בתצפית" : "לא סווג בתצפית"}
+          </span>
+        </div>
+        <div style={P.means}>{meaning.means}</div>
+        {full ? (
+          <div style={P.note}>{marked ? meaning.whenMarked : meaning.whenNotMarked}</div>
+        ) : null}
+      </div>
+    );
+  }
+
   const known = reading.status !== "unknown";
   const he = STATUS_HE[reading.status] ?? "חסר מידע";
   const tone = reading.status === "contradictory" ? "#fc8a84"
@@ -54,7 +89,15 @@ export function UnitCard({ meta, reading, gap }: {
       style={{ flex: "1 1 320px", minInlineSize: 300, padding: "10px 14px",
         borderRadius: RADIUS.md, background: "rgba(255,255,255,0.025)",
         borderInlineStart: `4px solid ${COLOR_ROLE[meta.colorRole]}` }}>
-      <summary style={{ cursor: "pointer", listStyle: "none" }}>
+      {/* `display: block` IS THE WHOLE CARD.
+          A <summary> with `list-style: none` computes to `inline-flex` here,
+          which laid the title row and the explanation SIDE BY SIDE on one
+          line. In Hebrew the result read "זמן ידועסווג במפורש" — the status
+          word fused to the first word of the sentence after it. The text was
+          not merely ugly, it was unreadable, and it shipped because the words
+          are all present in `innerText` (separated by newlines) so every DOM
+          assertion passed while the screen said nothing. */}
+      <summary style={{ cursor: "pointer", listStyle: "none", display: "block" }}>
         {/* Title and status on one line that cannot break: "חסר מידע"
             wrapping to "חסר / מידע" made the status unreadable. */}
         <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
@@ -106,11 +149,28 @@ export function UnitCard({ meta, reading, gap }: {
 
 /** One labelled group. Two of these, never a flat ten. */
 
-export function UnitRow({ group, title, note, units, readings }: {
+export function UnitRow({ group, title, note, units, readings, variant = "technical", full = true }: {
   group: "FOUNDATION" | "DEPARTMENTS";
   title: string; note: string; units: readonly AnalysisUnitMeta[];
   readings: Record<string, AnalysisUnitReading>;
+  variant?: UnitVariant;
+  full?: boolean;
 }) {
+  if (variant === "plain") {
+    return (
+      <div data-analysis-group={group} style={P.group}>
+        <div style={P.groupHead}>
+          <b style={P.groupTitle}>{title}</b>
+          <span style={P.groupNote}>{note}</span>
+        </div>
+        {units.map((u) => (
+          <UnitCard key={u.id} meta={u} reading={readings[u.id]!} gap={unitGap(u.id)}
+                    variant="plain" full={full} />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div data-analysis-group={group} style={{ marginTop: 18 }}>
       <div style={{ fontSize: T.section, color: COLOR.text, fontWeight: 700, marginBottom: 8 }}>
@@ -124,3 +184,18 @@ export function UnitRow({ group, title, note, units, readings }: {
     </div>
   );
 }
+
+/** PLAIN-variant styles. Separate object so the technical card is untouched. */
+const P: Record<string, React.CSSProperties> = {
+  group: { display: "grid", gap: 6, gridTemplateColumns: "minmax(0, 1fr)" },
+  groupHead: { display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" },
+  groupTitle: { fontSize: 17, color: COLOR.text, fontWeight: 800 },
+  groupNote: { fontSize: 13, color: COLOR.textFaint },
+  unit: { display: "grid", gap: 2, paddingBlock: 7,
+    borderTop: `1px solid ${COLOR.border}`, gridTemplateColumns: "minmax(0, 1fr)" },
+  head: { display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" },
+  name: { fontSize: 15, fontWeight: 700 },
+  status: { fontSize: 13, fontWeight: 600 },
+  means: { fontSize: 14, lineHeight: 1.55, color: COLOR.textDim },
+  note: { fontSize: 13, lineHeight: 1.55, color: COLOR.textFaint },
+};
