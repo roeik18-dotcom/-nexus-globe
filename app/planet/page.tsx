@@ -96,6 +96,8 @@ import { projectValueGroup } from "@/app/lib/philos/projectValueGroup";
 import WorldGlobe, { CanonActivityPanel, RegionLayerPanel } from "./WorldGlobe";
 import DayStatusStrip from "@/app/lib/philos/day/DayStatusStrip";
 import { loadDaySession } from "@/app/lib/philos/day/loadDaySession";
+import { loadActionEffectProjection } from "@/app/lib/philos/crossTerminal/loadActionEffectProjection";
+import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel";
 
 export const metadata = { title: "Philos — Globe" };
 
@@ -156,6 +158,11 @@ export default async function PlanetPage({
 
   // ONE authority, same as Community and World.
   const viewer = await resolveViewerContext();
+  /* THE SHARED ACTION→EFFECT READ. One loader for all seven terminals, so
+     the same two records cannot appear as ids here, a bare count there and
+     nothing at all elsewhere. This terminal interprets; it does not
+     re-decide which records count. */
+  const aeProjection = await loadActionEffectProjection(viewer.subject_id);
   const social = await loadSocialSystem(viewer);
   const chronology = social.chronology;
   const socialObjects = social.objects;
@@ -404,7 +411,7 @@ export default async function PlanetPage({
                   purpose="מפת הערכים, הקבוצות והגאוגרפיה של PHILOS."
                   subject={personRef.person_id}
                   identityLink={identityLink}
-                /><DayStatusStrip session={daySession} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="planet" facts={[
+                /><DayStatusStrip session={daySession} /><ActionEffectPanel terminal="planet" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="planet" facts={[
                   /* `arcs`/`nodes` come from projectGlobeGraph over
                      loadPhilosEvents(), whose log is "bootstrap ++ appended" —
                      it contains the 42-event hand-authored seed. GlobeNode and

@@ -78,6 +78,8 @@ import { DayOpeningPanel, DayClosingPanel } from "./DayPanels";
 import { loadDaySession, nextDate, parseDateParam, previousDate } from "@/app/lib/philos/day/loadDaySession";
 import DayDateNav from "@/app/lib/philos/day/DayDateNav";
 import DayChainSummary from "@/app/lib/philos/day/DayChainSummary";
+import { loadActionEffectProjection } from "@/app/lib/philos/crossTerminal/loadActionEffectProjection";
+import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel";
 
 export const metadata = { title: "Philos — היום" };
 
@@ -130,6 +132,11 @@ export default async function HubPage({
 
   // STEP 1 — the ONE shared identity reference.
   const personRef = resolvePersonRef(await resolveViewerContext(), params.subject);
+  /* THE SHARED ACTION→EFFECT READ. One loader for all seven terminals, so
+     the same two records cannot appear as ids here, a bare count there and
+     nothing at all elsewhere. This terminal interprets; it does not
+     re-decide which records count. */
+  const aeProjection = await loadActionEffectProjection(personRef.person_id);
   /* REAL unit readings — one shared selector, never a per-page derivation. */
   const canonEventsForViewer = await loadCanonEvents();
   const realUnitReadings = selectRealUnitReadings({
@@ -475,7 +482,7 @@ export default async function HubPage({
           previous={previousDate(viewedDate)}
           next={nextDate(viewedDate)}
         />
-        <DayStatusStrip session={daySession} />
+        <DayStatusStrip session={daySession} /><ActionEffectPanel terminal="hub" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
         <DayChainSummary session={daySession} />
         <DayOpeningPanel session={daySession} readOnly={!dayIsToday} linkable={linkableObservations} linkableStates={linkableStates} />
         <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="hub" facts={[

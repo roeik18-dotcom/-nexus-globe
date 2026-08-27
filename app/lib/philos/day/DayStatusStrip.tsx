@@ -50,6 +50,7 @@ export default function DayStatusStrip({
   children?: React.ReactNode;
 }) {
   const status = session.closing_status;
+  const met = session.gates.filter((g) => g.met);
   const missing = session.missing_gates;
   /* THE TIER DECIDES WHAT IS SHOWN — the stored status is audit metadata.
      This read `link_status === "VERIFIED_SAME_PERSON"` and printed that string
@@ -95,10 +96,20 @@ export default function DayStatusStrip({
           </span>
         </span>
 
+        {/* THE COMPACT SUMMARY. The strip previously opened with every gate
+            expanded, so on every terminal the first screen was an eleven-row
+            audit and the person's own Action → Effect sat below the fold.
+            The counts lead; the audit itself moves into the disclosure below,
+            complete and unchanged. */}
         {status !== "CLOSED" && (
-          <span style={S.missing}>
-            חסר {missing.length}/{session.gates.length}
-          </span>
+          <>
+            <span style={S.met} data-gates-met-count={met.length}>
+              {met.length}/{session.gates.length} MET
+            </span>
+            <span style={S.missing}>
+              חסרים {missing.length}
+            </span>
+          </>
         )}
 
         <Link href={closingHref} style={S.closingLink}>
@@ -112,6 +123,14 @@ export default function DayStatusStrip({
         <span style={S.nextText}>{nextActionFor(session)}</span>
       </div>
 
+      {/* THE FULL ELEVEN-GATE AUDIT — every gate, every reason, nothing
+          removed. It is closed by default because it is reference detail, not
+          the headline; `open` is uncontrolled so a person's choice survives
+          re-render, and read-only historical days render identically. */}
+      <details style={S.audit}>
+        <summary style={S.auditSummary}>
+          כל 11 השערים · FULL GATE AUDIT
+        </summary>
       {missing.length > 0 && (
         <ul style={S.gateList}>
           {session.gates.filter((g) => !g.met).map((g) => (
@@ -144,6 +163,7 @@ export default function DayStatusStrip({
           ))}
         </ul>
       )}
+      </details>
 
       {/* CARRY-FORWARD — what this day inherited and what it will hand on.
           Rendered here rather than only inside the opening form, because on a
@@ -240,6 +260,10 @@ const S = {
   linkTag: { ...TYPE.micro },
   noIndependent: { ...TYPE.micro, color: "#fbbf24" },
   storedStatus: { ...TYPE.micro, color: COLOR.textFaint },
+  met: { fontSize: 12, fontWeight: 800, color: "#34d399", letterSpacing: 0.4 },
+  audit: { marginBlockStart: 6 },
+  auditSummary: { cursor: "pointer", fontSize: 11.5, fontWeight: 700, color: "#8798b8",
+    letterSpacing: 0.5, listStyle: "none", paddingBlock: 4 },
   missing: { fontSize: FS.meta, color: "#fbbf24", fontWeight: 700 },
   closingLink: {
     marginInlineStart: "auto",

@@ -90,6 +90,8 @@ import { selectRealUnitReadings } from "@/app/lib/philos/analysis/realUnitReadin
 import DynamicsView, { type CommunityCapitalContext, type SelectedContext, type TimeRangeSummary } from "./DynamicsView";
 import DayStatusStrip from "@/app/lib/philos/day/DayStatusStrip";
 import { loadDaySession } from "@/app/lib/philos/day/loadDaySession";
+import { loadActionEffectProjection } from "@/app/lib/philos/crossTerminal/loadActionEffectProjection";
+import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel";
 
 /**
  * Real time-range counts over the real canon Observation log — computed
@@ -172,6 +174,11 @@ export default async function DynamicsPage({
   const params = await searchParams;
   // STEP 1 — the ONE shared identity reference.
   const personRef = resolvePersonRef(await resolveViewerContext(), params.subject);
+  /* THE SHARED ACTION→EFFECT READ. One loader for all seven terminals, so
+     the same two records cannot appear as ids here, a bare count there and
+     nothing at all elsewhere. This terminal interprets; it does not
+     re-decide which records count. */
+  const aeProjection = await loadActionEffectProjection(personRef.person_id);
   /* REAL unit readings — one shared selector, never a per-page derivation. */
   const realUnitReadings = selectRealUnitReadings({
     events: await loadCanonEvents(),
@@ -372,7 +379,7 @@ export default async function DynamicsPage({
      the causal view itself, in a fragment, so the terminal keeps its own
      full-bleed drawing surface below it. */
   return <>
-    <DayStatusStrip session={daySession} />
+    <DayStatusStrip session={daySession} /><ActionEffectPanel terminal="dynamics" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
     <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="dynamics" facts={[
       /* The day-scoped chain, already projected. `null` here means the
          projection could not resolve it — UNRESOLVED, never zero. */

@@ -51,6 +51,8 @@ import { AuditHeading, AuditSection } from "@/app/lib/philos/shell/epistemics";
 import { buildOperationalGroupProfile } from "@/app/lib/philos/valueSystem/operationalGroup";
 import DayStatusStrip from "@/app/lib/philos/day/DayStatusStrip";
 import { loadDaySession } from "@/app/lib/philos/day/loadDaySession";
+import { loadActionEffectProjection } from "@/app/lib/philos/crossTerminal/loadActionEffectProjection";
+import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel";
 
 export const metadata = { title: "Living World — Philos" };
 
@@ -70,6 +72,11 @@ export default async function WorldPage({ searchParams }: {
   // so this resolves to the designated real subject, exactly as the bare
   // constant did before.
   const personRef = resolvePersonRef(await resolveViewerContext());
+  /* THE SHARED ACTION→EFFECT READ. One loader for all seven terminals, so
+     the same two records cannot appear as ids here, a bare count there and
+     nothing at all elsewhere. This terminal interprets; it does not
+     re-decide which records count. */
+  const aeProjection = await loadActionEffectProjection(personRef.person_id);
   /* REAL unit readings — one shared selector, never a per-page derivation. */
   const realUnitReadings = selectRealUnitReadings({
     events: await loadCanonEvents(),
@@ -390,7 +397,7 @@ export default async function WorldPage({ searchParams }: {
                   selectedGroup={selected?.groupId}
                   purpose="מה נצפה בקנה-מידה מערכתי, ומה קיים אך אינו מגיע לכאן."
                   subject={personRef.person_id}
-                /><DayStatusStrip session={daySession} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="world" facts={[
+                /><DayStatusStrip session={daySession} /><ActionEffectPanel terminal="world" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="world" facts={[
                   /* These two record shapes are {record_id, evidence_id} and
                      {record_id, as} — no provenance field, so the count cannot
                      claim REAL. */

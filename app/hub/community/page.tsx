@@ -87,6 +87,8 @@ import CommunityPrototype, { type PrototypeLiveData, type PrototypeLiveFamilyGro
 import { SOURCE_VALUE_RELATIONS } from "@/app/lib/philos/community/sourceValueModel";
 import DayStatusStrip from "@/app/lib/philos/day/DayStatusStrip";
 import { loadDaySession } from "@/app/lib/philos/day/loadDaySession";
+import { loadActionEffectProjection } from "@/app/lib/philos/crossTerminal/loadActionEffectProjection";
+import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel";
 
 export const metadata = { title: "Philos — קבוצת ערך" };
 
@@ -125,6 +127,11 @@ export default async function CommunityPage({
   const viewerGroupId = groupCtx.context.status === "resolved" ? groupCtx.context.group_id : null;
   // STEP 1 — the ONE shared identity reference.
   const personRef = resolvePersonRef(await resolveViewerContext(), params.subject);
+  /* THE SHARED ACTION→EFFECT READ. One loader for all seven terminals, so
+     the same two records cannot appear as ids here, a bare count there and
+     nothing at all elsewhere. This terminal interprets; it does not
+     re-decide which records count. */
+  const aeProjection = await loadActionEffectProjection(personRef.person_id);
   /* REAL unit readings — one shared selector, never a per-page derivation. */
   const realUnitReadings = selectRealUnitReadings({
     events: await loadCanonEvents(),
@@ -863,7 +870,7 @@ export default async function CommunityPage({
                   community={showingGroupDetail && terminalGroup ? { group_id: terminalGroup.group_id, label: terminalGroup.name, provenance: terminalProvenance } : undefined}
                   subject={personRef.person_id}
                   identityLink={identityLink}
-                /><DayStatusStrip session={daySession} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="community" facts={[
+                /><DayStatusStrip session={daySession} /><ActionEffectPanel terminal="community" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="community" facts={[
                   {
                     label: "Identity link", source: "resolveShellIdentityLink → personCommunityLinkStore",
                     /* A VERIFIED link is a real record written by the two-step

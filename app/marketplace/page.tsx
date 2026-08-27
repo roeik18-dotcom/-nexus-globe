@@ -59,6 +59,8 @@ import DayStatusStrip from "@/app/lib/philos/day/DayStatusStrip";
 import { loadDaySession } from "@/app/lib/philos/day/loadDaySession";
 import { actionOriginOf } from "@/app/lib/philos/canon/actionStore";
 import { effectOriginOf } from "@/app/lib/philos/canon/effectStore";
+import { loadActionEffectProjection } from "@/app/lib/philos/crossTerminal/loadActionEffectProjection";
+import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel";
 
 export const metadata = { title: "Marketplace — Philos" };
 
@@ -148,6 +150,11 @@ export default async function MarketplacePage({
   /* ONE viewer resolution for this render — the scoping below and the
      semantic context both read it, rather than each resolving their own. */
   const viewer = await resolveViewerContext();
+  /* THE SHARED ACTION→EFFECT READ. One loader for all seven terminals, so
+     the same two records cannot appear as ids here, a bare count there and
+     nothing at all elsewhere. This terminal interprets; it does not
+     re-decide which records count. */
+  const aeProjection = await loadActionEffectProjection(viewer.subject_id);
   const personRef = resolvePersonRef(viewer, params.subject);
   /* REAL unit readings — one shared selector, never a per-page derivation. */
   const realUnitReadings = selectRealUnitReadings({
@@ -271,7 +278,7 @@ export default async function MarketplacePage({
           subject={personRef.person_id}
           identityLink={identityLink}
         />
-        <DayStatusStrip session={daySession} />
+        <DayStatusStrip session={daySession} /><ActionEffectPanel terminal="marketplace" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
         <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="marketplace" facts={[
           /* Arrays this page already loaded and already renders. */
           factFromCount("Need", "findNeedsForSubject → mineNeeds", mineNeeds.length,
