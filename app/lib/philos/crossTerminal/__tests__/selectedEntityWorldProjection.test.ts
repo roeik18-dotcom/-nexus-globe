@@ -37,6 +37,15 @@ const baseView = () => ({
 
 const profile = (over: Partial<OperationalGroupProfile> = {}): OperationalGroupProfile => ({
   group_id: "g_real", name: "אחריות קהילתית", provenance: "REAL",
+  /* `origin` is REQUIRED on purpose: a profile that cannot say how much of
+     itself is real is the shape that printed a seeded roster as REAL. A
+     fixture must state it too, rather than opting out. */
+  origin: {
+    events: { real: 0, bootstrap: 0, bootstrapOnly: false },
+    joins: { real: 0, bootstrap: 0, bootstrapOnly: false },
+    money: { real: 0, bootstrap: 0, bootstrapOnly: false },
+    realMemberIds: [],
+  },
   view: baseView(),
   leading_family: { family_ref: "F03", label: "אחריות, זכויות וחובות", via_base_value: "BV05 אחריות" },
   general_values: [], members: [], supporters: "UNKNOWN",

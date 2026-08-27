@@ -28,11 +28,12 @@ import { encodeSystemContextRef, type ContextSurface, type SelectedContext } fro
 import Link from "next/link";
 
 
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import type { ResolvedViewerContext } from "../context/resolvedViewerContext";
 import OrientationBand, { type ViewScale } from "./OrientationBand";
 import { SELECTED_GROUP_PARAM } from "@/app/lib/philos/community/selectedGroupContext";
 import { COLOR, COLOR_ROLE, FS, SPACE, STATUS, TERMINAL, TYPE } from "./designTokens";
+import SocialScaleNav from "./SocialScaleNav";
 
 export interface ShellCommunity {
   group_id: string;
@@ -416,6 +417,21 @@ export function SystemShell({
             open via `:target` — one anchor, no client state, and exactly one
             surface visible at a time because only one element can be the
             target. PURPLE, BLUE, YELLOW and ORANGE stay real routes. */}
+        {/* THE GREEN UMBRELLA RENDERS ITS CHILDREN.
+            `a83d90a` folded Community, Globe and World into one green control
+            whose href is the in-page anchor `#lens-green`, on the stated
+            reasoning that "leaving the page to see them would be a navigation
+            that changes nothing". That premise does not hold: the three are
+            separate terminals with separate loaders, and the anchor shows a
+            summary panel rather than any of them. The measurable result was
+            that /world became reachable from NO route in the product, /planet
+            only from /world, and the green control navigated nowhere.
+
+            `SocialScaleNav` — which already existed, already carried `sel` and
+            the selected group across a lens change, and already had a passing
+            test — was left in the tree without a single caller. It is simply
+            mounted here, so the umbrella's three destinations are visible and
+            clickable from every terminal, on every viewport. */}
         {/* ONE ROW, capped height. Seven controls fit 1280px without wrapping;
             narrower viewports scroll the BAR rather than reflowing the page. */}
         <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "nowrap",
@@ -442,6 +458,28 @@ export function SystemShell({
             );
           })}
         </div>
+        {/* The umbrella's three destinations, always visible. */}
+        <Suspense fallback={null}>
+          <SocialScaleNav selectedGroup={selectedGroup} />
+        </Suspense>
+        {/* HUMAN CONFIG WAS REACHABLE FROM NO ROUTE IN THE PRODUCT.
+            It owns the DomainState writer — the State(t0)/State(t1) form the
+            Day lifecycle depends on — so a person could open a Day that
+            required a State they had no visible way to record. The Observation
+            writer lives on /hub and was always reachable; this is the other
+            half of the same pair. */}
+        <Link
+          href="/hub/human-config"
+          data-nav-human-config
+          style={{
+            fontSize: FS.tag, fontWeight: 600, padding: "6px 12px", borderRadius: 8,
+            textDecoration: "none", whiteSpace: "nowrap", flex: "0 0 auto",
+            color: surface === "hub" ? COLOR.text : COLOR.textDim,
+            border: `1px solid ${COLOR.border}`,
+          }}
+        >
+          אדם · HUMAN CONFIG
+        </Link>
       </div>
 
       {/* The purpose line is orientation prose. A map-first surface states its

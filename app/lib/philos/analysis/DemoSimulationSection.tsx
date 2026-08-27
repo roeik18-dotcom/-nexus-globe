@@ -35,6 +35,23 @@ import { COLOR, FS, RADIUS, SPACE, TYPE } from "../shell/designTokens";
 
 export const DEMO_SECTION_LABEL = "DEMO / SIMULATION — כלי בדיקה, אינו נתון המשתמש" as const;
 
+/**
+ * IS THE DEMONSTRATION TOOL ALLOWED ON THIS SCREEN?
+ *
+ * It had no condition of any kind: three terminals rendered it
+ * unconditionally, so a person looking at their own REAL records was shown a
+ * panel captioned "DEMO / SIMULATION" attached to the same page. On a screen
+ * whose whole purpose is to distinguish what is real from what is not, that is
+ * the one thing it must never do.
+ *
+ * OPT-IN, NEVER OPT-OUT. The flag must be set explicitly to show the tool, so
+ * the safe state is the default and no new deployment can leak it. The demo
+ * data and this component are untouched — only the decision to render.
+ */
+export function demoToolsEnabled(): boolean {
+  return process.env.PHILOS_SHOW_DEMO === "1";
+}
+
 export default function DemoSimulationSection({
   terminal,
   legacy,
@@ -43,6 +60,9 @@ export default function DemoSimulationSection({
   /** Scenario-side legacy content only. Real chrome stays outside. */
   legacy?: ReactNode;
 }) {
+  /* Nothing at all on a REAL screen — not a collapsed disclosure, not a
+     summary line. A collapsed "DEMO" caption is still a DEMO caption. */
+  if (!demoToolsEnabled()) return null;
   return (
     <details dir="rtl" style={S.wrap}>
       <summary style={S.summary}>

@@ -335,6 +335,7 @@ function Overview({
 // re-exported) here so existing `from "./CommunityUniverse"` imports
 // elsewhere keep working without touching every call site.
 import { SCOPE_COLOR, PROMOTION_STATUS_COLOR } from "./colors";
+import { BOOTSTRAP_LABEL, BOOTSTRAP_TAG } from "@/app/lib/philos/eventProvenance";
 export { SCOPE_COLOR, PROMOTION_STATUS_COLOR };
 
 function ValueChips({ valueRegistry }: { valueRegistry: ValueEntry[] }) {
@@ -816,6 +817,22 @@ function GroupLandscape({
     <>
       {(["REAL", "DEMO", "ARCHIVED", "FORMING"] as const).map((status) => (
         <Section key={status} title={`${status} GROUPS (${byStatus(status).length})`}>
+          {/* THE CARD FIGURES BELOW ARE NOT ALL REAL. `member_count`,
+              `event_count` and `available` are projected from
+              `bootstrap ++ appended`, so under a REAL heading they read as
+              though a person had recorded them. The registry does not carry an
+              origin split, so rather than print a number this cannot yet
+              qualify, the section states plainly what the figures include. */}
+          {status === "REAL" && byStatus(status).length > 0 ? (
+            <div style={S.bootstrapCaption}>
+              <span style={S.bootstrapTag}>{BOOTSTRAP_TAG}</span>
+              <span>
+                המספרים בכרטיסים (people · events · available) מחושבים מיומן שמאחד את חבילת
+                הייחוס המהודרת עם הרשומות שנרשמו בפועל — {BOOTSTRAP_LABEL}. לפירוט REAL מול
+                ייחוס לכל קבוצה, פתחו את הקבוצה.
+              </span>
+            </div>
+          ) : null}
           {byStatus(status).length === 0 ? <Empty>0 — אין רשומה אמיתית במצב זה.</Empty> : (
             <div style={S.grid}>
               {byStatus(status).map((g) => (
@@ -1119,6 +1136,10 @@ function Empty({ children }: { children: React.ReactNode }) {
 }
 
 export const S: Record<string, React.CSSProperties> = {
+  bootstrapCaption: { display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap",
+    fontSize: 12, lineHeight: 1.5, color: "#fbbf24", marginBlockEnd: 10 },
+  bootstrapTag: { fontSize: 10, fontWeight: 800, letterSpacing: 0.6, padding: "1px 6px",
+    borderRadius: 999, border: "1px solid rgba(251,191,36,0.4)", color: "#fbbf24" },
   wrap: { fontFamily: "system-ui", color: "#e6ebf5" },
   tabs: { display: "flex", flexWrap: "wrap", gap: 6, margin: "16px 20px 0" },
   tab: { fontSize: FS.meta, padding: "5px 12px", borderRadius: 12, border: "1px solid rgba(90,120,180,0.3)", color: "#8fa3c9", textDecoration: "none" },

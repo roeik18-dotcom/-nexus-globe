@@ -31,6 +31,7 @@
 import type { GroupOperationalState } from "@/app/lib/philos/community/groupOperationalState";
 import type { OperationalGroupProfile } from "@/app/lib/philos/valueSystem/operationalGroup";
 import { COLOR, RADIUS, TYPE } from "@/app/lib/philos/shell/designTokens";
+import { BOOTSTRAP_LABEL, BOOTSTRAP_TAG } from "@/app/lib/philos/eventProvenance";
 
 const CH_W = 460, CH_H = 96;
 
@@ -76,10 +77,23 @@ export default function GroupOperationsPanel({
           <h2 style={S.title}>מי בקבוצה, איך גדלה, ולאן זז הכסף</h2>
         </div>
         <div style={S.headMeta}>
-          <span style={S.chip}>{profile.members.length} חברים</span>
+          {/* THE CHIPS CARRY THEIR OWN ORIGIN. `profile.members.length` and the
+              balance are both projected from `bootstrap ++ appended`; printed
+              bare they were the shortest, most quotable untrue figures on the
+              screen. Each now states the REAL number and tags the rest. */}
+          <span style={S.chip}>
+            {profile.origin.joins.real} חברים REAL
+            {profile.origin.joins.bootstrap > 0
+              ? ` · +${profile.origin.joins.bootstrap} ${BOOTSTRAP_TAG}` : ""}
+          </span>
+          {/* The balance is CUMULATIVE, so a single seeded money event
+              contaminates it entirely — `bootstrapOnly` was the wrong test,
+              because a real `allocation.proposed` that moved no money made it
+              false while every shekel shown was still seed. */}
           {balance !== null ? (
-            <span style={{ ...S.chip, color: "#34d399" }}>
+            <span style={{ ...S.chip, color: profile.origin.money.bootstrap > 0 ? "#fbbf24" : "#34d399" }}>
               {balance.toLocaleString()} {currency}
+              {profile.origin.money.bootstrap > 0 ? ` · ${BOOTSTRAP_TAG}` : ""}
             </span>
           ) : null}
           <span style={{ ...S.chip, color: profile.verified_effects > 0 ? "#34d399" : "#fbbf24" }}>
@@ -93,10 +107,26 @@ export default function GroupOperationsPanel({
         <div style={S.chartCol}>
           <div style={S.colHead}>
             תנועות תקציב · BUDGET TRANSACTIONS
-            <b style={S.colFigure}>{flow.length}</b>
+            {/* Same split as the roster: the REAL count leads, the reference
+                bundle is named rather than folded in. */}
+            <b style={S.colFigure}>{profile.origin.money.real}</b>
+          </div>
+          <div style={S.originLine}>
+            {profile.origin.money.bootstrap > 0 ? (
+              <>
+                <span style={S.originTag}>{BOOTSTRAP_TAG}</span>
+                <span>
+                  {profile.origin.money.bootstrap} תנועות והיתרה המוצגת מגיעות מחבילת הייחוס
+                  המהודרת — {BOOTSTRAP_LABEL}. אין כאן כסף REAL.
+                </span>
+              </>
+            ) : null}
           </div>
           {flow.length === 0 ? (
-            <Empty>לא נרשמה אף תנועת תקציב</Empty>
+            <Empty>
+              לא נרשמה אף תנועת תקציב REAL. אין כרגע כותב תקציב או הקצאות במוצר —
+              המסלול היחיד שקיים הוא חבילת הייחוס המהודרת, שאינה נתון המשתמש.
+            </Empty>
           ) : (
             <CapitalFlowChart flow={flow} />
           )}
@@ -128,7 +158,7 @@ export default function GroupOperationsPanel({
           <SemanticNote>
             זו היסטוריית אירועי member.joined ({membershipHistoryCount}) — לא סך חברי הקבוצה.
             {withoutJoinEvent > 0
-              ? ` ${withoutJoinEvent} מסונפים נוספים (מייסד וממונים) נכנסו ללא אירוע הצטרפות, ולכן אינם על העקומה. סך המסונפים: ${memberCount}.`
+              ? ` ${withoutJoinEvent} מסונפים נוספים (מייסד וממונים) נכנסו ללא אירוע הצטרפות, ולכן אינם על העקומה. סך המסונפים ביומן המאוחד: ${memberCount} — מתוכם ${profile.origin.joins.real} REAL והשאר מחבילת הייחוס.`
               : ""}
           </SemanticNote>
         </div>
@@ -138,7 +168,40 @@ export default function GroupOperationsPanel({
       <div>
         <div style={S.colHead}>
           חברים מסונפים · AFFILIATED MEMBERS
-          <b style={S.colFigure}>{memberCount}</b>
+          {/* THE FIGURE IS SPLIT, NOT AVERAGED. `memberCount` counted the
+              compiled seed roster together with the viewer's own recorded
+              join and printed one number on a REAL screen. The REAL count is
+              the one in the strong position; the reference bundle is named. */}
+          <b style={S.colFigure}>{profile.origin.joins.real}</b>
+        </div>
+        {/* TWO SOURCES DISAGREE AND NEITHER IS PROMOTED. `memberships.jsonl`
+            holds eight rows for this group and none of them is the viewer;
+            the event log holds the viewer's own recorded join. They are shown
+            side by side, unmerged, because silently unioning them is what
+            produced a "9 members" figure nobody could account for. */}
+        {profile.origin.joins.bootstrap > 0 ? (
+          <div style={S.unresolvedLine}>
+            <span style={S.unresolvedTag}>UNRESOLVED</span>
+            <span>
+              שני מקורות חברות אינם מסכימים: <code>memberships.jsonl</code> (רשומות מאוחסנות,
+              ללא כותב במוצר) מול אירועי <code>member.joined</code> ביומן. הם מוצגים זה לצד זה
+              ואינם מאוחדים — קביעת המקור הסמכותי ומודל ביטול החברות היא החלטה פתוחה.
+            </span>
+          </div>
+        ) : null}
+        <div style={S.originLine}>
+          {profile.origin.joins.bootstrap > 0 ? (
+            <>
+              <span style={S.originTag}>{BOOTSTRAP_TAG}</span>
+              <span>
+                {profile.origin.joins.bootstrap} מתוך {memberCount} המסונפים מגיעים מחבילת הייחוס
+                המהודרת (<code>valueGroupLog.ts</code>) — {BOOTSTRAP_LABEL}. הם אינם נספרים כ-REAL.
+              </span>
+            </>
+          ) : null}
+          {profile.origin.joins.real === 0 ? (
+            <span> אין עדיין אף הצטרפות REAL מתועדת לקבוצה הזו.</span>
+          ) : null}
         </div>
         <div style={S.roster}>
           {profile.members.map((m) => (
@@ -340,6 +403,16 @@ function initials(s: string): string {
 }
 
 const S: Record<string, React.CSSProperties> = {
+  /* Provenance is prose, not decoration: it sits under the figure it qualifies
+     and is legible, never a faint footnote. */
+  originLine: { display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap",
+    fontSize: 12, lineHeight: 1.5, color: "#fbbf24", marginBlockStart: 4 },
+  unresolvedLine: { display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap",
+    fontSize: 12, lineHeight: 1.5, color: "#f2635c", marginBlockStart: 6 },
+  unresolvedTag: { fontSize: 10, fontWeight: 800, letterSpacing: 0.6, padding: "1px 6px",
+    borderRadius: 999, border: "1px solid rgba(242,99,92,0.45)", color: "#f2635c" },
+  originTag: { fontSize: 10, fontWeight: 800, letterSpacing: 0.6, padding: "1px 6px",
+    borderRadius: 999, border: "1px solid rgba(251,191,36,0.4)", color: "#fbbf24" },
   band: {
     background: "linear-gradient(180deg, rgba(52,211,153,0.06), rgba(11,15,26,0.9))",
     border: `1px solid ${COLOR.borderStrong}`, borderRadius: 20,

@@ -37,6 +37,9 @@
 import { loadPhilosEvents } from "@/app/lib/philos-event-store";
 import { buildViewerLinkRegistry } from "@/app/lib/philos/bridge/viewerLinkRegistry";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
+import { countByOrigin, splitByOrigin, type OriginCounts }
+  from "@/app/lib/philos/eventProvenance";
+import type { PhilosEvent } from "@/app/lib/philos/events";
 import { systemClock, todayIn } from "@/app/lib/philos/eventStore";
 import { buildCapitalTimeline, buildMembershipTimeline, projectValueGroup, type ValueGroupView } from "@/app/lib/philos/projectValueGroup";
 import { buildDefaultLinkRegistry } from "@/app/lib/philos/bridge/linkRegistry";
@@ -65,7 +68,23 @@ export interface TraceHop {
 export interface OperationalGroupProfile {
   group_id: string;
   name: string;
+  /* WAS the literal "REAL", asserted rather than derived. The log this profile
+     is built from is `bootstrap ++ appended`, so a hardcoded REAL described
+     the seed bundle as the viewer's own data. */
   provenance: "REAL";
+  /* HOW MUCH OF THIS GROUP IS ACTUALLY REAL. Every visible aggregate below is
+     derived from events; this says how many of those events a person recorded
+     and how many came from the compiled reference bundle, so a screen can
+     state the difference instead of averaging it away. */
+  origin: {
+    events: OriginCounts;
+    /** `member.joined` only — the figure the roster used to report as REAL. */
+    joins: OriginCounts;
+    /** Money events — the ILS figure. */
+    money: OriginCounts;
+    /** Members whose join event is REAL. Never the seeded roster. */
+    realMemberIds: string[];
+  };
   view: ValueGroupView;
   /** Derived via the base-value registry (STATIC rule, stated). */
   leading_family: { family_ref: string; label: string; via_base_value: string } | null;
@@ -107,6 +126,36 @@ export function deriveLeadingFamily(centralValue: string): OperationalGroupProfi
  * projection genuinely has no group. All reads are the same accessors the
  * individual routes already use.
  */
+/**
+ * SPLIT THIS GROUP'S EVENTS BY WHERE THEY CAME FROM.
+ *
+ * The money set matches the events the capital-flow figure is built from, so
+ * "ILS 13,400" and "how much of it is real" can never disagree: they are two
+ * readings of one array.
+ */
+const MONEY_EVENTS = new Set([
+  "resource.received", "allocation.proposed", "allocation.voted",
+  "allocation.approved", "transfer.approved", "transfer.completed",
+]);
+
+function originOf(events: readonly PhilosEvent[], groupId: string): OperationalGroupProfile["origin"] {
+  const mine = events.filter((e) => e.entity_id === groupId
+    || (e.payload as { group_id?: string } | undefined)?.group_id === groupId);
+  const joins = mine.filter((e) => e.event_type === "member.joined");
+  const money = mine.filter((e) => MONEY_EVENTS.has(e.event_type));
+  return {
+    events: countByOrigin(mine),
+    joins: countByOrigin(joins),
+    money: countByOrigin(money),
+    /* Only a person whose OWN join is a stored record counts as a real
+       member here. A seeded roster entry is reference material, not a person
+       who joined this group. */
+    realMemberIds: splitByOrigin(joins).real
+      .map((e) => (e.payload as { person_id?: string } | undefined)?.person_id ?? e.actor_id)
+      .filter((v, i, a) => v !== undefined && a.indexOf(v) === i) as string[],
+  };
+}
+
 export async function buildOperationalGroupProfile(): Promise<OperationalGroupProfile | null> {
   /* The member-owned reads below were scoped to `REAL_CURRENT_SUBJECT`, so
      any viewer who happened to be a member of this group saw ROEI's Needs,
@@ -202,6 +251,7 @@ export async function buildOperationalGroupProfile(): Promise<OperationalGroupPr
     group_id: view.group_id,
     name: view.name,
     provenance: "REAL",
+    origin: originOf(events, view.group_id),
     view,
     leading_family: deriveLeadingFamily(view.central_value),
     general_values: [],

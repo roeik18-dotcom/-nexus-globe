@@ -14,11 +14,22 @@
  * the only honest guard available against a mismatch whose other half lives in
  * the browser.
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import React from "react";
 
 import DemoSimulationSection from "../DemoSimulationSection";
+
+/* The section is OPT-IN now: without the flag it renders nothing at all, which
+   is the point of the gate. These tests are about the markup it produces WHEN
+   it is allowed, so they turn it on explicitly and restore the previous value
+   (deleting it when it was unset — "" would not be unset). */
+let previousDemoFlag: string | undefined;
+beforeEach(() => { previousDemoFlag = process.env.PHILOS_SHOW_DEMO; process.env.PHILOS_SHOW_DEMO = "1"; });
+afterEach(() => {
+  if (previousDemoFlag === undefined) delete process.env.PHILOS_SHOW_DEMO;
+  else process.env.PHILOS_SHOW_DEMO = previousDemoFlag;
+});
 
 const TERMINALS = ["hub", "brain", "community", "dynamics", "marketplace", "planet", "world"] as const;
 
@@ -65,5 +76,27 @@ describe("DemoSimulationSection — deterministic, closed initial markup", () =>
         expect(m[0], f).not.toMatch(/\bopen\b|defaultOpen/);
       }
     }
+  });
+});
+
+describe("the demonstration tool is invisible on a REAL screen", () => {
+  it("renders NOTHING — not even a collapsed DEMO caption — when the flag is unset", async () => {
+    delete process.env.PHILOS_SHOW_DEMO;
+    const { default: DemoSimulationSection } = await import("../DemoSimulationSection");
+    const html = renderToStaticMarkup(
+      React.createElement(DemoSimulationSection, { terminal: "dynamics" as never }));
+    expect(html).toBe("");
+    expect(html).not.toContain("DEMO");
+    expect(html).not.toContain("SIMULATION");
+  });
+
+  it("is opt-in: only the explicit value \"1\" enables it", async () => {
+    const { demoToolsEnabled } = await import("../DemoSimulationSection");
+    for (const v of ["", "0", "true", "yes", "REAL"]) {
+      process.env.PHILOS_SHOW_DEMO = v;
+      expect(demoToolsEnabled()).toBe(false);
+    }
+    process.env.PHILOS_SHOW_DEMO = "1";
+    expect(demoToolsEnabled()).toBe(true);
   });
 });
