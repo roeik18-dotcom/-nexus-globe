@@ -35,6 +35,10 @@ import type { GroupRelation } from "@/app/lib/philos/valueSystem/groupResolver";
 import { QUALITY_GROUP_MODEL } from "@/app/lib/philos/community/sourceValueModel";
 import { PROVENANCE_STYLE, ProvenanceBadge, type Provenance } from "@/app/lib/philos/shell/provenance";
 import { COLOR, FS, RADIUS, SPACE, STATUS, TYPE } from "@/app/lib/philos/shell/designTokens";
+import {
+  ASSURANCE_LABEL, ASSURANCE_TONE, NO_INDEPENDENT_VERIFICATION,
+  shortAssurance, isLinkedTier,
+} from "@/app/lib/philos/community/identityAssuranceVocabulary";
 
 export interface ValueGroupCardData {
   view: ValueGroupView;
@@ -232,7 +236,9 @@ function GroupCard({ data }: { data: ValueGroupCardData }) {
         italic={data.resolvedRelations.length === 0} />
 
       <FieldRow label="PERSON ↔ VALUE" provenance={data.personRelation.linked ? "REAL" : "UNKNOWN"}
-        value={data.personRelation.linked ? "חבר מאומת · VERIFIED_SAME_PERSON" : "אין קשר מאומת לצופה"}
+        value={data.personRelation.linked
+          ? `חבר מקושר · ${ASSURANCE_LABEL.SELF_ATTESTED_SAME_PERSON} · ${NO_INDEPENDENT_VERIFICATION}`
+          : `${ASSURANCE_LABEL.NONE} לצופה`}
         meta={data.personRelation.linked && data.personRelation.memberId ? `member: ${data.personRelation.memberId}` : "הקשר לא נטען — לא מומצא"}
         italic={!data.personRelation.linked} />
 

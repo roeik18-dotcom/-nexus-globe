@@ -14,6 +14,10 @@
  */
 import type { ValueGroupView, ActivityFeedItem, ContributorRankingEntry } from "@/app/lib/philos/projectValueGroup";
 import type { ShellIdentityLink } from "@/app/lib/philos/shell/SystemShell";
+import {
+  ASSURANCE_LABEL, ASSURANCE_TONE, NO_INDEPENDENT_VERIFICATION,
+  shortAssurance, isLinkedTier,
+} from "@/app/lib/philos/community/identityAssuranceVocabulary";
 
 export type Provenance = "REAL" | "DEMO";
 
@@ -223,15 +227,17 @@ export default function CommunityLivingView({
   );
 }
 
-function IdentityBadge({ identityLink }: { identityLink: ShellIdentityLink }) {
-  const color =
-    identityLink.status === "VERIFIED_SAME_PERSON" ? "#34d399" :
-    identityLink.status === "CONFLICT" ? "#f2635c" :
-    identityLink.status === "DECLARED_SAME_PERSON" ? "#5b9cf6" :
-    identityLink.status === "UNVERIFIED" ? "#fbbf24" : "#6c86b5";
+/** Exported as a test seam: this badge is the identity conclusion a person
+ *  reads on the community screen, and it is asserted directly. */
+export function IdentityBadge({ identityLink }: { identityLink: ShellIdentityLink }) {
+  /* The TIER decides the badge, not the stored status. This printed
+     `identityLink.status` verbatim, so a two-step self-report appeared as
+     the word VERIFIED on a community screen. */
+  const color = identityLink.status === "CONFLICT"
+    ? "#f2635c" : ASSURANCE_TONE[identityLink.assurance];
   return (
     <span style={{ ...S.identityBadge, color, borderColor: `${color}55` }} title={`${identityLink.person_id} ↔ ${identityLink.community_member_id}`}>
-      ⚭ {identityLink.status}
+      ⚭ {shortAssurance(identityLink.assurance)}
     </span>
   );
 }

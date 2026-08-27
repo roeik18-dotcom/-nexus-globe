@@ -449,16 +449,16 @@ function LevelSix({ valueContext }: { valueContext: ValueContext }) {
       <div style={S.stack}>
         <SectionHead>ערכים · קבוצות ערך — PERSON ↔ VALUE ↔ GROUP</SectionHead>
         <Empty>
-          אין גשר מאומת (VERIFIED_SAME_PERSON) בין נושא-canon זה למרחב הזהות של Community/Value-Group כיום — לא מוצג קישור מומצא. עבור אל /hub/community לקישור זהות מפורש.
+          אין קישור זהות בין נושא-canon זה למרחב הזהות של Community/Value-Group כיום — לא מוצג קישור מומצא. עבור אל /hub/community לקישור זהות מפורש.
         </Empty>
       </div>
     );
   }
   return (
     <div style={S.stack}>
-      <SectionHead>ערכים · קבוצות ערך — {valueContext.memberships.length} חברויות אמיתיות (זהות מאומתת)</SectionHead>
+      <SectionHead>ערכים · קבוצות ערך — {valueContext.memberships.length} חברויות אמיתיות (זהות מקושרת בהצהרה עצמית)</SectionHead>
       {valueContext.memberships.length === 0 ? (
-        <Empty>0 — זהות מאומתת, אך 0 חברויות קבוצה אמיתיות/DEMO כרגע.</Empty>
+        <Empty>0 — הזהות מקושרת (בהצהרה עצמית), אך 0 חברויות קבוצה אמיתיות/DEMO כרגע.</Empty>
       ) : (
         <div style={S.rowWrap}>
           {valueContext.memberships.map((m) => (

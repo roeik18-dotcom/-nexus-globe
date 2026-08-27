@@ -291,7 +291,7 @@ function NetworkPanel({ people, viewerLinked }: { people: PersonRow[]; viewerLin
   return (
     <div style={S.panel}>
       <div style={S.panelTitle}>NETWORK — {people.length} people</div>
-      {!viewerLinked ? <div style={S.note}>אין גשר זהות מאומת עבורך — נראה רק סטטיסטיקה כללית.</div> : null}
+      {!viewerLinked ? <div style={S.note}>אין קישור זהות עבורך — נראה רק סטטיסטיקה כללית.</div> : null}
       <a href="?view=audit&mode=relations" style={S.linkOut}>מפת יחסים מלאה · RELATION MAP →</a>
     </div>
   );

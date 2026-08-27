@@ -40,8 +40,10 @@ function identityFrom(records: PersonCommunityLink[]): DayIdentity {
   const resolved = resolvePersonCommunityLink(records, SUBJECT, MEMBER, GROUP);
   return {
     subject_id: SUBJECT, person_id: MEMBER,
-    link_status: resolved.link_status === "VERIFIED_SAME_PERSON"
-      ? "VERIFIED_SAME_PERSON" : "UNRESOLVED",
+    /* Unnarrowed, exactly as `loadDaySession` now carries it. */
+    link_status: resolved.link_status,
+    assurance: resolved.assurance,
+    ...(resolved.reason ? { link_reason: resolved.reason } : {}),
   };
 }
 
@@ -71,13 +73,10 @@ describe("IdentityLinked — provenance decides whether the gate can close", () 
   it("a DEMO VERIFIED link CANNOT make the gate MET", () => {
     const g = identityGate([link({ provenance: "DEMO" })]);
     expect(g.met).toBe(false);
-    /* The gate reports UNRESOLVED, not the resolver's own UNVERIFIED: the Day
-       boundary collapses every non-verified status to one word
-       (`loadDaySession.ts`), so the specific reason — "a DEMO record cannot
-       assert this" — is available on the resolver's result but does not reach
-       the gate's text. That narrowing is pre-existing and out of scope here;
-       asserted as it actually behaves rather than as it ideally would. */
-    expect(g.reason).toContain("UNRESOLVED");
+    /* The narrowing that collapsed every non-verified state to "UNRESOLVED" is
+       gone: the reason now names the provenance that excluded the record. */
+    expect(g.reason).toContain("רשומה לא סמכותית אינה יוצרת קישור זהות");
+    expect(g.reason).not.toContain("UNRESOLVED");
   });
 
   it("a DEMO DECLARED link cannot make the gate MET", () => {
@@ -109,9 +108,9 @@ describe("IdentityLinked — provenance decides whether the gate can close", () 
   it("no link record at all leaves the gate UNMET", () => {
     const g = identityGate([]);
     expect(g.met).toBe(false);
-    /* Same narrowing: NOT_LINKED also reaches the gate as UNRESOLVED. What the
-       resolver distinguishes, the gate does not. */
-    expect(g.reason).toContain("UNRESOLVED");
+    /* An ABSENCE now reads differently from an exclusion — the two situations
+       no longer share one word. */
+    expect(g.reason).toContain("לא נוצר קישור בין מרחבי השמות");
     expect(resolvePersonCommunityLink([], SUBJECT, MEMBER, GROUP).link_status).toBe("NOT_LINKED");
   });
 

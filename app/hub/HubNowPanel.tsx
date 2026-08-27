@@ -322,7 +322,7 @@ export default function HubNowPanel({
           <div style={S.divider} />
 
           {realGroups.length === 0 ? (
-            <Epistemic state="UNKNOWN" reason="אין קשר זהות מאומת לחבר בקבוצה" />
+            <Epistemic state="UNKNOWN" reason="אין קישור זהות לחבר בקבוצה" />
           ) : (
             realGroups.slice(0, 2).map(({ view }) => (
               <Line key={view.group_id} label="קבוצה" value={view.name} tone="plain" note="Member of" />

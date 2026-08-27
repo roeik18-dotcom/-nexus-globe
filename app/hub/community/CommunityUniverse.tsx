@@ -507,11 +507,11 @@ function ValueLandscape({
         <div style={{ ...S.subHead, marginTop: 14 }}>תרומה הקשרית · CONTEXTUAL CONTRIBUTION (עבור ערך זה)</div>
         {(() => {
           if (identityLink.status !== "VERIFIED_SAME_PERSON") {
-            return <Empty>אין גשר זהות מאומת (VERIFIED_SAME_PERSON) — לא מוצגת תרומה מומצאת.</Empty>;
+            return <Empty>אין קישור זהות בין מרחבי השמות — לא מוצגת תרומה מומצאת.</Empty>;
           }
           const isMember = groupsWithProvenance.some(({ view }) => groups.some((g) => g.group_id === view.group_id) && view.members.some((m) => m.person_id === identityLink.community_member_id));
           if (!isMember) {
-            return <Empty>זהות מאומתת, אך הנושא הנוכחי אינו חבר באף קבוצה אמיתית/DEMO סביב ערך זה.</Empty>;
+            return <Empty>הזהות מקושרת (בהצהרה עצמית), אך הנושא הנוכחי אינו חבר באף קבוצה אמיתית/DEMO סביב ערך זה.</Empty>;
           }
           const myVerifiedContributions = canonEffects
             .filter((e) => isEffectVerified(e.effect))
@@ -887,7 +887,7 @@ function PeopleGraph({ people, identityLink }: { people: PersonRow[]; identityLi
     <Section title={`אנשים ↔ ערכים ↔ קבוצות · PEOPLE ↔ VALUES ↔ GROUPS (${people.length})`}>
       <div style={S.note}>
         חברות בקבוצה ≠ אישור ערך אישי. כל שורה מציגה שיוך דרך חברות אמיתית בקבוצה בלבד — לא הסקה של ערך אישי.
-        {identityLink.status === "VERIFIED_SAME_PERSON" ? ` ${identityLink.person_id} מקושר קנונית ל-${identityLink.community_member_id} (VERIFIED_SAME_PERSON, §37).` : ""}
+        {identityLink.status === "VERIFIED_SAME_PERSON" ? ` ${identityLink.person_id} מקושר קנונית ל-${identityLink.community_member_id} (קישור זהות בהצהרה עצמית, §37).` : ""}
       </div>
       <div style={S.list}>
         {people.map((p) => (
@@ -1046,7 +1046,7 @@ function CanonActivitySection({
                 <span style={{ ...S.feedTag, color: "#5b9cf6" }}>CANON · ACTION</span>
                 <span style={S.feedText}>
                   <b>{a.action.type}</b> · {a.action.mechanism_scope} · owner {a.action.owner} · {a.action.action_id.slice(0, 10)}…
-                  {isLinkedOwner ? <span style={{ color: "#34d399" }}> · מקושר לזהות הקהילתית שלך (VERIFIED_SAME_PERSON)</span> : null}
+                  {isLinkedOwner ? <span style={{ color: "#34d399" }}> · מקושר לזהות הקהילתית שלך (קישור זהות בהצהרה עצמית)</span> : null}
                 </span>
                 <span style={S.feedTime}>{a.recorded_at.slice(0, 16).replace("T", " ")}</span>
               </a>

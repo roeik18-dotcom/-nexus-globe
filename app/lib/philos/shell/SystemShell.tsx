@@ -45,8 +45,24 @@ export interface ShellCommunity {
  *  passed in by whichever page already resolved it, never re-derived
  *  here. `undefined` = the page did not resolve one (not the same as
  *  NOT_LINKED, which IS a real resolved status and renders). */
+import type { AssuranceTier } from "@/app/lib/philos/community/personCommunityLink";
+
 export interface ShellIdentityLink {
+  /**
+   * The STORED status, kept because thirteen surfaces already gate on it and
+   * because an audit needs to see what is actually on disk. It is not the
+   * conclusion a person should read — see `assurance`.
+   */
   status: "VERIFIED_SAME_PERSON" | "DECLARED_SAME_PERSON" | "UNVERIFIED" | "CONFLICT" | "NOT_LINKED";
+  /**
+   * WHAT THE LINK IS WORTH, computed once by `resolvePersonCommunityLink` and
+   * carried here verbatim. Never recomputed by a surface: the resolver is the
+   * single source of truth, and a component that re-derived it could disagree
+   * with the gate that used it.
+   */
+  assurance: AssuranceTier;
+  /** The resolver's explicit reason when the link does not attest. */
+  reason?: string;
   person_id: string;
   community_member_id: string;
 }

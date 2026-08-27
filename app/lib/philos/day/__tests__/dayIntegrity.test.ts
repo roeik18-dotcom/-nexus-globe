@@ -39,7 +39,8 @@ const T1_ID = "state_t1_1";
 /** The Effect's exact recording instant — State(t1) shares it deliberately. */
 const EFFECT_AT = `${DATE}T12:00:00.000Z`;
 
-const LINKED: DayIdentity = { subject_id: SUBJECT, person_id: PERSON, link_status: "VERIFIED_SAME_PERSON" };
+const LINKED: DayIdentity = { subject_id: SUBJECT, person_id: PERSON,
+  link_status: "VERIFIED_SAME_PERSON", assurance: "SELF_ATTESTED_SAME_PERSON" };
 
 function ev(over: Partial<PhilosEvent> & Pick<PhilosEvent, "event_type">): PhilosEvent {
   return {

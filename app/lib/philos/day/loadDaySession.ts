@@ -86,7 +86,13 @@ export async function resolveDayIdentity(): Promise<DayIdentity> {
   return {
     subject_id: viewer.subject_id,
     person_id: viewer.person_id,
-    link_status: link.status === "VERIFIED_SAME_PERSON" ? "VERIFIED_SAME_PERSON" : "UNRESOLVED",
+    /* The stored status, UNNARROWED. Collapsing everything non-verified to
+       "UNRESOLVED" here is what erased the difference between a declaration
+       awaiting attestation, a demo-only record, a conflict and an absence. */
+    link_status: link.status,
+    /* Carried from the resolver, never recomputed. */
+    assurance: link.assurance,
+    ...(link.reason ? { link_reason: link.reason } : {}),
   };
 }
 

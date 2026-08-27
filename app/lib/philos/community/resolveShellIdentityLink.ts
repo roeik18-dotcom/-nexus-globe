@@ -20,11 +20,18 @@ export async function resolveShellIdentityLink(): Promise<ShellIdentityLink> {
     // No group context is NOT_LINKED — there is no group to be linked TO.
     // Stated through the existing status vocabulary rather than by inventing
     // a sixth one this prop's consumers would not know how to render.
-    return { status: "NOT_LINKED", person_id: viewer.subject_id, community_member_id: viewer.person_id };
+    return {
+      status: "NOT_LINKED", assurance: "NONE",
+      reason: `no group context for this viewer — ${ctx.because}`,
+      person_id: viewer.subject_id, community_member_id: viewer.person_id,
+    };
   }
   const resolved = await resolveRealPersonCommunityLink(viewer.subject_id, viewer.person_id, ctx.group_id);
   return {
     status: resolved.link_status,
+    /* Carried, never recomputed. */
+    assurance: resolved.assurance,
+    ...(resolved.reason ? { reason: resolved.reason } : {}),
     person_id: viewer.subject_id,
     community_member_id: viewer.person_id,
   };

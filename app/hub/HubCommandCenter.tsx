@@ -152,9 +152,9 @@ export default function HubCommandCenter({
           own real memberships, never a dump of the full Value Universe. */}
       <Panel title="ערכים · קבוצות רלוונטיות עכשיו · VALUES/GROUPS RELEVANT NOW" accent={COLOR.accent}>
         {!valueContext.verified ? (
-          <Empty>אין גשר זהות מאומת (VERIFIED_SAME_PERSON) — לא מוצג קישור מומצא. <a href="/hub/community" style={{ color: COLOR.accent }}>קישור זהות מפורש →</a></Empty>
+          <Empty>אין קישור זהות בין מרחבי השמות — לא מוצג קישור מומצא. <a href="/hub/community" style={{ color: COLOR.accent }}>קישור זהות מפורש →</a></Empty>
         ) : valueContext.memberships.length === 0 ? (
-          <Empty>זהות מאומתת, אך 0 חברויות קבוצה אמיתיות/DEMO כרגע.</Empty>
+          <Empty>הזהות מקושרת (בהצהרה עצמית), אך 0 חברויות קבוצה אמיתיות/DEMO כרגע.</Empty>
         ) : (
           valueContext.memberships.map((m) => (
             <Row key={m.group_name} href="/hub/community?mode=groups">

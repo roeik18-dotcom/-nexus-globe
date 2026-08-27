@@ -30,6 +30,8 @@
  * own individual actions — still never "group"/"collective", which stays
  * UNKNOWN exactly as before.
  */
+import { shortAssurance } from "@/app/lib/philos/community/identityAssuranceVocabulary";
+import type { AssuranceTier } from "@/app/lib/philos/community/personCommunityLink";
 import type { ActionRecord } from "@/app/lib/philos/canon/actionStore";
 import type { LinkStatus } from "@/app/lib/philos/community/personCommunityLink";
 
@@ -41,7 +43,10 @@ export default function ActionCollectiveContext({
   /** Real, checked (`resolveShellIdentityLink`) — when `VERIFIED_SAME_
    *  PERSON`, `person_id` is the canon subject this community's member is
    *  the same human as. */
-  identityLink?: { status: LinkStatus; person_id: string; community_member_id: string };
+  /* Widened to carry the tier: this component prints a conclusion about the
+     identity link, and a visible conclusion must come from the resolver's
+     assurance rather than from the stored status. */
+  identityLink?: { status: LinkStatus; assurance: AssuranceTier; person_id: string; community_member_id: string };
 }) {
   const linked = identityLink?.status === "VERIFIED_SAME_PERSON";
   const memberOwnActions = linked ? actions.filter((a) => a.action.owner === identityLink!.person_id) : [];
@@ -61,11 +66,11 @@ export default function ActionCollectiveContext({
         <div style={S.linkedRow}>
           <span style={{ color: "#34d399", fontWeight: 700 }}>{memberOwnActions.length}</span> Action{"("}ים{")"} של{" "}
           <b>{identityLink!.person_id}</b> — אותה זהות קנונית כמו החבר/ה "{identityLink!.community_member_id}" בקהילה זו
-          (VERIFIED_SAME_PERSON).
+          (קישור זהות בהצהרה עצמית · אין אימות עצמאי).
         </div>
       ) : (
         <div style={S.note}>
-          זהות ה-owner של Action קנוני לעומת חברי הקהילה: {identityLink?.status ?? "לא נבדק"} — ראה פאנל הזהות למעלה כדי לקשר במפורש.
+          זהות ה-owner של Action קנוני לעומת חברי הקהילה: {identityLink ? shortAssurance(identityLink.assurance) : "לא נבדק"} — ראה פאנל הזהות למעלה כדי לקשר במפורש.
         </div>
       )}
 

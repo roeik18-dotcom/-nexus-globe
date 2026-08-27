@@ -159,7 +159,7 @@ export default function MarketplacePrototype({
             <span style={S.contextGap}>Need/Offer אינם נושאים group_id/value_context ב-canon — לא ניתן להוכיח שהם שייכים מבנית לקבוצה זו. מוצג להתמצאות בלבד.</span>
           </>
         ) : (
-          <span style={S.contextGap}>אין גשר זהות מאומת — אין הקשר קבוצה/ערך אמיתי להציג.</span>
+          <span style={S.contextGap}>אין קישור זהות — אין הקשר קבוצה/ערך אמיתי להציג.</span>
         )}
       </div>
 

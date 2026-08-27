@@ -309,7 +309,11 @@ const SCENARIO: AcceptanceScenario = {
       "קיימת גרסה נגדית מוצהרת.",
     ],
     missing: [
-      "זהות מאומתת של נושא הטענה.",
+      /* Reworded away from "זהות מאומתת": this is the DEMO claim scenario
+         listing what evidence is ABSENT, and it is unrelated to the
+         Person↔Community identity link — but the phrase is reserved, so it
+         does not appear anywhere a person can read it. */
+      "אימות עצמאי של זהות נושא הטענה.",
       "תגובה רשמית מגופי האכיפה והפיקוח.",
       "בדיקה עצמאית של גוף מוסמך.",
       "ראיה ראשונית כלשהי לתוכן הטענות.",

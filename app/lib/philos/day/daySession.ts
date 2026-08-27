@@ -31,6 +31,8 @@
  * untouched and is deliberately not an input to `closing_status`.
  */
 import type { PhilosEvent } from "../events";
+import type { AssuranceTier, LinkStatus } from "../community/personCommunityLink";
+import { visibleAssuranceReason } from "../community/identityAssuranceVocabulary";
 import type { ActionLifecycleSummary } from "../canon/actionLifecycle";
 import {
   EMPTY_REF_WORLD,
@@ -49,14 +51,67 @@ import {
 /** Same four values as `GroupEventProvenance`; never inferred from location. */
 export type DayProvenance = "REAL" | "DERIVED" | "DEMO" | "IMPORTED";
 
-export type DayLinkStatus = "VERIFIED_SAME_PERSON" | "UNRESOLVED";
+/**
+ * The STORED status, carried through unnarrowed.
+ *
+ * This was `"VERIFIED_SAME_PERSON" | "UNRESOLVED"`, which threw away the
+ * difference between "a declaration exists but was never attested", "the only
+ * records are demonstrations", "the records contradict each other" and "there
+ * is nothing at all". Four different situations, one word, and a person told
+ * only that something was unresolved. The distinction exists in the resolver;
+ * discarding it here was what made the gate unhelpful.
+ */
+export type DayLinkStatus = LinkStatus | "UNRESOLVED";
 
 export interface DayIdentity {
   /** Canon Action/Effect/Evidence/Learning space. */
   subject_id: string;
   /** PhilosEvent / community space. */
   person_id: string;
+  /** Stored status — audit metadata, never the user-facing conclusion. */
   link_status: DayLinkStatus;
+  /**
+   * WHAT THE LINK IS WORTH. Computed by `resolvePersonCommunityLink` and
+   * carried here; the gate below reads THIS, not `link_status`.
+   */
+  assurance: AssuranceTier;
+  /** The resolver's own explanation, when it gave one. */
+  link_reason?: string;
+}
+
+/**
+ * WHAT THE GATE ACCEPTS, and the exact words for each tier.
+ *
+ * `IdentityLinked` asks whether the two namespaces are EXPLICITLY LINKED. It
+ * has never asked, and must never claim, that an independent party verified
+ * the identity. So a two-step self-attestation satisfies it — and the reason
+ * says which tier satisfied it, so "MET" is never read as more than it is.
+ */
+const ASSURANCE_MEETS_GATE: Record<AssuranceTier, boolean> = {
+  SELF_ATTESTED_SAME_PERSON: true,
+  /* Reserved. No stored record can produce this tier today. */
+  INDEPENDENTLY_VERIFIED_SAME_PERSON: true,
+  SELF_DECLARED_SAME_PERSON: false,
+  NONE: false,
+};
+
+/** Re-exported so day consumers keep one import. DEFINED ONCE in
+ *  `community/identityAssuranceVocabulary.ts` — the single wording source, so
+ *  the gate, the strip and the community badges cannot phrase one fact three
+ *  ways. */
+export {
+  ASSURANCE_LABEL, NO_INDEPENDENT_VERIFICATION,
+} from "../community/identityAssuranceVocabulary";
+
+/**
+ * The gate's sentence — Hebrew, and one of five distinguishable outcomes.
+ *
+ * The resolver's own `link_reason` is precise English for an audit trail; it
+ * is deliberately NOT shown here. It stays on the record for debugging while
+ * the screen gets a sentence written for a person.
+ */
+export function describeIdentityAssurance(identity: DayIdentity): string {
+  return visibleAssuranceReason(identity.assurance, identity.link_status);
 }
 
 /**
@@ -431,11 +486,12 @@ export function projectDaySession(input: ProjectDaySessionInput): DaySession {
     },
     {
       gate: "IdentityLinked",
-      met: identity.link_status === "VERIFIED_SAME_PERSON",
-      reason:
-        identity.link_status === "VERIFIED_SAME_PERSON"
-          ? null
-          : `identity link is ${identity.link_status} — canon subject and PhilosEvent person are not proven to be the same human`,
+      /* FROM THE TIER, not from the stored status. A raw `VERIFIED_SAME_PERSON`
+         on a DEMO record resolves to assurance NONE and must not close this. */
+      met: ASSURANCE_MEETS_GATE[identity.assurance],
+      /* The reason is stated even when MET, because "MET" alone would let a
+         self-attestation be read as independent verification. */
+      reason: describeIdentityAssurance(identity),
     },
     {
       gate: "StateT0Available",

@@ -22,6 +22,10 @@ import Link from "next/link";
 
 import { COLOR, FS, RADIUS, SPACE, TYPE } from "../shell/designTokens";
 import { nextActionFor, type DaySession } from "./daySession";
+import {
+  ASSURANCE_LABEL, ASSURANCE_TONE, NO_INDEPENDENT_VERIFICATION, SECOND_STEP_PENDING,
+  isLinkedTier, isSelfTier, storedStatusLine,
+} from "../community/identityAssuranceVocabulary";
 
 const STATUS_COLOR: Record<DaySession["closing_status"], string> = {
   OPEN: COLOR.accent,
@@ -47,7 +51,15 @@ export default function DayStatusStrip({
 }) {
   const status = session.closing_status;
   const missing = session.missing_gates;
-  const linked = session.identity.link_status === "VERIFIED_SAME_PERSON";
+  /* THE TIER DECIDES WHAT IS SHOWN — the stored status is audit metadata.
+     This read `link_status === "VERIFIED_SAME_PERSON"` and printed that string
+     as the conclusion, which told a person their identity was VERIFIED when
+     what actually happened is that they attested to it themselves, twice. */
+  const assurance = session.identity.assurance;
+  const linked = isLinkedTier(assurance);
+  /* Absence of independent verification is STATED, never left to be inferred
+     from the absence of a word. */
+  const selfOnly = isSelfTier(assurance);
 
   return (
     <section dir="rtl" style={S.wrap} aria-label="מצב היום">
@@ -62,12 +74,24 @@ export default function DayStatusStrip({
 
         {/* Both ids, always. Collapsing them would assert an identity the
             bridge alone is entitled to state. */}
-        <span style={S.identity}>
+        <span style={S.identity} data-identity-assurance={assurance}>
           <span style={S.idPart}>{session.identity.subject_id}</span>
           <span style={S.join}>{linked ? "≡" : "≠"}</span>
           <span style={S.idPart}>{session.identity.person_id}</span>
-          <span style={{ ...S.linkTag, color: linked ? "#34d399" : "#fbbf24" }}>
-            {linked ? "VERIFIED_SAME_PERSON" : "UNRESOLVED"}
+          {/* THE CONCLUSION, in words a person can act on. */}
+          <span style={{ ...S.linkTag, color: ASSURANCE_TONE[assurance] }}>
+            {ASSURANCE_LABEL[assurance]}
+          </span>
+          {assurance === "SELF_DECLARED_SAME_PERSON" && (
+            <span style={S.noIndependent}>{SECOND_STEP_PENDING}</span>
+          )}
+          {selfOnly && (
+            <span style={S.noIndependent}>{NO_INDEPENDENT_VERIFICATION}</span>
+          )}
+          {/* The stored value, labelled as exactly that — never presented as
+              the conclusion, and never shown bare. */}
+          <span style={S.storedStatus} data-stored-link-status={session.identity.link_status}>
+            {storedStatusLine(session.identity.link_status)}
           </span>
         </span>
 
@@ -110,6 +134,12 @@ export default function DayStatusStrip({
             <li key={g.gate} data-gate={g.gate} data-gate-met="true" style={S.gateItem}>
               <b style={S.gateName}>{g.gate}</b>
               <span style={S.gateMet}>MET</span>
+              {/* A gate that carries a reason WHEN MET says on what basis it
+                  was met. Without this, IdentityLinked read as a bare "MET" —
+                  which is exactly how a two-step self-report gets mistaken for
+                  independent verification. Gates with nothing to qualify
+                  (`reason: null`) render as before. */}
+              {g.reason ? <span style={S.gateReason}>{g.reason}</span> : null}
             </li>
           ))}
         </ul>
@@ -208,6 +238,8 @@ const S = {
   },
   join: { fontSize: FS.meta, color: COLOR.textFaint },
   linkTag: { ...TYPE.micro },
+  noIndependent: { ...TYPE.micro, color: "#fbbf24" },
+  storedStatus: { ...TYPE.micro, color: COLOR.textFaint },
   missing: { fontSize: FS.meta, color: "#fbbf24", fontWeight: 700 },
   closingLink: {
     marginInlineStart: "auto",

@@ -31,8 +31,10 @@ const PERSON = "p_you";
 const DATE = "2026-08-26";
 const DAY_ID = dayId(SUBJECT, DATE);
 
-const LINKED: DayIdentity = { subject_id: SUBJECT, person_id: PERSON, link_status: "VERIFIED_SAME_PERSON" };
-const UNLINKED: DayIdentity = { subject_id: SUBJECT, person_id: PERSON, link_status: "UNRESOLVED" };
+const LINKED: DayIdentity = { subject_id: SUBJECT, person_id: PERSON,
+  link_status: "VERIFIED_SAME_PERSON", assurance: "SELF_ATTESTED_SAME_PERSON" };
+const UNLINKED: DayIdentity = { subject_id: SUBJECT, person_id: PERSON,
+  link_status: "NOT_LINKED", assurance: "NONE" };
 
 function ev(over: Partial<PhilosEvent> & Pick<PhilosEvent, "event_type">): PhilosEvent {
   return {

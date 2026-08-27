@@ -169,7 +169,7 @@ const GATE_WRITER: Readonly<Record<DayGate, { action: string; where: string } | 
 /** The source each gate needs before it can be met. */
 const GATE_SOURCE: Readonly<Record<DayGate, string>> = {
   DayOpened: "day.opened event",
-  IdentityLinked: "PersonCommunityLink · VERIFIED_SAME_PERSON",
+  IdentityLinked: "PersonCommunityLink · assurance tier",
   StateT0Available: "DomainStateRecord",
   EventObservationLinked: "CanonEvent (Observation)",
   ActionAuthorized: "MatchPermit + consent",

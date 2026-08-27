@@ -43,6 +43,7 @@ import { buildDefaultLinkRegistry } from "@/app/lib/philos/bridge/linkRegistry";
 import { linksByRelation } from "@/app/lib/philos/bridge/entityLink";
 import { buildCommunityTensions, sortTensions, type TensionItem } from "@/app/lib/philos/tension";
 import { resolveShellIdentityLink } from "@/app/lib/philos/community/resolveShellIdentityLink";
+import { ASSURANCE_LABEL } from "@/app/lib/philos/community/identityAssuranceVocabulary";
 import { findNeedsForSubject } from "@/app/lib/philos/canon/needStoreAccessor";
 import { findOffersForSource } from "@/app/lib/philos/canon/offerStoreAccessor";
 import { buildActionLifecycleSummary, type ActionLifecycleEntry } from "@/app/lib/philos/canon/actionLifecycle";
@@ -169,7 +170,10 @@ export async function buildOperationalGroupProfile(): Promise<OperationalGroupPr
   // TRACE — every hop a real stored reference; stop honestly where none.
   const trace: TraceHop[] = [];
   trace.push(isMember
-    ? { step: "PERSON → GROUP", ref: memberId!, detail: `${viewer.subject_id} ↔ ${memberId} חבר אמיתי ב-${view.name}`, linked_via: "member.joined event + VERIFIED_SAME_PERSON" }
+    ? { step: "PERSON → GROUP", ref: memberId!, detail: `${viewer.subject_id} ↔ ${memberId} חבר אמיתי ב-${view.name}`, /* The trace names WHAT LINKED the person to the group. It said
+         "+ VERIFIED_SAME_PERSON" — the stored status, rendered bare on screen
+         as though a verification had happened. The tier is what it is. */
+        linked_via: `member.joined event + ${ASSURANCE_LABEL[identityLink.assurance]}` }
     : { step: "PERSON → GROUP", ref: null, detail: "אין חברות אמיתית — השרשרת נעצרת", linked_via: "—" });
   const needIds = new Set(ownNeeds.map((n) => n.need.need_id));
   const offerIds = new Set(ownOffers.map((o) => o.offer.offer_id));

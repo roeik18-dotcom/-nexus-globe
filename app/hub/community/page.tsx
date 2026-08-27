@@ -1,4 +1,5 @@
 import path from "path";
+import { shortAssurance } from "@/app/lib/philos/community/identityAssuranceVocabulary";
 import { resolveViewerContextSemantics } from "@/app/lib/philos/context/resolveViewerContextSemantics";
 import SignOutButton from "@/app/signin/SignOutButton";
 import { resolveViewerGroupView } from "@/app/lib/philos/community/viewerGroupView";
@@ -792,6 +793,7 @@ export default async function CommunityPage({
                     communityMemberDisplayName={viewer.display_name}
                     communityId={viewerGroupId ?? ""}
                     initialStatus={identityLink.status}
+                    initialAssurance={identityLink.assurance}
                   />
                   <CommunityCommandTerminal
                     group={terminalGroup!}
@@ -868,8 +870,8 @@ export default async function CommunityPage({
                        declare→confirm path; anything else is not REAL. */
                     provenance: identityLink.status === "VERIFIED_SAME_PERSON" ? "REAL" : "UNKNOWN",
                     status: identityLink.status === "VERIFIED_SAME_PERSON" ? "PRESENT" : "EMPTY",
-                    value: identityLink.status,
-                    reason: "אין קישור מאומת — לא נמצאה רשומה ב־personCommunityLinkStore",
+                    value: shortAssurance(identityLink.assurance),
+                    reason: "אין קישור זהות — לא נמצאה רשומה סמכותית ב־personCommunityLinkStore",
                   },
                 ]} /><DemoSimulationSection terminal="community" /></>
       }

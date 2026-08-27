@@ -404,7 +404,7 @@ export default function CommunityPrototype({ live }: { live: PrototypeLiveData }
               <div style={S.note}>
                 Needs {live.canonNeedsCount} · Resources {live.canonOffersCount} · Actions {live.canonActionsCount} · Effects {live.canonEffectsCount} ({live.canonVerifiedEffectsCount} מאומת) — ספירות מערכתיות אמיתיות (canon), לא פר-משפחה: אין group_id/value_context על Need/Offer/Action/Effect כיום.
               </div>
-              {!live.identityLinked ? <div style={{ ...S.note, color: "#fbbf24", marginTop: 4 }}>אין גשר זהות מאומת — הספירות הנ"ל עשויות שלא לשקף את המשתמש הנוכחי.</div> : null}
+              {!live.identityLinked ? <div style={{ ...S.note, color: "#fbbf24", marginTop: 4 }}>אין קישור זהות — הספירות הנ"ל עשויות שלא לשקף את המשתמש הנוכחי.</div> : null}
             </DrawerSection>
 
             <DrawerSection title="NEXT VALID ACTION">

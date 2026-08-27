@@ -12,20 +12,28 @@
 import { useState, useTransition } from "react";
 import type { LinkStatus } from "@/app/lib/philos/community/personCommunityLink";
 import { confirmSamePersonAction, declareSamePersonAction, type IdentityLinkActionResult } from "./identityLinkActions";
+import type { AssuranceTier } from "@/app/lib/philos/community/personCommunityLink";
+import {
+  ASSURANCE_LABEL, ASSURANCE_TONE, NO_INDEPENDENT_VERIFICATION, SECOND_STEP_PENDING,
+  isSelfTier, storedStatusLine,
+} from "@/app/lib/philos/community/identityAssuranceVocabulary";
 
-const STATUS_LABEL: Record<LinkStatus, string> = {
-  NOT_LINKED: "NOT_LINKED",
-  UNVERIFIED: "UNVERIFIED",
-  DECLARED_SAME_PERSON: "DECLARED_SAME_PERSON",
-  VERIFIED_SAME_PERSON: "VERIFIED_SAME_PERSON",
-  CONFLICT: "CONFLICT",
-};
-const STATUS_COLOR: Record<LinkStatus, string> = {
-  NOT_LINKED: "#6c86b5",
-  UNVERIFIED: "#fbbf24",
-  DECLARED_SAME_PERSON: "#5b9cf6",
-  VERIFIED_SAME_PERSON: "#34d399",
-  CONFLICT: "#f2635c",
+/**
+ * The tier a given stored status resolves to FOR THIS VIEWER'S OWN PANEL.
+ *
+ * This panel is the one surface that transitions the link, so it re-renders
+ * from the action's returned status before the server round-trip lands. Both
+ * writers produce `declaration_source: "self"` on a REAL record, so a status
+ * they return maps to exactly one tier — this is a local echo of the writer's
+ * own guarantee, not a second implementation of the resolver's rule. The
+ * authoritative tier still arrives as `initialAssurance` from the server.
+ */
+const STATUS_TIER: Record<LinkStatus, AssuranceTier> = {
+  NOT_LINKED: "NONE",
+  UNVERIFIED: "NONE",
+  CONFLICT: "NONE",
+  DECLARED_SAME_PERSON: "SELF_DECLARED_SAME_PERSON",
+  VERIFIED_SAME_PERSON: "SELF_ATTESTED_SAME_PERSON",
 };
 
 export default function PersonCommunityLinkPanel({
@@ -34,14 +42,19 @@ export default function PersonCommunityLinkPanel({
   communityMemberDisplayName,
   communityId,
   initialStatus,
+  initialAssurance,
 }: {
   personId: string;
   communityMemberId: string;
   communityMemberDisplayName: string;
   communityId: string;
+  /** Stored status — audit metadata only. */
   initialStatus: LinkStatus;
+  /** The resolver's tier. The conclusion this panel shows. */
+  initialAssurance: AssuranceTier;
 }) {
   const [status, setStatus] = useState<LinkStatus>(initialStatus);
+  const [assurance, setAssurance] = useState<AssuranceTier>(initialAssurance);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -50,7 +63,7 @@ export default function PersonCommunityLinkPanel({
     startTransition(async () => {
       const result = await action();
       if (!result.ok) setMessage(result.message);
-      else setStatus(result.link_status);
+      else { setStatus(result.link_status); setAssurance(STATUS_TIER[result.link_status]); }
     });
   };
 
@@ -58,7 +71,8 @@ export default function PersonCommunityLinkPanel({
     <section dir="rtl" style={S.card}>
       <div style={S.head}>
         <h3 style={S.title}>זהות אחת — Person ↔ Community Member</h3>
-        <span style={{ ...S.statusTag, color: STATUS_COLOR[status] }}>{STATUS_LABEL[status]}</span>
+        {/* THE CONCLUSION is the tier. The stored status follows it, labelled. */}
+        <span style={{ ...S.statusTag, color: ASSURANCE_TONE[assurance] }}>{ASSURANCE_LABEL[assurance]}</span>
       </div>
       <div style={S.row}>
         <span style={S.meta}>PERSON (canon)</span>
@@ -72,6 +86,19 @@ export default function PersonCommunityLinkPanel({
         <span style={S.meta}>COMMUNITY</span>
         <span style={S.value}>{communityId}</span>
       </div>
+      {isSelfTier(assurance) ? (
+        <div style={S.row}>
+          <span style={S.meta}>אימות</span>
+          <span style={{ ...S.value, color: "#fbbf24" }}>
+            {NO_INDEPENDENT_VERIFICATION}
+            {assurance === "SELF_DECLARED_SAME_PERSON" ? ` · ${SECOND_STEP_PENDING}` : ""}
+          </span>
+        </div>
+      ) : null}
+      <div style={S.row}>
+        <span style={S.meta}>AUDIT</span>
+        <span style={{ ...S.value, color: "#8798b8" }}>{storedStatusLine(status)}</span>
+      </div>
 
       <div style={S.note}>
         {status === "NOT_LINKED"
@@ -79,7 +106,7 @@ export default function PersonCommunityLinkPanel({
           : status === "DECLARED_SAME_PERSON"
           ? "הוצהר פעם אחת. שלב שני, נפרד, נדרש כדי לאשר."
           : status === "VERIFIED_SAME_PERSON"
-          ? "אושר בשני שלבים מפורשים על ידי אותו משתמש יחיד — לא אימות צד-שלישי (אין עוד משתתף במערכת היום)."
+          ? "הנושא הצהיר ואישר בשני שלבים — הצהרה עצמית, לא אימות של גורם עצמאי (אין עוד משתתף במערכת היום)."
           : status === "CONFLICT"
           ? "נמצאה סתירה בין רשומות קישור אמיתיות — לא נפתר בשקט."
           : "קיימת הצהרה שאינה של המשתמש עצמו — ממתינה לאישורו."}
@@ -98,7 +125,9 @@ export default function PersonCommunityLinkPanel({
             {pending ? "…" : "אשר שוב — שלב 2/2"}
           </button>
         ) : null}
-        {status === "VERIFIED_SAME_PERSON" ? <span style={{ color: "#34d399", fontSize: 13, fontWeight: 700 }}>✓ אותה זהות קנונית</span> : null}
+        {status === "VERIFIED_SAME_PERSON"
+          ? <span style={{ color: "#34d399", fontSize: 13, fontWeight: 700 }}>✓ {ASSURANCE_LABEL.SELF_ATTESTED_SAME_PERSON}</span>
+          : null}
       </div>
     </section>
   );
