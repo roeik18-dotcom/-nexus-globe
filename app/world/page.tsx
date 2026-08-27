@@ -82,6 +82,19 @@ export default async function WorldPage({ searchParams }: {
   /* THE PHILOS MATERIAL. Anchored to the day's own Observation — never the
      latest — so a day already opened keeps meaning what it meant. */
   const orientationFrame = await loadRealOrientationFrame(personRef.person_id, todayIn(systemClock));
+  /* The day's real chain, read from the projection this page already
+     loaded — no second source, no second answer. */
+  const dayPair = aeProjection.pairs.find((x) => x.action_origin === "REAL");
+  const dayChain = {
+    hasObservation: orientationFrame.resolved,
+    hasStateT0: orientationFrame.resolved,
+    hasAction: !!dayPair,
+    hasEffect: !!dayPair?.effect_id,
+    hasVerifiedEvidence: false,
+    hasLearning: false,
+    ...(dayPair ? { action_id: dayPair.action_id } : {}),
+    ...(dayPair?.effect_id ? { effect_id: dayPair.effect_id } : {}),
+  };
   /* REAL unit readings — one shared selector, never a per-page derivation. */
   const realUnitReadings = selectRealUnitReadings({
     events: await loadCanonEvents(),
@@ -402,7 +415,7 @@ export default async function WorldPage({ searchParams }: {
                   selectedGroup={selected?.groupId}
                   purpose="מה נצפה בקנה-מידה מערכתי, ומה קיים אך אינו מגיע לכאן."
                   subject={personRef.person_id}
-                /><DayStatusStrip session={daySession} /><RealOrientationPanel terminal="world" frame={orientationFrame} /><ActionEffectPanel terminal="world" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="world" facts={[
+                /><DayStatusStrip session={daySession} /><RealOrientationPanel terminal="world" frame={orientationFrame} chain={dayChain} /><ActionEffectPanel terminal="world" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="world" facts={[
                   /* These two record shapes are {record_id, evidence_id} and
                      {record_id, as} — no provenance field, so the count cannot
                      claim REAL. */

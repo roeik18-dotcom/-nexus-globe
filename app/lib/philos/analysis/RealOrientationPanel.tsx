@@ -16,36 +16,26 @@
 import { UnitRow } from "./analysisUnitSections";
 import { FOUNDATION_4, DEPARTMENTS_6, type AnalysisUnitReading } from "./analysisUnit";
 import { MODEL_EXPLANATION } from "./unitMeaning";
-import { terminalMeaning } from "./terminalMeaning";
+import { terminalMeaning, type MeaningTerminal } from "./terminalMeaning";
 import Link from "next/link";
 import type { OrientationFrameResult } from "./realOrientationFrame";
 import { COLOR, COLOR_ROLE, RADIUS, SPACE } from "../shell/designTokens";
 
 /** What this terminal reads the same anchored frame as meaning. */
-export type OrientationTerminal =
-  | "hub" | "brain" | "dynamics" | "marketplace" | "community" | "planet" | "world";
+export type OrientationTerminal = MeaningTerminal;
 
-const PERSPECTIVE: Record<OrientationTerminal, { title: string; note: string }> = {
-  hub:         { title: "ההתמצאות של היום",
-                 note: "התצפית שהיום נפתח איתה, והמצב שצוטט לצידה." },
-  brain:       { title: "קריאה קוגניטיבית",
-                 note: "מה סווג במפורש כידוע ומה נותר חסר. אין כאן הסקה." },
-  dynamics:    { title: "מתחים ושינוי",
-                 note: "יחידות שסומנו מול יחידות שלא — הפרש, לא סיבתיות." },
-  marketplace: { title: "רלוונטיות לצורך ולפעולה",
-                 note: "מה מהתצפית המעוגנת נוגע לצורך או להצעה. אין התאמה מאושרת." },
-  community:   { title: "הגבול האישי–חברתי",
-                 note: "קריאה אישית. אינה משויכת לקבוצה ללא קישור בר-ביצוע." },
-  planet:      { title: "מיקום ברשת",
-                 note: "הרשומות ניתנות לבדיקה. לא נרשמה התפשטות ברשת." },
-  world:       { title: "רמה מערכתית",
-                 note: "תצפית אישית אחת. אינה מסקנה מערכתית." },
-};
+
+/** The day's real chain, plus the ids for the audit block. */
+export interface PanelChain {
+  hasObservation: boolean; hasStateT0: boolean;
+  hasAction: boolean; hasEffect: boolean;
+  hasVerifiedEvidence: boolean; hasLearning: boolean;
+  action_id?: string; effect_id?: string;
+}
 
 export default function RealOrientationPanel({
-  terminal, frame,
-}: { terminal: OrientationTerminal; frame: OrientationFrameResult }) {
-  const p = PERSPECTIVE[terminal];
+  terminal, frame, chain,
+}: { terminal: OrientationTerminal; frame: OrientationFrameResult; chain: PanelChain }) {
 
   if (!frame.resolved) {
     return (
@@ -54,7 +44,6 @@ export default function RealOrientationPanel({
           <span style={S.eyebrow}>התמצאות · ORIENTATION</span>
           <span style={S.unresolved}>UNRESOLVED — {frame.reason}</span>
         </div>
-        <h2 style={S.title}>{p.title}</h2>
         {/* An unresolved frame states WHY and stops. It does not fall back to
             another record, and it does not draw ten empty cards as though the
             question had been asked and answered. */}
@@ -64,34 +53,43 @@ export default function RealOrientationPanel({
   }
 
   const o = frame.observation as unknown as Record<string, unknown>;
-  const label = (r: AnalysisUnitReading) =>
-    [...FOUNDATION_4, ...DEPARTMENTS_6].find((u) => u.id === r.unitId)!.label;
-  const marked = frame.readings.filter((r) => r.status !== "unknown");
-  const unmarked = frame.readings.filter((r) => r.status === "unknown");
-  const m = terminalMeaning(terminal, marked.map(label), unmarked.map(label));
+  const marked = frame.readings.filter((r) => r.status !== "unknown").length;
+  const m = terminalMeaning(terminal, {
+    ...chain, markedCount: marked, unmarkedCount: frame.readings.length - marked,
+  });
 
   return (
     <section dir="rtl" data-real-orientation={terminal} data-frame="resolved"
              data-canon-event-id={frame.canon_event_id} data-state-t0-id={frame.state_t0_id}
              style={S.card}>
 
-      {/* 1. מה קרה — the sentence the person wrote, first, unaltered. */}
+      {/* 1 — one human heading. */}
       <h2 style={S.title}>{m.title}</h2>
+
+      {/* 2 — what this terminal examines. Different on every page. */}
+      <p style={S.body}>{m.examines}</p>
+
+      {/* The person's own sentence: the only text PHILOS did not write. */}
       {typeof o.context === "string" && o.context ? (
         <blockquote style={S.quote}>{o.context}</blockquote>
       ) : null}
 
-      {/* 2. איך PHILOS מסדרת את זה — only Hub carries the full explanation;
-          repeating it on all seven was what made six terminals redundant. */}
       {m.full ? <p style={S.body}>{MODEL_EXPLANATION}</p> : null}
 
-      {/* 3. מה זה אומר במסוף הזה — the materially distinct part. */}
-      <p style={S.body}>{m.hereMeans}</p>
+      {/* 3 — the real material, in sentences. */}
+      <div style={S.block}>
+        <span style={S.blockLabel}>מה קיים כאן</span>
+        <ul style={S.list}>{m.material.map((x) => <li key={x} style={S.li}>{x}</li>)}</ul>
+      </div>
 
-      {/* THE TEN, in words. `סומן` / `לא סווג`, never OBSERVED / UNKNOWN. */}
+      {/* 4 — where this sits in the chain, both directions. */}
+      <div style={S.chain}>
+        <div><span style={S.chainLabel}>לפני</span> {m.chain.before}</div>
+        <div><span style={S.chainLabel}>אחרי</span> {m.chain.after}</div>
+      </div>
+
+      {/* THE TEN, in words — the same component the demo header draws. */}
       <div style={S.groups}>
-        {/* THE SAME COMPONENT the demo header draws, in its plain variant —
-            one implementation, so the ten units cannot be drawn two ways. */}
         <UnitRow group="FOUNDATION" title="משתני יסוד" note="הבסיס: זמן, חומר, מרווח, אנרגיה"
                  units={FOUNDATION_4} readings={byId(frame.readings)}
                  variant="plain" full={m.full} />
@@ -100,27 +98,33 @@ export default function RealOrientationPanel({
                  variant="plain" full={m.full} />
       </div>
 
-      {/* 4. מה עדיין לא ידוע */}
+      {/* 5 — known and not known, kept apart. */}
+      <div style={S.knownBox}>
+        <span style={S.blockLabel}>מה ידוע</span>
+        <ul style={S.list}>{m.known.map((x) => <li key={x} style={S.li}>{x}</li>)}</ul>
+      </div>
       <div style={S.unknownBox}>
-        <span style={S.boxLabel}>מה עדיין לא ידוע</span>
-        <span style={S.body}>{m.stillUnknown}</span>
+        <span style={S.blockLabel}>מה עדיין לא ידוע</span>
+        <ul style={S.list}>{m.unknown.map((x) => <li key={x} style={S.li}>{x}</li>)}</ul>
       </div>
 
-      {/* 5. מה אפשר לעשות עכשיו — exactly one, or an honest none. */}
+      {/* 6 — exactly one action, or an honest none. */}
       <div style={S.nextBox}>
-        <span style={S.boxLabel}>מה אפשר לעשות עכשיו</span>
+        <span style={S.blockLabel}>מה אפשר לעשות עכשיו</span>
         {m.nextAction
           ? <Link href={m.nextAction.href} style={S.nextLink}>{m.nextAction.label} ←</Link>
           : <span style={S.body}>במסוף הזה אין כרגע פעולה זמינה. זה לא חוסר — פשוט אין מה לעשות כאן עד שיירשם מידע נוסף.</span>}
       </div>
 
-      {/* G. TECHNICAL AUDIT LAST — closed, and named for what it is. */}
+      {/* 7 — technical detail, closed, at the bottom only. */}
       <details style={S.audit}>
         <summary style={S.auditSummary}>פרטי ביקורת טכניים</summary>
         <div dir="ltr" style={S.auditBody}>
           <div><b>canon_event_id</b> {frame.canon_event_id}</div>
           <div><b>state_t0_id</b> {frame.state_t0_id}</div>
           <div><b>day_id</b> {frame.day_id}</div>
+          {chain.action_id ? <div><b>action_id</b> {chain.action_id}</div> : null}
+          {chain.effect_id ? <div><b>effect_id</b> {chain.effect_id}</div> : null}
           <div><b>observation</b> {String(o.domain)}/{String(o.frame)} · level {String(o.level)} · confidence {String(o.confidence)}</div>
           <div><b>state</b> {frame.state.domain_id}/{frame.state.parameter_id} · level {frame.state.level}</div>
           <div><b>units</b> {frame.observedCount} OBSERVED · {frame.unknownCount} UNKNOWN</div>
@@ -145,6 +149,17 @@ const S: Record<string, React.CSSProperties> = {
   quote: { margin: 0, paddingInlineStart: 12, borderInlineStart: `3px solid ${COLOR_ROLE.purple}`,
     fontSize: 16, lineHeight: 1.6, color: COLOR.text },
   body: { fontSize: 15, lineHeight: 1.65, color: COLOR.textDim, margin: 0 },
+  block: { display: "grid", gap: 3, gridTemplateColumns: "minmax(0, 1fr)" },
+  blockLabel: { fontSize: 11, fontWeight: 800, letterSpacing: 0.8, color: COLOR.textFaint },
+  list: { margin: 0, paddingInlineStart: 18, display: "grid", gap: 3 },
+  li: { fontSize: 14.5, lineHeight: 1.6, color: COLOR.textDim },
+  chain: { display: "grid", gap: 4, padding: 10, borderRadius: 8,
+    border: `1px solid ${COLOR.border}`, fontSize: 14, lineHeight: 1.6,
+    color: COLOR.textDim, gridTemplateColumns: "minmax(0, 1fr)" },
+  chainLabel: { fontSize: 11, fontWeight: 800, color: COLOR.textFaint,
+    marginInlineEnd: 6, letterSpacing: 0.6 },
+  knownBox: { display: "grid", gap: 3, padding: 10, borderRadius: 8,
+    border: "1px solid rgba(52,211,153,0.22)", gridTemplateColumns: "minmax(0, 1fr)" },
   groups: { display: "grid", gap: 14, gridTemplateColumns: "minmax(0, 1fr)" },
   group: { display: "grid", gap: 6, gridTemplateColumns: "minmax(0, 1fr)" },
   groupHead: { display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" },

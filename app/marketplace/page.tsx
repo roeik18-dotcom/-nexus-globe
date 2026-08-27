@@ -160,6 +160,19 @@ export default async function MarketplacePage({
   /* THE PHILOS MATERIAL. Anchored to the day's own Observation — never the
      latest — so a day already opened keeps meaning what it meant. */
   const orientationFrame = await loadRealOrientationFrame(viewer.subject_id, todayIn(systemClock));
+  /* The day's real chain, read from the projection this page already
+     loaded — no second source, no second answer. */
+  const dayPair = aeProjection.pairs.find((x) => x.action_origin === "REAL");
+  const dayChain = {
+    hasObservation: orientationFrame.resolved,
+    hasStateT0: orientationFrame.resolved,
+    hasAction: !!dayPair,
+    hasEffect: !!dayPair?.effect_id,
+    hasVerifiedEvidence: false,
+    hasLearning: false,
+    ...(dayPair ? { action_id: dayPair.action_id } : {}),
+    ...(dayPair?.effect_id ? { effect_id: dayPair.effect_id } : {}),
+  };
   const personRef = resolvePersonRef(viewer, params.subject);
   /* REAL unit readings — one shared selector, never a per-page derivation. */
   const realUnitReadings = selectRealUnitReadings({
@@ -283,7 +296,7 @@ export default async function MarketplacePage({
           subject={personRef.person_id}
           identityLink={identityLink}
         />
-        <DayStatusStrip session={daySession} /><RealOrientationPanel terminal="marketplace" frame={orientationFrame} /><ActionEffectPanel terminal="marketplace" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
+        <DayStatusStrip session={daySession} /><RealOrientationPanel terminal="marketplace" frame={orientationFrame} chain={dayChain} /><ActionEffectPanel terminal="marketplace" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
         <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="marketplace" facts={[
           /* Arrays this page already loaded and already renders. */
           factFromCount("Need", "findNeedsForSubject → mineNeeds", mineNeeds.length,

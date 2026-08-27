@@ -47,6 +47,10 @@ import { buildDomainStateTimeline } from "@/app/lib/philos/canon/domainStateQuer
 import { loadActions } from "@/app/lib/philos/canon/actionStoreAccessor";
 import { loadEffects } from "@/app/lib/philos/canon/effectStoreAccessor";
 import { TEMPERAMENT_DIMENSIONS } from "@/app/lib/philos/humanConfig/temperamentDimensions";
+import { loadRealOrientationFrame } from "@/app/lib/philos/analysis/loadRealOrientationFrame";
+import RealOrientationPanel from "@/app/lib/philos/analysis/RealOrientationPanel";
+import { loadActionEffectProjection } from "@/app/lib/philos/crossTerminal/loadActionEffectProjection";
+import { systemClock as _clk2, todayIn as _today2 } from "@/app/lib/philos/eventStore";
 
 export const metadata = { title: "Philos — Human Config" };
 
@@ -69,6 +73,26 @@ export default async function HumanConfigPage({
 
   const identityLink = await resolveShellIdentityLink();
 
+  /* Human Config gets its OWN orientation material — what a source
+
+     structure is, versus a live state — not a copy of Hub's day log. */
+
+  const hcFrame = await loadRealOrientationFrame(viewer.subject_id, _today2(_clk2));
+
+  const hcProj = await loadActionEffectProjection(viewer.subject_id);
+
+  const hcPair = hcProj.pairs.find((x) => x.action_origin === "REAL");
+
+  const hcChain = { hasObservation: hcFrame.resolved, hasStateT0: hcFrame.resolved,
+
+    hasAction: !!hcPair, hasEffect: !!hcPair?.effect_id,
+
+    hasVerifiedEvidence: false, hasLearning: false,
+
+    ...(hcPair ? { action_id: hcPair.action_id } : {}),
+
+    ...(hcPair?.effect_id ? { effect_id: hcPair.effect_id } : {}) };
+
   // Visual-checkpoint prototype only — production view below (no `view`
   // param) is completely unaffected by this branch. See
   // `HumanConfigPrototype.tsx`'s own header.
@@ -86,6 +110,7 @@ export default async function HumanConfigPage({
           <SystemShell
           viewerContext={semanticContext}
           signOut={<SignOutButton />} surface="hub" purpose="Human Config — prototype תצוגה ראשונה" subject={viewer.subject_id} identityLink={identityLink} />
+        <RealOrientationPanel terminal="human-config" frame={hcFrame} chain={hcChain} />
         </div>
         <HumanConfigPrototype subjectId={viewer.subject_id} parameters={parameters} />
       </div>
@@ -130,6 +155,7 @@ export default async function HumanConfigPage({
         <SystemShell
           viewerContext={semanticContext}
           signOut={<SignOutButton />} surface="hub" purpose="Human Config אמיתי — מבנה מקור, לא מצב חי." subject={viewer.subject_id} identityLink={identityLink} />
+        <RealOrientationPanel terminal="human-config" frame={hcFrame} chain={hcChain} />
       </div>
       <div dir="rtl" style={{ padding: "0 20px" }}>
         <CreateHumanDomainStateForm />

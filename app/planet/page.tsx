@@ -168,6 +168,19 @@ export default async function PlanetPage({
   /* THE PHILOS MATERIAL. Anchored to the day's own Observation — never the
      latest — so a day already opened keeps meaning what it meant. */
   const orientationFrame = await loadRealOrientationFrame(viewer.subject_id, todayIn(systemClock));
+  /* The day's real chain, read from the projection this page already
+     loaded — no second source, no second answer. */
+  const dayPair = aeProjection.pairs.find((x) => x.action_origin === "REAL");
+  const dayChain = {
+    hasObservation: orientationFrame.resolved,
+    hasStateT0: orientationFrame.resolved,
+    hasAction: !!dayPair,
+    hasEffect: !!dayPair?.effect_id,
+    hasVerifiedEvidence: false,
+    hasLearning: false,
+    ...(dayPair ? { action_id: dayPair.action_id } : {}),
+    ...(dayPair?.effect_id ? { effect_id: dayPair.effect_id } : {}),
+  };
   const social = await loadSocialSystem(viewer);
   const chronology = social.chronology;
   const socialObjects = social.objects;
@@ -416,7 +429,7 @@ export default async function PlanetPage({
                   purpose="מפת הערכים, הקבוצות והגאוגרפיה של PHILOS."
                   subject={personRef.person_id}
                   identityLink={identityLink}
-                /><DayStatusStrip session={daySession} /><RealOrientationPanel terminal="planet" frame={orientationFrame} /><ActionEffectPanel terminal="planet" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="planet" facts={[
+                /><DayStatusStrip session={daySession} /><RealOrientationPanel terminal="planet" frame={orientationFrame} chain={dayChain} /><ActionEffectPanel terminal="planet" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="planet" facts={[
                   /* `arcs`/`nodes` come from projectGlobeGraph over
                      loadPhilosEvents(), whose log is "bootstrap ++ appended" —
                      it contains the 42-event hand-authored seed. GlobeNode and

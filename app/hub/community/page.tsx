@@ -137,6 +137,19 @@ export default async function CommunityPage({
   /* THE PHILOS MATERIAL. Anchored to the day's own Observation — never the
      latest — so a day already opened keeps meaning what it meant. */
   const orientationFrame = await loadRealOrientationFrame(personRef.person_id, todayIn(systemClock));
+  /* The day's real chain, read from the projection this page already
+     loaded — no second source, no second answer. */
+  const dayPair = aeProjection.pairs.find((x) => x.action_origin === "REAL");
+  const dayChain = {
+    hasObservation: orientationFrame.resolved,
+    hasStateT0: orientationFrame.resolved,
+    hasAction: !!dayPair,
+    hasEffect: !!dayPair?.effect_id,
+    hasVerifiedEvidence: false,
+    hasLearning: false,
+    ...(dayPair ? { action_id: dayPair.action_id } : {}),
+    ...(dayPair?.effect_id ? { effect_id: dayPair.effect_id } : {}),
+  };
   /* REAL unit readings — one shared selector, never a per-page derivation. */
   const realUnitReadings = selectRealUnitReadings({
     events: await loadCanonEvents(),
@@ -875,7 +888,7 @@ export default async function CommunityPage({
                   community={showingGroupDetail && terminalGroup ? { group_id: terminalGroup.group_id, label: terminalGroup.name, provenance: terminalProvenance } : undefined}
                   subject={personRef.person_id}
                   identityLink={identityLink}
-                /><DayStatusStrip session={daySession} /><RealOrientationPanel terminal="community" frame={orientationFrame} /><ActionEffectPanel terminal="community" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="community" facts={[
+                /><DayStatusStrip session={daySession} /><RealOrientationPanel terminal="community" frame={orientationFrame} chain={dayChain} /><ActionEffectPanel terminal="community" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="community" facts={[
                   {
                     label: "Identity link", source: "resolveShellIdentityLink → personCommunityLinkStore",
                     /* A VERIFIED link is a real record written by the two-step

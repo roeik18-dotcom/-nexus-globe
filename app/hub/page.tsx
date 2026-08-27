@@ -142,6 +142,19 @@ export default async function HubPage({
   /* THE PHILOS MATERIAL. Anchored to the day's own Observation — never the
      latest — so a day already opened keeps meaning what it meant. */
   const orientationFrame = await loadRealOrientationFrame(personRef.person_id, viewedDate);
+  /* The day's real chain, read from the projection this page already
+     loaded — no second source, no second answer. */
+  const dayPair = aeProjection.pairs.find((x) => x.action_origin === "REAL");
+  const dayChain = {
+    hasObservation: orientationFrame.resolved,
+    hasStateT0: orientationFrame.resolved,
+    hasAction: !!dayPair,
+    hasEffect: !!dayPair?.effect_id,
+    hasVerifiedEvidence: false,
+    hasLearning: false,
+    ...(dayPair ? { action_id: dayPair.action_id } : {}),
+    ...(dayPair?.effect_id ? { effect_id: dayPair.effect_id } : {}),
+  };
   /* REAL unit readings — one shared selector, never a per-page derivation. */
   const canonEventsForViewer = await loadCanonEvents();
   const realUnitReadings = selectRealUnitReadings({
@@ -487,7 +500,7 @@ export default async function HubPage({
           previous={previousDate(viewedDate)}
           next={nextDate(viewedDate)}
         />
-        <DayStatusStrip session={daySession} /><RealOrientationPanel terminal="hub" frame={orientationFrame} /><ActionEffectPanel terminal="hub" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
+        <DayStatusStrip session={daySession} /><RealOrientationPanel terminal="hub" frame={orientationFrame} chain={dayChain} /><ActionEffectPanel terminal="hub" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
         <DayChainSummary session={daySession} />
         <DayOpeningPanel session={daySession} readOnly={!dayIsToday} linkable={linkableObservations} linkableStates={linkableStates} />
         <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="hub" facts={[

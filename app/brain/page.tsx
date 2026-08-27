@@ -98,6 +98,19 @@ export default async function BrainPage({
   /* THE PHILOS MATERIAL. Anchored to the day's own Observation — never the
      latest — so a day already opened keeps meaning what it meant. */
   const orientationFrame = await loadRealOrientationFrame(personRef.person_id, todayIn(systemClock));
+  /* The day's real chain, read from the projection this page already
+     loaded — no second source, no second answer. */
+  const dayPair = aeProjection.pairs.find((x) => x.action_origin === "REAL");
+  const dayChain = {
+    hasObservation: orientationFrame.resolved,
+    hasStateT0: orientationFrame.resolved,
+    hasAction: !!dayPair,
+    hasEffect: !!dayPair?.effect_id,
+    hasVerifiedEvidence: false,
+    hasLearning: false,
+    ...(dayPair ? { action_id: dayPair.action_id } : {}),
+    ...(dayPair?.effect_id ? { effect_id: dayPair.effect_id } : {}),
+  };
   /* REAL unit readings — one shared selector, never a per-page derivation. */
   const realUnitReadings = selectRealUnitReadings({
     events: await loadCanonEvents(),
@@ -204,7 +217,13 @@ export default async function BrainPage({
           subject={subject}
           identityLink={identityLink}
         />
-        <DayStatusStrip session={daySession} /><RealOrientationPanel terminal="brain" frame={orientationFrame} /><ActionEffectPanel terminal="brain" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
+        <DayStatusStrip session={daySession} /><RealOrientationPanel terminal="brain" frame={orientationFrame} chain={dayChain} /><ActionEffectPanel terminal="brain" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
+        {/* THE EVIDENCE DESTINATION. `מקור וראיות` is a region of Brain, not a
+            terminal of its own, so it lives here at its own anchor with its own
+            material: what was claimed versus what was actually proven. */}
+        <div id="evidence" style={{ marginBlockStart: 16 }}>
+          <RealOrientationPanel terminal="evidence" frame={orientationFrame} chain={dayChain} />
+        </div>
         <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="brain" facts={[
           factFromCount("Observation nodes", "projectCanonDynamics → canon.nodes", canon.nodes.length,
             "אין תצפית — לא נמצאה רשומה ב־canonEventStore"),
