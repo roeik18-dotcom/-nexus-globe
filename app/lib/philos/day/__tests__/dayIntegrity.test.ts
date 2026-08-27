@@ -393,12 +393,28 @@ describe("facts count by declared provenance, never by collection length", () =>
     expect(r.reason).toMatch(/אינן REAL/);
   });
 
-  it("a record with NO provenance makes the whole fact UNRESOLVED, never REAL", () => {
+  /* CONTRACT CHANGED, DELIBERATELY. This test previously asserted that ONE
+     record without an origin made the WHOLE fact UNRESOLVED. That rule was
+     safe when no record carried an origin at all, but once Action and Effect
+     gained `record_origin` it became actively misleading: a person who had
+     just written a REAL record saw it reported as unresolvable because a
+     legacy row sat beside it. A missing origin is a fact about the OLD
+     record and says nothing about the new one. Both truths now survive. */
+  it("a mixed collection reports the REAL records AND the legacy ones, hiding neither", () => {
     const r = f([rec("a", "REAL"), rec("b")]);
+    expect(r.status).toBe("PRESENT");
+    expect(r.provenance).toBe("REAL");
+    expect(r.value).toBe(1);
+    expect(r.breakdown).toMatchObject({ REAL: 1, UNKNOWN_LEGACY: 1 });
+    expect(r.unsupported_reason).toMatch(/מעורב/);
+  });
+
+  it("with NO admissible record, a missing origin still yields UNRESOLVED", () => {
+    const r = f([rec("b")]);
     expect(r.status).toBe("UNRESOLVED");
     expect(r.provenance).toBe("UNKNOWN");
     expect(r.value).toBeUndefined();
-    expect(r.unsupported_reason).toMatch(/ללא provenance/);
+    expect(r.unsupported_reason).toMatch(/ללא record_origin|ללא provenance/);
   });
 
   it("an EMPTY authoritative REAL collection reads EMPTY with a reason", () => {
@@ -412,7 +428,13 @@ describe("facts count by declared provenance, never by collection length", () =>
     const c = factFromCount("Globe arcs", "projectGlobeGraph → arcs", 10, "none");
     expect(c.provenance).toBe("UNKNOWN");
     expect(c.status).toBe("PRESENT");
-    expect(c.unsupported_reason).toMatch(/bootstrap|provenance/);
+    /* The caption used to say the records "carry no provenance". That became
+       false once Action and Effect gained `record_origin`; what is actually
+       missing is the RECORDS, since this helper is handed a bare count. The
+       assertion still guards the same thing — the reason must name why REAL
+       cannot be claimed here — without pinning the obsolete explanation. */
+    expect(c.unsupported_reason).toMatch(/record_origin|bootstrap|provenance/);
+    expect(c.unsupported_reason).toBeTruthy();
   });
 });
 

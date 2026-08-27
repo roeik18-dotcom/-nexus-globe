@@ -63,6 +63,7 @@ import { learningStore, findLearningsForEffect } from "./learningStoreAccessor";
 import type { LearningRecord } from "./learningStore";
 import { computeStateDelta, type StateDelta } from "./stateDelta";
 import { canonEventStore } from "./canonEventStoreAccessor";
+import type { RecordOrigin } from "../recordOrigin";
 
 // ── PROPOSED ACTION / ACTOR — record a real Action ─────────────────────────
 
@@ -87,8 +88,42 @@ export async function recordAction(action: Action, recordedAt: string): Promise<
       `Action ${action?.action_id ?? "(no id)"} failed structural validation before recording`,
     );
   }
-  const [stored] = await actionStore().append([{ action, recorded_at: recordedAt }]);
+  return writeActionRecord(action, recordedAt, undefined);
+}
+
+/**
+ * THE TRUSTED BOUNDARY. Private on purpose: `record_origin` is an argument
+ * here and nowhere else, so no caller outside this module — and in particular
+ * no `"use server"` action reachable from a browser — can choose it.
+ */
+async function writeActionRecord(
+  action: Action, recordedAt: string, record_origin: RecordOrigin | undefined,
+): Promise<ActionRecord> {
+  const [stored] = await actionStore().append([
+    { action, recorded_at: recordedAt, ...(record_origin ? { record_origin } : {}) },
+  ]);
   return stored;
+}
+
+/**
+ * THE ONE WRITER THAT MAY CONFER REAL, for an Action a person recorded through
+ * the authenticated form. It takes NO origin parameter: REAL is a fact about
+ * this code path, not a value anyone supplies. Raw FormData cannot reach it.
+ *
+ * This module deliberately has no `"use server"` directive — exporting this
+ * from a server-action module would publish it as a client-callable endpoint,
+ * which is precisely the hole the Observation writer was moved out of.
+ */
+export async function recordAuthenticatedAction(
+  action: Action, recordedAt: string,
+): Promise<ActionRecord> {
+  const validation = validateAction(action);
+  if (!validation.valid) {
+    throw new ActionReferentialIntegrityError(
+      `Action ${action?.action_id ?? "(no id)"} failed structural validation before recording`,
+    );
+  }
+  return writeActionRecord(action, recordedAt, "REAL");
 }
 
 // ── EXPECTED EFFECT / OBSERVED EFFECT / EVIDENCE — record a real Effect ────
@@ -120,6 +155,13 @@ export class ObservedInReferentialIntegrityError extends Error {
 }
 
 export async function recordEffect(effect: Effect, recordedAt: string): Promise<EffectRecord> {
+  return checkAndWriteEffect(effect, recordedAt, undefined);
+}
+
+/** The referential checks, run exactly once, whatever the origin. */
+async function checkAndWriteEffect(
+  effect: Effect, recordedAt: string, record_origin: RecordOrigin | undefined,
+): Promise<EffectRecord> {
   const actions = await loadActions();
   const actionExists = actions.some((r) => r.action.action_id === effect.action_ref);
   if (!actionExists) throw new EffectReferentialIntegrityError(effect.action_ref);
@@ -137,8 +179,29 @@ export async function recordEffect(effect: Effect, recordedAt: string): Promise<
     if (!obsExists) throw new ObservedInReferentialIntegrityError(effect.observed_in_ref);
   }
 
-  const [stored] = await effectStore().append([{ effect, recorded_at: recordedAt }]);
+  return writeEffectRecord(effect, recordedAt, record_origin);
+}
+
+/** Private trusted boundary for Effect — see `writeActionRecord`. */
+async function writeEffectRecord(
+  effect: Effect, recordedAt: string, record_origin: RecordOrigin | undefined,
+): Promise<EffectRecord> {
+  const [stored] = await effectStore().append([
+    { effect, recorded_at: recordedAt, ...(record_origin ? { record_origin } : {}) },
+  ]);
   return stored;
+}
+
+/**
+ * The one writer that may confer REAL on an Effect, for an Effect a person
+ * recorded through the authenticated form. No origin parameter — REAL is a
+ * fact about this code path. The referential checks run exactly once, inside
+ * `checkAndWriteEffect`, so nothing is appended twice.
+ */
+export async function recordAuthenticatedEffect(
+  effect: Effect, recordedAt: string,
+): Promise<EffectRecord> {
+  return checkAndWriteEffect(effect, recordedAt, "REAL");
 }
 
 // ── DELTA / LEARNING / UPDATED STATE — record a real Learning ──────────────

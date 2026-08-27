@@ -35,14 +35,42 @@ import { join } from "node:path";
 
 import { type Effect, type EffectError, validateEffect } from "./effect";
 import { parseOffsetInstant } from "./observation";
+import { isRecordOrigin, type RecordOrigin } from "../recordOrigin";
 
 export const EFFECT_STORE_FILENAME = "effects.jsonl";
 
 /** Wraps the real, unmodified `Effect` type. `recorded_at` is when this
  *  record was appended — distinct from `Effect.time`. */
+/** Absent or unrecognised origin is UNKNOWN — never optimistically REAL. */
+export function effectOriginOf(record: Pick<EffectRecord, "record_origin"> | undefined | null): RecordOrigin {
+  return isRecordOrigin(record?.record_origin) ? record.record_origin : "UNKNOWN";
+}
+
+/** The one admissibility test. A projection must ask THIS, not read prose. */
+export function isEffectAdmissible(record: Pick<EffectRecord, "record_origin"> | undefined | null): boolean {
+  return effectOriginOf(record) === "REAL";
+}
+
 export interface EffectRecord {
   effect: Effect;
   recorded_at: string;
+  /**
+   * WHERE THIS RECORD CAME FROM — the record-level origin, exactly as
+   * `CanonEvent` already carries it.
+   *
+   * `effect.provenance` is a HUMAN SENTENCE explaining why the effect happened
+   * ("self-initiated via Marketplace following a permitted Match…"). Thirteen
+   * projections were comparing that prose to the string "REAL" and, finding it
+   * unequal, rendering a genuine record as UNKNOWN. The two questions are
+   * different: `provenance` is the person's explanation and belongs to them;
+   * this field is the system's statement about the writer that produced the
+   * record, and no free text may ever stand in for it.
+   *
+   * OPTIONAL, AND ABSENT MEANS UNKNOWN. Stored records predating this contract
+   * are not migrated or rewritten — they simply have no origin, which is the
+   * honest answer for them. Read it through `effectOriginOf()`, never directly.
+   */
+  record_origin?: RecordOrigin;
 }
 
 export const EFFECT_APPEND_REJECTION_CODES = [

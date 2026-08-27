@@ -82,7 +82,9 @@ import { resolvePersonFrame } from "@/app/lib/philos/person/personFrameAccessor"
 import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import { findDomainStatesForSubject } from "@/app/lib/philos/canon/domainStateStoreAccessor";
 import DemoSimulationSection from "@/app/lib/philos/analysis/DemoSimulationSection";
-import RealDataGapPanel, { factFromCount } from "@/app/lib/philos/day/RealDataGapPanel";
+import RealDataGapPanel, { factFromCount, factFromRecords, provenanceFromOrigin } from "@/app/lib/philos/day/RealDataGapPanel";
+import { actionOriginOf, type ActionRecord } from "@/app/lib/philos/canon/actionStore";
+import { effectOriginOf, type EffectRecord } from "@/app/lib/philos/canon/effectStore";
 import { loadCanonEvents } from "@/app/lib/philos/canon/canonEventStoreAccessor";
 import { selectRealUnitReadings } from "@/app/lib/philos/analysis/realUnitReadings";
 import DynamicsView, { type CommunityCapitalContext, type SelectedContext, type TimeRangeSummary } from "./DynamicsView";
@@ -267,6 +269,14 @@ export default async function DynamicsPage({
      table underneath it can never disagree. */
   let causalCounts: { observations: number; needs: number; offers: number; actions: number; effects: number; verifiedEffects: number; learnings: number | null } | null = null;
   let causalWindow: { from: string; to: string } | null = null;
+  /* THE RECORDS THEMSELVES, not just their length. The gap panel below was
+     handed `action_refs.length` and therefore could not read `record_origin`,
+     so a genuine REAL Action written through the authenticated form rendered
+     as UNKNOWN on this terminal. Captured here in exactly the idiom
+     `causalCounts` already uses — assigned inside the block that loads them,
+     read at the panel call site. */
+  let viewerActions: ActionRecord[] = [];
+  let viewerEffects: EffectRecord[] = [];
   const traceEdges = await (async () => {
     try {
       const { canonEventStore } = await import("@/app/lib/philos/canon/canonEventStoreAccessor");
@@ -278,6 +288,8 @@ export default async function DynamicsPage({
         (e) => e.canon_type === "observation" && e.payload.subject === subj);
       const acts = (await loadActions()).filter((a) => a.action.owner === subj);
       const effs = (await loadEffects()).filter((e) => e.effect.subject === subj);
+      viewerActions = acts;
+      viewerEffects = effs;
       const nds = await findNeedsForSubject(subj).catch(() => []);
       const { findOffersForSource } = await import("@/app/lib/philos/canon/offerStoreAccessor");
       const ofs = await findOffersForSource(subj).catch(() => []);
@@ -364,9 +376,14 @@ export default async function DynamicsPage({
     <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="dynamics" facts={[
       /* The day-scoped chain, already projected. `null` here means the
          projection could not resolve it — UNRESOLVED, never zero. */
-      factFromCount("Action", "DaySession.action_refs", daySession.action_refs.value?.length ?? null,
+      /* RECORDS, NOT REFS. `DaySession.*_refs` are ids; an id cannot say where
+         its record came from. These read the loaded records so this terminal
+         determines origin itself instead of declaring that it cannot. */
+      factFromRecords("Action", "loadActions → viewerActions", viewerActions,
+        (r) => provenanceFromOrigin(actionOriginOf(r)),
         daySession.action_refs.unresolved_reason ?? "לא נמצאה רשומה"),
-      factFromCount("Effect", "DaySession.effect_refs", daySession.effect_refs.value?.length ?? null,
+      factFromRecords("Effect", "loadEffects → viewerEffects", viewerEffects,
+        (r) => provenanceFromOrigin(effectOriginOf(r)),
         daySession.effect_refs.unresolved_reason ?? "לא נמצאה רשומה"),
       factFromCount("Evidence", "DaySession.evidence_refs", daySession.evidence_refs.value?.length ?? null,
         daySession.evidence_refs.unresolved_reason ?? "לא נמצאה רשומה"),

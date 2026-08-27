@@ -17,7 +17,7 @@
  */
 import { revalidatePath } from "next/cache";
 
-import { recordEffect, EffectReferentialIntegrityError } from "./actionLifecycle";
+import { recordAuthenticatedEffect, EffectReferentialIntegrityError } from "./actionLifecycle";
 import type { Effect } from "./effect";
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { createIdGenerator, systemClock } from "@/app/lib/philos/eventStore";
@@ -74,7 +74,7 @@ export async function createEffectForCurrentUserCore(formData: FormData): Promis
   };
 
   try {
-    const stored = await recordEffect(effect, now);
+    const stored = await recordAuthenticatedEffect(effect, now);
     return { ok: true, effect_id: stored.effect.effect_id };
   } catch (e) {
     if (e instanceof EffectReferentialIntegrityError) return { ok: false, message: e.message };

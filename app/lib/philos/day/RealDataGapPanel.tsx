@@ -38,6 +38,7 @@ import {
 import type { RealUnitReadings } from "../analysis/realUnitReadings";
 import { COLOR, COLOR_ROLE, FS, RADIUS, SPACE, TYPE } from "../shell/designTokens";
 import { DAY_GATES, type DayGate, type DaySession } from "./daySession";
+import type { RecordOrigin } from "../recordOrigin";
 
 /**
  * What a terminal already knows, handed in rather than re-derived.
@@ -90,7 +91,12 @@ export function factFromCount(
   }
   return count > 0
     ? { label, source, provenance: "UNKNOWN", status: "PRESENT", value: count,
-        unsupported_reason: "מקור לא מסומן — הרשומות אינן נושאות provenance; ייתכן ומכיל bootstrap/DEMO" }
+        /* WAS "הרשומות אינן נושאות provenance" — no longer true: Action and
+           Effect records carry `record_origin`. What is missing HERE is the
+           records themselves; this helper is handed a bare count, so it cannot
+           read an origin. Callers that hold the records must use
+           `factFromRecords`, which can. */
+        unsupported_reason: "ספירה בלבד — לא נמסרו רשומות לפאנל, ולכן לא ניתן לקרוא record_origin כאן" }
     : { label, source, provenance: "UNKNOWN", status: "EMPTY", reason };
 }
 
@@ -105,6 +111,29 @@ type RecordProvenance = "REAL" | "DERIVED_REAL" | "DEMO" | "REFERENCE" | "UNKNOW
  * a person reads as their own. A record with no provenance at all makes the
  * whole fact UNRESOLVED rather than being quietly treated as REAL.
  */
+/**
+ * RECORD ORIGIN → THIS PANEL'S PROVENANCE VOCABULARY.
+ *
+ * Two vocabularies exist on purpose and are not the same set: `RecordOrigin`
+ * is what a stored record carries (`recordOrigin.ts`), while this panel speaks
+ * in terms a reader can act on. The mapping is written out rather than cast,
+ * so a new origin has to be given a meaning here instead of silently arriving
+ * as something it is not.
+ *
+ * UNKNOWN maps to `undefined` — "this record does not say" — which is exactly
+ * what the panel already counts as missing provenance. That keeps legacy
+ * records, which carry no origin at all, reading as UNKNOWN with no migration.
+ */
+export function provenanceFromOrigin(origin: RecordOrigin): RecordProvenance | undefined {
+  switch (origin) {
+    case "REAL": return "REAL";
+    case "DERIVED": return "DERIVED_REAL";
+    case "DEMO": return "DEMO";
+    case "IMPORTED": return "REFERENCE";
+    case "UNKNOWN": return undefined;
+  }
+}
+
 export function factFromRecords<T>(
   label: string,
   source: string,
@@ -120,16 +149,36 @@ export function factFromRecords<T>(
     tally[pv] = (tally[pv] ?? 0) + 1;
   }
 
-  if (missing > 0) {
+  const real = tally.REAL ?? 0;
+  const derived = tally.DERIVED_REAL ?? 0;
+
+  /* A MIXED COLLECTION KEEPS BOTH TRUTHS.
+     This block used to return UNRESOLVED the moment ANY record lacked an
+     origin — before it had looked at how many were REAL. One legacy row
+     therefore hid every genuine record behind "cannot determine", and a
+     person who had just written a REAL Action saw their own record reported
+     as absent. Missing origin on an OLD record is a fact about that record;
+     it says nothing about the new one beside it. */
+  if (missing > 0 && real > 0) {
     return {
-      label, source, provenance: "UNKNOWN", status: "UNRESOLVED",
-      unsupported_reason: `${missing} מתוך ${records.length} רשומות ללא provenance — לא ניתן לקבוע REAL`,
-      breakdown: tally,
+      label, source, provenance: "REAL", status: "PRESENT", value: real,
+      unsupported_reason:
+        `${real} REAL · ${missing} רשומות ישנות ללא record_origin — מעורב. ` +
+        `הישנות אינן נספרות ואינן סוגרות שער; החדשות נספרות במלואן.`,
+      breakdown: { ...tally, UNKNOWN_LEGACY: missing },
     };
   }
 
-  const real = tally.REAL ?? 0;
-  const derived = tally.DERIVED_REAL ?? 0;
+  /* Nothing admissible at all — now UNRESOLVED is the honest answer. */
+  if (missing > 0) {
+    return {
+      label, source, provenance: "UNKNOWN", status: "UNRESOLVED",
+      unsupported_reason:
+        `${missing} מתוך ${records.length} רשומות ללא record_origin (רשומות ישנות) — לא ניתן לקבוע REAL עבורן`,
+      breakdown: { ...tally, UNKNOWN_LEGACY: missing },
+    };
+  }
+
   const nonReal = (tally.DEMO ?? 0) + (tally.REFERENCE ?? 0) + (tally.UNKNOWN ?? 0);
 
   if (real > 0) {

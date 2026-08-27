@@ -27,15 +27,43 @@ import { join } from "node:path";
 
 import { type Action, type ActionError, validateAction } from "./action";
 import { parseOffsetInstant } from "./observation";
+import { isRecordOrigin, type RecordOrigin } from "../recordOrigin";
 
 export const ACTION_STORE_FILENAME = "actions.jsonl";
 
 /** Wraps the real, unmodified `Action` type. `recorded_at` is when this
  *  record was appended — distinct from `Action.time`, same discipline
  *  `NeedRecord` already applies between `recorded_at` and `need.time`. */
+/** Absent or unrecognised origin is UNKNOWN — never optimistically REAL. */
+export function actionOriginOf(record: Pick<ActionRecord, "record_origin"> | undefined | null): RecordOrigin {
+  return isRecordOrigin(record?.record_origin) ? record.record_origin : "UNKNOWN";
+}
+
+/** The one admissibility test. A projection must ask THIS, not read prose. */
+export function isActionAdmissible(record: Pick<ActionRecord, "record_origin"> | undefined | null): boolean {
+  return actionOriginOf(record) === "REAL";
+}
+
 export interface ActionRecord {
   action: Action;
   recorded_at: string;
+  /**
+   * WHERE THIS RECORD CAME FROM — the record-level origin, exactly as
+   * `CanonEvent` already carries it.
+   *
+   * `action.provenance` is a HUMAN SENTENCE explaining why the action happened
+   * ("self-initiated via Marketplace following a permitted Match…"). Thirteen
+   * projections were comparing that prose to the string "REAL" and, finding it
+   * unequal, rendering a genuine record as UNKNOWN. The two questions are
+   * different: `provenance` is the person's explanation and belongs to them;
+   * this field is the system's statement about the writer that produced the
+   * record, and no free text may ever stand in for it.
+   *
+   * OPTIONAL, AND ABSENT MEANS UNKNOWN. Stored records predating this contract
+   * are not migrated or rewritten — they simply have no origin, which is the
+   * honest answer for them. Read it through `actionOriginOf()`, never directly.
+   */
+  record_origin?: RecordOrigin;
 }
 
 export const ACTION_APPEND_REJECTION_CODES = [

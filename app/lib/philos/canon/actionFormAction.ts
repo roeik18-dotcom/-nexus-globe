@@ -12,7 +12,7 @@
  */
 import { revalidatePath } from "next/cache";
 
-import { recordAction, ActionReferentialIntegrityError } from "./actionLifecycle";
+import { recordAuthenticatedAction, ActionReferentialIntegrityError } from "./actionLifecycle";
 import type { Action, ActionType, MechanismScope } from "./action";
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { createIdGenerator, systemClock } from "@/app/lib/philos/eventStore";
@@ -87,7 +87,7 @@ export async function createActionForCurrentUserCore(formData: FormData): Promis
   };
 
   try {
-    const stored = await recordAction(action, systemClock.now());
+    const stored = await recordAuthenticatedAction(action, systemClock.now());
     return { ok: true, action_id: stored.action.action_id };
   } catch (e) {
     if (e instanceof ActionReferentialIntegrityError) return { ok: false, message: e.message };

@@ -29,7 +29,7 @@ import { findKnownResource, resolveSelectedContext, VALUE_DIMENSIONS } from "./r
 import { parseSystemContextRef } from "@/app/lib/systemContext";
 import { SystemShell } from "@/app/lib/philos/shell/SystemShell";
 import DemoSimulationSection from "@/app/lib/philos/analysis/DemoSimulationSection";
-import RealDataGapPanel, { factFromCount } from "@/app/lib/philos/day/RealDataGapPanel";
+import RealDataGapPanel, { factFromCount, factFromRecords, provenanceFromOrigin } from "@/app/lib/philos/day/RealDataGapPanel";
 import { selectRealUnitReadings } from "@/app/lib/philos/analysis/realUnitReadings";
 import { AuditHeading, AuditSection } from "@/app/lib/philos/shell/epistemics";
 import { resolveShellIdentityLink } from "@/app/lib/philos/community/resolveShellIdentityLink";
@@ -57,6 +57,8 @@ import { linksByRelation } from "@/app/lib/philos/bridge/entityLink";
 import { buildCommunityTensions, sortTensions } from "@/app/lib/philos/tension";
 import DayStatusStrip from "@/app/lib/philos/day/DayStatusStrip";
 import { loadDaySession } from "@/app/lib/philos/day/loadDaySession";
+import { actionOriginOf } from "@/app/lib/philos/canon/actionStore";
+import { effectOriginOf } from "@/app/lib/philos/canon/effectStore";
 
 export const metadata = { title: "Marketplace — Philos" };
 
@@ -276,9 +278,17 @@ export default async function MarketplacePage({
             "אין צורך רשום — לא נמצאה רשומה ב־needStore"),
           factFromCount("Offer", "findOffersForSource → mineOffers", mineOffers.length,
             "אין הצעה רשומה — לא נמצאה רשומה ב־offerStore"),
-          factFromCount("Action", "loadActions → mineActions", mineActions.length,
+          /* RECORD ORIGIN, NOT PROSE. These were `factFromCount`, which
+             cannot see an origin and therefore reported every Action and
+             Effect as UNKNOWN — including ones written through the
+             authenticated form. `record_origin` is the record-level fact;
+             `action.provenance` is the person's sentence and is not a
+             provenance vocabulary at all. */
+          factFromRecords("Action", "loadActions → mineActions", mineActions,
+            (r) => provenanceFromOrigin(actionOriginOf(r)),
             "אין פעולה רשומה — לא נמצאה רשומה ב־actionStore"),
-          factFromCount("Effect", "loadEffects → mineEffects", mineEffects.length,
+          factFromRecords("Effect", "loadEffects → mineEffects", mineEffects,
+            (r) => provenanceFromOrigin(effectOriginOf(r)),
             "אין תוצאה רשומה — לא נמצאה רשומה ב־effectStore"),
         ]} />
       </div>
