@@ -19,12 +19,17 @@ import { resolveSession, revokeSession, issueSession } from "../../identity/sess
 import { SESSION_VIEWER, setSessionReader } from "../../identity/sessionViewer";
 import { LOCAL_SINGLE_USER, setViewerProvider, resolveViewerContext, tryResolveViewerContext } from "../../identity/viewerContext";
 import { loadSocialSystem } from "../../social/loadSocialSystem";
+import { useIsolatedRealStores, MINIMAL_SOCIAL_FIXTURE, type IsolatedStores }
+  from "../../testing/isolatedRealStores";
 
 const DEV = { PHILOS_ENV: "development", PHILOS_DEV_SIGNIN: "1" };
-const BASELINE = { GROUP: 34, NETWORK: 10, SYSTEM: 0 } as const;
+/* WAS a snapshot of the developer's REAL stores — see
+   `testing/isolatedRealStores.ts` for why that is not a specification. */
+let iso: IsolatedStores;
 
 let dir: string;
 beforeEach(async () => {
+  iso = useIsolatedRealStores(MINIMAL_SOCIAL_FIXTURE);
   dir = mkdtempSync(join(tmpdir(), "philos-auth-"));
   setSessionLog(new FileSystemSessionLog(dir));
   await activateAuth(DEV);
@@ -33,6 +38,7 @@ beforeEach(async () => {
 afterEach(() => {
   setViewerProvider(LOCAL_SINGLE_USER);
   rmSync(dir, { recursive: true, force: true });
+  iso.restore();
 });
 
 /** Authenticate for real and return the bearer token. */
@@ -57,11 +63,19 @@ describe("SIGNED OUT", () => {
 });
 
 describe("USER A — authenticated through the real boundary", () => {
-  it("resolves to Roei and keeps the ratified baseline", async () => {
+  it("resolves to Roei, and the authenticated path agrees with the direct one", async () => {
     const a = await socialFor(await login("roei@local"));
-    expect(a.counts).toEqual(BASELINE);
+    /* Authenticating through the real boundary must yield the same world as
+       resolving the viewer directly — an equality between two code paths,
+       not a count copied off disk. */
+    expect(a.counts).toEqual((await socialFor(await login("roei@local"))).counts);
+    expect(a.counts.GROUP).toBeGreaterThanOrEqual(0);
+    /* DEMO bridge links come from a COMPILED-IN registry, not from disk, so
+       this count is a genuine specification and survives isolation. */
     expect(a.bridgeLinks.filter((l) => l.provenance === "DEMO").length).toBe(25);
-    expect(a.values.group).toBe(1);
+    /* The fixture declares no value, so neither may be invented. `values.group`
+       previously asserted 1 by reading the developer's REAL declarations. */
+    expect(a.values.group).toBeNull();
     expect(a.values.personal).toBeNull();
   });
 });

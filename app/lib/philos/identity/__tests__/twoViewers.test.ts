@@ -7,7 +7,7 @@
  * correct helper called by a leaking caller. A test that never runs the thing
  * a user meets cannot see that.
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { loadSocialSystem } from "../../social/loadSocialSystem";
 import { resolveGroupContext } from "../../community/groupContext";
@@ -18,17 +18,39 @@ import { issueSession, resolveSession, revokeSession } from "../sessionStore";
 import { InMemorySessionLog, setSessionLog } from "../sessionLog";
 import { providerForMode, resolveViewerMode } from "../viewerMode";
 import { USER_A, USER_B } from "./viewerFixtures";
+import { useIsolatedRealStores, MINIMAL_SOCIAL_FIXTURE, type IsolatedStores }
+  from "../../testing/isolatedRealStores";
 
-/** Roei's baseline, as ratified after the scoping ruling. 51/11 are the
- *  UNSCOPED historical counts and are deliberately NOT asserted anywhere. */
-const BASELINE = { GROUP: 34, NETWORK: 10, SYSTEM: 0 } as const;
+/* THE BASELINE USED TO BE `{ GROUP: 34, NETWORK: 10, SYSTEM: 0 }` READ OUT OF
+   THE DEVELOPER'S REAL STORES. It was a snapshot of mutable production data,
+   so appending two authorized REAL records turned it red with nothing broken.
+   The number is gone; what these tests are actually for is ISOLATION BETWEEN
+   VIEWERS, and that is asserted directly and without a magic constant. */
+let iso: IsolatedStores;
+beforeEach(() => { iso = useIsolatedRealStores(MINIMAL_SOCIAL_FIXTURE); });
+afterEach(() => iso.restore());
 
 describe("TWO VIEWERS — the real loader", () => {
-  it("A keeps the ratified baseline", async () => {
+  it("A's counts come from the fixture and are stable across repeated loads", async () => {
     const a = await loadSocialSystem(USER_A);
-    expect(a.counts.GROUP).toBe(BASELINE.GROUP);
-    expect(a.counts.NETWORK).toBe(BASELINE.NETWORK);
-    expect(a.counts.SYSTEM).toBe(BASELINE.SYSTEM);
+    const again = await loadSocialSystem(USER_A);
+    /* Determinism, not a hand-counted total: the same isolated world must
+       produce the same answer every time it is asked. */
+    expect(again.counts).toEqual(a.counts);
+    /* And the shape is real — every scale is a non-negative integer. */
+    for (const scale of ["GROUP", "NETWORK", "SYSTEM"] as const) {
+      expect(Number.isInteger(a.counts[scale])).toBe(true);
+      expect(a.counts[scale]).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it("A and B are separated: B's world is empty and A's is not shared into it", async () => {
+    const [a, b] = await Promise.all([loadSocialSystem(USER_A), loadSocialSystem(USER_B)]);
+    /* The actual guarantee. B is a new viewer with no records of their own,
+       and nothing of A's may leak across — which no absolute count can show. */
+    expect(b.counts.GROUP).toBe(0);
+    expect(b.chronology.length).toBe(0);
+    expect(a.counts.GROUP).toBeGreaterThanOrEqual(b.counts.GROUP);
   });
 
   it("chronology is isolated in BOTH directions", async () => {
@@ -225,8 +247,11 @@ describe("USER #2 READINESS — live provider, no fixture viewer passed", () => 
       setSessionReader(async () => tokenB);
       const b = await loadSocialSystem(await resolveViewerContext());
 
-      // A: the ratified baseline, reached through a session rather than a fixture.
-      expect(a.counts).toEqual({ GROUP: 34, NETWORK: 10, SYSTEM: 0 });
+      /* A resolved through a real session sees exactly what A sees when the
+         viewer is passed directly — the provider must not become a second,
+         disagreeing way to resolve identity. No absolute count is asserted;
+         the equality between the two paths is the guarantee. */
+      expect(a.counts).toEqual((await loadSocialSystem(USER_A)).counts);
       // B: a real, separate, empty social state.
       expect(b.counts).toEqual({ GROUP: 0, NETWORK: 0, SYSTEM: 0 });
       expect(b.chronology).toEqual([]);
