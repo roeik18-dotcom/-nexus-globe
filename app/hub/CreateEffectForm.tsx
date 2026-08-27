@@ -72,8 +72,17 @@ export default function CreateEffectForm({
         <input type="checkbox" name="concerns_subject_internal_state" /> concerns_subject_internal_state — האפקט נוגע במצב הפנימי שלי
       </label>
       <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
-        <input type="checkbox" name="self_verified" /> self_verified — אני מאשר/ת שהתוצאה אכן קרתה בפועל (canon §17: self תמיד מספיק)
+        <input type="checkbox" name="self_verified" /> self_verified — אני מאשר/ת שהתוצאה אכן קרתה בפועל
       </label>
+      {/* WHAT TICKING THAT BOX IS WORTH. `verifier_type` is hardcoded "self"
+          in the writer, so the same person who claims the outcome is the one
+          confirming it. That is self-report, and calling it evidence on screen
+          would repeat exactly the defect the identity tier work removed. */}
+      <div data-effect-evidence-note style={{ fontSize: 12, color: "#8fa3c9", lineHeight: 1.5 }}>
+        ללא סימון: <b>תוצאה דווחה ונקשרה לפעולה</b> — טרם קיימת ראיה קבילה, ואין אימות עצמאי.
+        עם סימון: זהו <b>אישור עצמי</b> של מדווח התוצאה בלבד (verifier_type = self),
+        לא ראיה עצמאית ולא אימות של גורם חיצוני.
+      </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <button type="submit" disabled={pending} style={btnStyle}>{pending ? "רושם…" : "רשום אפקט · RECORD EFFECT"}</button>
         {result ? (

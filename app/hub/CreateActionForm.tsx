@@ -29,13 +29,15 @@ const SCOPES: { value: "self_regulation" | "melting_pot"; label: string }[] = [
 ];
 
 export default function CreateActionForm({
-  inputOptions, matchPermit, actingSubject,
+  inputOptions, matchPermit, actingSubject, dayRef,
 }: {
   inputOptions: { id: string; label: string }[];
   matchPermit?: MatchPermit | null;
   /** Whoever the server will bind this write to. Display only — the owner is
    *  decided server-side and this cannot influence it. */
   actingSubject?: string;
+  /** The open day this Action declares. Server-resolved; never client-chosen. */
+  dayRef?: string;
 }) {
   const [result, setResult] = useState<CreateActionResult | null>(null);
   const [pending, startTransition] = useTransition();
@@ -88,9 +90,33 @@ export default function CreateActionForm({
           אין MATCH PERMIT זמין — Action שבוחר גם Need וגם Offer יידחה ללא הערכת התאמה מותרת קודמת.
         </div>
       )}
+      {/* ── THE DAY THIS ACTION BELONGS TO ───────────────────────────────
+          `daySession` scopes the chain on `day_ref === day_id && owner ===
+          subject_id` — a DECLARED link, never chronology. This form sent no
+          `day_ref` at all, so every Action it wrote fell outside every day and
+          neither ActionRecorded nor ActionAuthorized could ever be met. The
+          value is the server-resolved open day, not a client choice. */}
+      {dayRef ? (
+        <>
+          <input type="hidden" name="day_ref" value={dayRef} />
+          <div data-action-day-ref={dayRef} style={{ fontSize: 12, color: "#8fa3c9" }}>
+            משויך ליום הפתוח: <b dir="ltr">{dayRef}</b>
+          </div>
+        </>
+      ) : (
+        <div style={{ fontSize: 12, color: "#fbbf24" }}>
+          אין יום פתוח — פעולה שתירשם כעת לא תשויך ליום ולא תסגור שער יומי.
+        </div>
+      )}
       <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
         <input type="checkbox" name="consent" /> consent — אני מסכים/ה שפעולה זו תירשם (canon §10)
       </label>
+      {/* WHAT THIS CONSENT IS, AND WHAT IT IS NOT. */}
+      <div data-action-authority style={{ fontSize: 12, color: "#8fa3c9", lineHeight: 1.5 }}>
+        הרשאת פעולה בהסכמה מפורשת של מבצע הפעולה — אין כאן אישור קבוצה,
+        אישור חיצוני או הרשאה עצמאית. מכיוון שההסכמה היא תנאי חובה בכותב הקיים,
+        פעולה אחת סוגרת יחד את שני השערים <b>ActionRecorded</b> ו-<b>ActionAuthorized</b>.
+      </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <button type="submit" disabled={pending} style={btnStyle}>{pending ? "רושם…" : "רשום פעולה · RECORD ACTION"}</button>
         {result ? (

@@ -37,6 +37,8 @@ import { loadPhilosEvents, philosEventStore } from "@/app/lib/philos-event-store
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { loadCanonEvents } from "@/app/lib/philos/canon/canonEventStoreAccessor";
 import { resolveSubmittedObservationRef } from "./linkableObservations";
+import { resolveSubmittedStateRef } from "./linkableStates";
+import { loadDomainStates } from "@/app/lib/philos/canon/domainStateStoreAccessor";
 import { systemClock, todayIn } from "@/app/lib/philos/eventStore";
 import type { PhilosEvent } from "@/app/lib/philos/events";
 import {
@@ -76,7 +78,9 @@ export async function openDayCore(formData: FormData): Promise<DayWriteResult> {
     subject_id: viewer.subject_id,
     intention: String(formData.get("intention") ?? "").trim(),
     context: String(formData.get("context") ?? "").trim(),
-    state_t0_refs: refs(formData, "state_t0_refs"),
+    /* Filled in below, from the store, never from the submitted string —
+       same discipline as the Observation anchor. */
+    state_t0_refs: [],
     /* The Event/Observation anchor. Omitted entirely when absent rather than
        stored as "", so "not anchored" stays distinguishable from "anchored to
        nothing" — and the validator's empty-if-present rule stays meaningful.
@@ -118,6 +122,36 @@ export async function openDayCore(formData: FormData): Promise<DayWriteResult> {
     }
     candidate.event_ref = resolved.canon_event_id;
     candidate.observation_ref = resolved.canon_event_id;
+  }
+
+  /* ── THE STATE(t0) ANCHOR, PROVEN AGAINST THE STORE BEFORE ANY APPEND ──
+     Identical treatment to the Observation above, and for the identical
+     reason: `state_t0_refs` used to be free text, so a person could type
+     `obs_anything` — which the placeholder actually suggested — and open a day
+     whose State(t0) named nothing. The gate then stayed shut forever, because
+     the log is append-only and a second opening is refused.
+
+     Nothing here trusts the client for identity or provenance: the subject is
+     `viewer.subject_id` resolved server-side, and REAL provenance is read off
+     the STORED record. A submitted subject_id/person_id/provenance reaches no
+     code path.
+
+     No selection remains legitimate: the day opens PARTIAL with no t0 ref, and
+     StateT0Available stays honestly unresolved for that day — permanently,
+     which is why the form says so before consent. */
+  const submittedStateRefs = refs(formData, "state_t0_refs");
+  if (submittedStateRefs.length > 0) {
+    const storedStates = await loadDomainStates();
+    const resolvedStates: string[] = [];
+    for (const submitted of submittedStateRefs) {
+      const resolved = resolveSubmittedStateRef(submitted, storedStates, viewer.subject_id);
+      if (!resolved.ok) {
+        return { ok: false, message: `day.opened refused: ${resolved.reason} — ${resolved.message}` };
+      }
+      /* A person selecting the same state twice selects it once. */
+      if (!resolvedStates.includes(resolved.state_id)) resolvedStates.push(resolved.state_id);
+    }
+    candidate.state_t0_refs = resolvedStates;
   }
 
   const validation = validateDayOpenedPayload(candidate);

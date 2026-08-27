@@ -42,6 +42,8 @@ import RealDataGapPanel, { factFromCount } from "@/app/lib/philos/day/RealDataGa
 import { loadCanonEvents } from "@/app/lib/philos/canon/canonEventStoreAccessor";
 import { selectRealUnitReadings } from "@/app/lib/philos/analysis/realUnitReadings";
 import { selectLinkableObservations } from "@/app/lib/philos/day/linkableObservations";
+import { selectLinkableStates } from "@/app/lib/philos/day/linkableStates";
+import { loadDomainStates } from "@/app/lib/philos/canon/domainStateStoreAccessor";
 import EntityContextPanel from "@/app/lib/philos/shell/EntityContextPanel";
 import StateDiffPanel from "@/app/lib/philos/shell/StateDiffPanel";
 import { buildCarryForward, buildDayClosingQuestions } from "@/app/lib/philos/dayClosingFusion";
@@ -139,6 +141,12 @@ export default async function HubPage({
      the accepted set are the same set. */
   const linkableObservations = selectLinkableObservations({
     events: canonEventsForViewer,
+    subject_id: personRef.person_id,
+  });
+  /* The State(t0) records this person may cite at opening. Same store the
+     writer re-reads, so options and accepted set are the same set. */
+  const linkableStates = selectLinkableStates({
+    records: await loadDomainStates(),
     subject_id: personRef.person_id,
   });
   // `resolvePersonRef` already applied this exact `typeof` check; kept as a
@@ -469,7 +477,7 @@ export default async function HubPage({
         />
         <DayStatusStrip session={daySession} />
         <DayChainSummary session={daySession} />
-        <DayOpeningPanel session={daySession} readOnly={!dayIsToday} linkable={linkableObservations} />
+        <DayOpeningPanel session={daySession} readOnly={!dayIsToday} linkable={linkableObservations} linkableStates={linkableStates} />
         <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="hub" facts={[
           factFromCount("State(t0)", "DaySession.state_t0", daySession.state_t0.value?.length ?? null,
             daySession.state_t0.unresolved_reason ?? "לא נמצאה רשומה"),

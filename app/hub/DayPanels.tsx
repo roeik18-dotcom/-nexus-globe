@@ -23,6 +23,7 @@ import { useState, useTransition } from "react";
 import { openDay, recordDayClosing } from "@/app/lib/philos/day/dayActions";
 import type { DaySession } from "@/app/lib/philos/day/daySession";
 import type { LinkableObservation } from "@/app/lib/philos/day/linkableObservations";
+import type { LinkableState } from "@/app/lib/philos/day/linkableStates";
 import { COLOR, FS, RADIUS, SPACE, TYPE } from "@/app/lib/philos/shell/designTokens";
 
 function useDayForm() {
@@ -32,13 +33,15 @@ function useDayForm() {
   return { err, setErr, ok, setOk, pending, start };
 }
 
-export function DayOpeningPanel({ session, readOnly = false, linkable = [] }: {
+export function DayOpeningPanel({ session, readOnly = false, linkable = [], linkableStates = [] }: {
   session: DaySession;
   readOnly?: boolean;
   /** The viewer's own eligible Observations, selected SERVER-side. The panel
    *  renders this list and never derives its own — the writer re-derives the
    *  same predicate from the store, so the two cannot drift apart. */
   linkable?: readonly LinkableObservation[];
+  /** The viewer's own citable State(t0) records, selected SERVER-side. */
+  linkableStates?: readonly LinkableState[];
 }) {
   const { err, setErr, ok, setOk, pending, start } = useDayForm();
   const alreadyOpen = session.opened_at.value !== null;
@@ -116,10 +119,36 @@ export function DayOpeningPanel({ session, readOnly = false, linkable = [] }: {
           <input name="context" required style={S.input} placeholder="מצב פתיחה, נסיבות" />
         </label>
 
-        <label style={S.label}>
-          <span style={S.k}>State(t0) refs</span>
-          <input name="state_t0_refs" style={S.input} placeholder="obs_… (מזהה קיים)" />
-        </label>
+        {/* ── STATE(t0) — ONE CONTROL, NOT A TYPED ID ──────────────────────
+            This was a free-text input whose placeholder read `obs_…`, which is
+            not even the right prefix: the resolver wants a `dstate_…`
+            state_id. A person following the hint typed a ref that could never
+            resolve, and the gate stayed shut with no explanation. */}
+        {linkableStates.length > 0 ? (
+          <label style={S.label}>
+            <span style={S.k}>מצב פתיחה · State(t0)</span>
+            <select name="state_t0_refs" defaultValue="" data-state-link style={S.input}>
+              <option value="">— ללא מצב פתיחה (היום ייפתח חלקי) —</option>
+              {linkableStates.map((st) => (
+                <option key={st.state_id} value={st.state_id}>
+                  {st.observed_at.slice(0, 16).replace("T", " ")}
+                  {` · ${st.domain_id}/${st.parameter_id} · level ${st.level}`}
+                  {st.declaresCause ? " · מצהיר סיבה" : ""}
+                  {` · ${st.state_id.slice(0, 12)}…`}
+                </option>
+              ))}
+            </select>
+            <span style={S.small}>
+              נבחר מצב אחד. השרת מאמת אותו מול המאגר לפני הכתיבה.
+            </span>
+          </label>
+        ) : (
+          <div data-state-link-empty style={S.carry}>
+            <span style={S.k}>מצב פתיחה · State(t0)</span>
+            <span style={S.small}>אין מצב פתיחה REAL זמין</span>
+            <a href="/hub/human-config" style={S.link}>רישום State חדש ←</a>
+          </div>
+        )}
 
         {/* ── THE OBSERVATION LINK — ONE CONTROL, NOT TWO RAW IDS ──────────
             The options are the server's own eligible list, so what a person
@@ -168,6 +197,29 @@ export function DayOpeningPanel({ session, readOnly = false, linkable = [] }: {
             ))}
           </div>
         )}
+
+        {/* ── WHAT OPENING COSTS, SAID BEFORE CONSENT ──────────────────────
+            The opening is the ONLY writer of these two refs and a second
+            opening is refused, so a day opened without them can never acquire
+            them. Nothing said so; a person could open first and silently lose
+            two gates for that date. */}
+        <div data-opening-permanence style={S.permanence}>
+          <b style={S.permanenceHead}>הפתיחה מתבצעת פעם אחת ליום</b>
+          <span style={S.small}>
+            התצפית ומצב הפתיחה חייבים להיווצר לפני הפתיחה ולהיבחר כאן.
+            פתיחה ללא אחד מהם פותחת יום חלקי — ולא ניתן לצרף אותם לאותה פתיחה מאוחר יותר.
+          </span>
+          <span style={S.small}>
+            {linkable.length > 0 ? `✓ ${linkable.length} תצפיות זמינות` : "✗ אין תצפית זמינה"}
+            {" · "}
+            {linkableStates.length > 0 ? `✓ ${linkableStates.length} מצבי פתיחה זמינים` : "✗ אין מצב פתיחה זמין"}
+          </span>
+          <span style={S.small}>
+            <a href="#observation-form" style={S.link}>רישום תצפית</a>
+            {" · "}
+            <a href="/hub/human-config" style={S.link}>רישום State(t0)</a>
+          </span>
+        </div>
 
         <label style={S.check}>
           <input type="checkbox" name="consent" />
@@ -355,6 +407,12 @@ const S = {
   v: { fontSize: FS.read, color: COLOR.text, overflowWrap: "anywhere" as const, minWidth: 0 },
   small: { fontSize: FS.meta, color: COLOR.textDim, overflowWrap: "anywhere" as const, minWidth: 0 },
   link: { fontSize: FS.base, color: "#5b9cf6", textDecoration: "underline" },
+  permanence: {
+    display: "flex", flexDirection: "column" as const, gap: 4,
+    border: "1px solid rgba(251,191,36,0.35)", borderRadius: RADIUS.sm,
+    background: "rgba(251,191,36,0.06)", padding: SPACE.sm,
+  },
+  permanenceHead: { fontSize: FS.base, fontWeight: 700, color: "#fbbf24" },
   unknown: { fontSize: FS.meta, color: "#fbbf24", overflowWrap: "anywhere" as const },
   note: { fontSize: FS.meta, color: COLOR.textFaint, margin: 0 },
   err: { fontSize: FS.meta, color: "#f2635c", margin: 0 },

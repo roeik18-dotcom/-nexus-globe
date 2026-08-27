@@ -18,13 +18,15 @@ import CreateActionForm from "@/app/hub/CreateActionForm";
 import type { MatchPermit } from "@/app/lib/philos/canon/matchPermit";
 
 export default function MatchActionFlow({
-  needOptions, offerOptions, inputOptions, actingSubject,
+  needOptions, offerOptions, inputOptions, actingSubject, dayRef,
 }: {
   needOptions: { need_id: string; label: string }[];
   offerOptions: { offer_id: string; label: string }[];
   inputOptions: { id: string; label: string }[];
   /** Display only — passed through to the action form's label. */
   actingSubject?: string;
+  /** The open day the Action will DECLARE. Server-resolved, never client-chosen. */
+  dayRef?: string;
 }) {
   const [permit, setPermit] = useState<MatchPermit | null>(null);
 
@@ -34,7 +36,7 @@ export default function MatchActionFlow({
         <EvaluateMatchForm needOptions={needOptions} offerOptions={offerOptions} onPermit={setPermit} />
       </div>
       <div id="action" dir="rtl" style={{ padding: "0 20px" }}>
-        <CreateActionForm inputOptions={inputOptions} matchPermit={permit} actingSubject={actingSubject} />
+        <CreateActionForm inputOptions={inputOptions} matchPermit={permit} actingSubject={actingSubject} dayRef={dayRef} />
       </div>
     </>
   );

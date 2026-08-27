@@ -412,6 +412,7 @@ export default async function MarketplacePage({
           scoped to personRef.person_id only — never every subject in the
           store — since this judges a specific person's own match. */}
       <MatchActionFlow
+        dayRef={daySession.opened_at.value !== null ? daySession.day_id : undefined}
         actingSubject={viewer.subject_id}
         needOptions={mineNeeds
           .map((n) => ({ need_id: n.need.need_id, label: `${n.need.desired_change} (${n.need.need_id.slice(0, 8)}…)` }))}

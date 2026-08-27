@@ -155,8 +155,10 @@ export function factFromRecords<T>(
 const GATE_WRITER: Readonly<Record<DayGate, { action: string; where: string } | null>> = {
   DayOpened: { action: "openDay", where: "פתיחת יום · Hub" },
   IdentityLinked: { action: "declareSamePersonAction → confirmSamePersonAction", where: "/hub/community" },
-  StateT0Available: { action: "createDomainStateForCurrentUser", where: "רישום State · Hub" },
-  EventObservationLinked: { action: "createObservationForCurrentUser", where: "רישום תצפית · Hub" },
+  /* The prerequisite writer creates the record; only the OPENING links it.
+     Naming the prerequisite here sent a person to the wrong screen. */
+  StateT0Available: { action: "openDay — פתיחת יום עם State(t0) נבחר", where: "פתיחת יום · Hub (צור State מראש)" },
+  EventObservationLinked: { action: "openDay — פתיחת יום עם תצפית נבחרת", where: "פתיחת יום · Hub (צור תצפית מראש)" },
   ActionAuthorized: { action: "evaluateMatchForCurrentUser", where: "/marketplace" },
   ActionRecorded: { action: "createActionForCurrentUser", where: "/marketplace" },
   EffectLinked: { action: "createEffectForCurrentUser", where: "תוצאות פעולות · Hub" },
