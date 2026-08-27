@@ -17,6 +17,8 @@ import type { Action, ActionType, MechanismScope } from "./action";
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
 import { createIdGenerator, systemClock } from "@/app/lib/philos/eventStore";
 import { verifyMatchPermit } from "./matchPermit";
+import { resolveWritableDay } from "../day/resolveWritableDay";
+import { loadPhilosEvents } from "@/app/lib/philos-event-store";
 
 export type CreateActionResult =
   | { ok: true; action_id: string }
@@ -34,10 +36,11 @@ export async function createActionForCurrentUserCore(formData: FormData): Promis
   const reversibility = String(formData.get("reversibility") ?? "").trim();
   const provenance = String(formData.get("provenance") ?? "").trim();
   const consent = formData.get("consent") === "on";
-  /* The operational day this Action belongs to. Optional and backward
-     compatible: a form that does not send it produces an Action with no day
-     link, exactly as before this field existed. */
-  const day_ref = String(formData.get("day_ref") ?? "").trim();
+  /* THE DAY IS RESOLVED SERVER-SIDE, AND `formData.get("day_ref")` IS NEVER
+     READ. It used to be, validated only for non-emptiness, so a submitted
+     Action could name a day that was never opened — or one already closed —
+     and close its gates anyway. The hidden input the live form still sends is
+     simply ignored; whatever it contains cannot reach the record. */
   const inputs = formData.getAll("inputs").map(String).filter((s) => s.trim() !== "");
 
   if (!ACTION_TYPES.includes(type as ActionType)) return { ok: false, message: "type must be transfer or non_transfer" };
@@ -72,6 +75,16 @@ export async function createActionForCurrentUserCore(formData: FormData): Promis
     }
     provenanceWithAudit = `${provenance} [match_permit verified: ${referencedNeedId}↔${referencedOfferId}]`;
   }
+
+  /* Fails CLOSED: no open day, a closed day, or two candidates all refuse
+     rather than guess. Refusing is the whole point — a writer that picked the
+     latest open day would be answering a question the person never asked. */
+  const writable = resolveWritableDay(await loadPhilosEvents(), viewer.subject_id);
+  if (!writable.ok) {
+    return { ok: false,
+      message: `${writable.message}${writable.candidates.length > 1 ? ` (${writable.candidates.join(", ")})` : ""}` };
+  }
+  const day_ref = writable.day_ref;
 
   const action: Action = {
     action_id: createIdGenerator().next("action"),
