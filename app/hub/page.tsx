@@ -82,6 +82,8 @@ import { loadActionEffectProjection } from "@/app/lib/philos/crossTerminal/loadA
 import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel";
 import { loadRealOrientationFrame } from "@/app/lib/philos/analysis/loadRealOrientationFrame";
 import RealOrientationPanel from "@/app/lib/philos/analysis/RealOrientationPanel";
+import { selectClosableStates } from "@/app/lib/philos/day/closableStates";
+import { loadDomainStates as _loadDS } from "@/app/lib/philos/canon/domainStateStoreAccessor";
 
 export const metadata = { title: "Philos — היום" };
 
@@ -155,6 +157,16 @@ export default async function HubPage({
     ...(dayPair ? { action_id: dayPair.action_id } : {}),
     ...(dayPair?.effect_id ? { effect_id: dayPair.effect_id } : {}),
   };
+  /* The states this day may legitimately close on — REAL, this person's,
+     and caused by an Action or Effect the day itself produced. */
+  const closableStates = selectClosableStates({
+    records: await _loadDS().catch(() => []),
+    subject_id: personRef.person_id,
+    dayChainRefs: [
+      ...aeProjection.pairs.map((x) => x.action_id),
+      ...aeProjection.pairs.flatMap((x) => (x.effect_id ? [x.effect_id] : [])),
+    ],
+  });
   /* REAL unit readings — one shared selector, never a per-page derivation. */
   const canonEventsForViewer = await loadCanonEvents();
   const realUnitReadings = selectRealUnitReadings({
@@ -729,7 +741,7 @@ export default async function HubPage({
           operational act stays the final thing on the page. */}
       <div style={{ padding: "0 20px 20px" }}>
         <DemoSimulationSection terminal="hub" />
-        <DayClosingPanel session={daySession} readOnly={!dayIsToday} />
+        <DayClosingPanel session={daySession} readOnly={!dayIsToday} closableStates={closableStates} />
       </div>
     </div>
   );

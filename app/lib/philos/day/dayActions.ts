@@ -42,6 +42,7 @@ import { loadDomainStates } from "@/app/lib/philos/canon/domainStateStoreAccesso
 import { systemClock, todayIn } from "@/app/lib/philos/eventStore";
 import type { PhilosEvent } from "@/app/lib/philos/events";
 import {
+  asDayClosingRecorded,
   asDayOpened,
   dayClosedEventId,
   dayOpenedEventId,
@@ -55,6 +56,9 @@ import {
   type DayOpenedPayload,
 } from "./dayEvent";
 import { countDayRecords } from "./daySession";
+import { resolveSubmittedClosingState } from "./closableStates";
+import { loadActions } from "../canon/actionStoreAccessor";
+import { loadEffects } from "../canon/effectStoreAccessor";
 
 export type DayWriteResult =
   | { ok: true; day_id: string; event_id: string }
@@ -226,6 +230,39 @@ export async function recordDayClosingCore(formData: FormData): Promise<DayWrite
      log that actually preceded it. Action/Effect/Learning ids live in canon's
      own stores, not here, so declaring them as `caused_by` would name records
      the log cannot resolve; they travel in the payload instead. */
+  /* NO SECOND CLOSING. `dayClosedEventId` is deterministic per person+day, so
+     a repeat would be refused downstream as a duplicate id — but as an opaque
+     store error, not as an answer. A day is closed once; saying so plainly is
+     the difference between a refusal and a crash. */
+  if (existing.some((e) => asDayClosingRecorded(e)?.payload.day_id === day_id)) {
+    return { ok: false, message: "day.closing_recorded refused: היום הזה כבר נסגר — סגירה היא פעם אחת" };
+  }
+
+  /* EVERY CITED STATE(t1) IS RE-RESOLVED AGAINST THE STORE. The field was free
+     text hinting `obs_…`, the wrong prefix entirely, so a person following it
+     typed a ref that could never resolve and the gate stayed shut in silence.
+     A submitted id is untrusted until proven REAL, this viewer's, and caused
+     by something this day actually produced. */
+  const submittedT1 = refs(formData, "state_t1_refs");
+  if (submittedT1.length > 0) {
+    const [statesForT1, actionsForT1, effectsForT1] = await Promise.all([
+      loadDomainStates(), loadActions(), loadEffects(),
+    ]);
+    const dayChainRefs = [
+      ...actionsForT1.filter((r) => (r.action as { day_ref?: string }).day_ref === day_id)
+        .map((r) => r.action.action_id),
+      ...effectsForT1.filter((r) => r.effect.subject === viewer.subject_id)
+        .map((r) => r.effect.effect_id),
+    ];
+    for (const submitted of submittedT1) {
+      const resolved = resolveSubmittedClosingState(
+        submitted, statesForT1, viewer.subject_id, dayChainRefs);
+      if (!resolved.ok) {
+        return { ok: false, message: `day.closing_recorded refused: ${resolved.reason} — ${resolved.message}` };
+      }
+    }
+  }
+
   const openingEventId = existing
     .filter((e) => asDayOpened(e)?.payload.day_id === day_id)
     .map((e) => e.event_id);

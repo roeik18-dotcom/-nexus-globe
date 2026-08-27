@@ -51,6 +51,11 @@ import { loadRealOrientationFrame } from "@/app/lib/philos/analysis/loadRealOrie
 import RealOrientationPanel from "@/app/lib/philos/analysis/RealOrientationPanel";
 import { loadActionEffectProjection } from "@/app/lib/philos/crossTerminal/loadActionEffectProjection";
 import { systemClock as _clk2, todayIn as _today2 } from "@/app/lib/philos/eventStore";
+import ClosingStateForm from "./ClosingStateForm";
+import { loadActions as _ldA } from "@/app/lib/philos/canon/actionStoreAccessor";
+import { loadEffects as _ldE } from "@/app/lib/philos/canon/effectStoreAccessor";
+import { isActionAdmissible as _aOK } from "@/app/lib/philos/canon/actionStore";
+import { isEffectAdmissible as _eOK } from "@/app/lib/philos/canon/effectStore";
 
 export const metadata = { title: "Philos — Human Config" };
 
@@ -93,6 +98,28 @@ export default async function HumanConfigPage({
 
     ...(hcPair?.effect_id ? { effect_id: hcPair.effect_id } : {}) };
 
+  /* The chain a closing state may cite: this viewer's own admissible
+
+     Action and its linked Effect. Nothing else is offered. */
+
+  const [_acts, _effs] = await Promise.all([_ldA().catch(() => []), _ldE().catch(() => [])]);
+
+  const hcActions = _acts.filter((r) => r.action.owner === viewer.subject_id && _aOK(r))
+
+    .map((r) => ({ id: r.action.action_id,
+
+      label: `${r.action.type} · ${String((r.action as { reversibility?: string }).reversibility ?? '').slice(0, 40)}` }));
+
+  const hcEffects = _effs.filter((r) => r.effect.subject === viewer.subject_id && _eOK(r))
+
+    .map((r) => ({ id: r.effect.effect_id,
+
+      label: String(r.effect.claimed_outcome?.statement ?? r.effect.effect_id).slice(0, 52) }));
+
+  const hcParams = [{ domain_id: 'human_temperament',
+
+    parameter_id: 'temperament_response_intensity', label: 'עוצמת התגובה · WEAK↔STRONG' }];
+
   // Visual-checkpoint prototype only — production view below (no `view`
   // param) is completely unaffected by this branch. See
   // `HumanConfigPrototype.tsx`'s own header.
@@ -111,6 +138,7 @@ export default async function HumanConfigPage({
           viewerContext={semanticContext}
           signOut={<SignOutButton />} surface="hub" purpose="Human Config — prototype תצוגה ראשונה" subject={viewer.subject_id} identityLink={identityLink} />
         <RealOrientationPanel terminal="human-config" frame={hcFrame} chain={hcChain} />
+        <ClosingStateForm parameters={hcParams} actions={hcActions} effects={hcEffects} />
         </div>
         <HumanConfigPrototype subjectId={viewer.subject_id} parameters={parameters} />
       </div>
@@ -156,6 +184,7 @@ export default async function HumanConfigPage({
           viewerContext={semanticContext}
           signOut={<SignOutButton />} surface="hub" purpose="Human Config אמיתי — מבנה מקור, לא מצב חי." subject={viewer.subject_id} identityLink={identityLink} />
         <RealOrientationPanel terminal="human-config" frame={hcFrame} chain={hcChain} />
+        <ClosingStateForm parameters={hcParams} actions={hcActions} effects={hcEffects} />
       </div>
       <div dir="rtl" style={{ padding: "0 20px" }}>
         <CreateHumanDomainStateForm />

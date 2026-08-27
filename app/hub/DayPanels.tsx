@@ -25,6 +25,7 @@ import type { DaySession } from "@/app/lib/philos/day/daySession";
 import type { LinkableObservation } from "@/app/lib/philos/day/linkableObservations";
 import type { LinkableState } from "@/app/lib/philos/day/linkableStates";
 import { COLOR, FS, RADIUS, SPACE, TYPE } from "@/app/lib/philos/shell/designTokens";
+import type { ClosableState } from "@/app/lib/philos/day/closableStates";
 
 function useDayForm() {
   const [err, setErr] = useState<string | null>(null);
@@ -236,7 +237,11 @@ export function DayOpeningPanel({ session, readOnly = false, linkable = [], link
   );
 }
 
-export function DayClosingPanel({ session, readOnly = false }: { session: DaySession; readOnly?: boolean }) {
+export function DayClosingPanel({ session, readOnly = false, closableStates = [] }: {
+  session: DaySession; readOnly?: boolean;
+  /** Only states this day may legitimately close on. Resolved server-side. */
+  closableStates?: readonly ClosableState[];
+}) {
   const { err, setErr, ok, setOk, pending, start } = useDayForm();
   const closed = session.closing_recorded_at.value !== null;
   const notOpened = session.opened_at.value === null;
@@ -291,9 +296,29 @@ export function DayClosingPanel({ session, readOnly = false }: { session: DaySes
         >
           <input type="hidden" name="date" value={session.date} />
 
+          {/* A SELECTOR, NOT FREE TEXT. This asked for a typed id and hinted
+              `obs_…` — the wrong prefix entirely, since the resolver wants a
+              `dstate_…`. Anyone following the hint typed a ref that could never
+              resolve, and the gate stayed shut with no explanation. The list
+              holds only states this day can actually close on: REAL, this
+              person's, and caused by something this day produced. */}
           <label style={S.label}>
-            <span style={S.k}>State(t1) refs</span>
-            <input name="state_t1_refs" style={S.input} placeholder="obs_… (מזהה קיים)" />
+            <span style={S.k}>מצב סיום · State(t1)</span>
+            {closableStates.length === 0 ? (
+              <span style={S.note}>
+                אין עדיין מצב סיום זכאי. מצב סיום חייב להיות שלך, אמיתי, ולנבוע
+                מהפעולה או מהתוצאה של היום הזה — רשום אותו קודם ב-Human Config.
+              </span>
+            ) : (
+              <select name="state_t1_refs" data-closing-state style={S.input} defaultValue="">
+                <option value="">— ללא מצב סיום (היום ייסגר חלקית) —</option>
+                {closableStates.map((c) => (
+                  <option key={c.state_id} value={c.state_id}>
+                    {c.recorded_at.slice(0, 16).replace("T", " ")} · {c.parameter_id} · level {c.level}
+                  </option>
+                ))}
+              </select>
+            )}
           </label>
 
           {/* Real ids from this day's own chain — not free text. */}
