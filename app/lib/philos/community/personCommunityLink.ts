@@ -202,8 +202,73 @@ export function confirmSamePerson(params: {
   };
 }
 
+/**
+ * HOW STRONG THE CLAIM ACTUALLY IS — an interpretation, never a stored value.
+ *
+ * The persisted vocabulary (`DECLARED_SAME_PERSON`, `VERIFIED_SAME_PERSON`)
+ * stays exactly as written on disk; nothing is migrated and no record changes.
+ * What changes is that a reader can now ask a second, sharper question than
+ * "is it verified": verified BY WHOM, and on whose word.
+ *
+ * The word "VERIFIED" in the stored status has always overclaimed. In a
+ * single-viewer system the same person declares and then confirms their own
+ * declaration — `identityLinkActions.ts` resolves the actor identically for
+ * both steps, and the confirmation's own evidence string says "by the same
+ * local viewer". That is a deliberate two-step self-report, which is the
+ * strongest thing this system can honestly support today, and it is NOT
+ * independent verification. Naming the tier is how the difference stops
+ * depending on someone reading the writer's source.
+ */
+export type AssuranceTier =
+  /** No admissible record, or one that cannot substantiate any tier. */
+  | "NONE"
+  /** The named person said it. One act, their own word. */
+  | "SELF_DECLARED_SAME_PERSON"
+  /** The named person said it, then deliberately re-confirmed it. Still
+   *  their own word — two acts by one actor, not two actors. */
+  | "SELF_ATTESTED_SAME_PERSON"
+  /**
+   * Attested by an actor who is independent of the subject AND authorized to
+   * attest. RESERVED, AND CURRENTLY UNREACHABLE — deliberately.
+   *
+   * No record can express it: `PersonCommunityLink` has no `actor_id`, so a
+   * record cannot even name who attested, and no capability gate exists to
+   * decide whether that actor was authorized. `declaration_source:
+   * "third_party"` is NOT sufficient evidence — it records a claimed origin,
+   * not a proven authorization, and `validateLink` rejects it on a VERIFIED
+   * record anyway.
+   *
+   * Reaching this tier requires an authority model that does not exist yet.
+   * Until it does, nothing returns this value, and `assuranceOf` is exhaustive
+   * proof of that rather than a promise in a comment.
+   */
+  | "INDEPENDENTLY_VERIFIED_SAME_PERSON";
+
+/**
+ * The tier a single authoritative record substantiates.
+ *
+ * Reads only what the record carries. A status it cannot substantiate — a
+ * VERIFIED record whose `declaration_source` is not `self`, which names no
+ * attesting actor and proves no authorization — is `NONE`, not a weaker
+ * positive tier: the honest answer to "who vouched for this" is "nothing here
+ * can say", and that is not a smaller version of "the person did".
+ */
+export function assuranceOf(link: PersonCommunityLink | undefined): AssuranceTier {
+  if (!link || link.provenance !== "REAL") return "NONE";
+  if (link.declaration_source !== "self") return "NONE";
+  if (link.link_status === "VERIFIED_SAME_PERSON") return "SELF_ATTESTED_SAME_PERSON";
+  if (link.link_status === "DECLARED_SAME_PERSON") return "SELF_DECLARED_SAME_PERSON";
+  return "NONE";
+}
+
 export interface ResolvedLink {
   link_status: LinkStatus;
+  /**
+   * What the resolved status is actually WORTH. Derived here, stored nowhere.
+   * `link_status` keeps answering the question it always answered, so every
+   * existing caller — including the Day gate — is unaffected.
+   */
+  assurance: AssuranceTier;
   /** The record backing this status — absent only when `link_status` is
    *  `NOT_LINKED` or `CONFLICT` (a conflict has no single backing record
    *  by definition; see `conflicting` below). */
@@ -211,6 +276,36 @@ export interface ResolvedLink {
   /** Present only when `link_status === "CONFLICT"` — every real record
    *  that disagrees, shown in full rather than silently resolved one way. */
   conflicting?: PersonCommunityLink[];
+  /**
+   * Why the status is what it is, when records exist for this triple but do
+   * not confer the authority they appear to claim. Absent when the answer
+   * needs no explanation (a REAL record resolved, or nothing exists at all).
+   */
+  reason?: string;
+  /**
+   * Records for this exact triple that were SEEN but carry no authority,
+   * because their provenance is not REAL. Diagnostic only — surfaced so a
+   * demo record is visible rather than silently dropped, and never counted.
+   */
+  nonAuthoritative?: PersonCommunityLink[];
+}
+
+/**
+ * ONLY A REAL RECORD CONFERS AUTHORITY.
+ *
+ * `provenance` was carried on every link record from the beginning and read by
+ * nobody: `resolvePersonCommunityLink` matched on the id triple alone, so a
+ * DEMO record claiming `VERIFIED_SAME_PERSON` for the right pair resolved as
+ * verified and satisfied the Day's `IdentityLinked` gate. A demonstration
+ * fixture could therefore assert that two real identities are the same human
+ * — the one assertion this module exists to make deliberate.
+ *
+ * The test is on the RECORD, not on where it was found: a DEMO record living
+ * in the real store is still DEMO, and a REAL record in a scratch directory is
+ * still REAL. Provenance is a fact the record carries.
+ */
+function isAuthoritative(link: PersonCommunityLink): boolean {
+  return link?.provenance === "REAL";
 }
 
 /**
@@ -232,21 +327,67 @@ export function resolvePersonCommunityLink(
   community_member_id: string,
   community_id: string,
 ): ResolvedLink {
-  const forThisTriple = records.filter(
-    (r) => r.person_id === person_id && r.community_member_id === community_member_id && r.community_id === community_id,
-  );
-  const conflictingOtherPerson = records.filter(
+  /* AUTHORITY IS DECIDED OVER REAL RECORDS ONLY, and that decision is made
+     FIRST — before latest-wins, and before the conflict scan.
+
+     Latest-wins over the raw log was the defect: a DEMO record written after a
+     REAL one would have become "the latest", so a demonstration could both
+     grant authority the person never claimed and revoke authority they did.
+     Filtering first makes a non-REAL record incapable of either.
+
+     The conflict scan is deliberately REAL-only for the same reason. A DEMO
+     record naming a different person for this member is a fixture, not a
+     contradiction, and letting it force CONFLICT would be a demo downgrading
+     real authority — the same defect wearing the opposite sign. */
+  const sameTriple = (r: PersonCommunityLink) =>
+    r.person_id === person_id && r.community_member_id === community_member_id && r.community_id === community_id;
+
+  const admissible = records.filter(isAuthoritative);
+
+  const forThisTriple = admissible.filter(sameTriple);
+  const conflictingOtherPerson = admissible.filter(
     (r) => r.community_member_id === community_member_id && r.community_id === community_id && r.person_id !== person_id,
   );
-  const conflictingOtherMember = records.filter(
+  const conflictingOtherMember = admissible.filter(
     (r) => r.person_id === person_id && r.community_id === community_id && r.community_member_id !== community_member_id,
   );
 
+  /* Seen, kept visible, and never counted. */
+  const nonAuthoritative = records.filter((r) => sameTriple(r) && !isAuthoritative(r));
+
   if (conflictingOtherPerson.length > 0 || conflictingOtherMember.length > 0) {
-    return { link_status: "CONFLICT", conflicting: [...forThisTriple, ...conflictingOtherPerson, ...conflictingOtherMember] };
+    return {
+      link_status: "CONFLICT",
+      /* Disagreeing records substantiate nothing between them. */
+      assurance: "NONE",
+      conflicting: [...forThisTriple, ...conflictingOtherPerson, ...conflictingOtherMember],
+      ...(nonAuthoritative.length > 0 ? { nonAuthoritative } : {}),
+    };
   }
-  if (forThisTriple.length === 0) return { link_status: "NOT_LINKED" };
+
+  if (forThisTriple.length === 0) {
+    /* Nothing at all is NOT_LINKED — the honest absence. Records that exist
+       but cannot vouch are a different answer, and they get a different one:
+       UNVERIFIED, with the reason stated rather than reported as absence. */
+    if (nonAuthoritative.length === 0) return { link_status: "NOT_LINKED", assurance: "NONE" };
+    const sources = [...new Set(nonAuthoritative.map((r) => r.provenance))].join(", ");
+    return {
+      link_status: "UNVERIFIED",
+      assurance: "NONE",
+      reason:
+        `${nonAuthoritative.length} link record(s) exist for this pair but carry provenance ${sources}, not REAL — ` +
+        `a demonstration record cannot assert that two identities are the same human`,
+      nonAuthoritative,
+    };
+  }
 
   const latest = [...forThisTriple].sort((a, b) => a.created_at.localeCompare(b.created_at)).at(-1)!;
-  return { link_status: latest.link_status, latest };
+  return {
+    link_status: latest.link_status,
+    /* The tier the AUTHORITATIVE record substantiates — the same record
+       `link_status` came from, so the two can never describe different rows. */
+    assurance: assuranceOf(latest),
+    latest,
+    ...(nonAuthoritative.length > 0 ? { nonAuthoritative } : {}),
+  };
 }
