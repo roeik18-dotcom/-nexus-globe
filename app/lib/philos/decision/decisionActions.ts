@@ -52,6 +52,7 @@ import {
   type CaseStatus,
   type DecisionCase,
   emptyCase,
+  REFERENCE_LIST_FIELDS,
   validateDecisionCase,
 } from "./decisionCase";
 import { resolveCase } from "./decisionCaseResolver";
@@ -123,10 +124,17 @@ async function reviseCase(next: DecisionCase): Promise<void> {
   ]);
 }
 
+/**
+ * Every list-of-references field a writer may append to. Derived from
+ * `REFERENCE_LIST_FIELDS` so a new list on `DecisionCase` cannot be forgotten
+ * here — adding one to the record makes it attachable, and nothing else.
+ */
+export type CaseRefListKey = (typeof REFERENCE_LIST_FIELDS)[number];
+
 /** Add a reference without ever duplicating one. */
 function withRef(
   c: DecisionCase,
-  key: "observation_refs" | "action_refs" | "effect_refs" | "evidence_refs" | "learning_refs" | "need_refs",
+  key: CaseRefListKey,
   ref: string,
 ): DecisionCase {
   const list = c[key];
@@ -559,7 +567,7 @@ export async function recordReviewFormAction(
  */
 export async function attachToCase(
   case_id: string,
-  key: "evidence_refs" | "learning_refs" | "effect_refs" | "action_refs" | "need_refs",
+  key: CaseRefListKey,
   ref: string,
   status?: CaseStatus,
 ): Promise<{ ok: boolean; error?: string }> {
@@ -629,4 +637,32 @@ export async function openCaseAndRecordDecisionFormAction(
   const r = await openCaseAndRecordDecisionCore(formData);
   if (r.ok) revalidateAll();
   return r;
+}
+
+/**
+ * Set the case's single `value_tradeoff_ref`. Separate from `attachToCase`
+ * because that appends to LISTS; a case has at most one tradeoff, and a
+ * second one would mean the decision paid two different prices.
+ */
+export async function reviseCaseWithTradeoff(
+  case_id: string,
+  tradeoff_ref: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const cases = await loadCases();
+  const theCase = cases.find((c) => c.case_id === case_id);
+  if (!theCase) return { ok: false, error: `case ${case_id} not found` };
+  if (theCase.value_tradeoff_ref && theCase.value_tradeoff_ref !== tradeoff_ref) {
+    return { ok: false, error: "case already carries a different tradeoff" };
+  }
+
+  const next: DecisionCase = { ...theCase, value_tradeoff_ref: tradeoff_ref };
+  const check = await resolveCase(next);
+  if (!check.resolved) {
+    return {
+      ok: false,
+      error: `unresolved: ${check.unresolved.map((u) => `${u.field}=${u.ref}`).join(", ")}`,
+    };
+  }
+  await reviseCase(next);
+  return { ok: true };
 }

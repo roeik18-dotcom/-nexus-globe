@@ -77,6 +77,18 @@ export interface DecisionCase {
   observation_refs: readonly string[];
   /** Alternatives put forward, as records. */
   proposal_refs: readonly string[];
+
+  // ── The appraisal layer. See `gap.ts` and `valueMechanism.ts`. ──
+  /** `Gap.gap_id` — the difference between what is and what is wanted. */
+  gap_refs: readonly string[];
+  /** `Appraisal.appraisal_id` — what that gap MEANS, and to whom. */
+  appraisal_refs: readonly string[];
+  /** `ValueConflict.conflict_id` — which values pull apart here. */
+  value_conflict_refs: readonly string[];
+  /** `ValueTradeoff.tradeoff_id` — the price the decision chose to pay. */
+  value_tradeoff_ref?: string;
+  /** `ValueImpact.impact_id` — what happened to each value afterwards. */
+  value_impact_refs: readonly string[];
   /** `Decision.decision_id` — what was chosen. At most one per case. */
   decision_ref?: string;
   /** `Action.action_id` — what was actually done. */
@@ -132,6 +144,10 @@ export const REFERENCE_LIST_FIELDS = [
   "need_refs",
   "observation_refs",
   "proposal_refs",
+  "gap_refs",
+  "appraisal_refs",
+  "value_conflict_refs",
+  "value_impact_refs",
   "action_refs",
   "effect_refs",
   "evidence_refs",
@@ -188,6 +204,9 @@ export function allReferences(c: DecisionCase): { field: string; ref: string }[]
   if (c.authority_policy_ref) {
     out.push({ field: "authority_policy_ref", ref: c.authority_policy_ref });
   }
+  if (c.value_tradeoff_ref) {
+    out.push({ field: "value_tradeoff_ref", ref: c.value_tradeoff_ref });
+  }
   return out;
 }
 
@@ -208,6 +227,10 @@ export function emptyCase(input: {
     need_refs: [],
     observation_refs: [],
     proposal_refs: [],
+    gap_refs: [],
+    appraisal_refs: [],
+    value_conflict_refs: [],
+    value_impact_refs: [],
     action_refs: [],
     effect_refs: [],
     evidence_refs: [],

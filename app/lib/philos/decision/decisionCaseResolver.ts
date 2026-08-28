@@ -28,6 +28,18 @@ import type { LearningRecord } from "../canon/learningStore";
 import { loadLearnings } from "../canon/learningStoreAccessor";
 import type { VerificationRecord } from "../canon/outcomeVerificationStore";
 import { loadVerifications } from "../canon/outcomeVerificationStoreAccessor";
+import {
+  type AppraisalRecord,
+  type GapRecord,
+  loadAppraisals,
+  loadGaps,
+  loadValueConflicts,
+  loadValueImpacts,
+  loadValueTradeoffs,
+  type ValueConflictRecord,
+  type ValueImpactRecord,
+  type ValueTradeoffRecord,
+} from "./appraisalStore";
 import { allReferences, type DecisionCase } from "./decisionCase";
 import type { Decision } from "./decision";
 import type { DecisionReview } from "./decisionReview";
@@ -47,6 +59,13 @@ export interface ResolvedCase {
 
   decision?: Decision;
   reviews: DecisionReview[];
+
+  // ── The appraisal layer. ──
+  gaps: GapRecord[];
+  appraisals: AppraisalRecord[];
+  value_conflicts: ValueConflictRecord[];
+  value_tradeoff?: ValueTradeoffRecord;
+  value_impacts: ValueImpactRecord[];
   actions: ActionRecord[];
   effects: EffectRecord[];
   evidence: VerificationRecord[];
@@ -72,13 +91,21 @@ export interface ResolvedCase {
  * projection actually walks.
  */
 export async function resolveCase(c: DecisionCase): Promise<ResolvedCase> {
-  const [actions, effects, evidence, learnings, decisions, reviews] = await Promise.all([
+  const [
+    actions, effects, evidence, learnings, decisions, reviews,
+    allGaps, allAppraisals, allConflicts, allTradeoffs, allImpacts,
+  ] = await Promise.all([
     loadActions(),
     loadEffects(),
     loadVerifications(),
     loadLearnings(),
     loadDecisions(),
     loadDecisionReviews(),
+    loadGaps(),
+    loadAppraisals(),
+    loadValueConflicts(),
+    loadValueTradeoffs(),
+    loadValueImpacts(),
   ]);
 
   const unresolved: UnresolvedReference[] = [];
@@ -113,6 +140,33 @@ export async function resolveCase(c: DecisionCase): Promise<ResolvedCase> {
     (r) => r.learning?.learning_id,
   );
 
+  const resolvedGaps = pick("gap_refs", c.gap_refs, allGaps, (r) => r.gap?.gap_id);
+  const resolvedAppraisals = pick(
+    "appraisal_refs", c.appraisal_refs, allAppraisals, (r) => r.appraisal?.appraisal_id,
+  );
+  const resolvedConflicts = pick(
+    "value_conflict_refs", c.value_conflict_refs, allConflicts, (r) => r.conflict?.conflict_id,
+  );
+  const resolvedImpacts = pick(
+    "value_impact_refs", c.value_impact_refs, allImpacts, (r) => r.impact?.impact_id,
+  );
+
+  let value_tradeoff: ValueTradeoffRecord | undefined;
+  if (c.value_tradeoff_ref) {
+    const found = allTradeoffs.find((r) => r.tradeoff?.tradeoff_id === c.value_tradeoff_ref);
+    if (!found) unresolved.push({ field: "value_tradeoff_ref", ref: c.value_tradeoff_ref });
+    else value_tradeoff = found;
+  }
+
+  /* AN APPRAISAL MUST POINT AT A GAP THE CASE ALSO LISTS. The other direction
+     of the same link, checked so a case cannot carry an appraisal of
+     something it does not contain. */
+  for (const a of resolvedAppraisals) {
+    if (!c.gap_refs.includes(a.appraisal.gap_ref)) {
+      unresolved.push({ field: "appraisal.gap_ref", ref: a.appraisal.gap_ref });
+    }
+  }
+
   let decision: Decision | undefined;
   if (c.decision_ref) {
     const found = decisions.find((r) => r.decision.decision_id === c.decision_ref);
@@ -144,6 +198,11 @@ export async function resolveCase(c: DecisionCase): Promise<ResolvedCase> {
     unresolved,
     decision,
     reviews: caseReviews,
+    gaps: resolvedGaps,
+    appraisals: resolvedAppraisals,
+    value_conflicts: resolvedConflicts,
+    value_tradeoff,
+    value_impacts: resolvedImpacts,
     actions: resolvedActions,
     effects: resolvedEffects,
     evidence: resolvedEvidence,
