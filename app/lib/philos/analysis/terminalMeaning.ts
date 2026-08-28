@@ -26,6 +26,10 @@ export interface DayChain {
   hasLearning: boolean;
   markedCount: number;
   unmarkedCount: number;
+  /** The Effect awaiting verification, when there is one. Carried so the
+   *  "verify this" prompt can link to THAT Effect's own screen rather than to
+   *  a page where the person has to find it again. */
+  effect_id?: string;
 }
 
 export interface TerminalMeaning {
@@ -120,7 +124,7 @@ function terminalMeaningBody(
          is reported but unchecked, the thing actually missing is a second
          person — so that is what this offers, ahead of closing the day. */
       nextAction: c.hasEffect && !c.hasVerifiedEvidence
-        ? { label: "אימות התוצאה בידי אדם אחר", href: "/marketplace#verify-effect" }
+        ? { label: "אימות התוצאה בידי אדם אחר", href: c.effect_id ? `/verify/${c.effect_id}` : "/hub" }
         : c.hasEffect
           ? { label: "רשום מצב סיום וסגור את היום", href: "/hub#day-closing-record" }
           : { label: "רשום פעולה ליום הזה", href: "/marketplace#action" },
@@ -289,7 +293,7 @@ function terminalMeaningBody(
             "לכן התוצאה אינה נחשבת ראיה, והלמידה נשארת חסומה.",
           ],
       nextAction: c.hasEffect && !c.hasVerifiedEvidence
-        ? { label: "אימות התוצאה בידי אדם אחר", href: "/marketplace#verify-effect" }
+        ? { label: "אימות התוצאה בידי אדם אחר", href: c.effect_id ? `/verify/${c.effect_id}` : "/hub" }
         : null,
     };
   }

@@ -21,6 +21,8 @@
  */
 import { NextResponse, type NextRequest } from "next/server";
 
+import { isSafeReturnTo } from "@/app/lib/philos/auth/returnTo";
+
 const SESSION_COOKIE = "philos_session";
 
 /** Paths that must stay reachable without a session, or the sign-in screen
@@ -35,9 +37,15 @@ export function middleware(request: NextRequest): NextResponse {
   if (PUBLIC.some((re) => re.test(pathname))) return NextResponse.next();
   if (request.cookies.get(SESSION_COOKIE)) return NextResponse.next();
 
+  /* CARRY THE DESTINATION. Without this, someone sent a verification link
+     signs in and lands on a fixed page, and the link they were sent — the
+     entire reason they signed in — is gone. Validated by the same function
+     the action uses, so a path that cannot be followed is never written. */
   const url = request.nextUrl.clone();
   url.pathname = "/signin";
   url.search = "";
+  const intended = `${pathname}${request.nextUrl.search}`;
+  if (isSafeReturnTo(intended)) url.searchParams.set("returnTo", intended);
   return NextResponse.redirect(url);
 }
 

@@ -20,6 +20,7 @@ import { signInWithCredential } from "@/app/lib/philos/auth/signIn";
 import { assertRuntimeSafe } from "@/app/lib/philos/auth/productionGuard";
 import { DEFAULT_SESSION_TTL_MS, revokeSession } from "@/app/lib/philos/identity/sessionStore";
 import { SESSION_COOKIE } from "@/app/lib/philos/identity/sessionViewer";
+import { resolveReturnTo } from "@/app/lib/philos/auth/returnTo";
 
 export type SignInFormState = { error?: string };
 
@@ -30,6 +31,10 @@ export async function signInAction(
   /* Re-checked here, not only at boot: a process can be reconfigured after
      startup, and a guard that ran once is a guard that can be outlived. */
   assertRuntimeSafe();
+
+  /* Read BEFORE the credential check, so a failed attempt re-renders the form
+     with the destination still attached and a retry does not lose it. */
+  const returnTo = resolveReturnTo(formData.get("returnTo"));
 
   const result = await signInWithCredential({
     account: String(formData.get("account") ?? ""),
@@ -56,7 +61,7 @@ export async function signInAction(
        and reads as signed-out rather than reaching a page and throwing. */
     maxAge: Math.floor(DEFAULT_SESSION_TTL_MS / 1000),
   });
-  redirect("/hub/community");
+  redirect(returnTo);
 }
 
 export async function signOut(): Promise<void> {

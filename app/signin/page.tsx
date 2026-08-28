@@ -1,6 +1,7 @@
 import { activateAuth, DEV_ACCOUNT_SECRETS } from "@/app/lib/philos/auth/bootstrap";
 import { COLOR, FS, RADIUS, SPACE, STATUS, TYPE } from "@/app/lib/philos/shell/designTokens";
 import SignInForm from "./SignInForm";
+import { isSafeReturnTo } from "@/app/lib/philos/auth/returnTo";
 
 export const metadata = { title: "PHILOS — כניסה" };
 
@@ -13,8 +14,17 @@ export const metadata = { title: "PHILOS — כניסה" };
  * no account that can succeed, which is stated rather than hidden behind a
  * form that silently rejects everything.
  */
-export default async function SignInPage() {
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ returnTo?: string }>;
+}) {
   const mode = await activateAuth();
+  /* Validated here too, not just on submit: a rejected value must never be
+     rendered back into the page, and the note below must not promise a
+     return the action would refuse to make. */
+  const { returnTo: rawReturnTo } = await searchParams;
+  const returnTo = isSafeReturnTo(rawReturnTo) ? rawReturnTo : undefined;
 
   return (
     <div dir="rtl" style={S.page}>
@@ -38,7 +48,19 @@ export default async function SignInPage() {
           </div>
         )}
 
+        {/* Say where they will land. A person who arrived from a link should
+            not have to guess whether signing in will take them back to it. */}
+        {returnTo ? (
+          <div style={S.warn} data-return-to={returnTo}>
+            <span style={{ ...TYPE.micro, color: STATUS.demo.text }}>המשך לאחר הכניסה</span>
+            <span style={{ fontSize: FS.tag, color: COLOR.textDim, lineHeight: 1.8 }}>
+              נחזיר אותך לדף שביקשת: <span dir="ltr">{decodeURIComponent(returnTo)}</span>
+            </span>
+          </div>
+        ) : null}
+
         <SignInForm
+          returnTo={returnTo}
           hint={
             mode === "DEV_PASSWORD"
               ? Object.entries(DEV_ACCOUNT_SECRETS).map(([a, s]) => `${a} · ${s}`).join("   |   ")

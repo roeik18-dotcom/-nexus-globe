@@ -69,8 +69,18 @@ describe("evidence and learning are stated on all nine terminals", () => {
   });
 
   it("offers verification as the next step while the outcome is unchecked", () => {
-    expect(terminalMeaning("hub", chain()).nextAction?.href).toBe("/marketplace#verify-effect");
-    expect(terminalMeaning("hub", chain({ hasVerifiedEvidence: true })).nextAction?.href)
+    // The prompt links to THAT Effect's own screen, so the verifier does not
+    // have to find it again on a page full of somebody else's material.
+    expect(terminalMeaning("hub", chain({ effect_id: "effect_x" })).nextAction?.href)
+      .toBe("/verify/effect_x");
+    expect(terminalMeaning("hub", chain({ hasVerifiedEvidence: true, effect_id: "effect_x" })).nextAction?.href)
       .toBe("/hub#day-closing-record");
+  });
+
+  it("does not invent a verify link when no Effect has been recorded", () => {
+    // Without an Effect there is nothing to verify, and `/verify/undefined`
+    // would be a link to a page that cannot exist.
+    expect(terminalMeaning("hub", chain()).nextAction?.href).toBe("/hub");
+    expect(terminalMeaning("evidence", chain()).nextAction?.href).toBe("/hub");
   });
 });

@@ -31,6 +31,37 @@ export function isIndependentKind(t: VerifierType): boolean {
   return t !== "self";
 }
 
+/**
+ * The identity half of the rule, on its own.
+ *
+ * Split out because a SCREEN needs to answer "may this person verify this?"
+ * before they have typed anything, and the only honest way to do that is to
+ * ask the same function the writer asks. A page that reimplemented the check
+ * would eventually disagree with the writer, and the person would fill in a
+ * form that was never going to be accepted.
+ */
+export type VerifierStanding =
+  | { ok: true }
+  | { ok: false; refusal: "verifier_id_missing" | "verifier_is_subject" | "verifier_is_actor" };
+
+export function checkVerifierStanding(input: {
+  verifier: string | undefined;
+  subject: string;
+  actor: string | undefined;
+}): VerifierStanding {
+  const verifier = typeof input.verifier === "string" ? input.verifier.trim() : "";
+  /* An unnamed verifier cannot be shown to be anyone other than the actor.
+     Absence of a name is not evidence of independence. */
+  if (verifier === "") return { ok: false, refusal: "verifier_id_missing" };
+  if (verifier === input.subject) return { ok: false, refusal: "verifier_is_subject" };
+  /* An unresolved Action fails closed: we cannot show the verifier is not the
+     actor, so we do not claim it. */
+  if (input.actor === undefined || verifier === input.actor) {
+    return { ok: false, refusal: "verifier_is_actor" };
+  }
+  return { ok: true };
+}
+
 export type EvidenceRefusal =
   | "no_verification"
   | "invalid_verification"
@@ -67,20 +98,9 @@ export function checkIndependentEvidence(input: EvidenceCheckInput): EvidenceChe
     return { independent: false, refusal: "verifier_type_self_not_independent" };
   }
 
-  const verifier = typeof v.verifier_id === "string" ? v.verifier_id.trim() : "";
-  if (verifier === "") {
-    /* An unnamed verifier cannot be shown to be anyone other than the actor.
-       Absence of a name is not evidence of independence. */
-    return { independent: false, refusal: "verifier_id_missing" };
-  }
-  if (verifier === subject) {
-    return { independent: false, refusal: "verifier_is_subject" };
-  }
-  /* An unresolved Action fails closed. We cannot show the verifier is not the
-     actor, so we do not claim it. */
-  if (actor === undefined || verifier === actor) {
-    return { independent: false, refusal: "verifier_is_actor" };
-  }
+  /* Delegated, not repeated — the screen asks this same function. */
+  const standing = checkVerifierStanding({ verifier: v.verifier_id, subject, actor });
+  if (!standing.ok) return { independent: false, refusal: standing.refusal };
 
   if (concerns_subject_internal_state && v.subject_consent !== true) {
     return { independent: false, refusal: "internal_state_needs_subject_consent" };

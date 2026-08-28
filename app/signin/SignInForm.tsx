@@ -10,11 +10,15 @@ import { signInAction, type SignInFormState } from "./actions";
  * an account name and a secret. Neither is an identity, and there is no third
  * field through which one could be supplied.
  */
-export default function SignInForm({ hint }: { hint?: string }) {
+export default function SignInForm({ hint, returnTo }: { hint?: string; returnTo?: string }) {
   const [state, action, pending] = useActionState<SignInFormState, FormData>(signInAction, {});
 
   return (
     <form action={action} style={{ display: "flex", flexDirection: "column", gap: SPACE.sm }}>
+      {/* The destination the person was heading for, carried through the
+          credential exchange. Re-validated server-side; a value edited here
+          buys nothing that `resolveReturnTo` would accept. */}
+      {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
       <label style={S.label}>
         חשבון
         <input name="account" autoComplete="username" required style={S.input} dir="ltr" />
