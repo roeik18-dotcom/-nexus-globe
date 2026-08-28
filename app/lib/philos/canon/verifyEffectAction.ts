@@ -136,6 +136,73 @@ export async function verifyEffectCore(formData: FormData): Promise<VerifyEffect
 
 export async function verifyEffect(formData: FormData): Promise<VerifyEffectResult> {
   const r = await verifyEffectCore(formData);
-  if (r.ok) { revalidatePath("/marketplace"); revalidatePath("/brain"); revalidatePath("/hub"); }
+  if (r.ok) {
+    /* `/verify/[effectId]` FIRST: it is the page the person is standing on,
+       and on reload it must now show "already verified" rather than a form
+       that would be refused. */
+    revalidatePath("/verify/[effectId]", "page");
+    for (const p of ["/marketplace", "/brain", "/hub", "/dynamics"]) revalidatePath(p);
+  }
   return r;
+}
+
+
+// ── THE FORM BINDING ──────────────────────────────────────────────────────
+
+/**
+ * The shape `useActionState` carries between submissions.
+ *
+ * WHY THIS EXISTS AT ALL. The screen first bound the form to a CLIENT closure
+ * (`action={(fd) => ...}`). React deliberately disables such a form when
+ * JavaScript has not hydrated — it renders `javascript:throw` as the action —
+ * so the button did nothing at all: no request, no message, no change. A
+ * server action bound through `useActionState` posts natively when there is
+ * no JS and enhances when there is, which is the same pattern the sign-in
+ * form already uses and the reason sign-in kept working.
+ *
+ * Validation moved here for the same reason: a `required` attribute is
+ * enforced by the browser, and a browser that refuses a submission produces
+ * no server-side trace and, on a stubborn form, no visible message either.
+ * A refusal the server returns is a refusal the person can always see.
+ */
+export type VerifyFormState = {
+  ok?: true;
+  verifier_id?: string;
+  effect_id?: string;
+  error?: string;
+  reason?: VerifyRefusal | "fields_incomplete";
+};
+
+/** Field name → the words the person read above it. */
+const REQUIRED_FIELDS: ReadonlyArray<{ name: string; label: string }> = [
+  { name: "effect_id", label: "מזהה התוצאה" },
+  { name: "statement", label: "מה מאושר" },
+  { name: "method", label: "איך ידעת" },
+  { name: "provenance", label: "מהיכן הידיעה" },
+  { name: "verifier_type", label: "סוג הבדיקה" },
+  { name: "confidence", label: "רמת הוודאות" },
+];
+
+export async function verifyEffectFormAction(
+  _prev: VerifyFormState,
+  formData: FormData,
+): Promise<VerifyFormState> {
+  const missing = REQUIRED_FIELDS.filter(
+    (f) => String(formData.get(f.name) ?? "").trim() === "",
+  );
+  if (missing.length > 0) {
+    return {
+      reason: "fields_incomplete",
+      error: `חסר למילוי: ${missing.map((f) => f.label).join(" · ")}`,
+    };
+  }
+
+  const confidence = Number(String(formData.get("confidence") ?? "").trim());
+  if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
+    return { reason: "fields_incomplete", error: "רמת הוודאות חייבת להיות מספר בין 0 ל־1" };
+  }
+
+  const r = await verifyEffect(formData);
+  if (!r.ok) return { reason: r.reason, error: r.message };
+  return { ok: true, verifier_id: r.verifier_id, effect_id: r.effect_id };
 }

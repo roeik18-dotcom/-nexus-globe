@@ -22,7 +22,7 @@ import { _setEffectStore } from "../effectStoreAccessor";
 import { InMemoryVerificationStore } from "../outcomeVerificationStore";
 import { _setVerificationStore } from "../outcomeVerificationStoreAccessor";
 import { setViewerProvider, LOCAL_SINGLE_USER } from "../../identity/viewerContext";
-import { verifyEffectCore } from "../verifyEffectAction";
+import { verifyEffectCore, verifyEffectFormAction } from "../verifyEffectAction";
 import type { Action } from "../action";
 import type { Effect } from "../effect";
 
@@ -194,5 +194,78 @@ describe("verifyEffectCore — verification is an act by someone else", () => {
     const r = await verifyEffectCore(form({ ...VALID, effect_id: "effect_nope" }));
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.reason).toBe("effect_not_found");
+  });
+
+  /**
+   * THE SILENT-FAILURE REGRESSION.
+   *
+   * The form was first bound to a CLIENT closure and its fields marked
+   * `required`. Two consequences, both invisible: React disables such a form
+   * until JavaScript hydrates, and a browser enforcing `required` refuses the
+   * submission before any of our code runs. Pressing the button produced no
+   * request, no record and no message — it simply did nothing.
+   *
+   * The fix moved validation to the server so a refusal is always rendered.
+   * These tests hold that: every incomplete submission must come back with text
+   * a person can read, and must write nothing.
+   */
+  describe("verifyEffectFormAction — an incomplete form is refused in words", () => {
+    const form = (fields: Record<string, string>) => {
+      const fd = new FormData();
+      for (const [k, v] of Object.entries(fields)) fd.set(k, v);
+      return fd;
+    };
+
+    it("names every missing field, in the words shown above it", async () => {
+      const s = await verifyEffectFormAction({}, form({}));
+      expect(s.ok).toBeUndefined();
+      expect(s.reason).toBe("fields_incomplete");
+      for (const label of ["מה מאושר", "איך ידעת", "מהיכן הידיעה", "סוג הבדיקה", "רמת הוודאות"]) {
+        expect(s.error).toContain(label);
+      }
+      expect(await verificationStore.load()).toHaveLength(0);
+    });
+
+    it("names only the field that is actually missing", async () => {
+      const s = await verifyEffectFormAction({}, form({
+        effect_id: "effect_1", statement: "x", method: "y", provenance: "z", confidence: "0.8",
+      }));
+      expect(s.error).toContain("סוג הבדיקה");
+      expect(s.error).not.toContain("איך ידעת");
+    });
+
+    it("refuses a confidence outside 0..1 rather than storing it", async () => {
+      for (const bad of ["7", "-1", "abc", ""]) {
+        const s = await verifyEffectFormAction({}, form({
+          effect_id: "effect_1", statement: "x", method: "y", provenance: "z",
+          verifier_type: "counterparty", confidence: bad,
+        }));
+        expect(s.ok).toBeUndefined();
+        expect(s.error).toBeTruthy();
+      }
+      expect(await verificationStore.load()).toHaveLength(0);
+    });
+
+    it("passes a complete, independent submission through to a real record", async () => {
+      const s = await verifyEffectFormAction({}, form({
+        effect_id: "effect_1", statement: "I saw this happen", method: "direct_observation",
+        provenance: "counterparty_report", verifier_type: "counterparty", confidence: "0.8",
+      }));
+      expect(s.ok).toBe(true);
+      expect(s.verifier_id).toBe(OUTSIDER);
+      expect(await verificationStore.load()).toHaveLength(1);
+    });
+
+    it("returns a server refusal as readable text, not a silent no-op", async () => {
+      viewerIs(ACTOR);
+      const s = await verifyEffectFormAction({}, form({
+        effect_id: "effect_1", statement: "x", method: "y", provenance: "z",
+        verifier_type: "counterparty", confidence: "0.8",
+      }));
+      expect(s.ok).toBeUndefined();
+      expect(s.reason).toBe("verifier_is_subject");
+      expect(s.error).toBeTruthy();
+      expect(await verificationStore.load()).toHaveLength(0);
+    });
   });
 });

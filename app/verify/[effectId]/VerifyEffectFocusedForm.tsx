@@ -8,12 +8,26 @@
  * about someone's inner state — whether that person consented.
  *
  * `verifier_id` is absent by design. It is taken from the session on the
- * server, so there is no field here for naming somebody else, and no way to
- * submit a verification as a person you are not.
+ * server, so there is no field here for naming somebody else.
+ *
+ * BOUND TO A SERVER ACTION, NOT A CLIENT CLOSURE. The first version used
+ * `action={(formData) => ...}`, which React disables when JavaScript has not
+ * hydrated — it renders `javascript:throw` as the form action, so the button
+ * did nothing whatsoever: no request reached the server, and nothing on
+ * screen changed. `useActionState` over a server action posts natively
+ * without JS and enhances with it, so the form works either way and every
+ * refusal comes back as rendered text.
+ *
+ * `noValidate` is deliberate: browser-enforced `required` refuses the
+ * submission before anything of ours runs, which is the same silent dead end
+ * wearing different clothes. The server validates and says what is missing.
  */
-import { useState, useTransition } from "react";
+import { useActionState } from "react";
 
-import { verifyEffect, type VerifyEffectResult } from "@/app/lib/philos/canon/verifyEffectAction";
+import {
+  verifyEffectFormAction,
+  type VerifyFormState,
+} from "@/app/lib/philos/canon/verifyEffectAction";
 
 export default function VerifyEffectFocusedForm({
   effectId, concernsInternalState, subject,
@@ -22,45 +36,45 @@ export default function VerifyEffectFocusedForm({
   concernsInternalState: boolean;
   subject: string;
 }) {
-  const [result, setResult] = useState<VerifyEffectResult | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [state, action, pending] = useActionState<VerifyFormState, FormData>(
+    verifyEffectFormAction,
+    {},
+  );
 
-  if (result?.ok) return <VerificationRecorded verifier_id={result.verifier_id} effect_id={result.effect_id} />;
+  if (state.ok && state.verifier_id && state.effect_id) {
+    return <VerificationRecorded verifier_id={state.verifier_id} effect_id={state.effect_id} />;
+  }
 
   return (
-    <form
-      dir="rtl"
-      id="verify-effect"
-      data-verify-form
-      style={S.form}
-      action={(formData) => {
-        formData.set("effect_id", effectId);
-        startTransition(async () => setResult(await verifyEffect(formData)));
-      }}
-    >
+    <form dir="rtl" id="verify-effect" data-verify-form style={S.form} action={action} noValidate>
+      {/* Carried as a field, not closed over, so a JS-less native POST still
+          tells the server which outcome this is about. It is not an identity:
+          the server re-resolves the Effect, its Action and the viewer, and
+          `checkVerifierStanding` decides. */}
+      <input type="hidden" name="effect_id" value={effectId} />
+
       <label style={S.field}>
         <span style={S.label}>מה בדיוק מאושר כאן — מה קרה בפועל?</span>
-        <textarea name="statement" required rows={3} style={S.textarea}
+        <textarea name="statement" rows={3} style={S.textarea}
           placeholder="במילים שלך — מה נראה או נודע" />
       </label>
 
       <label style={S.field}>
         <span style={S.label}>איך ידעת?</span>
-        <input name="method" type="text" required style={S.input}
+        <input name="method" type="text" style={S.input}
           placeholder="ראיתי בעצמי / נכחתי / נמדד ותועד" />
       </label>
 
       <label style={S.field}>
         <span style={S.label}>מהיכן הידיעה הגיעה?</span>
-        <input name="provenance" type="text" required style={S.input}
-          placeholder="מקור הידיעה" />
+        <input name="provenance" type="text" style={S.input} placeholder="מקור הידיעה" />
       </label>
 
       <label style={S.field}>
         <span style={S.label}>מה סוג הבדיקה שלך?</span>
         {/* `self` is absent, not merely discouraged — it is not a check. */}
-        <select name="verifier_type" required defaultValue="" style={S.input}>
-          <option value="" disabled>— בחר/י —</option>
+        <select name="verifier_type" defaultValue="" style={S.input}>
+          <option value="">— בחר/י —</option>
           <option value="counterparty">הייתי צד בעניין וראיתי את התוצאה</option>
           <option value="third_party">צפיתי מבחוץ, ואיני צד בעניין</option>
           <option value="observed_measured">התוצאה נמדדה או תועדה באופן שאפשר להראות</option>
@@ -69,12 +83,12 @@ export default function VerifyEffectFocusedForm({
 
       <label style={S.field}>
         <span style={S.label}>רמת הוודאות (0 עד 1)</span>
-        <input name="confidence" type="number" min={0} max={1} step={0.05} required
+        <input name="confidence" type="number" min={0} max={1} step={0.05}
           style={S.input} placeholder="למשל 0.85" />
       </label>
 
-      {/* Only shown when it is load-bearing. An always-visible consent box on an
-          external fact would be a question with no meaning. */}
+      {/* Shown only when it is load-bearing. An always-visible consent box on
+          an external fact would be a question with no meaning. */}
       {concernsInternalState ? (
         <div style={S.consent}>
           <label style={S.checkRow}>
@@ -89,11 +103,17 @@ export default function VerifyEffectFocusedForm({
       ) : null}
 
       <div style={S.actions}>
-        <button type="submit" disabled={pending} style={S.btn}>
-          {pending ? "רושם…" : "אמת תוצאה"}
+        <button
+          type="submit"
+          disabled={pending}
+          style={{ ...S.btn, opacity: pending ? 0.6 : 1, cursor: pending ? "progress" : "pointer" }}
+        >
+          {pending ? "שולח…" : "אמת תוצאה"}
         </button>
-        {result && !result.ok ? (
-          <span style={S.err} role="alert" data-verify-error={result.reason}>{result.message}</span>
+        {state.error ? (
+          <span style={S.err} role="alert" data-verify-error={state.reason ?? "error"}>
+            {state.error}
+          </span>
         ) : null}
       </div>
     </form>

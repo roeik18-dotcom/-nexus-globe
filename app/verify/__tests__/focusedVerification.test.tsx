@@ -66,6 +66,43 @@ describe("the focused form asks for the verifier's own words and nothing else", 
     expect(html).not.toContain('name="subject"');
   });
 
+  // THE SILENT-FAILURE REGRESSION, at the markup level.
+  // A client closure renders `javascript:throw` and does nothing without JS;
+  // browser-enforced `required` refuses the submit before our code runs.
+  // Both produced a dead button and no message.
+  // Bound to an imported SERVER action, never an inline client closure. Only
+  // the former gets Next's `method="POST"` + `$ACTION_*` progressive-
+  // enhancement markup, which this isolated renderer cannot produce — so the
+  // binding is asserted at the source, and the POST itself was verified
+  // against the running server.
+  it("binds the form to a server action, not an inline client closure", () => {
+    const raw = readFileSync(
+      join(process.cwd(), "app", "verify", "[effectId]", "VerifyEffectFocusedForm.tsx"), "utf8");
+    /* CODE ONLY. The header comment quotes the broken `action={(formData) =>`
+       pattern on purpose, to record what this must never go back to; matching
+       prose would fail on the very sentence that documents the rule. */
+    const code = raw
+      .split("\n")
+      .filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l))
+      .join("\n");
+    expect(code).toContain("verifyEffectFormAction");
+    expect(code).toContain("useActionState");
+    expect(code).toContain("action={action}");
+    expect(code).not.toMatch(/action=\{\s*\(/);      // no inline closure
+    expect(code).not.toMatch(/action=\{async\s*\(/); // nor an async one
+  });
+
+  it("carries effect_id as a field, so a native POST still identifies the outcome", () => {
+    expect(html).toContain('name="effect_id"');
+  });
+
+  it("disables browser validation, which would refuse the submit silently", () => {
+    expect(html).toContain("noValidate");
+    // No `required` ATTRIBUTE reaches the markup — the server decides, and
+    // says so in words, rather than the browser refusing without a trace.
+    expect(html).not.toContain("required=");
+  });
+
   it("does not offer `self` as a kind of verification", () => {
     expect(html).not.toContain('value="self"');
   });
