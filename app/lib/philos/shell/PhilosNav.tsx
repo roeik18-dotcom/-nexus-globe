@@ -31,6 +31,11 @@ export const FAMILIES: Family[] = [
     { label: "מבנה האדם", href: "/hub/human-config", match: at("/hub/human-config") },
   ] },
   { id: "action", label: "פעולה", hue: COLOR_ROLE.red, items: [
+    /* THE ENTRY POINT. `/decisions` is the one job the product does for a
+       person on their first day — decide, then come back and find out. It
+       leads its family because everything else in here is downstream of a
+       decision someone actually made. */
+    { label: "החלטות", href: "/decisions", match: at("/decisions") },
     { label: "דינמיקה", href: "/dynamics", match: at("/dynamics") },
     { label: "שוק", href: "/marketplace", match: at("/marketplace") },
   ] },
