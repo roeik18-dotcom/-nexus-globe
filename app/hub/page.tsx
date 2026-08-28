@@ -87,6 +87,7 @@ import { loadDomainStates as _loadDS } from "@/app/lib/philos/canon/domainStateS
 import { resolveWritableDay } from "@/app/lib/philos/day/resolveWritableDay";
 import { dayId as _dayId } from "@/app/lib/philos/day/dayEvent";
 import { chainEvidenceFlags, loadEvidenceAndLearning } from "@/app/lib/philos/crossTerminal/loadEvidenceAndLearning";
+import { TerminalView } from "@/app/lib/philos/shell/TerminalView";
 
 export const metadata = { title: "Philos — היום" };
 
@@ -525,6 +526,9 @@ export default async function HubPage({
           previous={previousDate(viewedDate)}
           next={nextDate(viewedDate)}
         />
+      </div>
+        <TerminalView terminal="hub" chain={dayChain} frame={orientationFrame}>
+        <div style={{ padding: "12px 20px 0" }}>
         <DayStatusStrip session={daySession} /><RealOrientationPanel terminal="hub" frame={orientationFrame} chain={dayChain} /><ActionEffectPanel terminal="hub" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
         <DayChainSummary session={daySession} />
         <DayOpeningPanel session={daySession} readOnly={!dayIsToday} linkable={linkableObservations} linkableStates={linkableStates} />
@@ -756,6 +760,7 @@ export default async function HubPage({
         <DemoSimulationSection terminal="hub" />
         <DayClosingPanel session={daySession} readOnly={!dayIsWritable} closableStates={closableStates} />
       </div>
+      </TerminalView>
     </div>
   );
 }

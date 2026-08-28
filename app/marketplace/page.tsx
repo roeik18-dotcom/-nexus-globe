@@ -65,6 +65,7 @@ import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel"
 import { loadRealOrientationFrame } from "@/app/lib/philos/analysis/loadRealOrientationFrame";
 import RealOrientationPanel from "@/app/lib/philos/analysis/RealOrientationPanel";
 import { chainEvidenceFlags, loadEvidenceAndLearning } from "@/app/lib/philos/crossTerminal/loadEvidenceAndLearning";
+import { TerminalView } from "@/app/lib/philos/shell/TerminalView";
 
 export const metadata = { title: "Marketplace — Philos" };
 
@@ -301,6 +302,9 @@ export default async function MarketplacePage({
           subject={personRef.person_id}
           identityLink={identityLink}
         />
+      </div>
+      <TerminalView terminal="marketplace" chain={dayChain} frame={orientationFrame}>
+      <div>
         <DayStatusStrip session={daySession} /><RealOrientationPanel terminal="marketplace" frame={orientationFrame} chain={dayChain} /><ActionEffectPanel terminal="marketplace" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
         <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="marketplace" facts={[
           /* Arrays this page already loaded and already renders. */
@@ -587,6 +591,7 @@ export default async function MarketplacePage({
       <div style={{ padding: "0 20px 20px" }}>
         <DemoSimulationSection terminal="marketplace" />
       </div>
+      </TerminalView>
     </div>
   );
 }

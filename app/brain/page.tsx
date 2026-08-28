@@ -50,6 +50,7 @@ import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel"
 import { loadRealOrientationFrame } from "@/app/lib/philos/analysis/loadRealOrientationFrame";
 import RealOrientationPanel from "@/app/lib/philos/analysis/RealOrientationPanel";
 import { chainEvidenceFlags, loadEvidenceAndLearning } from "@/app/lib/philos/crossTerminal/loadEvidenceAndLearning";
+import { TerminalView } from "@/app/lib/philos/shell/TerminalView";
 
 export const metadata = { title: "Philos — Brain" };
 
@@ -221,6 +222,9 @@ export default async function BrainPage({
           subject={subject}
           identityLink={identityLink}
         />
+      </div>
+      <TerminalView terminal="brain" chain={dayChain} frame={orientationFrame}>
+      <div>
         <DayStatusStrip session={daySession} /><RealOrientationPanel terminal="brain" frame={orientationFrame} chain={dayChain} /><ActionEffectPanel terminal="brain" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
         {/* THE EVIDENCE DESTINATION. `מקור וראיות` is a region of Brain, not a
             terminal of its own, so it lives here at its own anchor with its own
@@ -307,6 +311,7 @@ export default async function BrainPage({
         {/* Below every REAL Brain surface, collapsed by default. */}
         <DemoSimulationSection terminal="brain" />
       </div>
+      </TerminalView>
     </div>
   );
 }
