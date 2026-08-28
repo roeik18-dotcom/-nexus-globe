@@ -37,6 +37,7 @@ import { STATUS, COLOR, TYPE } from "@/app/lib/philos/shell/designTokens";
 import { ProvenanceBadge as ProvBadge, type Provenance } from "@/app/lib/philos/shell/provenance";
 import { buildActivePersonRefs, type ActiveConfigSet } from "@/app/lib/philos/canonical/activeConfig";
 import { availableDomainConfigs } from "@/app/lib/philos/canonical/domainConfigRegistry";
+import { SystemDrawer } from "@/app/lib/philos/shell/SystemDrawer";
 
 /**
  * PRIORITIES — an ORDERED reading of the same real backlog already on this
@@ -125,6 +126,10 @@ export default async function PersonNowPanel({
 
   return (
     <section dir="rtl" style={S.hero}>
+      {/* Folded by default. Everything below is counts, sources and
+          status tokens — the system describing itself. Kept whole,
+          one click away, but no longer ahead of the material. */}
+      <SystemDrawer id="person-now" title="מרחב המדידה · פירוט מערכת" note="מה ניתן למדוד — לא מצב מדוד">
       <div style={S.heroHead}>
         <span style={STATUS_BADGE("real")}>CANON</span>
         <h2 style={S.heroTitle}>Person Now — {subject}</h2>
@@ -248,6 +253,7 @@ export default async function PersonNowPanel({
           </div>
         )}
       </Section>
+      </SystemDrawer>
     </section>
   );
 }

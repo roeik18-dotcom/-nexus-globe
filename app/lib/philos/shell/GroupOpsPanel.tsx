@@ -69,7 +69,7 @@ export default async function GroupOpsPanel({ variant }: { variant: "reasoning" 
       <Row k="NEEDS" v={`${p.member_needs.length} של חברים מקושרים (אין שדה group ב-Need)`} />
       <Row k="ACTIONS" v={`${p.linked_actions.length} מקושרות (bridge) · ${p.view.transfers.length} transfers`} />
       <Row k="EFFECTS" v={`${p.effect_claims} claims · ${p.verified_effects} מאומתים`} />
-      <Row k="LEARNING" v={p.learnings.length > 0 ? `${p.learnings.length} (${p.learnings.map((l) => l.kind).join(", ")})` : "אין Learning — UNKNOWN"} />
+      <Row k="LEARNING" v={p.learnings.length > 0 ? `${p.learnings.length} (${p.learnings.map((l) => l.kind).join(", ")})` : "טרם נרשמה מסקנה"} />
       <Row k="TREND" v={p.trend} />
     </section>
   );

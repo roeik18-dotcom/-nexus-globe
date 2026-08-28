@@ -14,6 +14,7 @@ import { COLOR, FS, RADIUS, SPACE, TYPE } from "../shell/designTokens";
 import {
   readingFor, type ActionEffectPair, type ProjectionTerminal,
 } from "./actionEffectProjection";
+import { SystemDrawer } from "@/app/lib/philos/shell/SystemDrawer";
 
 export default function ActionEffectPanel({
   terminal, pairs, legacyCount = 0,
@@ -35,9 +36,13 @@ export default function ActionEffectPanel({
     <section dir="rtl" data-action-effect-panel={terminal} style={S.card}>
       <div style={S.head}>
         <span style={S.eyebrow}>פעולה → תוצאה · ACTION → EFFECT</span>
+        {/* THE HEADLINE IS A SENTENCE, NOT A PROVENANCE TALLY.
+            `2 REAL · 1 ללא record_origin` is the store describing itself. The
+            same two numbers, said the way a person would say them; the raw
+            provenance tags stay on each row inside the drawer. */}
         <span style={S.count}>
-          {real.length} REAL
-          {legacy.length > 0 ? ` · ${legacy.length} ללא record_origin` : ""}
+          {real.length === 0 ? "עדיין לא נרשמה פעולה" : `${real.length} פעולות שנרשמו`}
+          {legacy.length > 0 ? ` · ${legacy.length} ישנות, לא נספרות` : ""}
         </span>
       </div>
 
@@ -59,18 +64,24 @@ export default function ActionEffectPanel({
                 {p.effect_id
                   ? <code style={{ ...S.id, color: p.effect_origin === "REAL" ? "#34d399" : "#8798b8" }}>{p.effect_id}</code>
                   : <span style={S.noEffect}>אין תוצאה מקושרת</span>}
-                <span style={{ ...S.originTag, color: isReal ? "#34d399" : "#fbbf24" }}>
-                  {p.action_origin}{p.effect_origin ? ` / ${p.effect_origin}` : ""}
-                </span>
-                <span style={S.scope}>{p.scope}</span>
               </div>
-              {/* WHAT THIS TERMINAL KNOWS */}
+              {/* WHAT THIS TERMINAL KNOWS — the sentence stays open. */}
               <div style={S.knows}>{r.knows}</div>
               {/* AND WHAT IT DOES NOT — never omitted, never softened */}
               <div style={S.doesNot}>◦ {r.does_not_know}</div>
-              {r.unresolved_reason ? (
-                <div style={S.unresolved}>UNRESOLVED — {r.unresolved_reason}</div>
-              ) : null}
+              {/* Provenance tags, scope and the resolver's own reason are the
+                  system's vocabulary, not the person's. Folded, never cut. */}
+              <SystemDrawer id={`pair-${p.action_id}`} title="מקור ופרטי מערכת" note="provenance · scope">
+                <div style={S.ids}>
+                  <span style={{ ...S.originTag, color: isReal ? "#34d399" : "#fbbf24" }}>
+                    {p.action_origin}{p.effect_origin ? ` / ${p.effect_origin}` : ""}
+                  </span>
+                  <span style={S.scope}>{p.scope}</span>
+                </div>
+                {r.unresolved_reason ? (
+                  <div style={S.unresolved}>UNRESOLVED — {r.unresolved_reason}</div>
+                ) : null}
+              </SystemDrawer>
             </div>
           );
         })
@@ -78,7 +89,7 @@ export default function ActionEffectPanel({
 
       {legacyCount > 0 ? (
         <div style={S.legacy}>
-          {legacyCount} רשומות ישנות ללא record_origin מוצגות בנפרד ואינן סוגרות שער.
+          {legacyCount} רשומות ישנות שמקורן לא תועד — מוצגות בנפרד ואינן סוגרות שלב.
         </div>
       ) : null}
     </section>

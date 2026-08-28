@@ -48,6 +48,7 @@ import { HUMAN_CANON_DOMAIN_ID } from "@/app/hub/CanonicalSlicePanel";
 import CanonicalSlicePanel from "@/app/hub/CanonicalSlicePanel";
 import { ProvenanceBadge, type Provenance } from "@/app/lib/philos/shell/provenance";
 import { COLOR, RADIUS, SPACE, TYPE } from "@/app/lib/philos/shell/designTokens";
+import { SystemDrawer } from "@/app/lib/philos/shell/SystemDrawer";
 
 interface LearningRow {
   key: string;
@@ -108,8 +109,10 @@ export default async function CanonicalBrainPanel({ subject, asOf, lifecycle, pe
       <header style={S.head}>
         <div>
           <div style={S.eyebrow}>הנגזרת · BRAIN DERIVATION</div>
+          {/* The pipeline stages were printed as their internal names. Same
+              six stages, said in the language the rest of the page uses. */}
           <h2 style={S.title}>
-            WHAT CHANGED → WHY / HYPOTHESES → EVIDENCE → UNKNOWN → LEARNING → NEXT ACTION
+            מה השתנה → למה → ראיה → מה לא ידוע → מסקנה → הפעולה הבאה
           </h2>
         </div>
         <div style={S.headMeta}>
@@ -119,6 +122,7 @@ export default async function CanonicalBrainPanel({ subject, asOf, lifecycle, pe
         </div>
       </header>
 
+      <SystemDrawer id="brain-derivation" title="הנגזרת המלאה · פירוט מערכת" note="שלבים, מקורות וסטטוסים">
       <div style={S.grid}>
         <Block
           title="WHAT CHANGED"
@@ -193,6 +197,7 @@ export default async function CanonicalBrainPanel({ subject, asOf, lifecycle, pe
           )}
         </div>
       </div>
+      </SystemDrawer>
 
       {/* CONFIG REVIEW / AUDIT — the activated refs' own Source-Lock review
           markers (INFERRED mapping bases, OPEN conflicts). Provenance

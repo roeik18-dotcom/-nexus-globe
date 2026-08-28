@@ -20,6 +20,7 @@ import {
 import { multiLayerContradictions, DIRECT_CONTRADICTION_VALUE_RELATIONS } from "../valueSystem/socialValueSpine";
 import { COLOR, FS, RADIUS, SPACE, TYPE } from "./designTokens";
 import { ProvenanceBadge } from "./provenance";
+import { SystemDrawer } from "@/app/lib/philos/shell/SystemDrawer";
 
 const TAX_LABEL: Record<TaxonomyKey, string> = {
   core_10: "core-10 (מוכרז סגור)",
@@ -44,6 +45,8 @@ export default function ContradictionProvenancePanel() {
 
   return (
     <section dir="rtl" style={S.band}>
+      {/* Folded — provenance of contradictions is audit material. */}
+      <SystemDrawer id="contradiction-provenance" title="פרובננס הניגודים · פירוט" note="מקורות וסתירות">
       <div style={S.head}>
         <span style={S.eyebrow}>פרובננס הניגודים · CONTRADICTION PROVENANCE — למה היחס קיים</span>
         <ProvenanceBadge p="STATIC" />
@@ -115,6 +118,7 @@ export default function ContradictionProvenancePanel() {
         בשמות שונים — אלה החלטות סיווג נפרדות. לכן הזהות מופרדת מהחברות, ואף טקסונומיה אינה
         מוכרזת מחייבת.
       </div>
+      </SystemDrawer>
     </section>
   );
 }

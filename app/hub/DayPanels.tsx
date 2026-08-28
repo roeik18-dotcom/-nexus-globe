@@ -26,6 +26,7 @@ import type { LinkableObservation } from "@/app/lib/philos/day/linkableObservati
 import type { LinkableState } from "@/app/lib/philos/day/linkableStates";
 import { COLOR, FS, RADIUS, SPACE, TYPE } from "@/app/lib/philos/shell/designTokens";
 import type { ClosableState } from "@/app/lib/philos/day/closableStates";
+import { SystemDrawer } from "@/app/lib/philos/shell/SystemDrawer";
 
 function useDayForm() {
   const [err, setErr] = useState<string | null>(null);
@@ -258,7 +259,10 @@ export function DayClosingPanel({ session, readOnly = false, closableStates = []
           gets PARTIAL without having been told why. */}
       {session.missing_gates.length > 0 && (
         <div style={S.gates}>
-          <span style={S.k}>שערים חסרים · {session.missing_gates.length}</span>
+          {/* The count leads in words; the gate names themselves are internal
+              identifiers and move into the drawer with their reasons. */}
+          <span style={S.k}>נותרו {session.missing_gates.length} שלבים להשלמה</span>
+          <SystemDrawer id="closing-gates" title="אילו שלבים חסרים · פירוט" note="שמות פנימיים וסיבות">
           <ul style={S.ul}>
             {session.gates.filter((g) => !g.met).map((g) => (
               <li key={g.gate} style={S.li}>
@@ -267,8 +271,9 @@ export function DayClosingPanel({ session, readOnly = false, closableStates = []
               </li>
             ))}
           </ul>
+          </SystemDrawer>
           <p style={S.note}>
-            רישום סגירה עם שער חסר יניב <b>PARTIAL</b> — לא סגירה. הלולאות הפתוחות ייגררו למחר.
+            רישום סגירה כשעוד חסרים שלבים ייצור סגירה חלקית — לא סגירה מלאה. מה שנשאר פתוח ייגרר למחר.
           </p>
         </div>
       )}

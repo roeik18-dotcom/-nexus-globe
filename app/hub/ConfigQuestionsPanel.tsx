@@ -31,6 +31,7 @@ import { availableDomainConfigs } from "@/app/lib/philos/canonical/domainConfigR
 import { COLOR, RADIUS, SPACE, TYPE } from "@/app/lib/philos/shell/designTokens";
 import { ProvenanceBadge } from "@/app/lib/philos/shell/provenance";
 import { Epistemic } from "@/app/lib/philos/shell/epistemics";
+import { SystemDrawer } from "@/app/lib/philos/shell/SystemDrawer";
 
 export default function ConfigQuestionsPanel() {
   // HUMAN CONFIG (cross-domain base) and each DOMAIN CONFIG slot are two
@@ -47,6 +48,8 @@ export default function ConfigQuestionsPanel() {
 
   return (
     <section dir="rtl" style={S.band}>
+      {/* Folded by default — system detail, kept whole, one click away. */}
+      <SystemDrawer id="config-questions" title="שאלות קונפיג · פירוט מערכת" note="מצב הגדרות">
       <div style={S.head}>
         <span style={S.eyebrow}>
           שאלות שהקונפיג מגדיר · CONFIG-DECLARED QUESTIONS ({total})
@@ -91,6 +94,7 @@ export default function ConfigQuestionsPanel() {
         </a>
         . אין מסלול אוטומטי משאלה למצב, וזה מכוון.
       </div>
+      </SystemDrawer>
     </section>
   );
 }

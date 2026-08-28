@@ -41,6 +41,7 @@ import { DEMO_COMMUNITIES } from "@/app/lib/philos/demoCommunities";
 import { ProvenanceBadge } from "./provenance";
 import { Epistemic, Measurement, Stance } from "./epistemics";
 import { FS, COLOR, RADIUS, SPACE, TYPE } from "./designTokens";
+import { SystemDrawer } from "@/app/lib/philos/shell/SystemDrawer";
 
 const DIMENSION_WORD: Record<string, string> = { PHYSICAL: "גופני", EMOTIONAL: "רגשי", COGNITIVE: "שכלי" };
 const ORIENTATION_WORD: Record<string, string> = { INTERNAL: "פנימי", EXTERNAL: "חיצוני" };
@@ -166,6 +167,10 @@ export default async function ObservationReadingPanel({
 
   return (
     <section dir="rtl" style={S.band}>
+      {/* Folded by default. Everything below is counts, sources and
+          status tokens — the system describing itself. Kept whole, one
+          click away, but no longer ahead of the material. */}
+      <SystemDrawer id="observation-reading" title="קריאת התצפית · פירוט מערכת" note="ממדים, ערכים ומקורות">
       <div style={S.headRow}>
         <span style={S.eyebrow}>קריאת התצפית האחרונה · LATEST OBSERVATION READING — {surface}</span>
         <span style={S.idChip}>{reading.canon_event_id.slice(0, 14)}…</span>
@@ -398,6 +403,7 @@ export default async function ObservationReadingPanel({
         <Row label="Learning" value={learningLinked ? "קיים Learning ש-prior_state_ref שלו מפנה לתצפית זו" : "אין Learning שנגזר מהתצפית — לא מומצא"} good={learningLinked} />
         <Row label="מדידות בתאים אחרים" value={`רק ${reading.recorded_cell.domain}/${reading.recorded_cell.frame} נמדד; שאר התאים ללא level — UNKNOWN`} good={false} />
       </div>
+      </SystemDrawer>
     </section>
   );
 }

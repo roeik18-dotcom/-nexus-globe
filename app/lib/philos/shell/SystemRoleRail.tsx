@@ -28,6 +28,7 @@
  * role being carried says nothing about any 3x3 cell, level or stability.
  */
 import { COLOR, COLOR_ROLE, FS, RADIUS, SPACE, TYPE } from "./designTokens";
+import { SystemDrawer } from "@/app/lib/philos/shell/SystemDrawer";
 
 /** Verbatim from the Colour Source Lock, in its own ORDER_INDEX order. */
 const ROLES = [
@@ -67,6 +68,10 @@ export interface SystemRoleEvidence {
 export default function SystemRoleRail({ evidence }: { evidence: SystemRoleEvidence }) {
   return (
     <section dir="rtl" style={S.band}>
+      {/* Folded by default. Everything below is counts, sources and
+          status tokens — the system describing itself. Kept whole, one
+          click away, but no longer ahead of the material. */}
+      <SystemDrawer id="system-roles" title="תפקידי מערכת · פירוט" note="Colour Source Lock">
       <div style={S.head}>
         <span style={S.eyebrow}>תפקידי מערכת · SYSTEM ROLES — Colour Source Lock, 7 רשומות</span>
         <span style={S.note}>נשא/לא נשא ברשומה אמיתית · אינו ציון</span>
@@ -113,6 +118,7 @@ export default function SystemRoleRail({ evidence }: { evidence: SystemRoleEvide
         {" · "}🟡 YELLOW — מעבר מצב: <b>0 מבנית</b>, כי אין חוזה קנוני לשמירת State′
         (<code>STATE-TRANSITION-BOUNDARY.md</code>).
       </div>
+      </SystemDrawer>
     </section>
   );
 }

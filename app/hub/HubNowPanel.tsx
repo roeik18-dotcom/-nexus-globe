@@ -60,6 +60,7 @@ import { COLOR, RADIUS, SPACE, TYPE } from "@/app/lib/philos/shell/designTokens"
 import { ProvenanceBadge, type Provenance } from "@/app/lib/philos/shell/provenance";
 import { buildAttentionChain, type EpistemicStatus } from "@/app/lib/philos/attentionChain";
 import { Epistemic, EvidenceRow, ScopedNextAction } from "@/app/lib/philos/shell/epistemics";
+import { SystemDrawer } from "@/app/lib/philos/shell/SystemDrawer";
 
 /** The two-sided reading of each typed contradiction, in the SAME domain
  *  words `tension.ts` already uses. Presentation of a real classifier
@@ -172,6 +173,10 @@ export default function HubNowPanel({
 
   return (
     <section dir="rtl" style={S.root}>
+      {/* Folded by default. Everything below is counts, sources and
+          status tokens — the system describing itself. Kept whole,
+          one click away, but no longer ahead of the material. */}
+      <SystemDrawer id="hub-now" title="מצב נוכחי · פירוט מערכת" note="ספירות, מקורות וסטטוסים">
       <style>{CSS}</style>
 
       <header style={S.head}>
@@ -426,6 +431,7 @@ export default function HubNowPanel({
           )}
         </Card>
       </div>
+      </SystemDrawer>
     </section>
   );
 }

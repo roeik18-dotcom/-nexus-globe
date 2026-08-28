@@ -43,7 +43,7 @@ export default function DayChainSummary({ session }: { session: DaySession }) {
             <span key={l.label} style={S.seg}>
               <span style={{ ...S.node, borderColor: ok ? "#34d399" : "#fbbf24", color: ok ? COLOR.text : "#fbbf24" }}>
                 {l.label}
-                <b style={S.count}>{ok ? n : legacy ? `${l.field.refs.length} ללא ראיה` : "UNKNOWN"}</b>
+                <b style={S.count}>{ok ? n : legacy ? `${l.field.refs.length} ללא ראיה` : "טרם"}</b>
               </span>
               {i < links.length - 1 && <span style={S.arrow}>←</span>}
             </span>

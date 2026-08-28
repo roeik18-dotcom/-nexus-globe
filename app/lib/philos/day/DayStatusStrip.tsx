@@ -103,11 +103,15 @@ export default function DayStatusStrip({
             complete and unchanged. */}
         {status !== "CLOSED" && (
           <>
+            {/* SAID IN WORDS. `9/11 MET` is the gate list talking; the same
+                two numbers, in the language the rest of the strip uses. The
+                machine-readable count stays on the data attribute for tests
+                and for anyone reading the DOM. */}
             <span style={S.met} data-gates-met-count={met.length}>
-              {met.length}/{session.gates.length} MET
+              {met.length} מתוך {session.gates.length} שלבים הושלמו
             </span>
             <span style={S.missing}>
-              חסרים {missing.length}
+              נותרו {missing.length}
             </span>
           </>
         )}

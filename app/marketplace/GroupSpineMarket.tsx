@@ -236,7 +236,7 @@ export default async function GroupSpineMarket({ input }: { input: SpineMarketIn
                 </span>
               ) : null}
               <span style={{ fontSize: FS.meta, color: COLOR.textDim }}>{c.basis}</span>
-              <span style={{ fontSize: FS.tag, color: STATE.DERIVED.hue }}>DERIVED</span>
+              <span style={{ fontSize: FS.tag, color: STATE.DERIVED.hue }}>נגזר מחישוב</span>
               {/* A real write. The action re-derives this candidate server-side
                   and refuses anything it cannot find. */}
               <span style={{ marginInlineStart: "auto" }}>

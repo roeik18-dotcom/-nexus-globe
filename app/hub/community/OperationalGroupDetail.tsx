@@ -14,6 +14,7 @@
 import type { OperationalGroupProfile } from "@/app/lib/philos/valueSystem/operationalGroup";
 import { ProvenanceBadge, type Provenance } from "@/app/lib/philos/shell/provenance";
 import { COLOR, RADIUS, SPACE, TYPE } from "@/app/lib/philos/shell/designTokens";
+import { SystemDrawer } from "@/app/lib/philos/shell/SystemDrawer";
 
 export default function OperationalGroupDetail({ profile }: { profile: OperationalGroupProfile }) {
   const p = profile;
@@ -21,6 +22,8 @@ export default function OperationalGroupDetail({ profile }: { profile: Operation
 
   return (
     <section dir="rtl" style={S.band}>
+      {/* Folded by default — system detail, kept whole, one click away. */}
+      <SystemDrawer id="group-detail" title="פירוט קבוצה · מערכת" note="ספירות ומקורות">
       <header style={S.head}>
         <div>
           <div style={S.eyebrow}>קבוצה תפעולית · OPERATIONAL VALUE GROUP</div>
@@ -124,6 +127,7 @@ export default function OperationalGroupDetail({ profile }: { profile: Operation
           <KV k={p.quality.status} v={p.quality.note} />
         </Sec>
       </div>
+      </SystemDrawer>
     </section>
   );
 }
