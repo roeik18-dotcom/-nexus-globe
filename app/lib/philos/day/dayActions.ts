@@ -57,6 +57,7 @@ import {
 } from "./dayEvent";
 import { countDayRecords } from "./daySession";
 import { resolveSubmittedClosingState } from "./closableStates";
+import { resolveWritableDay } from "./resolveWritableDay";
 import { loadActions } from "../canon/actionStoreAccessor";
 import { loadEffects } from "../canon/effectStoreAccessor";
 
@@ -194,8 +195,24 @@ export async function openDayCore(formData: FormData): Promise<DayWriteResult> {
 /** Testable core — no `revalidatePath`. */
 export async function recordDayClosingCore(formData: FormData): Promise<DayWriteResult> {
   const viewer = await resolveViewerContext();
-  const date = String(formData.get("date") ?? "").trim() || todayIn(systemClock);
-  const day_id = dayId(viewer.subject_id, date);
+
+  /* THE DAY BEING CLOSED IS THE OPEN ONE, NOT THE ONE ON THE CLOCK.
+     This read `date` from FormData and fell back to `todayIn(systemClock)`,
+     which is UTC. Someone who opened a day at 22:00 local found it read-only
+     at 01:00 — the day rolled over in a timezone they do not live in, on a
+     day they had not finished. The same field also let a client name any day.
+
+     OPENING still takes a date: it creates a day that does not exist yet.
+     CLOSING must not, because the day it closes already exists and there is
+     exactly one candidate. `resolveWritableDay` is the rule already agreed for
+     Action — eligible while opened and not yet closed, no clock read — so both
+     halves of the system now answer "which day is active?" identically. */
+  const writable = resolveWritableDay(await loadPhilosEvents(), viewer.subject_id);
+  if (!writable.ok) {
+    return { ok: false,
+      message: `day.closing_recorded refused: ${writable.message}${writable.candidates.length > 1 ? ` (${writable.candidates.join(", ")})` : ""}` };
+  }
+  const day_id = writable.day_ref;
 
   const candidate: Partial<DayClosingRecordedPayload> = {
     day_id,
@@ -220,10 +237,10 @@ export async function recordDayClosingCore(formData: FormData): Promise<DayWrite
   // A closing for a day nobody opened would produce a day whose own opening
   // is UNKNOWN — a record describing something that never started.
   if (counts.openings === 0) {
-    return { ok: false, message: `לא ניתן לסגור יום שלא נפתח (${date})` };
+    return { ok: false, message: `לא ניתן לסגור יום שלא נפתח (${day_id})` };
   }
   if (counts.closings > 0) {
-    return { ok: false, message: `יום ${date} כבר נסגר — סגירה שנייה נדחית` };
+    return { ok: false, message: `יום ${day_id} כבר נסגר — סגירה שנייה נדחית` };
   }
 
   /* The closing's real causal parent is the opening — the one event in THIS

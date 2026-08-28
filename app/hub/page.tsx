@@ -84,6 +84,8 @@ import { loadRealOrientationFrame } from "@/app/lib/philos/analysis/loadRealOrie
 import RealOrientationPanel from "@/app/lib/philos/analysis/RealOrientationPanel";
 import { selectClosableStates } from "@/app/lib/philos/day/closableStates";
 import { loadDomainStates as _loadDS } from "@/app/lib/philos/canon/domainStateStoreAccessor";
+import { resolveWritableDay } from "@/app/lib/philos/day/resolveWritableDay";
+import { dayId as _dayId } from "@/app/lib/philos/day/dayEvent";
 
 export const metadata = { title: "Philos — היום" };
 
@@ -167,6 +169,13 @@ export default async function HubPage({
       ...aeProjection.pairs.flatMap((x) => (x.effect_id ? [x.effect_id] : [])),
     ],
   });
+  /* CLOSING FOLLOWS THE OPEN DAY, NOT THE CLOCK. `dayIsToday` compares to
+     the UTC date, so a day opened at 22:00 local went read-only at 01:00 —
+     still open, still unfinished, and no longer closable. The opening panel
+     keeps `dayIsToday`, because opening a NEW day for a past date is a
+     different act; closing one that is already open is not. */
+  const writableDay = resolveWritableDay(await loadPhilosEvents(), personRef.person_id);
+  const dayIsWritable = writableDay.ok && writableDay.day_ref === _dayId(personRef.person_id, viewedDate);
   /* REAL unit readings — one shared selector, never a per-page derivation. */
   const canonEventsForViewer = await loadCanonEvents();
   const realUnitReadings = selectRealUnitReadings({
@@ -741,7 +750,7 @@ export default async function HubPage({
           operational act stays the final thing on the page. */}
       <div style={{ padding: "0 20px 20px" }}>
         <DemoSimulationSection terminal="hub" />
-        <DayClosingPanel session={daySession} readOnly={!dayIsToday} closableStates={closableStates} />
+        <DayClosingPanel session={daySession} readOnly={!dayIsWritable} closableStates={closableStates} />
       </div>
     </div>
   );
