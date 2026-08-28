@@ -323,10 +323,20 @@ export default function RealDataGapPanel({
 
   return (
     <section dir="rtl" style={S.wrap} aria-label="מה חסר עכשיו">
-      <div style={S.head}>
-        <span style={S.eyebrow}>מה חסר עכשיו · {terminal}</span>
-        <span style={S.count}>{unmet.length}/{session.gates.length}</span>
-      </div>
+      {/* COLLAPSED BY DEFAULT, AND AT THE BOTTOM OF THE PAGE.
+          Everything below is gate vocabulary and resolver names — the
+          machine's account of itself. It used to open on every terminal, so
+          the first thing a person met was `StateT0Available`, `EMPTY UNKNOWN`
+          and a list of function names, while their own material sat further
+          down. It is all still here, complete and unchanged; it simply no
+          longer speaks first. The headline counts stay on the summary line so
+          nothing is hidden — only folded. */}
+      <details style={S.systemDrawer} data-system-details="gaps">
+        <summary style={S.systemSummary}>
+          <span style={S.eyebrow}>מה חסר עכשיו · {terminal}</span>
+          <span style={S.count}>{unmet.length}/{session.gates.length}</span>
+          <span style={S.systemHint}>שערים, מקורות ופרטי מערכת</span>
+        </summary>
 
       {/* ONE recommended next action — the first unmet gate, because
           everything after it is blocked by it. */}
@@ -405,6 +415,7 @@ export default function RealDataGapPanel({
       )}
 
       <UnitsStrip real={realUnits} />
+      </details>
     </section>
   );
 }
@@ -489,6 +500,12 @@ function UnitRow({ title, units, byId }: {
 }
 
 const S = {
+  systemDrawer: { margin: 0 },
+  systemSummary: {
+    display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 8,
+    cursor: "pointer", listStyle: "none",
+  },
+  systemHint: { fontSize: 11, color: "#6c86b5" },
   wrap: {
     border: `1px solid ${COLOR.border}`,
     borderRadius: RADIUS.md,

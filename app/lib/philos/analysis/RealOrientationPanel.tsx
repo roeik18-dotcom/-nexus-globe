@@ -40,14 +40,27 @@ export default function RealOrientationPanel({
   if (!frame.resolved) {
     return (
       <section dir="rtl" data-real-orientation={terminal} data-frame="unresolved" style={S.card}>
-        <div style={S.head}>
-          <span style={S.eyebrow}>התמצאות · ORIENTATION</span>
-          <span style={S.unresolved}>UNRESOLVED — {frame.reason}</span>
+        {/* AN UNRESOLVED FRAME STILL OWES THE PERSON A SENTENCE.
+            It used to lead with the raw token — `UNRESOLVED — no_opening` —
+            which is the resolver talking to itself. The reason is real and is
+            kept, in the drawer at the bottom with everything else technical;
+            what leads now is the plain fact and the one thing to do about it. */}
+        <h2 style={S.title}>עדיין אין על מה להתבסס כאן</h2>
+        <p style={S.body}>{frame.message}</p>
+
+        <div style={S.nextBox}>
+          <span style={S.blockLabel}>מה אפשר לעשות עכשיו</span>
+          <Link href="/hub" style={S.nextLink}>פתח/י את היום במרכז ←</Link>
         </div>
-        {/* An unresolved frame states WHY and stops. It does not fall back to
-            another record, and it does not draw ten empty cards as though the
-            question had been asked and answered. */}
-        <div style={S.note}>{frame.message}</div>
+
+        <details style={S.audit} data-system-details="orientation-unresolved">
+          <summary style={S.auditSummary}>פרטי מערכת</summary>
+          <div dir="ltr" style={S.auditBody}>
+            <div><b>state</b> UNRESOLVED</div>
+            <div><b>reason</b> {frame.reason}</div>
+            <div><b>terminal</b> {terminal}</div>
+          </div>
+        </details>
       </section>
     );
   }
@@ -103,10 +116,6 @@ export default function RealOrientationPanel({
         <span style={S.blockLabel}>מה ידוע</span>
         <ul style={S.list}>{m.known.map((x) => <li key={x} style={S.li}>{x}</li>)}</ul>
       </div>
-      <div style={S.unknownBox}>
-        <span style={S.blockLabel}>מה עדיין לא ידוע</span>
-        <ul style={S.list}>{m.unknown.map((x) => <li key={x} style={S.li}>{x}</li>)}</ul>
-      </div>
 
       {/* 6 — exactly one action, or an honest none. */}
       <div style={S.nextBox}>
@@ -116,9 +125,17 @@ export default function RealOrientationPanel({
           : <span style={S.body}>במסוף הזה אין כרגע פעולה זמינה. זה לא חוסר — פשוט אין מה לעשות כאן עד שיירשם מידע נוסף.</span>}
       </div>
 
-      {/* 7 — technical detail, closed, at the bottom only. */}
-      <details style={S.audit}>
-        <summary style={S.auditSummary}>פרטי ביקורת טכניים</summary>
+      {/* 7 — ONE closed drawer at the bottom, holding everything that is not
+             the material or the action: what is still unknown, and the
+             technical ids. "What is not known" is real and stays complete,
+             but it is not what a person came to read, and printed open on all
+             nine terminals it drowned the two sentences that were. */}
+      <details style={S.audit} data-system-details="orientation">
+        <summary style={S.auditSummary}>מה עדיין לא ידוע · ופרטי מערכת</summary>
+        <div style={S.unknownBox}>
+          <span style={S.blockLabel}>מה עדיין לא ידוע</span>
+          <ul style={S.list}>{m.unknown.map((x) => <li key={x} style={S.li}>{x}</li>)}</ul>
+        </div>
         <div dir="ltr" style={S.auditBody}>
           <div><b>canon_event_id</b> {frame.canon_event_id}</div>
           <div><b>state_t0_id</b> {frame.state_t0_id}</div>

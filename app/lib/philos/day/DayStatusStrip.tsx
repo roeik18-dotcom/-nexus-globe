@@ -117,20 +117,25 @@ export default function DayStatusStrip({
         </Link>
       </div>
 
-      {/* One next action. Named from a real missing gate, never invented. */}
-      <div style={S.next}>
-        <span style={S.nextLabel}>הפעולה הבאה</span>
-        <span style={S.nextText}>{nextActionFor(session)}</span>
-      </div>
 
       {/* THE FULL ELEVEN-GATE AUDIT — every gate, every reason, nothing
           removed. It is closed by default because it is reference detail, not
           the headline; `open` is uncontrolled so a person's choice survives
           re-render, and read-only historical days render identically. */}
+      {/* THE DAY-LEVEL NEXT ACTION LIVES IN HERE NOW.
+          Three surfaces used to each print a "next action": this strip, the
+          orientation panel, and the gap panel — three answers to one
+          question, on every page. The terminal-specific one in the
+          orientation panel is the primary action a person acts on; this one
+          is derived from the gate list, so it belongs with the gate list. */}
       <details style={S.audit}>
         <summary style={S.auditSummary}>
           כל 11 השערים · FULL GATE AUDIT
         </summary>
+        <div style={S.next}>
+          <span style={S.nextLabel}>הפעולה הבאה ביום</span>
+          <span style={S.nextText}>{nextActionFor(session)}</span>
+        </div>
       {missing.length > 0 && (
         <ul style={S.gateList}>
           {session.gates.filter((g) => !g.met).map((g) => (

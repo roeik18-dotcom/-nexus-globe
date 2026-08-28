@@ -31,10 +31,16 @@ export default function PersonFrameStrip({
 
   return (
     <section dir="rtl" style={S.band}>
-      <div style={S.head}>
+      {/* COLLAPSED BY DEFAULT. This band says of itself that it is reference
+          only — "אינו מצב מדוד" — yet it printed three axes of UNKNOWN above
+          the person's own material on five terminals. What can be asked is
+          worth keeping and is kept, entire; it simply is not the answer to
+          "what happened today", so it no longer opens uninvited. */}
+      <details data-system-details="person-frame" style={{ margin: 0 }}>
+      <summary style={{ ...S.head, cursor: "pointer", listStyle: "none", display: "flex" }}>
         <span style={S.eyebrow}>מסגרת ייחוס · PERSON-IN-CONTEXT REFERENCE FRAME</span>
         <span style={S.note}>ייחוס בלבד — מה ניתן לשאול/למדוד. אינו מצב מדוד.</span>
-      </div>
+      </summary>
 
       <div style={S.grid}>
         {/* AXIS 1 — the cross-domain human base */}
@@ -94,6 +100,7 @@ export default function PersonFrameStrip({
           </div>
         </div>
       )}
+      </details>
     </section>
   );
 }
