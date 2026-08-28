@@ -35,7 +35,7 @@ export default function ActionEffectPanel({
   return (
     <section dir="rtl" data-action-effect-panel={terminal} style={S.card}>
       <div style={S.head}>
-        <span style={S.eyebrow}>פעולה → תוצאה · ACTION → EFFECT</span>
+        <span style={S.eyebrow}>מה עשית, ומה יצא מזה</span>
         {/* THE HEADLINE IS A SENTENCE, NOT A PROVENANCE TALLY.
             `2 REAL · 1 ללא record_origin` is the store describing itself. The
             same two numbers, said the way a person would say them; the raw
@@ -58,20 +58,21 @@ export default function ActionEffectPanel({
                  data-pair-origin={isReal ? "REAL" : "LEGACY"}
                  data-pair-action={p.action_id}
                  data-pair-effect={p.effect_id ?? ""}>
-              <div style={S.ids}>
-                <code style={{ ...S.id, color: isReal ? "#34d399" : "#8798b8" }}>{p.action_id}</code>
-                <span style={S.arrow}>→</span>
-                {p.effect_id
-                  ? <code style={{ ...S.id, color: p.effect_origin === "REAL" ? "#34d399" : "#8798b8" }}>{p.effect_id}</code>
-                  : <span style={S.noEffect}>אין תוצאה מקושרת</span>}
-              </div>
+              {p.effect_id ? null : <div style={S.noEffect}>אין תוצאה מקושרת</div>}
               {/* WHAT IT DOES NOT KNOW stays open — that is the honest limit
                   a person needs, and it is written in words. */}
               <div style={S.doesNot}>◦ {r.does_not_know}</div>
               {/* Provenance tags, scope and the resolver's own reason are the
                   system's vocabulary, not the person's. Folded, never cut. */}
-              <SystemDrawer id={`pair-${p.action_id}`} title="מקור ופרטי מערכת" note="provenance · scope">
-                {/* Names the raw record ids — kept, but not as the headline. */}
+              <SystemDrawer id={`pair-${p.action_id}`} title="מזהים ומקור" note="לרישום ולבדיקה">
+                {/* The record ids themselves — kept, one click away. */}
+                <div style={S.ids}>
+                  <code style={{ ...S.id, color: isReal ? "#34d399" : "#8798b8" }}>{p.action_id}</code>
+                  <span style={S.arrow}>→</span>
+                  {p.effect_id
+                    ? <code style={{ ...S.id, color: p.effect_origin === "REAL" ? "#34d399" : "#8798b8" }}>{p.effect_id}</code>
+                    : null}
+                </div>
                 <div style={S.knows}>{r.knows}</div>
                 <div style={S.ids}>
                   <span style={{ ...S.originTag, color: isReal ? "#34d399" : "#fbbf24" }}>

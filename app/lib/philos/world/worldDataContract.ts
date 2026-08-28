@@ -15,7 +15,7 @@
  *
  * Nothing in this module invents a record. It reports what the stores hold.
  */
-import type { SystemRejectionReason } from "./systemEvidenceProjection";
+import { REJECTION_TEXT, type SystemRejectionReason } from "./systemEvidenceProjection";
 
 export interface ProvenanceCounts {
   real: number;
@@ -88,7 +88,7 @@ export function buildWorldDataContract(input: ContractInput): WorldDataContract 
     if (ranked.length === 0) return "אין מועמדים — הערוץ מחובר ולא הגיעו רשומות";
     const [reason, n] = ranked[0];
     const ext = input.evidence.filter((e) => e.level === "external_verified" && e.provenance !== "DEMO").length;
-    return `הערוץ מחובר. ${input.evidence.length} רשומות ראיה נבדקו, מתוכן ${ext} באימות חיצוני. הסיבה השכיחה לאי-הכללה: ${reason} (${n})`;
+    return `הערוץ מחובר. ${input.evidence.length} רשומות ראיה נבדקו, מתוכן ${ext} באימות חיצוני. הסיבה השכיחה לאי-הכללה: ${REJECTION_TEXT[reason] ?? reason} (${n})`;
   })();
 
   return {

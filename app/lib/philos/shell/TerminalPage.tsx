@@ -142,7 +142,10 @@ function Section({ section, tier }: { section: TerminalSection; tier: "SECONDARY
       <summary style={S.summary}>
         <span style={{ ...TYPE.micro, fontSize: FS.tag, letterSpacing: 1.2,
           color: quiet ? COLOR.textFaint : COLOR.textDim }}>
-          {tier}
+          {/* The tier is a LAYOUT rank, and printing its English name on every
+              section header was the single most repeated piece of machine
+              vocabulary in the product. The rank still shows — in words. */}
+          {tier === "AUDIT" ? "לבדיקה" : "משני"}
         </span>
         <span style={{ fontSize: FS.read, color: quiet ? COLOR.textDim : COLOR.text, fontWeight: 600 }}>
           {section.title}

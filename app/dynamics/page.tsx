@@ -95,6 +95,7 @@ import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel"
 import { loadRealOrientationFrame } from "@/app/lib/philos/analysis/loadRealOrientationFrame";
 import RealOrientationPanel from "@/app/lib/philos/analysis/RealOrientationPanel";
 import { chainEvidenceFlags, loadEvidenceAndLearning } from "@/app/lib/philos/crossTerminal/loadEvidenceAndLearning";
+import { TerminalView } from "@/app/lib/philos/shell/TerminalView";
 
 /**
  * Real time-range counts over the real canon Observation log — computed
@@ -401,7 +402,7 @@ export default async function DynamicsPage({
      the causal view itself, in a fragment, so the terminal keeps its own
      full-bleed drawing surface below it. */
   return <>
-    <DayStatusStrip session={daySession} /><RealOrientationPanel terminal="dynamics" frame={orientationFrame} chain={dayChain} /><ActionEffectPanel terminal="dynamics" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
+    <TerminalView terminal="dynamics" chain={dayChain} frame={orientationFrame} technical={<><DayStatusStrip session={daySession} /><RealOrientationPanel terminal="dynamics" frame={orientationFrame} chain={dayChain} /></>} /><ActionEffectPanel terminal="dynamics" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
     <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="dynamics" facts={[
       /* The day-scoped chain, already projected. `null` here means the
          projection could not resolve it — UNRESOLVED, never zero. */
@@ -467,7 +468,7 @@ export default async function DynamicsPage({
            Unchanged and one click away. */
         <details style={{ background: "rgba(0,0,0,0.2)", borderRadius: 10, padding: "6px 12px", margin: "0 0 12px", opacity: 0.85 }}>
           <summary style={{ cursor: "pointer", fontSize: 13, letterSpacing: 1, color: "#6c86b5" }}>
-            מסגרת אדם · ערך · דומיין — REFERENCE FRAME
+            מסגרת אדם · ערך · תחום
           </summary>
           <div style={{ marginTop: 10 }}><PersonFrameStrip frame={personFrame} compact /></div>
         </details>

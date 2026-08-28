@@ -45,7 +45,7 @@ export default function CreateObservationForm({ subject }: {
         });
       }}
     >
-      <div style={{ fontSize: 13, letterSpacing: 0.5, color: "#8fa3c9" }}>תצפית עצמית חדשה · NEW SELF-OBSERVATION{subject ? ` (${subject})` : ""}</div>
+      <div style={{ fontSize: 13, letterSpacing: 0.5, color: "#8fa3c9" }}>תצפית עצמית חדשה{subject ? ` (${subject})` : ""}</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <select name="domain" required style={selectStyle}>
           {DOMAINS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}

@@ -225,7 +225,7 @@ export default function CausalChainFlow({
         : undefined,
     },
     {
-      key: "obs", label: "OBSERVATION", gloss: "מה נצפה", linkFromPrevious: linkage.t0_obs,
+      key: "obs", label: "תצפית", gloss: "מה נצפה", linkFromPrevious: linkage.t0_obs,
       content: anchor ? `${DOMAIN_WORD[anchor.d]} · level ${anchor.mark.level}` : null,
       detail: anchor ? `${anchor.mark.deficitType} · ${anchor.mark.provenance}` : undefined,
       time: anchor?.mark.observed_at ?? null,
@@ -238,7 +238,7 @@ export default function CausalChainFlow({
         : undefined,
     },
     {
-      key: "action", label: "ACTION", gloss: "מה נעשה", linkFromPrevious: linkage.obs_action,
+      key: "action", label: "פעולה", gloss: "מה נעשה", linkFromPrevious: linkage.obs_action,
       content: latestAction ? latestAction.action.action.type : null,
       detail: latestAction
         ? `${latestAction.action.action.mechanism_scope} · ${latestAction.action.action.reversibility}`
@@ -252,7 +252,7 @@ export default function CausalChainFlow({
       href: latestAction ? `?ctx=${encodeURIComponent(`action:${latestAction.action.action.action_id}`)}` : undefined,
     },
     {
-      key: "effect", label: "EFFECT", gloss: "מה נטען שקרה", linkFromPrevious: linkage.action_effect,
+      key: "effect", label: "תוצאה", gloss: "מה נטען שקרה", linkFromPrevious: linkage.action_effect,
       content: latestEffect ? latestEffect.effect.effect.claimed_outcome.statement : null,
       detail: latestEffect ? (latestEffect.verified ? "VERIFIED" : "CLAIMED ONLY") : undefined,
       time: latestEffect?.effect.effect.claimed_outcome.time ?? null,
@@ -263,7 +263,7 @@ export default function CausalChainFlow({
       href: latestEffect ? `?ctx=${encodeURIComponent(`effect:${latestEffect.effect.effect.effect_id}`)}` : undefined,
     },
     {
-      key: "evidence", label: "EVIDENCE", gloss: "מה מאמת", linkFromPrevious: linkage.effect_evidence,
+      key: "evidence", label: "ראיה", gloss: "מה מאמת", linkFromPrevious: linkage.effect_evidence,
       content: verifiedOutcome ? verifiedOutcome.statement : null,
       detail: verifiedOutcome ? `${verifiedOutcome.verifier_type} · ${verifiedOutcome.method}` : undefined,
       time: verifiedOutcome?.time ?? null,
@@ -462,7 +462,7 @@ function TemporalBlockBand({
   return (
     <div style={{ marginTop: SPACE.md, paddingTop: SPACE.md, borderTop: `1px solid ${COLOR.border}` }}>
       <div style={{ ...S.eyebrow, color: "#fbbf24" }}>
-        השוואה לאורך זמן · TEMPORAL COMPARISON — חסום ב:{" "}{firstBlock ? firstBlock.label : "—"}
+        השוואה לאורך זמן — חסום ב:{" "}{firstBlock ? firstBlock.label : "—"}
       </div>
       <div dir="ltr" style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
         {steps.map((st, i) => (
@@ -535,7 +535,7 @@ function OpenBoundaryBand({
         </div>
         {hasVerifiedEvidence ? (
           <div style={S.baRow}>
-            <span style={{ ...S.baDomain, minWidth: 110 }}>EVIDENCE</span>
+            <span style={{ ...S.baDomain, minWidth: 110 }}>ראיה</span>
             <span style={{ ...S.baCell, minWidth: 0, flex: 1 }}>
               קיימת עדות Effect מאומתת — Effect מאומת מוכיח תוצאת Effect לפי רשומת האימות שלו בלבד; אינו מוכיח Learning, שינוי Level/Stability או State(t+1).
             </span>
@@ -589,7 +589,7 @@ function ConfigBaseline({
 
         {domains.map((d) => (
           <div key={d.domain_id} style={S.baRow}>
-            <span style={{ ...S.baDomain, minWidth: 150 }}>DOMAIN CONFIG · {d.label_he}</span>
+            <span style={{ ...S.baDomain, minWidth: 150 }}>{d.label_he}</span>
             <span style={{ ...S.baCell, minWidth: 0, flex: 1 }}>
               {d.active_refs} refs פעילים מתוך {d.total_in_lock} — {summarize(d.by_type)}
               <span style={{ color: COLOR.textFaint }}> · זמין, לא נבחר</span>
@@ -714,11 +714,10 @@ function StageCard({ stage, index }: { stage: StageData; index: number }) {
     <>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
         <span style={{ ...TYPE.micro, color: real ? p.text : COLOR.textFaint, letterSpacing: 0.8 }}>
-          {index}. {stage.label}
+          {index}. {stage.gloss}
         </span>
         {stage.boundary && !real ? <OpenBoundaryMark note={stage.empty} /> : <ProvenanceBadge p={stage.provenance} />}
       </div>
-      <div dir="rtl" style={{ fontSize: 12, color: COLOR.textFaint }}>{stage.gloss}</div>
 
       {real ? (
         <div dir="rtl" style={{ ...w.text, minHeight: 34 }}>

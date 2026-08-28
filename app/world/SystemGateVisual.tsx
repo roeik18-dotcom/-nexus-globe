@@ -64,7 +64,7 @@ export default function SystemGateVisual({ rows, observed, because }: {
         SOCIAL EXISTS
       </text>
       <text x={X_OUT} y={26} textAnchor="start" style={{ ...TYPE.micro, fontSize: FS.tag, fill: COLOR.textFaint, letterSpacing: 1.3 }}>
-        SYSTEM ELIGIBLE
+        עומד בשער המערכת
       </text>
 
       {rows.map((r, i) => {

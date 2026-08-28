@@ -56,6 +56,7 @@ import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel"
 import { loadRealOrientationFrame } from "@/app/lib/philos/analysis/loadRealOrientationFrame";
 import RealOrientationPanel from "@/app/lib/philos/analysis/RealOrientationPanel";
 import { chainEvidenceFlags, loadEvidenceAndLearning } from "@/app/lib/philos/crossTerminal/loadEvidenceAndLearning";
+import { TerminalView } from "@/app/lib/philos/shell/TerminalView";
 
 export const metadata = { title: "Living World — Philos" };
 
@@ -230,7 +231,7 @@ export default async function WorldPage({ searchParams }: {
     },
     {
       id: "system-eligible",
-      title: "EXISTS / SYSTEM-ELIGIBLE · פירוט לפי שלב",
+      title: "קיים מול עומד בשער — פירוט לפי שלב",
       summary: "קיום מול כשירות מערכתית, שלב אחר שלב · UNKNOWN ≠ 0",
       children: (
         <SocialFrame
@@ -308,7 +309,7 @@ export default async function WorldPage({ searchParams }: {
                             figures, for a reader who wants the numbers rather than
                             the shape. */}
                         <details style={S.exDetails}>
-                          <summary style={S.exSummary}>EXISTS / SYSTEM-ELIGIBLE — פירוט מספרי</summary>
+                          <summary style={S.exSummary}>קיים מול עומד בשער — פירוט מספרי</summary>
                           <table style={S.exists}>
                             <thead>
                               <tr>
@@ -388,7 +389,7 @@ export default async function WorldPage({ searchParams }: {
           <AuditHeading accent="#e6edf7" />
                     <SocialSourceSpinePanel surface="world" />
                     <AuditSection
-                      title="קריאת התצפית האחרונה · OBSERVATION READING"
+                      title="קריאת התצפית האחרונה"
                       note="6 אזכורים, ערכי בסיס, משפחות ערך, ניגודים, Color Roles, DEMO"
                     >
                       <ObservationReadingPanel subject={personRef.person_id} surface="WORLD" />
@@ -399,7 +400,7 @@ export default async function WorldPage({ searchParams }: {
                         repeated the same REAL group effect under the same promoted label
                         this pass corrected at the top of the page — a second, uncorrected
                         copy of the misreading. The effect now appears once, classified. */}
-                    <AuditSection title="מצב אדם / ערך · PERSON / VALUE STATE" note="Phase 4 · CANON — זהה לכל שאר המסופים">
+                    <AuditSection title="מצב אדם וערך" note="זהה לכל שאר המסופים">
                       <CanonicalSlicePanel subject={personRef.person_id} asOf={systemClock.now()} />
                     </AuditSection>
         </>
@@ -419,7 +420,7 @@ export default async function WorldPage({ searchParams }: {
                   selectedGroup={selected?.groupId}
                   purpose="מה נצפה בקנה-מידה מערכתי, ומה קיים אך אינו מגיע לכאן."
                   subject={personRef.person_id}
-                /><DayStatusStrip session={daySession} /><RealOrientationPanel terminal="world" frame={orientationFrame} chain={dayChain} /><ActionEffectPanel terminal="world" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="world" facts={[
+                /><TerminalView terminal="world" chain={dayChain} frame={orientationFrame} technical={<><DayStatusStrip session={daySession} /><RealOrientationPanel terminal="world" frame={orientationFrame} chain={dayChain} /></>} /><ActionEffectPanel terminal="world" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="world" facts={[
                   /* These two record shapes are {record_id, evidence_id} and
                      {record_id, as} — no provenance field, so the count cannot
                      claim REAL. */

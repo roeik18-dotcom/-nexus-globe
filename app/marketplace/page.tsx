@@ -303,9 +303,11 @@ export default async function MarketplacePage({
           identityLink={identityLink}
         />
       </div>
-      <TerminalView terminal="marketplace" chain={dayChain} frame={orientationFrame}>
+      <TerminalView terminal="marketplace" chain={dayChain} frame={orientationFrame}
+          technical={<><DayStatusStrip session={daySession} /><RealOrientationPanel terminal="marketplace" frame={orientationFrame} chain={dayChain} /></>}
+        >
       <div>
-        <DayStatusStrip session={daySession} /><RealOrientationPanel terminal="marketplace" frame={orientationFrame} chain={dayChain} /><ActionEffectPanel terminal="marketplace" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
+        <ActionEffectPanel terminal="marketplace" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
         <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="marketplace" facts={[
           /* Arrays this page already loaded and already renders. */
           factFromCount("Need", "findNeedsForSubject → mineNeeds", mineNeeds.length,
@@ -352,7 +354,7 @@ export default async function MarketplacePage({
            Unchanged and one click away. */
         <details style={{ background: "rgba(0,0,0,0.2)", borderRadius: 10, padding: "6px 12px", margin: "0 20px 12px", opacity: 0.85 }}>
           <summary style={{ cursor: "pointer", fontSize: 13, letterSpacing: 1, color: "#6c86b5" }}>
-            מסגרת אדם · ערך · דומיין — REFERENCE FRAME
+            מסגרת אדם · ערך · תחום
           </summary>
           <div style={{ marginTop: 10 }}><PersonFrameStrip frame={personFrame} compact /></div>
         </details>
@@ -492,7 +494,16 @@ export default async function MarketplacePage({
 
       {/* LOOP 6 — real Effect and Learning creation for person_roei. Every
           option list is scoped to personRef.person_id's own real records. */}
+      {/* THREE WRITE FORMS STOOD OPEN ON ARRIVAL, so the terminal's own
+          question ("what is available, and what did it lead to") was answered
+          three screens below a data-entry stack nobody had asked for. They
+          are one click away, and the click is the request to write. */}
       <div dir="rtl" style={{ padding: "0 20px" }}>
+        <details>
+          <summary style={{ cursor: "pointer", listStyle: "none", fontSize: 13, fontWeight: 700, color: "#7d90b4", paddingBlock: 6 }}>
+            רישום תוצאה, אימות ומסקנה
+          </summary>
+          <div style={{ display: "grid", gap: 12, marginBlockStart: 10 }}>
         <CreateEffectForm
           observationOptions={canonEvents
             .filter((ev) => ev.canon_type === "observation" && ev.payload.subject === personRef.person_id)
@@ -525,6 +536,8 @@ export default async function MarketplacePage({
             .filter((ev) => ev.canon_type === "observation" && ev.payload.subject === personRef.person_id)
             .map((ev) => ({ canon_event_id: ev.canon_event_id, label: `${ev.payload.domain}/${ev.payload.frame} · level ${ev.payload.level} (${ev.canon_event_id.slice(0, 8)}…)` }))}
         />
+          </div>
+        </details>
       </div>
 
       {selected.status === "found" ? <ActionSpacePanel selected={selected} knownResource={knownResource} valueDimensions={VALUE_DIMENSIONS} /> : null}
@@ -540,7 +553,7 @@ export default async function MarketplacePage({
           Effect→Evidence flow above. Shared person/value state is audit. */}
       <div dir="rtl" style={{ margin: "8px 20px 0" }}>
         <AuditHeading accent="#fb923c" />
-        <AuditSection title="מצב אדם / ערך · PERSON / VALUE STATE" note="Phase 4 · CANON — זהה לכל שאר המסופים">
+        <AuditSection title="מצב אדם וערך" note="זהה לכל שאר המסופים">
           <CanonicalSlicePanel subject={personRef.person_id} asOf={systemClock.now()} />
         </AuditSection>
       </div>
@@ -554,7 +567,7 @@ export default async function MarketplacePage({
       <div dir="rtl" style={{ margin: "8px 20px 0" }}>
         <details>
           <summary style={{ fontSize: 12, letterSpacing: 1, color: "#6c86b5", marginBottom: 5, cursor: "pointer" }}>
-            דוגמה · DEMO FLOW — כלי בדיקה, אינו נתון המשתמש
+            דוגמה — כלי בדיקה, אינו נתון המשתמש
           </summary>
           <DemoMarketplaceFlow />
         </details>
@@ -569,7 +582,7 @@ export default async function MarketplacePage({
         ) : (
           <details>
             <summary style={{ cursor: "pointer", fontSize: 12, letterSpacing: 1.5, color: "#6c86b5" }}>
-              LEGACY / AUDIT — קטלוג PUDM (משימות / פערים / יכולות / ספקים, ראה סיווג מלא בקוד הדף)
+              קטלוג ישן — משימות, פערים, יכולות וספקים
             </summary>
             <div style={{ marginTop: 10 }}>
               <MarketplaceView

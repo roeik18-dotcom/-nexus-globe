@@ -107,7 +107,7 @@ export default function GroupOperationsPanel({
       <div style={S.charts}>
         <div style={S.chartCol}>
           <div style={S.colHead}>
-            תנועות תקציב · BUDGET TRANSACTIONS
+            תנועות תקציב
             {/* Same split as the roster: the REAL count leads, the reference
                 bundle is named rather than folded in. */}
             <b style={S.colFigure}>{profile.origin.money.real}</b>
@@ -368,7 +368,6 @@ function Stat({ label, term, n, color, note }: {
       <span style={{ fontSize: 19, fontWeight: 800, color: n > 0 ? (color ?? COLOR.text) : "#5a6d92" }}>
         {n}
       </span>
-      <span style={{ ...TYPE.micro, fontSize: 10.5, color: COLOR.textFaint }}>{term}</span>
       {note ? (
         <span style={{ fontSize: 10.5, color: "#5a6d92", fontFamily: "ui-monospace, monospace" }}>
           {note}

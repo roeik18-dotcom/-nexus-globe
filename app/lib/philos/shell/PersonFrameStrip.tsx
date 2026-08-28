@@ -38,7 +38,7 @@ export default function PersonFrameStrip({
           "what happened today", so it no longer opens uninvited. */}
       <details data-system-details="person-frame" style={{ margin: 0 }}>
       <summary style={{ ...S.head, cursor: "pointer", listStyle: "none", display: "flex" }}>
-        <span style={S.eyebrow}>מסגרת ייחוס · PERSON-IN-CONTEXT REFERENCE FRAME</span>
+        <span style={S.eyebrow}>מסגרת ייחוס</span>
         <span style={S.note}>ייחוס בלבד — מה ניתן לשאול/למדוד. אינו מצב מדוד.</span>
       </summary>
 

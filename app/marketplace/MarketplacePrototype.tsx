@@ -88,7 +88,7 @@ export default function MarketplacePrototype({
     : !offer
       ? { label: "רשום Offer · RECORD OFFER" }
       : actionsCount === 0
-        ? { label: "הערך התאמה · EVALUATE MATCH" }
+        ? { label: "הערך התאמה" }
         : effectsCount === 0
           ? { label: "רשום Effect · RECORD EFFECT" }
           : { label: "סקור השפעה · REVIEW IMPACT" };

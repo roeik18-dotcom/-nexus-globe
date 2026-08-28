@@ -70,7 +70,7 @@ export default function EvaluateMatchForm({
         });
       }}
     >
-      <div style={{ fontSize: 13, letterSpacing: 0.5, color: "#8fa3c9" }}>הערכת התאמה (canon, לא נשמר — נגזר בכל בקשה) · EVALUATE MATCH (derived, not persisted)</div>
+      <div style={{ fontSize: 13, letterSpacing: 0.5, color: "#8fa3c9" }}>הערכת התאמה — נגזרת בכל בקשה, לא נשמרת</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <select name="need_id" required defaultValue={needOptions[0]?.need_id} style={selectStyle}>
           {needOptions.map((n) => <option key={n.need_id} value={n.need_id}>{n.label}</option>)}
@@ -95,7 +95,7 @@ export default function EvaluateMatchForm({
       </div>
       <div style={{ fontSize: 12, color: "#6c86b5" }}>אף תשובה אינה מסומנת מראש — כל שאלה דורשת אישור מפורש שלך. · No answer is pre-checked — every question requires your explicit answer.</div>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <button type="submit" disabled={pending} style={btnStyle}>{pending ? "מעריך…" : "הערך התאמה · EVALUATE"}</button>
+        <button type="submit" disabled={pending} style={btnStyle}>{pending ? "מעריך…" : "הערך התאמה"}</button>
       </div>
       {result ? (
         result.ok ? (

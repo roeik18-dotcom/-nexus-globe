@@ -97,15 +97,15 @@ function MultiLaneSummary({
   mission: ReturnType<typeof buildMissionOrientation>;
 }) {
   const lanes: { label: string; value: string }[] = [
-    { label: "HUMAN STATE", value: mission.current_state.every((r) => r.current_level === null) ? "לא ידוע" : `${mission.current_state.filter((r) => r.current_level !== null).length}/3 ידוע` },
-    { label: "VALUE DOMAIN", value: mission.values.length > 0 ? `${mission.values.length} מופעל` : "לא ידוע (לא מחובר)" },
-    { label: "TENSIONS", value: `${tensions.length} פתוח` },
-    { label: "NEEDS", value: `${needs.length} פתוח` },
-    { label: "ACTIONS (היום)", value: `${todaysActions.length}` },
-    { label: "EFFECTS", value: `${lifecycle.counts.effect_verified} מאומת / ${lifecycle.counts.effect_claimed_only} נטען` },
-    { label: "EVIDENCE", value: lifecycle.counts.effect_verified > 0 ? `${lifecycle.counts.effect_verified} Effect עם עדות` : "לא ידוע" },
-    { label: "LEARNING", value: `${lifecycle.counts.learnings_with_state_prime} state_prime` },
-    { label: "MISSION/ORIENTATION", value: mission.uncertainty.value ?? "לא ידוע" },
+    { label: "מצב האדם", value: mission.current_state.every((r) => r.current_level === null) ? "לא ידוע" : `${mission.current_state.filter((r) => r.current_level !== null).length}/3 ידוע` },
+    { label: "תחום ערך", value: mission.values.length > 0 ? `${mission.values.length} מופעל` : "לא ידוע (לא מחובר)" },
+    { label: "מתחים", value: `${tensions.length} פתוח` },
+    { label: "צרכים", value: `${needs.length} פתוח` },
+    { label: "פעולות (היום)", value: `${todaysActions.length}` },
+    { label: "תוצאות", value: `${lifecycle.counts.effect_verified} מאומת / ${lifecycle.counts.effect_claimed_only} נטען` },
+    { label: "ראיה", value: lifecycle.counts.effect_verified > 0 ? `${lifecycle.counts.effect_verified} תוצאות עם עדות` : "לא ידוע" },
+    { label: "מסקנות", value: `${lifecycle.counts.learnings_with_state_prime} עם מצב חדש` },
+    { label: "משימה וכיוון", value: mission.uncertainty.value ?? "לא ידוע" },
   ];
   return (
     <div dir="rtl" style={S.block}>
@@ -144,7 +144,7 @@ function TensionContradictionView({ tensions }: { tensions: TensionItem[] }) {
 
 function MissionTrajectory({ mission }: { mission: ReturnType<typeof buildMissionOrientation> }) {
   const stages = [
-    { label: "Orientation קודמת", value: "לא ידוע — אין תמונת מצב שמורה, רק מצב חי" },
+    { label: "מסגרת קודמת", value: "לא ידוע — אין תמונת מצב שמורה, רק מצב חי" },
     { label: "Action", value: mission.candidate_actions.length > 0 ? `${mission.candidate_actions.length} רשום` : "לא ידוע" },
     { label: "Effect", value: mission.learning.status !== "unknown" ? "נצפה" : "לא ידוע" },
     { label: "Learning", value: mission.learning.value ?? "לא ידוע" },

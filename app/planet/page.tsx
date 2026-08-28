@@ -101,6 +101,7 @@ import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel"
 import { loadRealOrientationFrame } from "@/app/lib/philos/analysis/loadRealOrientationFrame";
 import RealOrientationPanel from "@/app/lib/philos/analysis/RealOrientationPanel";
 import { chainEvidenceFlags, loadEvidenceAndLearning } from "@/app/lib/philos/crossTerminal/loadEvidenceAndLearning";
+import { TerminalView } from "@/app/lib/philos/shell/TerminalView";
 
 export const metadata = { title: "Philos — Globe" };
 
@@ -413,7 +414,7 @@ export default async function PlanetPage({
     {
       id: "network-audit",
       title: "שער אמת רשתי · פעילות קנונית · שכבת מרחב · מסגרת אדם",
-      summary: "NETWORK AUDIT — קשרים מאומתים, כיסוי הרזולבר ומסגרת האדם",
+      summary: "קשרים מאומתים, כיסוי הזיהוי ומסגרת האדם",
       children: (
         <div style={{ position: "relative" }}>{networkAudit}</div>
       ),
@@ -433,7 +434,7 @@ export default async function PlanetPage({
                   purpose="מפת הערכים, הקבוצות והגאוגרפיה של PHILOS."
                   subject={personRef.person_id}
                   identityLink={identityLink}
-                /><DayStatusStrip session={daySession} /><RealOrientationPanel terminal="planet" frame={orientationFrame} chain={dayChain} /><ActionEffectPanel terminal="planet" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="planet" facts={[
+                /><TerminalView terminal="planet" chain={dayChain} frame={orientationFrame} technical={<><DayStatusStrip session={daySession} /><RealOrientationPanel terminal="planet" frame={orientationFrame} chain={dayChain} /></>} /><ActionEffectPanel terminal="planet" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="planet" facts={[
                   /* `arcs`/`nodes` come from projectGlobeGraph over
                      loadPhilosEvents(), whose log is "bootstrap ++ appended" —
                      it contains the 42-event hand-authored seed. GlobeNode and

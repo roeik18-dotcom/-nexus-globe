@@ -28,7 +28,7 @@ export default function QualityGroupView({ groupRegistry }: { groupRegistry: Gro
       <div style={S.section}>
         <div style={S.sectionTitle}>קבוצות איכות · QUALITY GROUPS — {QUALITY_GROUP_MODEL.status}</div>
         <div style={{ ...S.note, marginBottom: 8, color: "#f2635c" }}>
-          VALUE GROUP ≠ QUALITY GROUP. חברות ≠ איכות. פופולריות ≠ איכות. כסף ≠ איכות. דת ≠ איכות. מספר אירועים ≠ איכות. אין Global Human Score — לעולם לא ציון פר-אדם/פר-קבוצה גלובלי.
+          קבוצת ערך אינה קבוצת איכות. חברות ≠ איכות. פופולריות ≠ איכות. כסף ≠ איכות. דת ≠ איכות. מספר אירועים ≠ איכות. אין ציון אנושי גלובלי — לעולם לא ציון פר-אדם או פר-קבוצה.
         </div>
         <div style={S.detailGrid}>
           <DetailRow label="STATUS" value={QUALITY_GROUP_MODEL.status} />

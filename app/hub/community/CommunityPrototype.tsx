@@ -172,7 +172,7 @@ function computeNextAction(hasGroup: boolean, needs: number, offers: number, act
   if (!hasGroup) return { label: "מצא / הקם קבוצה · FIND / FORM GROUP", href: "/hub/community?mode=groups" };
   if (needs === 0) return { label: "רשום Need · RECORD NEED", href: "/hub/community?mode=needs" };
   if (offers === 0) return { label: "רשום / מצא Resource · OFFER / FIND RESOURCE", href: "/hub/community?mode=resources" };
-  if (actions === 0) return { label: "בדוק התאמה · EVALUATE MATCH", href: "/marketplace" };
+  if (actions === 0) return { label: "בדוק התאמה", href: "/marketplace" };
   if (effects === 0) return { label: "בצע / רשום Action · COMMIT / ACT", href: "/marketplace" };
   if (verifiedEffects === 0) return { label: "רשום Effect · RECORD EFFECT", href: "/marketplace" };
   if (verifiedEffects < effects) return { label: "אמת ראיה · ADD / VERIFY EVIDENCE", href: "/marketplace" };

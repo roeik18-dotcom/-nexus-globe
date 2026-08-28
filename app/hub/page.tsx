@@ -527,9 +527,11 @@ export default async function HubPage({
           next={nextDate(viewedDate)}
         />
       </div>
-        <TerminalView terminal="hub" chain={dayChain} frame={orientationFrame}>
+        <TerminalView terminal="hub" chain={dayChain} frame={orientationFrame}
+          technical={<><DayStatusStrip session={daySession} /><RealOrientationPanel terminal="hub" frame={orientationFrame} chain={dayChain} /></>}
+        >
         <div style={{ padding: "12px 20px 0" }}>
-        <DayStatusStrip session={daySession} /><RealOrientationPanel terminal="hub" frame={orientationFrame} chain={dayChain} /><ActionEffectPanel terminal="hub" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
+        <ActionEffectPanel terminal="hub" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
         <DayChainSummary session={daySession} />
         <DayOpeningPanel session={daySession} readOnly={!dayIsToday} linkable={linkableObservations} linkableStates={linkableStates} />
         <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="hub" facts={[
@@ -627,7 +629,7 @@ export default async function HubPage({
               `#record-observation` anchor other surfaces link to is on the
               `<details>` itself, so a deep link still lands on it. */}
           <details id="record-observation" dir="rtl" style={{ margin: "0 0 14px" }}>
-            <summary style={SUMMARY_ACTION}>＋ תצפית עצמית חדשה · NEW SELF-OBSERVATION</summary>
+            <summary style={SUMMARY_ACTION}>＋ תצפית עצמית חדשה</summary>
             <div style={{ marginTop: 10 }}>
               <CreateObservationForm subject={personRef.person_id} />
             </div>
@@ -654,11 +656,11 @@ export default async function HubPage({
               of it is the state a person opens Hub to read. Each section
               is labeled with what it actually contains so the material is
               findable rather than merely hidden. */}
-          <div dir="rtl" style={AUDIT_HEAD}>פירוט · מערכת · ביקורת — DETAILS / SYSTEM / AUDIT</div>
+          <div dir="rtl" style={AUDIT_HEAD}>פירוט לבדיקה</div>
 
           <details style={AUDIT_DETAILS}>
             <summary style={SUMMARY_AUDIT}>
-              פירוט מלא · PERSON NOW — CONFIG/STATE, PRIORITIES, DAY CLOSING, VALUE GROUPS
+              פירוט מלא — הגדרות ומצב, עדיפויות, סגירת יום וקבוצות ערך
             </summary>
             <div style={{ marginTop: 10 }}>{personNowSection}</div>
           </details>
@@ -672,7 +674,7 @@ export default async function HubPage({
               ontology dump the primary Hub must not open with. */}
           <details style={AUDIT_DETAILS}>
             <summary style={SUMMARY_AUDIT}>
-              קריאת התצפית האחרונה · OBSERVATION READING — 6 תאים, ערכי בסיס, משפחות ערך, ניגודים, Color Roles, DEMO
+              קריאת התצפית האחרונה — 6 תאים, ערכי בסיס, משפחות ערך, ניגודים וצבעים
             </summary>
             <div style={{ marginTop: 10 }}>
               <ObservationReadingPanel subject={resolvedSubject ?? personRef.person_id} surface="HUB" />
@@ -680,17 +682,17 @@ export default async function HubPage({
           </details>
 
           <details style={AUDIT_DETAILS}>
-            <summary style={SUMMARY_AUDIT}>מרכז פיקוד · COMMAND CENTER — אוריינטציה, מרחב פעולה, קבוצות</summary>
+            <summary style={SUMMARY_AUDIT}>מרכז פיקוד — כיוון, מרחב פעולה וקבוצות</summary>
             <div style={{ marginTop: 10 }}>{commandCenterSection}</div>
           </details>
 
           <details style={AUDIT_DETAILS}>
-            <summary style={SUMMARY_AUDIT}>תוצאות פעולות · ACTION OUTCOMES — Effect/Learning ואבחון חוסרים</summary>
+            <summary style={SUMMARY_AUDIT}>תוצאות פעולות — תוצאה, מסקנה ואבחון חוסרים</summary>
             <div id="action-outcomes" style={{ marginTop: 10 }}>{actionOutcomesSection}</div>
           </details>
 
           <details style={AUDIT_DETAILS}>
-            <summary style={SUMMARY_AUDIT}>למידה שבועית · WEEKLY LEARNING — מעברי State, ראיות ולמידות השבוע</summary>
+            <summary style={SUMMARY_AUDIT}>למידה שבועית — מעברי מצב, ראיות ומסקנות השבוע</summary>
             <div id="weekly-learning" style={{ marginTop: 10 }}>
               <WeeklyLearningPanel subject={resolvedSubject ?? personRef.person_id} asOf={systemClock.now()} />
             </div>
@@ -706,7 +708,7 @@ export default async function HubPage({
               is gone. */}
           <details style={AUDIT_DETAILS}>
             <summary style={SUMMARY_AUDIT}>
-              עוד · MORE — Day Opening/Closing, Mission, Human Config, Orientation detail
+              עוד — פתיחת וסגירת יום, משימה, מבנה האדם ופירוט הכיוון
             </summary>
             <div style={{ marginTop: 10 }}>
               {dayCycleSection}
@@ -733,7 +735,7 @@ export default async function HubPage({
       ) : null}
       <details style={{ ...AUDIT_DETAILS, margin: "0 20px 20px" }}>
         <summary style={SUMMARY_AUDIT}>
-          לוח מחוונים מלא · FULL LEGACY DASHBOARD
+          לוח המחוונים המלא
         </summary>
       <PhilosToday
         figures={figures}

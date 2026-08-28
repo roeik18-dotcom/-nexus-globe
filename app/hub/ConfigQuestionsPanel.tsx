@@ -52,7 +52,7 @@ export default function ConfigQuestionsPanel() {
       <SystemDrawer id="config-questions" title="שאלות קונפיג · פירוט מערכת" note="מצב הגדרות">
       <div style={S.head}>
         <span style={S.eyebrow}>
-          שאלות שהקונפיג מגדיר · CONFIG-DECLARED QUESTIONS ({total})
+          שאלות שהקונפיג מגדיר ({total})
         </span>
         <ProvenanceBadge p={total > 0 ? "CANON" : "UNKNOWN"} />
       </div>

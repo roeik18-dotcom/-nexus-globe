@@ -52,7 +52,7 @@ export default function DayChainSummary({ session }: { session: DaySession }) {
       </div>
 
       <details style={S.details}>
-        <summary style={S.summary}>מזהים · AUDIT — {session.day_id}</summary>
+        <summary style={S.summary}>מזהי היום — {session.day_id}</summary>
         <ul style={S.list}>
           {links.map((l) => (
             <li key={l.label} style={S.item}>

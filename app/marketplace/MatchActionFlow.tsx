@@ -31,13 +31,25 @@ export default function MatchActionFlow({
   const [permit, setPermit] = useState<MatchPermit | null>(null);
 
   return (
-    <>
-      <div dir="rtl" style={{ padding: "0 20px" }}>
-        <EvaluateMatchForm needOptions={needOptions} offerOptions={offerOptions} onPermit={setPermit} />
-      </div>
-      <div id="action" dir="rtl" style={{ padding: "0 20px" }}>
-        <CreateActionForm inputOptions={inputOptions} matchPermit={permit} actingSubject={actingSubject} dayRef={dayRef} />
-      </div>
-    </>
+    /* CLOSED UNTIL ASKED FOR. These two are a WRITE path — evaluate a match,
+       then record the action it permits — and they stood open above the
+       terminal's own answer, so eighteen empty fields greeted a person who
+       had come to read what the market currently holds. They stay one unit:
+       the permit produced by the first is consumed by the second, so
+       collapsing them separately would let someone open the action form
+       without the evaluation that authorises it. */
+    <div dir="rtl" style={{ padding: "0 20px" }}>
+      <details>
+        <summary style={{ cursor: "pointer", listStyle: "none", fontSize: 13, fontWeight: 700, color: "#7d90b4", paddingBlock: 6 }}>
+          הערכת התאמה ורישום פעולה
+        </summary>
+        <div style={{ display: "grid", gap: 12, marginBlockStart: 10 }}>
+          <EvaluateMatchForm needOptions={needOptions} offerOptions={offerOptions} onPermit={setPermit} />
+          <div id="action">
+            <CreateActionForm inputOptions={inputOptions} matchPermit={permit} actingSubject={actingSubject} dayRef={dayRef} />
+          </div>
+        </div>
+      </details>
+    </div>
   );
 }

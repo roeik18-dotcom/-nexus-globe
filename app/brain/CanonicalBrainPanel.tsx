@@ -108,7 +108,7 @@ export default async function CanonicalBrainPanel({ subject, asOf, lifecycle, pe
     <section dir="rtl" style={S.band}>
       <header style={S.head}>
         <div>
-          <div style={S.eyebrow}>הנגזרת · BRAIN DERIVATION</div>
+          <div style={S.eyebrow}>איך הגענו למסקנה</div>
           {/* The pipeline stages were printed as their internal names. Same
               six stages, said in the language the rest of the page uses. */}
           <h2 style={S.title}>
@@ -122,7 +122,7 @@ export default async function CanonicalBrainPanel({ subject, asOf, lifecycle, pe
         </div>
       </header>
 
-      <SystemDrawer id="brain-derivation" title="הנגזרת המלאה · פירוט מערכת" note="שלבים, מקורות וסטטוסים">
+      <SystemDrawer id="brain-derivation" title="הנגזרת המלאה" note="שלבים, מקורות וסטטוסים">
       <div style={S.grid}>
         <Block
           title="WHAT CHANGED"
@@ -204,7 +204,7 @@ export default async function CanonicalBrainPanel({ subject, asOf, lifecycle, pe
           bookkeeping about the CONFIG, never hypotheses about the person. */}
       <details style={{ marginTop: SPACE.md }}>
         <summary style={S.summary}>
-          CONFIG REVIEW / AUDIT — סמני provenance של הפניות הקונפיג ({derivation.config_review.length})
+          בדיקת מקורות הקונפיג ({derivation.config_review.length})
         </summary>
         <div style={{ marginTop: 8 }}>
           {derivation.config_review.length === 0 ? (
@@ -217,7 +217,7 @@ export default async function CanonicalBrainPanel({ subject, asOf, lifecycle, pe
 
       <details style={{ marginTop: SPACE.sm }}>
         <summary style={S.summary}>
-          DETAILS / AUDIT — Shared Person/Value state (זהה ל-Hub/Dynamics)
+          מצב אדם וערך משותף — זהה למרכז ולדינמיקה
         </summary>
         <div style={{ marginTop: 8 }}>
           <CanonicalSlicePanel subject={subject} asOf={asOf} />

@@ -109,7 +109,7 @@ function FilterBar({ filters, counts }: { filters: UniverseFilters; counts: { to
   const scopes: ValueScope[] = ["INDIVIDUAL", "GROUP", "COMMON"];
   return (
     <div style={S.section}>
-      <div style={S.sectionTitle}>יקום הערכים · VALUE UNIVERSE — 28 FAMILIES · 223 SUBVALUES</div>
+      <div style={S.sectionTitle}>יקום הערכים — 28 משפחות · 223 תתי-ערכים</div>
       <form method="GET" style={{ display: "flex", gap: 6, marginBottom: 8 }}>
         <input type="hidden" name="mode" value="universe" />
         {filters.familyId ? <input type="hidden" name="family" value={filters.familyId} /> : null}

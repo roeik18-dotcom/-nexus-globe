@@ -75,7 +75,7 @@ export default function SocialRoleStrip({
   const m = MEANING[surface];
   return (
     <div dir="rtl" style={S.strip}>
-      <span style={S.eyebrow}>תפקידים פנימיים · INTERNAL ROLES</span>
+      <span style={S.eyebrow}>תפקידים פנימיים</span>
 
       <Role glyph="🔴" name="RED" canonical="Action / Maximum-energy"
             meaning={m.red} value={counts.action} hex={COLOR_ROLE.red} />

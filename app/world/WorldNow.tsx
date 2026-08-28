@@ -217,7 +217,7 @@ export default function WorldNow(props: WorldNowProps) {
         <div style={{ flex: "1 1 380px", minWidth: 280, padding: `${SPACE.sm}px ${SPACE.md}px`,
           background: COLOR.bgCard, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.md }}>
           <div style={{ fontSize: FS.tag, letterSpacing: ".08em", color: COLOR.textFaint, marginBottom: 4 }}>
-            למה SYSTEM = 0
+            למה אף אחד לא הגיע
           </div>
           <div style={{ fontSize: FS.base, color: COLOR.text, lineHeight: 1.6 }}>
             {props.systemZeroReason ?? "יש רשומות בקנה-מידה מערכתי."}

@@ -82,7 +82,7 @@ export default function MarketMatchView({ input }: { input: MarketMatchInput }) 
   return (
     <div dir="rtl" style={S.page}>
       <CausalChain
-        title="מודל ההתאמה · MATCH MODEL"
+        title="מודל ההתאמה"
         stages={stages}
         links={links}
         note="חץ מצויר רק כשרשומה נושאת הפניה לקודמתה. צמד צורך–הצעה מצויר כקו מקווקו ללא ראש חץ: קיומו של צמד אינו התאמה, וההיתר מגיע מהמעריך הקנוני בלבד."
@@ -108,11 +108,11 @@ export default function MarketMatchView({ input }: { input: MarketMatchInput }) 
 
       {/* ── THE RECORDS — entities, in one list each, not a card per stage ── */}
       <section style={S.records} aria-label="הרשומות">
-        <RecordList title="מה נדרש · NEEDS" term="NEED" items={input.needs} empty="לא נרשם צורך" />
-        <RecordList title="מה זמין · OFFERS" term="OFFER" items={input.offers} empty="לא נרשמה הצעה" />
-        <RecordList title="מה נעשה · ACTIONS" term="ACTION" items={input.actions} empty="לא נרשמה פעולה" />
+        <RecordList title="מה נדרש" term="NEED" items={input.needs} empty="לא נרשם צורך" />
+        <RecordList title="מה זמין" term="OFFER" items={input.offers} empty="לא נרשמה הצעה" />
+        <RecordList title="מה נעשה" term="ACTION" items={input.actions} empty="לא נרשמה פעולה" />
         <RecordList
-          title="מה השתנה · EFFECTS" term="EFFECT" empty="לא נרשם אפקט"
+          title="מה השתנה" term="EFFECT" empty="לא נרשם אפקט"
           items={input.effects.map((e) => ({ id: e.id, text: e.text, at: e.at, mark: e.verified ? "מאומת" : "טענה" }))}
         />
       </section>

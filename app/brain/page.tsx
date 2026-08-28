@@ -223,9 +223,11 @@ export default async function BrainPage({
           identityLink={identityLink}
         />
       </div>
-      <TerminalView terminal="brain" chain={dayChain} frame={orientationFrame}>
+      <TerminalView terminal="brain" chain={dayChain} frame={orientationFrame}
+          technical={<><DayStatusStrip session={daySession} /><RealOrientationPanel terminal="brain" frame={orientationFrame} chain={dayChain} /></>}
+        >
       <div>
-        <DayStatusStrip session={daySession} /><RealOrientationPanel terminal="brain" frame={orientationFrame} chain={dayChain} /><ActionEffectPanel terminal="brain" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
+        <ActionEffectPanel terminal="brain" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} />
         {/* THE EVIDENCE DESTINATION. `מקור וראיות` is a region of Brain, not a
             terminal of its own, so it lives here at its own anchor with its own
             material: what was claimed versus what was actually proven. */}
@@ -282,7 +284,7 @@ export default async function BrainPage({
             point: emotional aversion (detected token) stays interpretation,
             the record stays evidence, the rest stays UNKNOWN. */}
         <AuditSection
-          title="קריאת התצפית האחרונה · OBSERVATION READING"
+          title="קריאת התצפית האחרונה"
           note="6 אזכורים, ערכי בסיס, משפחות ערך, ניגודים, Color Roles, DEMO"
         >
           <ObservationReadingPanel subject={subject ?? personRef.person_id} surface="BRAIN" />
@@ -290,7 +292,7 @@ export default async function BrainPage({
 
         {/* Operational-groups pass — group reasoning from the ONE shared
             profile assembler; no Brain-local group derivation. */}
-        <AuditSection title="הסבר קבוצה · GROUP REASONING" note="פרופיל תפעולי משותף, ללא גזירה מקומית">
+        <AuditSection title="הסבר קבוצה" note="פרופיל תפעולי משותף, ללא גזירה מקומית">
           <div dir="rtl"><GroupOpsPanel variant="reasoning" /></div>
         </AuditSection>
       </div>
@@ -302,7 +304,7 @@ export default async function BrainPage({
       <div style={{ padding: "0 20px 20px", background: "#080b13" }}>
         <details>
           <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: 1, color: "#6c86b5", padding: "10px 0", borderTop: "1px solid rgba(90,120,180,0.15)" }}>
-            AUDIT / DEBUG — מפת מציאות ואפשרות (Brain graph, {worldEvents.length} reality nodes)
+            מפת מציאות ואפשרות ({worldEvents.length} צמתים)
           </summary>
           <div style={{ height: "80vh", minHeight: 480, marginTop: 10 }}>
             <BrainV2 subject={subject} core={core} knownNeeds={knownNeeds} lifecycle={lifecycle} worldEvents={worldEvents} knowledge={knowledge} bridgeLinkCount={bridgeLinkCount} pendingNeeds={needsRequiringAction(knownNeeds, lifecycle)} valueContext={valueContext} />

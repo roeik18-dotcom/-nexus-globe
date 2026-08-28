@@ -182,7 +182,7 @@ export async function buildOperationalTrace(group_id: string, subject: string): 
     hops,
     missing_join_models: offers.length > 0 && !offerJoinExists
       ? [{
-          join: "OFFER → GROUP · NO_OFFER_GROUP_JOIN_MODEL",
+          join: "הצעה → קבוצה",
           because: "משאב אינו ניתן לקישור לקבוצה: אין שדה group_id על offer, אין מאגר offer-group-links, ואין סוג אירוע קבוצתי לכך. כרגע משאב מגיע לקבוצה רק דרך action.inputs של פעולה שכבר קיימת — כלומר אחרי ההתאמה, לא לפניה.",
           would_need: "מאגר קישור מקביל ל-need-group-links (offer_id + group_id + declared_by + evidence), או שדה group_id על ההצעה עצמה. עד שאחד מהם קיים — STRUCTURAL_GAP, ולא NO_CANONICAL_LINK.",
         }]

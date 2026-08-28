@@ -224,7 +224,7 @@ function GroupCard({ data }: { data: ValueGroupCardData }) {
 
       <FieldRow label="QUALITY" provenance="UNKNOWN"
         value={`${QUALITY_GROUP_MODEL.status} — אין נוסחת איכות`}
-        meta="המקור דחה זאת במפורש · חברות ≠ איכות · VALUE GROUP ≠ QUALITY GROUP" italic />
+        meta="המקור דחה זאת במפורש · חברות ≠ איכות · קבוצת ערך אינה קבוצת איכות" italic />
 
       <FieldRow label="RELATIONS" provenance={data.resolvedRelations.length === 0 ? "UNKNOWN" : data.provenance === "DEMO" ? "DEMO" : data.resolvedRelations.some((r) => r.provenance !== "VALUE_JOIN") ? "REAL" : "STATIC"}
         value={data.resolvedRelations.length === 0

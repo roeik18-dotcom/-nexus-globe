@@ -55,7 +55,7 @@ export function Stance({ stance, title }: { stance: EvidenceStance; title?: stri
         color: s.text, fontFamily: "ui-monospace, monospace", whiteSpace: "nowrap",
       }}
     >
-      {stance} · {s.he}
+      {s.he}
     </span>
   );
 }
@@ -379,7 +379,7 @@ export function AuditHeading({ accent }: { accent?: string }) {
         borderTop: "1px solid rgba(120,150,220,0.16)", paddingTop: 12,
       }}
     >
-      פירוט · מערכת · ביקורת — DETAILS / SYSTEM / AUDIT
+      פירוט לבדיקה
     </div>
   );
 }

@@ -63,7 +63,7 @@ export default function HumanConfigView({
       <CurrentPersonPanel readings={temperamentReadings} />
       <ReviewQueueCompact humanReviewRequired={summary.reviewRequired} reviewQueueCount={reviewQueueCount} />
 
-      <div style={S.sectionDivider}>HUMAN MODEL — {summary.sectionCount} Section · {summary.navigableDimensionCount} Dimension · {summary.canonicalConceptCount} concepts</div>
+      <div style={S.sectionDivider}>מבנה האדם — {summary.sectionCount} פרקים · {summary.navigableDimensionCount} ממדים · {summary.canonicalConceptCount} מושגים</div>
 
       <DimensionExplorer dimensions={dimensionCoverage} />
 
@@ -114,10 +114,10 @@ function Hero({ subjectId }: { subjectId: string }) {
 function StatStrip({ known, unknown, evidence, dimensions, sections, concepts }: { known: number; unknown: number; evidence: number; dimensions: number; sections: number; concepts: number }) {
   return (
     <div style={S.statStrip}>
-      <StatCell label="WHAT WE KNOW" value={`${known} evidence-backed`} color="#34d399" />
-      <StatCell label="WHAT WE DON'T KNOW" value={`${unknown} measurable unresolved`} color="#6c86b5" />
-      <StatCell label="EVIDENCE" value={String(evidence)} color="#6c86b5" />
-      <StatCell label="MODEL" value={`${sections} Sections · ${dimensions} Dimensions · ${concepts} concepts`} color="#5aa6ff" />
+      <StatCell label="מה ידוע" value={`${known} מגובים בראיה`} color="#34d399" />
+      <StatCell label="מה לא ידוע" value={`${unknown} מדידים ללא הכרעה`} color="#6c86b5" />
+      <StatCell label="ראיות" value={String(evidence)} color="#6c86b5" />
+      <StatCell label="המבנה" value={`${sections} פרקים · ${dimensions} ממדים · ${concepts} מושגים`} color="#5aa6ff" />
     </div>
   );
 }
@@ -136,7 +136,7 @@ function StatCell({ label, value, color }: { label: string; value: string; color
 function ModelCoverageGraph({ hierarchy, totalUnits }: { hierarchy: DomainGroup[]; totalUnits: number }) {
   return (
     <div style={S.graphWrap}>
-      <div style={S.graphHead}>MODEL COVERAGE — {totalUnits} units by Section</div>
+      <div style={S.graphHead}>כיסוי המבנה — {totalUnits} יחידות לפי פרק</div>
       <div style={S.graphBar}>
         {hierarchy.map((d, i) => (
           <a
@@ -305,7 +305,7 @@ function ParameterInspector({ detail, backSection, backHeading }: { detail: Para
         <StateCell label="LAST UPDATE" d={detail.lastUpdate} />
       </div>
       <div style={S.row}><span>EPISTEMIC STATUS</span><span style={S.meta}>{detail.epistemicStatus.value} — {detail.epistemicStatus.evidence}</span></div>
-      <div style={S.row}><span>EVIDENCE</span><span style={S.meta}>{detail.evidenceCount} רשומות</span></div>
+      <div style={S.row}><span>ראיות</span><span style={S.meta}>{detail.evidenceCount} רשומות</span></div>
       <div style={S.row}><span>OBSERVATIONS</span><span style={S.meta}>{detail.observationCount}</span></div>
       <div style={S.row}><span>OPEN QUESTIONS (REVIEW_REQUIRED)</span><span style={S.meta}>{detail.openReviewCount}</span></div>
       <div style={S.row}><span>HISTORY</span><span style={S.meta}>{detail.history.status} — {detail.history.reason}</span></div>
@@ -408,7 +408,7 @@ function SourceAndAudit({
 }) {
   return (
     <details style={S.auditDetails}>
-      <summary style={S.auditSummary}>SOURCE & AUDIT — מקור, מדדי ביקורת, והסברי התאמה מלאים</summary>
+      <summary style={S.auditSummary}>מקור ובדיקה — מקור, מדדי ביקורת והסברי התאמה</summary>
       <div style={{ marginTop: 10 }}>
         <div style={S.sourceLine}>
           מקור: {sourceFileName} · MASTER_UNITS · Domain = "אדם", בניכוי Section/Heading לא-אנושיים שנמצאו בביקורת (§27/§30/§31: תאוריה מוזיקלית, פטנטים, מיוצגים — Domain=אדם אינו מספיק הוכחה לשייכות ל-Human Config)

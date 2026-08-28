@@ -28,7 +28,7 @@ export const FAMILIES: Family[] = [
   { id: "person", label: "אדם", hue: COLOR_ROLE.purple, items: [
     { label: "מרכז", href: "/hub", match: (p) => p === "/hub" },
     { label: "מוח", href: "/brain", match: at("/brain") },
-    { label: "Human Config", href: "/hub/human-config", match: at("/hub/human-config") },
+    { label: "מבנה האדם", href: "/hub/human-config", match: at("/hub/human-config") },
   ] },
   { id: "action", label: "פעולה", hue: COLOR_ROLE.red, items: [
     { label: "דינמיקה", href: "/dynamics", match: at("/dynamics") },

@@ -333,9 +333,9 @@ export default function RealDataGapPanel({
           nothing is hidden — only folded. */}
       <details style={S.systemDrawer} data-system-details="gaps">
         <summary style={S.systemSummary}>
-          <span style={S.eyebrow}>מה חסר עכשיו · {terminal}</span>
+          <span style={S.eyebrow}>שלבים שנותרו</span>
           <span style={S.count}>{unmet.length}/{session.gates.length}</span>
-          <span style={S.systemHint}>שערים, מקורות ופרטי מערכת</span>
+          <span style={S.systemHint}>מקורות</span>
         </summary>
 
       {/* ONE recommended next action — the first unmet gate, because

@@ -1080,7 +1080,7 @@ function DynamicsDayClosingSection({
           which the drawing does not carry. Same records, reference tier. */}
       <details style={{ background: "rgba(0,0,0,0.22)", borderRadius: 10, padding: "6px 12px", opacity: 0.85 }}>
         <summary style={{ cursor: "pointer", fontSize: 13, letterSpacing: 1, color: "#6c86b5" }}>
-          שלבי השרשרת, כרטיס לכל שלב · PER-STAGE DETAIL
+          שלבי השרשרת, כרטיס לכל שלב
         </summary>
         <div style={{ marginTop: 10 }}>
       <CausalChainFlow
@@ -1109,7 +1109,7 @@ function DynamicsDayClosingSection({
           away. `PHILOS-SYSTEM-LANGUAGE.md` §9. */}
       <AuditHeading accent="#fbbf24" />
       <AuditSection
-        title="קריאת התצפית האחרונה · OBSERVATION READING"
+        title="קריאת התצפית האחרונה"
         note="6 אזכורים, ערכי בסיס, משפחות ערך, ניגודים, Color Roles, DEMO"
       >
         <ObservationReadingPanel subject={subject} surface="DYNAMICS" />
@@ -1125,7 +1125,7 @@ function DynamicsDayClosingSection({
           route actually reads as. Nothing here was removed. */}
       <details style={{ marginBottom: 12 }}>
         <summary style={{ cursor: "pointer", ...TYPE.micro, color: COLOR.textFaint, padding: "6px 0" }}>
-          DETAILS / AUDIT — Day Closing (שאלות ממוקדות, Learning, נשא הלאה)
+          סגירת היום — שאלות ממוקדות, מסקנה, נשא הלאה
         </summary>
         <div style={{ marginTop: 8 }}>
           <DayClosingFusion core={core} todaysActions={todaysActions} questions={questions} />
@@ -1133,7 +1133,7 @@ function DynamicsDayClosingSection({
       </details>
       <details style={{ marginBottom: 12 }}>
         <summary style={{ cursor: "pointer", ...TYPE.micro, color: COLOR.textFaint, padding: "6px 0" }}>
-          DETAILS / AUDIT — עומק ערך אנושי (Human Value Depth, DomainState, Mission)
+          עומק ערך אנושי — תחום, מצב ומשימה
         </summary>
         <div style={{ marginTop: 8 }}>
           <DynamicsHumanValueDepth
@@ -1351,7 +1351,7 @@ export default function DynamicsView({
           when the viewer explicitly selected something via `?ctx=`. */}
       <details open={selected?.status === "found"} style={S_SEC.details}>
         <summary style={S_SEC.summary}>
-          CONTEXT / RANGE — הקשר נבחר, טווחי זמן, הון קהילתי, פרוסה קנונית
+          הקשר וטווח — הקשר נבחר, טווחי זמן, הון קהילתי ופרוסה קנונית
         </summary>
         <div style={{ marginTop: 10 }}>
           {selected ? <SelectedContextHero selected={selected} /> : null}
@@ -1396,7 +1396,7 @@ export default function DynamicsView({
           a diagnostic surface rather than the route's opening statement. */}
       <details style={S_SEC.details}>
         <summary style={S_SEC.summary}>
-          AUDIT / DEBUG — גרף סיבתי legacy (כל האירועים, כל הנתיבים) · {view.hud.nodes} nodes / {view.hud.edges} edges
+          גרף סיבתי מלא — כל האירועים וכל הנתיבים · {view.hud.nodes} צמתים / {view.hud.edges} קשתות
         </summary>
         <div style={{ marginTop: 10 }}>
       <div dir="rtl" style={{ textAlign: "right", fontSize: 12, letterSpacing: 1, color: "#6c86b5", marginBottom: 4 }}>

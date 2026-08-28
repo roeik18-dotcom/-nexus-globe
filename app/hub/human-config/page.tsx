@@ -57,6 +57,7 @@ import { loadEffects as _ldE } from "@/app/lib/philos/canon/effectStoreAccessor"
 import { isActionAdmissible as _aOK } from "@/app/lib/philos/canon/actionStore";
 import { isEffectAdmissible as _eOK } from "@/app/lib/philos/canon/effectStore";
 import { chainEvidenceFlags, loadEvidenceAndLearning } from "@/app/lib/philos/crossTerminal/loadEvidenceAndLearning";
+import { TerminalView } from "@/app/lib/philos/shell/TerminalView";
 
 export const metadata = { title: "Philos — Human Config" };
 
@@ -141,7 +142,7 @@ export default async function HumanConfigPage({
           <SystemShell
           viewerContext={semanticContext}
           signOut={<SignOutButton />} surface="hub" purpose="Human Config — prototype תצוגה ראשונה" subject={viewer.subject_id} identityLink={identityLink} />
-        <RealOrientationPanel terminal="human-config" frame={hcFrame} chain={hcChain} />
+        <TerminalView terminal="human-config" chain={hcChain} frame={hcFrame} technical={<></>} />
         <ClosingStateForm parameters={hcParams} actions={hcActions} effects={hcEffects} />
         </div>
         <HumanConfigPrototype subjectId={viewer.subject_id} parameters={parameters} />
@@ -185,15 +186,27 @@ export default async function HumanConfigPage({
     <div style={{ minHeight: "100vh", background: "#0b0f1a" }}>
       <div style={{ padding: "12px 20px 0" }}>
         <SystemShell
+          dense
           viewerContext={semanticContext}
           signOut={<SignOutButton />} surface="hub" purpose="Human Config אמיתי — מבנה מקור, לא מצב חי." subject={viewer.subject_id} identityLink={identityLink} />
-        <RealOrientationPanel terminal="human-config" frame={hcFrame} chain={hcChain} />
-        <ClosingStateForm parameters={hcParams} actions={hcActions} effects={hcEffects} />
+        <TerminalView terminal="human-config" chain={hcChain} frame={hcFrame}
+          technical={<RealOrientationPanel terminal="human-config" frame={hcFrame} chain={hcChain} />} />
       </div>
+      {/* WRITING FORMS ARE CLOSED UNTIL ASKED FOR. Four of them stood open on
+          arrival, so the page opened as a data-entry screen rather than as an
+          answer to "what is my configuration". */}
       <div dir="rtl" style={{ padding: "0 20px" }}>
-        <CreateHumanDomainStateForm />
-        <CreateValueDomainStateForm />
-        <CreateDomainStateLearningForm parameterOptions={parameterOptions} actionOptions={actionOptions} effectOptions={effectOptions} />
+        <details>
+          <summary style={{ cursor: "pointer", listStyle: "none", fontSize: 13, fontWeight: 700, color: "#7d90b4", paddingBlock: 6 }}>
+            רישום מצב חדש
+          </summary>
+          <div style={{ display: "grid", gap: 12, marginBlockStart: 10 }}>
+            <ClosingStateForm parameters={hcParams} actions={hcActions} effects={hcEffects} />
+            <CreateHumanDomainStateForm />
+            <CreateValueDomainStateForm />
+            <CreateDomainStateLearningForm parameterOptions={parameterOptions} actionOptions={actionOptions} effectOptions={effectOptions} />
+          </div>
+        </details>
       </div>
       {!source ? (
         <div dir="rtl" style={{ padding: 24, color: "#e6ebf5" }}>

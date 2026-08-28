@@ -101,24 +101,24 @@ export default function RealMarketplace({
     // the Need node's owner stays the person, and membership certifies
     // nothing about the transaction.
     ...(realGroup && realGroupOps ? [{
-      key: "group", label: "VALUE GROUP", gloss: "ההקשר הקבוצתי", count: realGroupOps.members, href: "/hub/community?mode=groups&community=" + encodeURIComponent(realGroupOps.group_id),
+      key: "group", label: "קבוצת ערך", gloss: "ההקשר הקבוצתי", count: realGroupOps.members, href: "/hub/community?mode=groups&community=" + encodeURIComponent(realGroupOps.group_id),
       sub: `${realGroupOps.verifiedEffects} verified effects · ${realGroupOps.bridgeActions} linked actions`,
       latest: { text: `${realGroup.name} · ${realGroup.central_value}`, owner: realGroupOps.group_id, time: realGroupOps.opened_at },
       provenance: "REAL" as const,
       note: "קבוצה תפעולית כהקשר — Need שייך לאדם; חברות אינה רלוונטיות עסקה",
     } satisfies FlowStage] : []),
     {
-      key: "need", label: "NEED", gloss: "מה חסר", count: needs.length, href: "#need",
+      key: "need", label: "צורך", gloss: "מה חסר", count: needs.length, href: "#need",
       latest: lastNeed ? { text: lastNeed.need.desired_change, owner: lastNeed.need.subject, time: lastNeed.recorded_at } : null,
       provenance: "CANON", note: lastNeed ? undefined : "לא נרשם Need אמיתי",
     },
     {
-      key: "offer", label: "OFFER", gloss: "מה זמין", count: offers.length, href: "#offer",
+      key: "offer", label: "הצעה", gloss: "מה זמין", count: offers.length, href: "#offer",
       latest: lastOffer ? { text: lastOffer.offer.available_resource, owner: lastOffer.offer.source, time: lastOffer.recorded_at } : null,
       provenance: "CANON", note: lastOffer ? undefined : "לא נרשם Offer אמיתי",
     },
     {
-      key: "match", label: "MATCH", gloss: "מה חובר", count: realizedMatches.length, href: "#match",
+      key: "match", label: "התאמה", gloss: "מה חובר", count: realizedMatches.length, href: "#match",
       latest: lastMatch ? { text: `${lastMatch.action.type} על Need+Offer אמיתיים`, owner: lastMatch.action.owner, time: lastMatch.recorded_at } : null,
       provenance: "STATIC",
       note: lastMatch
@@ -126,18 +126,18 @@ export default function RealMarketplace({
         : "אין Action שמחבר Need+Offer; MatchPermit נגזר ולא נשמר — לא מומצא כאן",
     },
     {
-      key: "action", label: "ACTION", gloss: "מה נעשה", count: actions.length, href: "#action",
+      key: "action", label: "פעולה", gloss: "מה נעשה", count: actions.length, href: "#action",
       sub: `${actions.filter((a) => a.action.type === "transfer").length} transfers`,
       latest: lastAction ? { text: `${lastAction.action.type} · ${lastAction.action.mechanism_scope}`, owner: lastAction.action.owner, time: lastAction.recorded_at } : null,
       provenance: "CANON", note: lastAction ? undefined : "לא נרשמה Action אמיתית",
     },
     {
-      key: "effect", label: "EFFECT", gloss: "מה נטען שקרה", count: effects.length, href: "#result",
+      key: "effect", label: "תוצאה", gloss: "מה נטען שקרה", count: effects.length, href: "#result",
       latest: lastEffect ? { text: lastEffect.effect.claimed_outcome.statement, owner: lastEffect.effect.subject, time: lastEffect.recorded_at } : null,
       provenance: "CANON", note: lastEffect ? undefined : "לא נרשם Effect",
     },
     {
-      key: "evidence", label: "EVIDENCE", gloss: "מה מאומת", count: evidence.length, href: "#result",
+      key: "evidence", label: "ראיה", gloss: "מה מאומת", count: evidence.length, href: "#result",
       sub: `מתוך ${effects.length} claims`,
       latest: lastEvidence
         ? { text: lastEvidence.effect.claimed_outcome.statement, owner: `אומת בנפרד · ${lastEvidence.effect.subject}`, time: lastEvidence.recorded_at }
@@ -162,7 +162,7 @@ export default function RealMarketplace({
           the pipeline. */}
       <details style={S.flowDetails}>
         <summary style={S.flowSummary}>
-          שלבי הזרימה, כרטיס לכל שלב · PER-STAGE DETAIL
+          שלבי הזרימה, כרטיס לכל שלב
           <span style={S.flowCount}>{flowStages.length} שלבים</span>
         </summary>
         <div style={{ marginTop: 10 }}>
@@ -253,7 +253,7 @@ export default function RealMarketplace({
 
       <details style={{ margin: "12px 20px" }}>
         <summary style={{ cursor: "pointer", fontSize: 13, letterSpacing: 1, color: "#6c86b5", padding: "4px 0" }}>
-          DETAILS / AUDIT — פעילות שוק גולמית · RECENT MARKET ACTIVITY
+          פעילות שוק גולמית אחרונה
         </summary>
         <div style={{ marginTop: 8 }}>
           {activity.length === 0 ? (

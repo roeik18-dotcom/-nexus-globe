@@ -484,7 +484,7 @@ function LevelSix({ valueContext }: { valueContext: ValueContext }) {
         </div>
       )}
       <div style={{ fontSize: 13, color: "#6c86b5", marginTop: 6 }}>
-        {valueContext.totalRuntimeValues ?? 0} ערכים רשומים כיום ביקום הערכים המלא — <a href="/hub/community?mode=universe" style={{ color: "#5b9cf6" }}>צפה ב-VALUE UNIVERSE המלא →</a>
+        {valueContext.totalRuntimeValues ?? 0} ערכים רשומים כיום ביקום הערכים המלא — <a href="/hub/community?mode=universe" style={{ color: "#5b9cf6" }}>צפה ביקום הערכים המלא →</a>
       </div>
     </div>
   );

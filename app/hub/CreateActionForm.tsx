@@ -58,7 +58,7 @@ export default function CreateActionForm({
           "person_roei", so User B was shown Roei's name on their own form. It
           names whoever is acting, or nobody. */}
       <div style={{ fontSize: 13, letterSpacing: 0.5, color: "#8fa3c9" }}>
-        פעולה חדשה · NEW ACTION{actingSubject ? ` (${actingSubject})` : ""}
+        פעולה חדשה{actingSubject ? ` (${actingSubject})` : ""}
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <select name="type" required style={selectStyle}>{TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select>
@@ -118,7 +118,7 @@ export default function CreateActionForm({
         פעולה אחת סוגרת יחד את שני השלבים: <b>רישום הפעולה</b> ו<b>ההרשאה לבצע אותה</b>.
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <button type="submit" disabled={pending} style={btnStyle}>{pending ? "רושם…" : "רשום פעולה · RECORD ACTION"}</button>
+        <button type="submit" disabled={pending} style={btnStyle}>{pending ? "רושם…" : "רשום פעולה"}</button>
         {result ? (
           <span style={{ fontSize: 13, color: result.ok ? "#34d399" : "#f2635c" }}>
             {result.ok ? `נרשם · action_id: ${result.action_id.slice(0, 12)}…` : result.message}

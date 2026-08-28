@@ -98,7 +98,7 @@ export default function CommunityExperience({
         {(["OVERVIEW", "VALUES", "GROUPS", "NETWORK", "QUALITY"] as const).map((n) => (
           <button key={n} onClick={() => setLocalNav(n)} style={{ ...S.navBtn, ...(localNav === n ? S.navBtnActive : {}) }}>{n}</button>
         ))}
-        <a href="?view=audit" style={S.auditLink}>DETAILS / AUDIT →</a>
+        <a href="?view=audit" style={S.auditLink}>פירוט לבדיקה →</a>
       </nav>
 
       {/* HERO */}
@@ -301,7 +301,7 @@ function QualityPanel() {
   return (
     <div style={S.panel}>
       <div style={S.panelTitle}>QUALITY GROUPS</div>
-      <div style={S.note}>VALUE GROUP ≠ QUALITY GROUP. חברות ≠ איכות. פופולריות ≠ איכות. כסף ≠ איכות. אין Global Human Score.</div>
+      <div style={S.note}>קבוצת ערך אינה קבוצת איכות. חברות ≠ איכות. פופולריות ≠ איכות. כסף ≠ איכות. אין ציון אנושי גלובלי.</div>
       <a href="?view=audit&mode=quality" style={S.linkOut}>מודל האיכות המלא →</a>
     </div>
   );

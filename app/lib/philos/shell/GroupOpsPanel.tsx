@@ -41,7 +41,7 @@ export default async function GroupOpsPanel({ variant }: { variant: "reasoning" 
             ? `תנועת הון אחרונה: ${p.capital_flow[p.capital_flow.length - 1].delta} → ${p.capital_flow[p.capital_flow.length - 1].balance}`
             : "לא נצפה שינוי קבוצתי"} />
         <Row k="WHY" v={p.evidence_statements[0] ? `תוצאה מאומתת: ${p.evidence_statements[0]}` : "אין סיבה מאומתת — UNKNOWN"} />
-        <Row k="EVIDENCE" v={p.evidence_statements.length > 0 ? `${p.evidence_statements.length} ראיות מאומתות` : "אין ראיה מאומתת"} />
+        <Row k="ראיה" v={p.evidence_statements.length > 0 ? `${p.evidence_statements.length} ראיות מאומתות` : "אין ראיה מאומתת"} />
         <Row k="CONTRADICTIONS" v={p.tensions.length > 0 ? p.tensions.map((t) => t.label).join(" · ") : "אין Tension פתוח"} />
         <Row k="UNKNOWN" v={`supporters: UNKNOWN · capabilities: UNKNOWN · learning: ${p.learnings.length === 0 ? "אין" : p.learnings.length}${claimedOnly.length > 0 ? ` · ${claimedOnly.length} Effect claimed בלבד` : ""}`} />
         <Row k="NEXT ACTION" v={claimedOnly.length > 0

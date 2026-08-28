@@ -31,7 +31,7 @@ import { terminalMeaning, type MeaningTerminal, type DayChain } from "../analysi
 export const TECHNICAL_DRAWER_LABEL = "פרטים טכניים";
 
 export function TerminalView({
-  terminal, chain, frame, emptyLine, children,
+  terminal, chain, frame, emptyLine, children, technical,
 }: {
   terminal: MeaningTerminal;
   chain: Omit<DayChain, "markedCount" | "unmarkedCount">;
@@ -39,8 +39,13 @@ export function TerminalView({
    *  terminal yet — which is the empty state, not an error to report. */
   frame: { resolved: boolean; readings?: ReadonlyArray<{ status: string }> };
   emptyLine?: string;
-  /** The entire previous page. Kept whole, behind one disclosure. */
-  children: React.ReactNode;
+  /** THE TERMINAL'S OWN PRODUCT MATERIAL — visible.
+   *  Community rosters, the network map, the world view, the person's
+   *  readings, the evidence: this is why the page exists and why the nine
+   *  are not one page. Burying it made three terminals identical and empty. */
+  children?: React.ReactNode;
+  /** ONLY audit, ids, provenance, gates, debug and internal sources. */
+  technical?: React.ReactNode;
 }) {
   const readings = frame.readings ?? [];
   const markedCount = readings.filter((r) => r.status !== "unknown").length;
@@ -86,10 +91,15 @@ export function TerminalView({
           : <span style={S.noAction}>אין כרגע פעולה זמינה כאן.</span>}
       </div>
 
-      <details style={S.drawer} data-technical-drawer={terminal}>
-        <summary style={S.summary}>{TECHNICAL_DRAWER_LABEL}</summary>
-        <div style={S.drawerBody}>{children}</div>
-      </details>
+      {/* The terminal's own material, in the open. */}
+      {children ? <div style={S.product} data-block="material">{children}</div> : null}
+
+      {technical ? (
+        <details style={S.drawer} data-technical-drawer={terminal}>
+          <summary style={S.summary}>{TECHNICAL_DRAWER_LABEL}</summary>
+          <div style={S.drawerBody}>{technical}</div>
+        </details>
+      ) : null}
     </section>
   );
 }
@@ -97,7 +107,7 @@ export function TerminalView({
 const S: Record<string, React.CSSProperties> = {
   page: {
     display: "grid", gap: 14, gridTemplateColumns: "minmax(0, 1fr)",
-    maxWidth: 760, margin: "0 auto", padding: "8px 0 24px", minWidth: 0,
+    maxWidth: 1100, margin: "0 auto", padding: "8px 16px 24px", minWidth: 0,
   },
   title: { fontSize: "clamp(22px, 5vw, 30px)", fontWeight: 800, color: "#f2f6fc", margin: 0, lineHeight: 1.25 },
   lede: { margin: 0, fontSize: 16, lineHeight: 1.65, color: "#9fb0d0" },
@@ -115,6 +125,7 @@ const S: Record<string, React.CSSProperties> = {
     background: "#34d399", borderRadius: 999, padding: "10px 20px", textDecoration: "none",
   },
   noAction: { fontSize: 15, color: "#8fa3c9" },
+  product: { display: "grid", gap: 12, gridTemplateColumns: "minmax(0, 1fr)", minWidth: 0 },
   drawer: { marginBlockStart: 6, borderTop: "1px solid rgba(120,150,220,0.16)", paddingTop: 10 },
   summary: { cursor: "pointer", listStyle: "none", fontSize: 13, fontWeight: 700, color: "#7d90b4", paddingBlock: 4 },
   drawerBody: { marginBlockStart: 12, display: "grid", gap: 12, gridTemplateColumns: "minmax(0, 1fr)" },

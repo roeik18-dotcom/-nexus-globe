@@ -92,6 +92,7 @@ import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel"
 import { loadRealOrientationFrame } from "@/app/lib/philos/analysis/loadRealOrientationFrame";
 import RealOrientationPanel from "@/app/lib/philos/analysis/RealOrientationPanel";
 import { chainEvidenceFlags, loadEvidenceAndLearning } from "@/app/lib/philos/crossTerminal/loadEvidenceAndLearning";
+import { TerminalView } from "@/app/lib/philos/shell/TerminalView";
 
 export const metadata = { title: "Philos — קבוצת ערך" };
 
@@ -693,7 +694,7 @@ export default async function CommunityPage({
   if (!showingGroupDetail) {
     secondary.push({
       id: "universe-explorer",
-      title: "חקר עולם הערכים המלא · UNIVERSE",
+      title: "חקר עולם הערכים המלא",
       summary: `${valueRegistry.length} ערכים · ${groupRegistry.length} קבוצות · ${SUBVALUES.length} תתי-ערכים — הצהרת ערך, שיוך צורך, מפת יחסים ואיכות`,
       /* WRITE PATHS. `?mode=` navigation targets the forms inside this
          explorer, so an explicit mode must open it — folding it shut on a
@@ -705,7 +706,7 @@ export default async function CommunityPage({
                     <AuditHeading accent="#34d399" />
                     {communityAudit}
                     <AuditSection
-                      title="קריאת התצפית האחרונה · OBSERVATION READING"
+                      title="קריאת התצפית האחרונה"
                       note="6 אזכורים, ערכי בסיס, משפחות ערך, ניגודים, Color Roles, DEMO"
                     >
                       <ObservationReadingPanel subject={personRef.person_id} surface="COMMUNITY" />
@@ -746,7 +747,7 @@ export default async function CommunityPage({
   const audit: TerminalSection[] = [
     {
       id: "social-frame",
-      title: "מיקום במשפחת SOCIAL · CONTEXT / SCALE",
+      title: "מיקום במשפחה החברתית — הקשר וקנה מידה",
       summary: "ציר זמן · מודל הערך · תפקידים — Community הוא זום GROUP של אותו מודל",
       children: (
         <SocialFrame
@@ -814,7 +815,7 @@ export default async function CommunityPage({
                 valueFamilyLabel={valueFamilyForCentralValue(group.central_value)}
               />
               <details dir="rtl" style={{ margin: "0 20px 16px" }}>
-                <summary style={{ cursor: "pointer", fontSize: 13, letterSpacing: 1, color: "#6c86b5", padding: "4px 0" }}>DETAILS / AUDIT</summary>
+                <summary style={{ cursor: "pointer", fontSize: 13, letterSpacing: 1, color: "#6c86b5", padding: "4px 0" }}>פירוט לבדיקה</summary>
                 <div style={{ marginTop: 8 }}>
                   <PersonCommunityLinkPanel
                     personId={identityLink.person_id}
@@ -892,7 +893,7 @@ export default async function CommunityPage({
                   community={showingGroupDetail && terminalGroup ? { group_id: terminalGroup.group_id, label: terminalGroup.name, provenance: terminalProvenance } : undefined}
                   subject={personRef.person_id}
                   identityLink={identityLink}
-                /><DayStatusStrip session={daySession} /><RealOrientationPanel terminal="community" frame={orientationFrame} chain={dayChain} /><ActionEffectPanel terminal="community" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="community" facts={[
+                /><TerminalView terminal="community" chain={dayChain} frame={orientationFrame} technical={<><DayStatusStrip session={daySession} /><RealOrientationPanel terminal="community" frame={orientationFrame} chain={dayChain} /></>} /><ActionEffectPanel terminal="community" pairs={aeProjection.pairs} legacyCount={aeProjection.counts.legacy} /><RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="community" facts={[
                   {
                     label: "Identity link", source: "resolveShellIdentityLink → personCommunityLinkStore",
                     /* A VERIFIED link is a real record written by the two-step

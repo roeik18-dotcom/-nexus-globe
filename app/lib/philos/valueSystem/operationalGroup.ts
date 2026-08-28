@@ -269,7 +269,7 @@ export async function buildOperationalGroupProfile(): Promise<OperationalGroupPr
     capital_flow: capitalTl.map((c) => ({ date: c.date, delta: c.delta, balance: c.balance, currency: c.currency })),
     membership_over_time: membershipTl.map((m) => ({ date: m.date, count: m.count })),
     trend,
-    quality: { status: QUALITY_GROUP_MODEL.status, note: "VALUE GROUP ≠ QUALITY GROUP — אין נוסחת איכות; STANDARD→CRITERIA→EVIDENCE→VERIFIED EFFECTS בלבד" },
+    quality: { status: QUALITY_GROUP_MODEL.status, note: "קבוצת ערך אינה קבוצת איכות — אין נוסחת איכות; תקן ← קריטריון ← ראיה ← תוצאה מאומתת בלבד" },
     tensions: sortTensions(buildCommunityTensions(view, "REAL")),
     trace,
   };

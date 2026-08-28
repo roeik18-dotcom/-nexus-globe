@@ -155,7 +155,7 @@ export default async function ObservationReadingPanel({
     return (
       <section dir="rtl" style={S.band}>
         <div style={S.headRow}>
-          <span style={S.eyebrow}>קריאת התצפית האחרונה · LATEST OBSERVATION READING</span>
+          <span style={S.eyebrow}>קריאת התצפית האחרונה</span>
           <ProvenanceBadge p="UNKNOWN" />
         </div>
         <div style={S.emptyLine}>
@@ -172,7 +172,7 @@ export default async function ObservationReadingPanel({
           click away, but no longer ahead of the material. */}
       <SystemDrawer id="observation-reading" title="קריאת התצפית · פירוט מערכת" note="ממדים, ערכים ומקורות">
       <div style={S.headRow}>
-        <span style={S.eyebrow}>קריאת התצפית האחרונה · LATEST OBSERVATION READING — {surface}</span>
+        <span style={S.eyebrow}>קריאת התצפית האחרונה — {surface}</span>
         <span style={S.idChip}>{reading.canon_event_id.slice(0, 14)}…</span>
       </div>
 
@@ -211,14 +211,14 @@ export default async function ObservationReadingPanel({
                   <tr>
                     <th style={S.th}></th>
                     {(["INTERNAL", "EXTERNAL"] as const).map((o) => (
-                      <th key={o} style={S.th}>{ORIENTATION_WORD[o]} · {o}</th>
+                      <th key={o} style={S.th}>{ORIENTATION_WORD[o]}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {(["PHYSICAL", "EMOTIONAL", "COGNITIVE"] as const).map((d) => (
                     <tr key={d}>
-                      <td style={{ ...S.td, fontWeight: 700, color: COLOR.textDim }}>{DIMENSION_WORD[d]} · {d}</td>
+                      <td style={{ ...S.td, fontWeight: 700, color: COLOR.textDim }}>{DIMENSION_WORD[d]}</td>
                       {(["INTERNAL", "EXTERNAL"] as const).map((o) => {
                         const cell = classification!.six_class_reading.find((c) => c.class === `${d}_${o}`)!;
                         // This grid reports MENTIONS ONLY — never a measurement.

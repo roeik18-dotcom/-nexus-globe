@@ -624,7 +624,7 @@ function ValueLandscape({
         <Stat value={realNeedsCount} label="OPEN NEEDS" color="#f2635c" />
         <Stat value={realOffersCount} label="AVAILABLE RESOURCES" color="#fbbf24" />
         <Stat value={realActionsCount} label="ACTIVE ACTIONS" color="#5aa6ff" />
-        <Stat value={verifiedEffectsCount} label="VERIFIED EFFECTS" color="#34d399" />
+        <Stat value={verifiedEffectsCount} label="תוצאות מאומתות" color="#34d399" />
       </div>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", margin: "4px 0 14px" }}>
         <a href="?mode=needs" style={S.actionBtn}>+ צורך חדש · NEW NEED</a>
@@ -674,7 +674,7 @@ function ValueLandscape({
              already uses for GROUP DETAIL). Kept, not deleted: real
              evidence, just not primary-viewport material. */}
       <details dir="rtl" style={{ margin: "0 0 16px" }}>
-        <summary style={{ cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#6c86b5", padding: "4px 0" }}>DETAILS / AUDIT</summary>
+        <summary style={{ cursor: "pointer", fontSize: FS.meta, letterSpacing: 1, color: "#6c86b5", padding: "4px 0" }}>פירוט לבדיקה</summary>
         <div style={{ marginTop: 8 }}>
           <Section title={`מועמדים ממקור · SOURCE CANDIDATES (${SOURCE_CONCEPTS.length} מקור · ${countCanonicalConcepts()} קנוני לאחר איחוד כפילויות)`}>
             <div style={S.note}>

@@ -205,7 +205,6 @@ export default function CausalChain({
                   {st.count === null ? "—" : st.count}
                 </text>
                 <text x={x} y={CY + r + 21} textAnchor="middle" style={S.stageLabel}>{st.label}</text>
-                <text x={x} y={CY + r + 38} textAnchor="middle" style={S.stageTerm}>{st.term}</text>
               </g>
             );
           })}

@@ -72,7 +72,7 @@ export default function SystemGateFunnel({
     { key: "real", label: "אמיתי במעלה", term: "REAL UPSTREAM", n: provenance.real,
       because: "רק REAL הוא טענה על העולם" },
     { key: "eligible", label: "עומד בשער", term: "SYSTEM ELIGIBLE", n: eligible,
-      because: "עבר את שער SYSTEM ללא שינוי" },
+      because: "עבר את שער המערכת ללא שינוי" },
     { key: "observed", label: "נצפה בפועל", term: "OBSERVED AT SYSTEM", n: observed,
       because: "הוצב בפועל בקנה-מידה מערכתי" },
   ];
@@ -83,7 +83,7 @@ export default function SystemGateFunnel({
     <section dir="rtl" style={S.band}>
       <header style={S.head}>
         <div>
-          <div style={S.eyebrow}>שער המערכת · SYSTEM GATE</div>
+          <div style={S.eyebrow}>שער המערכת</div>
           <h2 style={S.title}>מה מגיע לקנה-מידה מערכתי — ומה עוצר אותו</h2>
         </div>
         <div style={S.headMeta}>
@@ -124,7 +124,6 @@ export default function SystemGateFunnel({
               <div style={S.stageRow}>
                 <span style={S.stageLabel}>
                   <span style={{ color: COLOR.text, fontWeight: 700 }}>{st.label}</span>
-                  <span style={S.stageTerm}>{st.term}</span>
                 </span>
 
                 <span style={S.track}>
@@ -179,7 +178,7 @@ export default function SystemGateFunnel({
       {/* THE GATE'S OWN SENTENCE — quoted from the contract, not re-worded. */}
       {zeroReason ? (
         <div style={S.gateReason}>
-          <span style={{ ...TYPE.micro, color: "#fbbf24" }}>למה SYSTEM = 0 · </span>
+          <span style={{ ...TYPE.micro, color: "#fbbf24" }}>למה אף אחד לא הגיע · </span>
           {zeroReason}
         </div>
       ) : null}

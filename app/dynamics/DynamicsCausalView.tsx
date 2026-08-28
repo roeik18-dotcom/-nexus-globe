@@ -90,7 +90,7 @@ export default function DynamicsCausalView({ input }: { input: DynamicsCausalInp
         <div style={S.stateRow}>
           <Figure n={input.observedCells} of={9} label="תאי מדידה נשאו תצפית" term="MEASURED CELLS" />
           <Figure n={c.observations} label="תצפיות אמיתיות" term="OBSERVATIONS" />
-          <Figure n={c.verifiedEffects} label="אפקטים מאומתים" term="VERIFIED EFFECTS"
+          <Figure n={c.verifiedEffects} label="אפקטים מאומתים"
                   tone={c.verifiedEffects > 0 ? STATUS.real.text : undefined} />
           {input.window ? (
             <span style={S.window}>
@@ -166,7 +166,7 @@ export default function DynamicsCausalView({ input }: { input: DynamicsCausalInp
 
       {/* ── 6 · LEARNING ──────────────────────────────────────────────── */}
       <section style={S.block} aria-label="למידה">
-        <h2 style={S.h2}>למידה · LEARNING</h2>
+        <h2 style={S.h2}>למידה</h2>
         <div style={S.learnRow}>
           {[
             { l: "פעולה", t: "ACTION", n: c.actions },
@@ -177,7 +177,6 @@ export default function DynamicsCausalView({ input }: { input: DynamicsCausalInp
             <span key={s.t} style={S.learnStep}>
               <span style={{ ...S.learnN, color: s.n ? COLOR.text : COLOR.textFaint }}>{s.n ?? "—"}</span>
               <span style={S.learnLabel}>{s.l}</span>
-              <span style={S.learnTerm}>{s.t}</span>
               {i < arr.length - 1 ? <span aria-hidden style={S.learnArrow}>⟵</span> : null}
             </span>
           ))}
@@ -191,7 +190,7 @@ export default function DynamicsCausalView({ input }: { input: DynamicsCausalInp
       {/* ── AUDIT · the full trace, unchanged ─────────────────────────── */}
       <details style={S.audit}>
         <summary style={S.auditSummary}>
-          מסלול מערכת מלא · FULL SYSTEM TRACE
+          מסלול מלא
           <span style={S.auditCount}>{input.edges.length} קשתות</span>
         </summary>
         <div style={{ marginTop: SPACE.sm }}>
@@ -202,14 +201,13 @@ export default function DynamicsCausalView({ input }: { input: DynamicsCausalInp
   );
 }
 
-function Figure({ n, of, label, term, tone }: { n: number | null; of?: number; label: string; term: string; tone?: string }) {
+function Figure({ n, of, label, tone }: { n: number | null; of?: number; label: string; term?: string; tone?: string }) {
   return (
     <span style={S.figure}>
       <span style={{ ...S.figN, color: tone ?? (n ? COLOR.text : COLOR.textFaint) }}>
         {n ?? "—"}{of !== undefined ? <span style={S.figOf}>/{of}</span> : null}
       </span>
       <span style={S.figLabel}>{label}</span>
-      <span style={S.figTerm}>{term}</span>
     </span>
   );
 }
