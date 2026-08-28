@@ -44,7 +44,7 @@ export interface StateEncoding {
 
 export const STATE: Record<DataState, StateEncoding> = {
   REAL:           { hue: "#4ade80", tag: "REAL",     meaning: "אדם רשם את זה" },
-  DERIVED:        { dash: "5 3",  hue: "#8fb8ff", tag: "DERIVED",  meaning: "המערכת הסיקה, ואומרת ממה" },
+  DERIVED:        { dash: "5 3",  hue: "#8fb8ff", tag: "נגזר",  meaning: "המערכת הסיקה, ואומרת ממה" },
   DEMO:           { dash: "2 3",  hue: "#f0b45c", tag: "DEMO",     meaning: "הדגמה מוצהרת — לא נכנס לניתוח אישי" },
   UNKNOWN:        { dash: "1 4",  hue: COLOR.textFaint, tag: "UNKNOWN", meaning: "לא ידוע — ואינו אפס" },
   NO_EVENTS:      { dash: "1 4",  hue: COLOR.textFaint, tag: "אין נתון", meaning: "הערוץ קיים, לא נרשם אף אירוע" },

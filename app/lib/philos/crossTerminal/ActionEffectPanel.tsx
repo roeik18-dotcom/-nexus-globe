@@ -65,13 +65,14 @@ export default function ActionEffectPanel({
                   ? <code style={{ ...S.id, color: p.effect_origin === "REAL" ? "#34d399" : "#8798b8" }}>{p.effect_id}</code>
                   : <span style={S.noEffect}>אין תוצאה מקושרת</span>}
               </div>
-              {/* WHAT THIS TERMINAL KNOWS — the sentence stays open. */}
-              <div style={S.knows}>{r.knows}</div>
-              {/* AND WHAT IT DOES NOT — never omitted, never softened */}
+              {/* WHAT IT DOES NOT KNOW stays open — that is the honest limit
+                  a person needs, and it is written in words. */}
               <div style={S.doesNot}>◦ {r.does_not_know}</div>
               {/* Provenance tags, scope and the resolver's own reason are the
                   system's vocabulary, not the person's. Folded, never cut. */}
               <SystemDrawer id={`pair-${p.action_id}`} title="מקור ופרטי מערכת" note="provenance · scope">
+                {/* Names the raw record ids — kept, but not as the headline. */}
+                <div style={S.knows}>{r.knows}</div>
                 <div style={S.ids}>
                   <span style={{ ...S.originTag, color: isReal ? "#34d399" : "#fbbf24" }}>
                     {p.action_origin}{p.effect_origin ? ` / ${p.effect_origin}` : ""}

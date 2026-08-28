@@ -13,12 +13,12 @@ import { buildSemanticTypeCounts, classifySemanticType, filterConceptsByStatus, 
 import { buildUnknownTemperamentReadings } from "@/app/lib/philos/humanConfig/temperamentDimensions";
 import DimensionExplorer from "./DimensionExplorer";
 
-const STATUS_LABEL: Record<MappingStatus, string> = { mapped: "MAPPED", unmapped: "UNMAPPED", review_required: "REVIEW_REQUIRED" };
+const STATUS_LABEL: Record<MappingStatus, string> = { mapped: "ממופה", unmapped: "לא ממופה", review_required: "דורש בדיקה" };
 const STATUS_COLOR: Record<MappingStatus, string> = { mapped: "#34d399", unmapped: "#6c86b5", review_required: "#fbbf24" };
 const FILTER_LABEL: Record<ParameterFilterKey, string> = {
-  known: "KNOWN", unknown: "UNKNOWN", conflict: "CONFLICT", review_required: "REVIEW_REQUIRED",
-  has_evidence: "HAS_EVIDENCE", no_evidence: "NO_EVIDENCE", changed: "CHANGED", stable: "STABLE",
-  has_open_questions: "HAS_OPEN_QUESTIONS",
+  known: "ידוע", unknown: "לא ידוע", conflict: "סתירה", review_required: "דורש בדיקה",
+  has_evidence: "יש ראיה", no_evidence: "אין ראיה", changed: "השתנה", stable: "יציב",
+  has_open_questions: "יש שאלות פתוחות",
 };
 const SEMANTIC_TYPE_LABEL: Record<SemanticConceptType, string> = {
   MEASURABLE_PARAMETER: "MEASURABLE_PARAMETER", MECHANISM: "MECHANISM", PROCESS: "PROCESS",
@@ -240,7 +240,7 @@ function SectionMap({ hierarchy, totalUnits }: { hierarchy: DomainGroup[]; total
 function FilterBar({ active }: { active?: string }) {
   return (
     <div style={S.filterBar}>
-      <span style={S.filterBarLabel}>Parameter filters:</span>
+      <span style={S.filterBarLabel}>סינון פרמטרים:</span>
       {PARAMETER_FILTER_KEYS.map((key) => (
         <a key={key} href={`?filter=${key}`} style={{ ...S.filterChip, ...(active === key ? S.filterChipActive : {}) }}>{FILTER_LABEL[key]}</a>
       ))}

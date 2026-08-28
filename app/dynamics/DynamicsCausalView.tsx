@@ -100,7 +100,7 @@ export default function DynamicsCausalView({ input }: { input: DynamicsCausalInp
           ) : null}
         </div>
         <p style={S.note}>
-          תשעה תאים הם המרחב הנמדד המלא. תא ללא תצפית הוא <b>UNKNOWN</b> — לא אפס,
+          תשעה תאים הם המרחב הנמדד המלא. תא ללא תצפית <b>עדיין לא נבדק</b> — לא אפס,
           ולא נקודת אמצע מומצאת.
         </p>
       </section>

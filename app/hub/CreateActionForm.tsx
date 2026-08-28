@@ -115,7 +115,7 @@ export default function CreateActionForm({
       <div data-action-authority style={{ fontSize: 12, color: "#8fa3c9", lineHeight: 1.5 }}>
         הרשאת פעולה בהסכמה מפורשת של מבצע הפעולה — אין כאן אישור קבוצה,
         אישור חיצוני או הרשאה עצמאית. מכיוון שההסכמה היא תנאי חובה בכותב הקיים,
-        פעולה אחת סוגרת יחד את שני השערים <b>ActionRecorded</b> ו-<b>ActionAuthorized</b>.
+        פעולה אחת סוגרת יחד את שני השלבים: <b>רישום הפעולה</b> ו<b>ההרשאה לבצע אותה</b>.
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <button type="submit" disabled={pending} style={btnStyle}>{pending ? "רושם…" : "רשום פעולה · RECORD ACTION"}</button>

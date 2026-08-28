@@ -40,7 +40,7 @@ export default function DimensionExplorer({ dimensions }: { dimensions: Dimensio
         />
         <label style={S.toggle}>
           <input type="checkbox" checked={reviewOnly} onChange={(e) => setReviewOnly(e.target.checked)} />
-          <span>REVIEW_REQUIRED בלבד</span>
+          <span>דורש בדיקה בלבד</span>
         </label>
       </div>
       <div style={S.scroll}>

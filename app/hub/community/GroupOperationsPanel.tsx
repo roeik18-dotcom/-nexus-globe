@@ -32,6 +32,7 @@ import type { GroupOperationalState } from "@/app/lib/philos/community/groupOper
 import type { OperationalGroupProfile } from "@/app/lib/philos/valueSystem/operationalGroup";
 import { COLOR, RADIUS, TYPE } from "@/app/lib/philos/shell/designTokens";
 import { BOOTSTRAP_LABEL, BOOTSTRAP_TAG } from "@/app/lib/philos/eventProvenance";
+import { SystemDrawer } from "@/app/lib/philos/shell/SystemDrawer";
 
 const CH_W = 460, CH_H = 96;
 
@@ -181,11 +182,20 @@ export default function GroupOperationsPanel({
             produced a "9 members" figure nobody could account for. */}
         {profile.origin.joins.bootstrap > 0 ? (
           <div style={S.unresolvedLine}>
-            <span style={S.unresolvedTag}>UNRESOLVED</span>
+            <span style={S.unresolvedTag}>לא הוכרע</span>
             <span>
-              שני מקורות חברות אינם מסכימים: <code>memberships.jsonl</code> (רשומות מאוחסנות,
-              ללא כותב במוצר) מול אירועי <code>member.joined</code> ביומן. הם מוצגים זה לצד זה
+              שני מקורות חברות אינם מסכימים: <b>רשימת החברים השמורה</b> (רשומות מאוחסנות,
+              ללא כותב במוצר) מול <b>אירועי ההצטרפות ביומן</b>. הם מוצגים זה לצד זה
               ואינם מאוחדים — קביעת המקור הסמכותי ומודל ביטול החברות היא החלטה פתוחה.
+              {/* The two store names stay in the product, one click away: a
+                  person reading "two sources disagree" is entitled to know
+                  which two, and a test asserts both are still named here. */}
+              <SystemDrawer id="membership-sources" title="שמות המקורות · פירוט מערכת" note="UNRESOLVED">
+                <div dir="ltr" style={{ fontSize: 12, color: "#8fa3c9" }}>
+                  <div><b>memberships.jsonl</b> — stored rows, no in-product writer</div>
+                  <div><b>member.joined</b> — the viewer&apos;s own recorded join event</div>
+                </div>
+              </SystemDrawer>
             </span>
           </div>
         ) : null}

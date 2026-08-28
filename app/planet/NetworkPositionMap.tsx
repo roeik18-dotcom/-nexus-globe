@@ -210,7 +210,7 @@ export default function NetworkPositionMap({
             note={reach.plottable === 0 ? "אין קואורדינטה שנרשמה — רזולוציה מנהלית בלבד" : undefined} />
         </div>
         <div style={{ fontSize: 12, color: COLOR.textFaint, marginBlockStart: 6 }}>
-          רזולוציית הישות הנבחרת: <b style={{ color: COLOR.textDim }}>{reach.precision ?? "UNKNOWN"}</b>
+          רזולוציית הישות הנבחרת: <b style={{ color: COLOR.textDim }}>{reach.precision ?? "לא ידוע"}</b>
           {reach.countryName ? ` · ${reach.countryName}` : ""}
         </div>
       </div>

@@ -40,7 +40,7 @@ export type ViewScale = "PERSON" | "GROUP" | "NETWORK" | "SYSTEM";
 /** Epistemic status → its one visual treatment. No decorative colour. */
 const STATUS_TONE: Record<ContextField["status"], { fg: string; bg: string; label: string }> = {
   RESOLVED:    { fg: STATUS.real.text,     bg: STATUS.real.bg,     label: "REAL" },
-  DERIVED:     { fg: "#8fa3c9",            bg: "rgba(143,163,201,0.12)", label: "DERIVED" },
+  DERIVED:     { fg: "#8fa3c9",            bg: "rgba(143,163,201,0.12)", label: "נגזר" },
   CANDIDATE:   { fg: STATUS.claimed.text,  bg: STATUS.claimed.bg,  label: "CANDIDATE" },
   UNKNOWN:     { fg: COLOR.textFaint,      bg: "transparent",      label: "UNKNOWN" },
   CONFLICTING: { fg: STATUS.blocked.text,  bg: STATUS.blocked.bg,  label: "CONFLICTING" },

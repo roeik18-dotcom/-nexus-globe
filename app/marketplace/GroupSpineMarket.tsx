@@ -202,7 +202,7 @@ export default async function GroupSpineMarket({ input }: { input: SpineMarketIn
           note: `${input.needs.length} סה"כ` },
         { key: "resource", entity: "RESOURCE", label: "משאב", term: "RESOURCE", count: available.length,
           note: `${input.resources.length} סה"כ` },
-        { key: "candidate", entity: "MATCH", label: "מועמדת", term: "CANDIDATE", count: input.candidates.length,
+        { key: "candidate", entity: "MATCH", label: "מועמדת", term: "מועמדת בלבד", count: input.candidates.length,
           note: `${crossGroup.length} בין-קבוצתיות`, derived: true },
         { key: "accepted", entity: "MATCH", label: "אושרה", term: "ACCEPTED", count: input.accepted.length,
           note: "החלטה של אדם" },
@@ -215,7 +215,7 @@ export default async function GroupSpineMarket({ input }: { input: SpineMarketIn
       <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.lg, marginTop: SPACE.sm,
         fontSize: FS.meta, color: COLOR.textFaint }}>
         <span>▲ צורך מבקש · ▼ משאב מציע</span>
-        <span style={{ color: STATE.DERIVED.hue }}>מועמדת = נגזרת, לא הסכמה</span>
+        <span style={{ color: STATE.DERIVED.hue }}>מועמדת = נגזרת מחישוב, לא הסכמה</span>
         <span>אושרה = החלטת אדם · פעולה = ביצוע</span>
         <span>קו רציף = משהו עבר · קו מקווקו = השלב הבא ריק</span>
       </div>

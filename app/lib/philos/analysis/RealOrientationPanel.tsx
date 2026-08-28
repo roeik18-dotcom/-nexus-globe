@@ -34,8 +34,16 @@ export interface PanelChain {
 }
 
 export default function RealOrientationPanel({
-  terminal, frame, chain,
-}: { terminal: OrientationTerminal; frame: OrientationFrameResult; chain: PanelChain }) {
+  terminal, frame, chain, hideAction = false,
+}: {
+  terminal: OrientationTerminal;
+  frame: OrientationFrameResult;
+  chain: PanelChain;
+  /* A page may render this panel twice — /brain shows both its own reading
+     and the evidence reading. Two identical "what can I do now" boxes is two
+     answers to one question, so the secondary instance omits it. */
+  hideAction?: boolean;
+}) {
 
   if (!frame.resolved) {
     return (
@@ -48,10 +56,12 @@ export default function RealOrientationPanel({
         <h2 style={S.title}>עדיין אין על מה להתבסס כאן</h2>
         <p style={S.body}>{frame.message}</p>
 
-        <div style={S.nextBox}>
-          <span style={S.blockLabel}>מה אפשר לעשות עכשיו</span>
-          <Link href="/hub" style={S.nextLink}>פתח/י את היום במרכז ←</Link>
-        </div>
+        {hideAction ? null : (
+          <div style={S.nextBox}>
+            <span style={S.blockLabel}>מה אפשר לעשות עכשיו</span>
+            <Link href="/hub" style={S.nextLink}>פתח/י את היום במרכז ←</Link>
+          </div>
+        )}
 
         <details style={S.audit} data-system-details="orientation-unresolved">
           <summary style={S.auditSummary}>פרטי מערכת</summary>
@@ -118,12 +128,14 @@ export default function RealOrientationPanel({
       </div>
 
       {/* 6 — exactly one action, or an honest none. */}
+      {hideAction ? null : (
       <div style={S.nextBox}>
         <span style={S.blockLabel}>מה אפשר לעשות עכשיו</span>
         {m.nextAction
           ? <Link href={m.nextAction.href} style={S.nextLink}>{m.nextAction.label} ←</Link>
           : <span style={S.body}>במסוף הזה אין כרגע פעולה זמינה. זה לא חוסר — פשוט אין מה לעשות כאן עד שיירשם מידע נוסף.</span>}
       </div>
+      )}
 
       {/* 7 — ONE closed drawer at the bottom, holding everything that is not
              the material or the action: what is still unknown, and the

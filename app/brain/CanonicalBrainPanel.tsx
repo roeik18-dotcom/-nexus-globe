@@ -112,7 +112,7 @@ export default async function CanonicalBrainPanel({ subject, asOf, lifecycle, pe
           {/* The pipeline stages were printed as their internal names. Same
               six stages, said in the language the rest of the page uses. */}
           <h2 style={S.title}>
-            מה השתנה → למה → ראיה → מה לא ידוע → מסקנה → הפעולה הבאה
+            מה השתנה → למה → ראיה → מה לא ידוע → מסקנה → הצעד הבא
           </h2>
         </div>
         <div style={S.headMeta}>

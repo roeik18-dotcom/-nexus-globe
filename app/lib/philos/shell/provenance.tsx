@@ -38,11 +38,19 @@ export const PROVENANCE_STYLE: Record<Provenance, { bg: string; border: string; 
   UNKNOWN: { bg: "rgba(90,111,150,0.10)", border: "rgba(90,111,150,0.32)", text: "#8798b8" },
 };
 
+/** The same six states, in the words a person reads. The token stays on the
+ *  data attribute so tests and the DOM keep the machine-readable value. */
+const PROVENANCE_WORD: Record<Provenance, string> = {
+  CANON: "מתועד", REAL: "נרשם", LEGACY: "ישן", DEMO: "הדגמה",
+  STATIC: "קבוע", UNKNOWN: "לא ידוע",
+};
+
 export function ProvenanceBadge({ p, title }: { p: Provenance; title?: string }) {
   const s = PROVENANCE_STYLE[p];
   return (
     <span
       title={title}
+      data-provenance={p}
       style={{
         fontSize: FS.base, fontWeight: 800, letterSpacing: 0.7,
         padding: "1px 6px", borderRadius: RADIUS.pill,
@@ -53,7 +61,7 @@ export function ProvenanceBadge({ p, title }: { p: Provenance; title?: string })
         whiteSpace: "nowrap",
       }}
     >
-      {p}
+      {PROVENANCE_WORD[p]}
     </span>
   );
 }

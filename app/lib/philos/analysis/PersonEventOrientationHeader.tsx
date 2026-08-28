@@ -425,7 +425,7 @@ export default function PersonEventOrientationHeader({ terminal, legacy }: {
           <Sections sections={[{ label: "השפעה חברתית", colorRole: "green", rows: [
             { k: "היקף ההפצה", v: unitGap("social").missingReason, status: "UNKNOWN" },
             { k: "כדי להשלים", v: unitGap("social").collectionAction, status: "COLLECT" },
-            { k: "קהילה מקושרת", v: "אין קבוצת ערך אמיתית מקושרת לאירוע", status: "UNRESOLVED" },
+            { k: "קהילה מקושרת", v: "אין קבוצת ערך מקושרת לאירוע", status: "UNRESOLVED" },
           ]}]} mark="green-social" />
         </div>
       </Lens>

@@ -21,7 +21,7 @@ export default async function GroupOpsPanel({ variant }: { variant: "reasoning" 
     return (
       <section dir="rtl" style={S.band}>
         <div style={S.head}><span style={S.eyebrow}>קבוצה תפעולית</span><ProvenanceBadge p="UNKNOWN" /></div>
-        <div style={S.empty}>אין קבוצת ערך אמיתית בלוג — UNKNOWN</div>
+        <div style={S.empty}>אין קבוצת ערך רשומה ביומן</div>
       </section>
     );
   }

@@ -129,7 +129,7 @@ export default function VerifiedRelationInventory(
                 ...S.badge,
                 color: l.provenance === "REAL" ? COLOR_ROLE.green : "#fbbf24",
               }}>{l.provenance}</span>
-              {l.derived ? <span style={S.derived}>DERIVED</span> : null}
+              {l.derived ? <span style={S.derived}>נגזר</span> : null}
               <span style={S.ids}>{l.link_id}</span>
             </div>
           ))}

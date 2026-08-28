@@ -226,7 +226,7 @@ export default async function BrainPage({
             terminal of its own, so it lives here at its own anchor with its own
             material: what was claimed versus what was actually proven. */}
         <div id="evidence" style={{ marginBlockStart: 16 }}>
-          <RealOrientationPanel terminal="evidence" frame={orientationFrame} chain={dayChain} />
+          <RealOrientationPanel terminal="evidence" frame={orientationFrame} chain={dayChain} hideAction />
         </div>
         <RealDataGapPanel session={daySession} realUnits={realUnitReadings} terminal="brain" facts={[
           factFromCount("Observation nodes", "projectCanonDynamics → canon.nodes", canon.nodes.length,

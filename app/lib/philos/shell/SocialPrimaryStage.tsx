@@ -306,7 +306,7 @@ export function ProvenanceContext({ ctx }: { ctx: SocialPrimaryContext }) {
     <Cell label="PROVENANCE" scope="REGISTRY" title="DEMO != REAL · גזירה אינה רישום">
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         {item(p.real, "REAL", STATUS.real.text)}
-        {item(p.derived, "DERIVED", "#8fa3c9")}
+        {item(p.derived, "נגזר", "#8fa3c9")}
         {item(p.demo, "DEMO", STATUS.demo.text)}
       </div>
     </Cell>
