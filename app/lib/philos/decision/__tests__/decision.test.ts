@@ -1,25 +1,28 @@
 import { describe, expect, it } from "vitest";
 
+import { type Decision, hasChosenAction, validateDecision } from "../decision";
 import {
-  REQUIRED_TIER,
-  requiredTierFor,
-  type Decision,
-  tierAtLeast,
-  validateDecision,
-} from "../decision";
+  levelAtLeast,
+  REQUIRED_LEVEL,
+  requiredLevelFor,
+} from "../evidenceAxes";
 
 function decision(overrides: Partial<Decision> = {}): Decision {
   return {
     decision_id: "dec_001",
+    case_id: "case_001",
     subject: "person_roei",
     statement: "לעבור לעבוד על מסלול ההחלטות במקום על ה-UI",
     because: "המשוב אמר שאין עבודת-משתמש אחת ברורה",
+    decision_logic: "העדפתי את המסלול שמייצר ראיה מוקדם יותר",
     expected_outcome: "בעוד שבוע יהיו לפחות שלוש החלטות רשומות שאני חוזר אליהן",
     alternatives_considered: ["להמשיך בפישוט ה-UI"],
+    observation_refs: [],
+    chosen_action: { kind: "no_action_yet", because: "טרם בוצעה פעולה" },
     confidence: 0.6,
     stakes: "medium",
     decided_at: "2026-08-28T09:00:00+03:00",
-    review_due: "2026-09-04T09:00:00+03:00",
+    review_horizon: "2026-09-04T09:00:00+03:00",
     record_origin: "REAL",
     ...overrides,
   };
@@ -52,9 +55,9 @@ describe("validateDecision", () => {
 
   it("refuses a review horizon that is not after the decision", () => {
     const result = validateDecision(
-      decision({ decided_at: "2026-08-28T09:00:00+03:00", review_due: "2026-08-28T09:00:00+03:00" }),
+      decision({ decided_at: "2026-08-28T09:00:00+03:00", review_horizon: "2026-08-28T09:00:00+03:00" }),
     );
-    expect(result.errors).toContainEqual({ field: "review_due", reason: "not_after_decided_at" });
+    expect(result.errors).toContainEqual({ field: "review_horizon", reason: "not_after_decided_at" });
   });
 
   it("refuses a timestamp with no explicit offset", () => {
@@ -72,24 +75,63 @@ describe("validateDecision", () => {
   });
 });
 
-describe("the stakes → verification tiering", () => {
-  it("lets a low-stakes decision be self-attested", () => {
-    expect(REQUIRED_TIER.low).toBe("self_attested");
+describe("the risk → outcome-verification policy", () => {
+  it("lets a low-risk decision be self-attested", () => {
+    expect(REQUIRED_LEVEL.low).toBe("self_attested");
   });
 
-  it("still demands an independent verifier for significant and public claims", () => {
-    expect(REQUIRED_TIER.significant).toBe("independent");
-    expect(REQUIRED_TIER.public).toBe("independent");
+  it("accepts measured or corroborated for a significant decision", () => {
+    // The floor is `measured`; `corroborated` is above it and also passes.
+    expect(REQUIRED_LEVEL.significant).toBe("measured");
+    expect(levelAtLeast("corroborated", REQUIRED_LEVEL.significant)).toBe(true);
   });
 
-  it("falls back to the STRICTEST tier for an unrecognised stakes value", () => {
+  it("demands independent verification for a public or irreversible claim", () => {
+    expect(REQUIRED_LEVEL.public).toBe("independently_verified");
+  });
+
+  it("falls back to the STRICTEST level for an unrecognised risk value", () => {
     // A malformed record must never buy itself a weaker requirement.
-    expect(requiredTierFor("nonsense")).toBe("independent");
+    expect(requiredLevelFor("nonsense")).toBe("independently_verified");
   });
 
   it("treats the floor as a floor, never a ceiling", () => {
-    expect(tierAtLeast("independent", "self_attested")).toBe(true);
-    expect(tierAtLeast("self_attested", "independent")).toBe(false);
-    expect(tierAtLeast("measured", "measured")).toBe(true);
+    expect(levelAtLeast("independently_verified", "self_attested")).toBe(true);
+    expect(levelAtLeast("self_attested", "independently_verified")).toBe(false);
+  });
+});
+
+describe("the decision→action link", () => {
+  it("requires `no_action_yet` to say why", () => {
+    const r = validateDecision(
+      decision({ chosen_action: { kind: "no_action_yet", because: "  " } }),
+    );
+    expect(r.errors).toContainEqual({ field: "chosen_action", reason: "empty_reference" });
+  });
+
+  it("requires an `action` variant to name a real reference", () => {
+    const r = validateDecision(decision({ chosen_action: { kind: "action", action_ref: "" } }));
+    expect(r.errors).toContainEqual({ field: "chosen_action", reason: "empty_reference" });
+  });
+
+  it("tells 'nothing done yet' apart from 'action linked'", () => {
+    expect(hasChosenAction(decision())).toBe(false);
+    expect(
+      hasChosenAction(decision({ chosen_action: { kind: "action", action_ref: "act_1" } })),
+    ).toBe(true);
+  });
+
+  it("requires a case_id — a decision outside a case is unreachable", () => {
+    expect(validateDecision(decision({ case_id: "" })).errors).toContainEqual({
+      field: "case_id",
+      reason: "empty",
+    });
+  });
+
+  it("requires the decision logic that selected this option", () => {
+    expect(validateDecision(decision({ decision_logic: "" })).errors).toContainEqual({
+      field: "decision_logic",
+      reason: "empty",
+    });
   });
 });

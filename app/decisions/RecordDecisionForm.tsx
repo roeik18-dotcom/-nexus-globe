@@ -14,19 +14,23 @@
  */
 import { useActionState } from "react";
 
-import { type DecisionFormState, recordDecisionFormAction } from "@/app/lib/philos/decision/decisionActions";
-import { HORIZONS, STAKES } from "@/app/lib/philos/decision/decision";
+import {
+  type DecisionFormState,
+  openCaseAndRecordDecisionFormAction,
+} from "@/app/lib/philos/decision/decisionActions";
+import { HORIZONS } from "@/app/lib/philos/decision/decision";
+import { RISK_LEVELS } from "@/app/lib/philos/decision/evidenceAxes";
 
-const STAKES_LABEL: Record<string, string> = {
-  low: "נמוך — אני יכול לאשר בעצמי",
-  medium: "בינוני — צריך מדידה או צד שני",
-  significant: "משמעותי — צריך מאמת עצמאי",
-  public: "טענה פומבית — מאמת עצמאי חובה",
+const RISK_LABEL: Record<string, string> = {
+  low: "נמוך — דיווח עצמי מספיק",
+  medium: "בינוני — צריך מדידה או תיעוד",
+  significant: "משמעותי — צריך מדידה או אישוש",
+  public: "פומבי או בלתי הפיך — צריך אימות עצמאי",
 };
 
 export default function RecordDecisionForm() {
   const [state, formAction, pending] = useActionState<DecisionFormState, FormData>(
-    recordDecisionFormAction,
+    openCaseAndRecordDecisionFormAction,
     {},
   );
 
@@ -49,6 +53,13 @@ export default function RecordDecisionForm() {
 
       <Field label="למה" hint="הנימוק כפי שהוא עכשיו, לא כפי שיישמע אחר כך">
         <textarea name="because" rows={2} style={S.input} />
+      </Field>
+
+      <Field
+        label="לפי איזה שיקול בחרת דווקא בזה"
+        hint="הכלל שהכריע בין החלופות. זה הצעד שהמערכת השאירה עד היום משתמע."
+      >
+        <textarea name="decision_logic" rows={2} style={S.input} />
       </Field>
 
       <Field
@@ -75,9 +86,9 @@ export default function RecordDecisionForm() {
         </Field>
 
         <Field label="כמה זה עולה אם טעיתי">
-          <select name="stakes" defaultValue="low" style={S.input}>
-            {STAKES.map((s) => (
-              <option key={s} value={s}>{STAKES_LABEL[s]}</option>
+          <select name="risk_level" defaultValue="low" style={S.input}>
+            {RISK_LEVELS.map((s: string) => (
+              <option key={s} value={s}>{RISK_LABEL[s]}</option>
             ))}
           </select>
         </Field>

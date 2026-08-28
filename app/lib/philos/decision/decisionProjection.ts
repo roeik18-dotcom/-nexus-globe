@@ -33,18 +33,15 @@
  * and own it; the system will not hand it over pre-computed and thereby
  * imply it means something.
  *
- * `surprises` is counted separately and is the figure actually worth
- * watching: an expectation met teaches nothing, and a journal producing no
- * surprises is either recording only foregone conclusions or not being read.
+ * `contradicted_expectations` is counted separately and is the figure
+ * actually worth watching: an expectation met teaches nothing, and a journal
+ * whose expectations are never contradicted is either recording only foregone
+ * conclusions or not being read.
  */
 import { parseOffsetInstant } from "../canon/observation";
 import type { Decision } from "./decision";
-import {
-  type CausalSupport,
-  CAUSAL_SUPPORT,
-  type DecisionReview,
-  type ExpectationOutcome,
-} from "./decisionReview";
+import { type DecisionReview, type ExpectationOutcome } from "./decisionReview";
+import { CAUSAL_RELATION, type CausalRelation } from "./evidenceAxes";
 
 export type QueueStatus =
   /** Reviewed. Closed, whatever the outcome was. */
@@ -59,7 +56,7 @@ export interface QueueEntry {
   status: QueueStatus;
   review?: DecisionReview;
   /**
-   * Whole days past `review_due`, at `now`. `0` on the day it comes due,
+   * Whole days past `review_horizon`, at `now`. `0` on the day it comes due,
    * `null` when it is not yet due or already reviewed. Never negative —
    * "overdue by minus three days" is not a thing a person should read.
    */
@@ -103,7 +100,7 @@ export function projectReviewQueue(
       return { decision, status: "reviewed" as const, review, overdue_days: null };
     }
 
-    const dueMs = parseOffsetInstant(decision.review_due);
+    const dueMs = parseOffsetInstant(decision.review_horizon);
     // An unparseable horizon cannot be called due. It is a broken record, and
     // saying "awaiting" is the honest reading of "we do not know when".
     if (dueMs === null || nowMs === null || nowMs < dueMs) {
@@ -126,7 +123,7 @@ export function inQueueOrder(entries: readonly QueueEntry[]): QueueEntry[] {
     if (rank[a.status] !== rank[b.status]) return rank[a.status] - rank[b.status];
     if (a.status === "due") return (b.overdue_days ?? 0) - (a.overdue_days ?? 0);
     if (a.status === "awaiting") {
-      return String(a.decision.review_due).localeCompare(String(b.decision.review_due));
+      return String(a.decision.review_horizon).localeCompare(String(b.decision.review_horizon));
     }
     return String(b.review?.reviewed_at ?? "").localeCompare(String(a.review?.reviewed_at ?? ""));
   });
@@ -144,10 +141,20 @@ export interface OutcomeSummary {
   partly: number;
   not_met: number;
   cannot_tell: number;
-  /** Reviews carrying a non-empty `surprise`. The figure worth watching. */
-  surprises: number;
+  /**
+   * Reviews whose outcome CONTRADICTED the pre-registered expectation. The
+   * figure worth watching, and the honest replacement for v1's `surprises`.
+   *
+   * v1 counted a free-text `surprise` field on the review. That field was
+   * learning content living off the canon spine; it now belongs in a
+   * `Learning`, so counting it here would mean reading a record this
+   * projection has no business reaching into. `not_met` and `partly` are
+   * what this projection can see, and a contradicted expectation is exactly
+   * the case where a model has something to update.
+   */
+  contradicted_expectations: number;
   /** How far up the causal ladder the reviews actually reached. */
-  by_causal_support: Readonly<Record<CausalSupport, number>>;
+  by_causal_relation: Readonly<Record<CausalRelation, number>>;
 }
 
 /**
@@ -156,12 +163,12 @@ export interface OutcomeSummary {
  * rather than a feature.
  */
 export function summariseOutcomes(entries: readonly QueueEntry[]): OutcomeSummary {
-  const by_causal_support: Record<CausalSupport, number> = {
-    happened_after: 0,
-    correlated: 0,
-    plausibly_contributed: 0,
+  const by_causal_relation: Record<CausalRelation, number> = {
+    occurred_after: 0,
+    associated_with: 0,
+    probably_contributed: 0,
     causally_supported: 0,
-    experimentally_shown: 0,
+    experimentally_demonstrated: 0,
   };
 
   const outcomes: Record<ExpectationOutcome, number> = {
@@ -173,7 +180,7 @@ export function summariseOutcomes(entries: readonly QueueEntry[]): OutcomeSummar
 
   let reviewed = 0;
   let unreviewed_overdue = 0;
-  let surprises = 0;
+  let contradicted_expectations = 0;
 
   for (const e of entries) {
     if (e.status === "due") unreviewed_overdue += 1;
@@ -181,8 +188,10 @@ export function summariseOutcomes(entries: readonly QueueEntry[]): OutcomeSummar
     if (!r) continue;
     reviewed += 1;
     if (r.expectation_met in outcomes) outcomes[r.expectation_met] += 1;
-    if (typeof r.surprise === "string" && r.surprise.trim() !== "") surprises += 1;
-    if (CAUSAL_SUPPORT.includes(r.causal_support)) by_causal_support[r.causal_support] += 1;
+    if (r.expectation_met === "not_met" || r.expectation_met === "partly") {
+      contradicted_expectations += 1;
+    }
+    if (CAUSAL_RELATION.includes(r.causal_relation)) by_causal_relation[r.causal_relation] += 1;
   }
 
   return {
@@ -193,7 +202,7 @@ export function summariseOutcomes(entries: readonly QueueEntry[]): OutcomeSummar
     partly: outcomes.partly,
     not_met: outcomes.not_met,
     cannot_tell: outcomes.cannot_tell,
-    surprises,
-    by_causal_support,
+    contradicted_expectations,
+    by_causal_relation,
   };
 }

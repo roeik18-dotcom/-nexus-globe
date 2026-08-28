@@ -17,7 +17,7 @@
  */
 import SignOutButton from "@/app/signin/SignOutButton";
 import { resolveViewerContext } from "@/app/lib/philos/identity/viewerContext";
-import { requiredTierFor } from "@/app/lib/philos/decision/decision";
+import { requiredLevelFor } from "@/app/lib/philos/decision/evidenceAxes";
 import {
   inQueueOrder,
   projectReviewQueue,
@@ -40,12 +40,12 @@ const OUTCOME_LABEL: Record<string, string> = {
   cannot_tell: "אי אפשר לדעת",
 };
 
-const SUPPORT_LABEL: Record<string, string> = {
-  happened_after: "קרה אחרי",
-  correlated: "יש קשר",
-  plausibly_contributed: "כנראה תרם",
+const RELATION_LABEL: Record<string, string> = {
+  occurred_after: "קרה אחרי",
+  associated_with: "יש קשר",
+  probably_contributed: "כנראה תרם",
   causally_supported: "נתמך סיבתית",
-  experimentally_shown: "הוכח בחזרה",
+  experimentally_demonstrated: "הודגם בחזרה",
 };
 
 export default async function DecisionsPage() {
@@ -104,7 +104,7 @@ export default async function DecisionsPage() {
                 <ReviewDecisionForm
                   decisionId={next.decision.decision_id}
                   expectation={next.decision.expected_outcome}
-                  requiredTier={requiredTierFor(next.decision.stakes)}
+                  requiredLevel={requiredLevelFor(next.decision.stakes)}
                   hasAlternatives={next.decision.alternatives_considered.length > 0}
                 />
               </section>
@@ -129,8 +129,8 @@ export default async function DecisionsPage() {
                 <Count n={summary.not_met} label={`ציפיות שלא התממשו מתוך ${summary.reviewed}`} />
                 <Count n={summary.cannot_tell} label={`עדיין אי אפשר לדעת, מתוך ${summary.reviewed}`} />
                 <Count
-                  n={summary.surprises}
-                  label={`הפתעות שנרשמו מתוך ${summary.reviewed}`}
+                  n={summary.contradicted_expectations}
+                  label={`ציפיות שנסתרו מתוך ${summary.reviewed}`}
                   note="המספר היחיד כאן ששווה לעקוב אחריו"
                 />
               </ul>
@@ -157,15 +157,9 @@ export default async function DecisionsPage() {
                       <div style={S.itemHead}>{e.decision.statement}</div>
                       <div style={S.itemMeta}>
                         {OUTCOME_LABEL[e.review!.expectation_met]} ·{" "}
-                        {SUPPORT_LABEL[e.review!.causal_support]}
-                        {e.review!.verification_tier === "self_attested"
-                          ? " · אישור עצמי"
-                          : null}
+                        {RELATION_LABEL[e.review!.causal_relation]}
                         {e.review!.reviewed_early ? " · נסקר לפני המועד" : null}
                       </div>
-                      {e.review!.surprise ? (
-                        <div style={S.surprise}>הפתיע: {e.review!.surprise}</div>
-                      ) : null}
                     </li>
                   ))}
                 </ul>
@@ -180,7 +174,7 @@ export default async function DecisionsPage() {
                     <li key={e.decision.decision_id} style={S.item}>
                       <div style={S.itemHead}>{e.decision.statement}</div>
                       <div style={S.itemMeta}>
-                        נבדוק ב־{String(e.decision.review_due).slice(0, 10)}
+                        נבדוק ב־{String(e.decision.review_horizon).slice(0, 10)}
                       </div>
                     </li>
                   ))}
@@ -237,12 +231,13 @@ function TechnicalRows({
     <div style={S.tech}>
       <div>subject · {viewerSubject}</div>
       <div>now · {now}</div>
-      <div>decisions.jsonl · decision-reviews.jsonl</div>
+      <div>decision-cases.jsonl · decisions.jsonl · decision-reviews.jsonl</div>
       {queue.map((e) => (
         <div key={e.decision.decision_id}>
-          {e.decision.decision_id} · {e.status} · stakes={e.decision.stakes} ·
-          origin={e.decision.record_origin} · due={e.decision.review_due}
-          {e.review ? ` · review=${e.review.review_id} · ${e.review.causal_support}` : ""}
+          {e.decision.decision_id} · case={e.decision.case_id} · {e.status} ·
+          stakes={e.decision.stakes} · origin={e.decision.record_origin} ·
+          due={e.decision.review_horizon}
+          {e.review ? ` · review=${e.review.review_id} · effect=${e.review.effect_ref} · ${e.review.causal_relation}` : ""}
         </div>
       ))}
     </div>

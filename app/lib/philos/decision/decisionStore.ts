@@ -30,10 +30,25 @@ import {
   type RecordSpec,
 } from "./appendOnlyStore";
 import { type Decision, validateDecision } from "./decision";
+import { type DecisionCase, validateDecisionCase } from "./decisionCase";
 import { type DecisionReview, validateDecisionReview } from "./decisionReview";
 
+export const DECISION_CASE_STORE_FILENAME = "decision-cases.jsonl";
 export const DECISION_STORE_FILENAME = "decisions.jsonl";
 export const DECISION_REVIEW_STORE_FILENAME = "decision-reviews.jsonl";
+
+/**
+ * A case's own log. It is append-only like the others, which means a case
+ * does not "change status" — a later state is a NEW record with the same
+ * `case_id`, and the current state is the newest one. `loadCases` collapses
+ * them; `loadCaseHistory` does not, so the path a case took stays readable.
+ */
+export interface DecisionCaseRecord {
+  case: DecisionCase;
+  recorded_at: string;
+  /** Each revision needs its own identity for the append-only id check. */
+  revision_id: string;
+}
 
 export interface DecisionRecord {
   decision: Decision;
@@ -44,6 +59,13 @@ export interface DecisionReviewRecord {
   review: DecisionReview;
   recorded_at: string;
 }
+
+export const DECISION_CASE_SPEC: RecordSpec<DecisionCaseRecord> = {
+  label: "DecisionCase",
+  idOf: (r) => r?.revision_id,
+  recordedAtOf: (r) => r?.recorded_at,
+  validate: (r) => validateDecisionCase(r?.case as DecisionCase),
+};
 
 export const DECISION_SPEC: RecordSpec<DecisionRecord> = {
   label: "Decision",
@@ -59,8 +81,15 @@ export const DECISION_REVIEW_SPEC: RecordSpec<DecisionReviewRecord> = {
   validate: (r) => validateDecisionReview(r?.review as DecisionReview),
 };
 
+export type DecisionCaseStore = AppendOnlyStore<DecisionCaseRecord>;
 export type DecisionStore = AppendOnlyStore<DecisionRecord>;
 export type DecisionReviewStore = AppendOnlyStore<DecisionReviewRecord>;
+
+export function inMemoryDecisionCaseStore(
+  bootstrap: readonly DecisionCaseRecord[] = [],
+): DecisionCaseStore {
+  return new InMemoryAppendOnlyStore(DECISION_CASE_SPEC, bootstrap);
+}
 
 export function inMemoryDecisionStore(bootstrap: readonly DecisionRecord[] = []): DecisionStore {
   return new InMemoryAppendOnlyStore(DECISION_SPEC, bootstrap);
@@ -76,8 +105,18 @@ function dataDir(): string {
   return process.env.CANON_DATA_DIR ?? join(process.cwd(), ".philos-canon-data");
 }
 
+let _decisionCaseStore: DecisionCaseStore | null = null;
 let _decisionStore: DecisionStore | null = null;
 let _decisionReviewStore: DecisionReviewStore | null = null;
+
+export function decisionCaseStore(): DecisionCaseStore {
+  if (_decisionCaseStore === null) {
+    _decisionCaseStore = new FileSystemAppendOnlyStore(
+      DECISION_CASE_SPEC, dataDir(), DECISION_CASE_STORE_FILENAME,
+    );
+  }
+  return _decisionCaseStore;
+}
 
 export function decisionStore(): DecisionStore {
   if (_decisionStore === null) {
@@ -102,11 +141,29 @@ export function decisionReviewStore(): DecisionReviewStore {
 }
 
 /** Test helpers only — never call from production code. */
+export function _setDecisionCaseStore(store: DecisionCaseStore | null): void {
+  _decisionCaseStore = store;
+}
 export function _setDecisionStore(store: DecisionStore | null): void {
   _decisionStore = store;
 }
 export function _setDecisionReviewStore(store: DecisionReviewStore | null): void {
   _decisionReviewStore = store;
+}
+
+/** Every revision of every case, oldest first. */
+export async function loadCaseHistory(): Promise<DecisionCaseRecord[]> {
+  return decisionCaseStore().load();
+}
+
+/**
+ * The CURRENT state of each case: the newest revision per `case_id`. The log
+ * is ordered oldest-first, so the last one wins.
+ */
+export async function loadCases(): Promise<DecisionCase[]> {
+  const byId = new Map<string, DecisionCase>();
+  for (const r of await loadCaseHistory()) byId.set(r.case.case_id, r.case);
+  return [...byId.values()];
 }
 
 export async function loadDecisions(): Promise<DecisionRecord[]> {

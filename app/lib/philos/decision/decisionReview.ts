@@ -1,141 +1,113 @@
 /**
- * Philos — the Decision Review, and the causal-support ladder.
+ * Philos — the Decision Review.
  *
- * A Review is the second half of a Decision: the person comes back at the
- * horizon they set and says what actually happened. Everything here exists
- * to stop that account from quietly becoming a causal claim.
+ * ## What this record is now, and what it was
  *
- * ## The defect this module is built to fix
+ * The first pass gave `DecisionReview` its own `what_happened`, `reviewer`
+ * and `verification_tier`, plus a `surprise` field holding learning content.
+ * Every one of those already had a canon home:
  *
- * `Action → Effect` never proved that the action caused the effect, and —
- * worse — the projection had no field that could carry the difference. An
- * independent verifier attests that an outcome OCCURRED; nothing in the
- * record could express what they had not attested. For a system whose whole
- * discipline is separating Detected from Verified, that was a contradiction
- * at the centre rather than a missing feature.
+ *   `what_happened`      → `Effect.claimed_outcome.statement`
+ *   `reviewer`           → `OutcomeVerification.verifier_id`
+ *   `verification_tier`  → `OutcomeVerification.verifier_type`
+ *   `surprise`           → `Learning`
  *
- * `CausalSupport` is that missing field. Five rungs, weakest first, and the
- * weakest is the DEFAULT — a review says "this happened afterwards" unless
- * something specific earns more.
+ * Two objects held one fact each, could disagree, and the canon-side one was
+ * never written at all — so the day's gates saw nothing while the journal
+ * showed a completed review. All four fields are GONE from this record. The
+ * review now REFERENCES the Effect and, when there is one, the Learning.
  *
- * ## Why the ladder is gated rather than asserted
+ * ## What genuinely belongs here, because no canon record carries it
  *
- * Anyone can type "my action caused this". The gates below are the smallest
- * set of conditions under which that sentence is not merely a feeling:
+ * `expectation_met` — the comparison of a PRE-REGISTERED expectation against
+ * what happened. Canon can say what was claimed and what was verified; it has
+ * never held what was predicted beforehand, so it cannot express whether the
+ * prediction held.
  *
- *   - `happened_after` — always available. Chronology is a fact about the
- *     records and needs no permission.
- *   - `correlated` — needs the expectation to have been resolved at all
- *     (`met`/`partly`/`not_met`). "I cannot tell" cannot be correlated with
- *     anything.
- *   - `plausibly_contributed` — additionally needs the stakes' required
- *     verification tier to be satisfied. A self-attested review of a
- *     significant decision does not reach this rung.
- *   - `causally_supported` — additionally needs at least one recorded
- *     alternative. If nothing else was ever on the table, "this is why it
- *     happened" has no competitor to have beaten, and the claim is
- *     unfalsifiable by construction.
- *   - `experimentally_shown` — additionally needs the review to name a
- *     repetition or a control (`comparison_basis`). Nothing in this codebase
- *     runs experiments; the rung exists so that the ladder does not stop one
- *     rung below the truth and imply that `causally_supported` is the
- *     ceiling. It is expected to stay unused for a long time, and that is a
- *     correct outcome, not a gap.
+ * `causal_relation` and its supporting fields — how strongly the DECISION is
+ * implicated in the outcome. `Effect.action_ref` asserts that an Effect
+ * belongs to an Action; it has never graded that link, and an
+ * `OutcomeVerification` grades only whether the outcome occurred.
  *
- * `checkCausalClaim` returns the HIGHEST rung the evidence supports. A
- * caller that asks for more gets the honest lower rung plus the reason —
- * never a rejection, because refusing to record the review at all would just
- * lose the person's account of what happened.
+ * The two axes stay apart: see `evidenceAxes.ts`. The outcome-verification
+ * level is DERIVED from the referenced Effect on read and is deliberately
+ * absent from this record.
  *
  * ## `cannot_tell` is a first-class result
  *
- * `ExpectationOutcome` includes `cannot_tell`, and it is not a failure to
- * review. Most consequential decisions are genuinely unresolved at their
- * first horizon. A journal that forces a verdict teaches people to invent
- * one, which is the exact failure mode this whole record set exists to
- * avoid.
- *
- * ## No scoring
- *
- * Nothing here ranks decisions or people, and `decisionProjection.ts` counts
- * records without ever dividing one count by another to produce a rate. See
- * that file's header for why the ratio specifically is refused.
+ * Not a failed review. Most consequential decisions are genuinely unresolved
+ * at their first horizon, and a journal that forces a verdict teaches people
+ * to invent one.
  */
 import { parseOffsetInstant } from "../canon/observation";
 import { isRecordOrigin, type RecordOrigin } from "../recordOrigin";
-import {
-  type Decision,
-  requiredTierFor,
-  tierAtLeast,
-  type VerificationTier,
-  VERIFICATION_TIERS,
-} from "./decision";
-
-/** Weakest to strongest. The order is load-bearing: rungs compare by index. */
-export const CAUSAL_SUPPORT = [
-  "happened_after",
-  "correlated",
-  "plausibly_contributed",
-  "causally_supported",
-  "experimentally_shown",
-] as const;
-export type CausalSupport = (typeof CAUSAL_SUPPORT)[number];
-
-/** The rung a review gets for free. Chronology needs no permission. */
-export const DEFAULT_CAUSAL_SUPPORT: CausalSupport = "happened_after";
+import { CAUSAL_RELATION, type CausalRelation } from "./evidenceAxes";
 
 export const EXPECTATION_OUTCOMES = ["met", "partly", "not_met", "cannot_tell"] as const;
 export type ExpectationOutcome = (typeof EXPECTATION_OUTCOMES)[number];
 
-/** `cannot_tell` is deliberately excluded — see module header. */
+/** `cannot_tell` is deliberately excluded — nothing can correlate with it. */
 export function isResolved(outcome: ExpectationOutcome): boolean {
   return outcome === "met" || outcome === "partly" || outcome === "not_met";
 }
 
 export interface DecisionReview {
   review_id: string;
-  /** The Decision this closes. Explicit link only — never inferred by time. */
+  /** The case this closes a decision within. */
+  case_id: string;
+  /** The Decision being reviewed. Explicit link only. */
   decision_ref: string;
-  /** Who wrote the review. For an `independent` tier this is not the decider. */
-  reviewer: string;
-  /** What actually happened, in the person's own words. NEVER generated. */
-  what_happened: string;
+  /**
+   * THE EFFECT THIS REVIEW IS ABOUT. Required, and the reason this record no
+   * longer restates the outcome: what happened, who verified it and how are
+   * all read from here. The writer either references an Effect that already
+   * exists or creates one through the canon Effect writer first — it never
+   * stores the outcome locally.
+   */
+  effect_ref: string;
+  /** Did the pre-registered expectation hold. The genuinely new comparison. */
   expectation_met: ExpectationOutcome;
-  /**
-   * What the person did not see coming. Optional, and the most valuable
-   * field in the record: a met expectation teaches nothing, a surprise is
-   * the only place a model actually updates.
-   */
-  surprise?: string;
-  /** How this outcome was established. Floor set by the Decision's stakes. */
-  verification_tier: VerificationTier;
-  /**
-   * The OutcomeVerification this review produced, when the tier is
-   * `independent`. Explicit reference into the existing canon store — this
-   * module never re-implements verification, it points at it.
-   */
-  outcome_verification_ref?: string;
-  /**
-   * A named repetition or control, if one exists. Required for — and only
-   * meaningful at — `experimentally_shown`.
-   */
+
+  // ── The causal axis. Stored here because canon has no field for it. ──
+  /** The rung EARNED. `checkCausalRelation` computes it; it is never read
+   *  straight from a form. */
+  causal_relation: CausalRelation;
+  /** The reviewer's own confidence in the causal claim, [0,1]. Optional —
+   *  absent is honest, a fabricated number is not. */
+  causal_confidence?: number;
+  /** What else could explain this outcome. Required for `causally_supported`. */
+  alternative_explanations: readonly string[];
+  /** What else was going on that could have moved the result. */
+  intervening_factors: readonly string[];
+  /** The window over which the outcome was assessed. */
+  time_window?: string;
+  /** Records that CUT AGAINST the claim. Kept explicitly so a review can be
+   *  honest about what it is arguing past. */
+  counterevidence_refs: readonly string[];
+  /** A named repetition or control. Required for the top rung only. */
   comparison_basis?: string;
-  /** The rung CLAIMED. What the record is entitled to is computed, not read. */
-  causal_support: CausalSupport;
+
+  /** `Learning.learning_id` produced from this review, when one was. */
+  learning_ref?: string;
+
   reviewed_at: string;
-  /** True when written before `decision.review_due`. Recorded, never hidden. */
+  /** True when written before the decision's `review_horizon`. Recorded,
+   *  never hidden — an early review is allowed and is marked. */
   reviewed_early: boolean;
   record_origin: RecordOrigin;
 }
 
 export type DecisionReviewError =
   | { field: "review_id"; reason: "empty" }
+  | { field: "case_id"; reason: "empty" }
   | { field: "decision_ref"; reason: "empty" }
-  | { field: "reviewer"; reason: "empty" }
-  | { field: "what_happened"; reason: "empty" }
+  | { field: "effect_ref"; reason: "empty" }
   | { field: "expectation_met"; reason: "unknown_value" }
-  | { field: "verification_tier"; reason: "unknown_value" }
-  | { field: "causal_support"; reason: "unknown_value" }
+  | { field: "causal_relation"; reason: "unknown_value" }
+  | { field: "causal_confidence"; reason: "not_a_probability" }
+  | { field: "alternative_explanations"; reason: "not_a_string_list" }
+  | { field: "intervening_factors"; reason: "not_a_string_list" }
+  | { field: "counterevidence_refs"; reason: "not_a_string_list" }
   | { field: "reviewed_at"; reason: "invalid_or_no_offset" }
   | { field: "reviewed_early"; reason: "not_a_boolean" }
   | { field: "record_origin"; reason: "unknown_value" };
@@ -150,26 +122,43 @@ function nonEmpty(s: unknown): s is string {
 }
 
 const OUTCOME_SET: ReadonlySet<string> = new Set(EXPECTATION_OUTCOMES);
-const TIER_SET: ReadonlySet<string> = new Set(VERIFICATION_TIERS);
-const SUPPORT_SET: ReadonlySet<string> = new Set(CAUSAL_SUPPORT);
+const RELATION_SET: ReadonlySet<string> = new Set(CAUSAL_RELATION);
 
 /** Pure, deterministic, total. All checks run; no short-circuiting. */
 export function validateDecisionReview(r: DecisionReview): DecisionReviewValidation {
   const errors: DecisionReviewError[] = [];
 
   if (!nonEmpty(r?.review_id)) errors.push({ field: "review_id", reason: "empty" });
+  if (!nonEmpty(r?.case_id)) errors.push({ field: "case_id", reason: "empty" });
   if (!nonEmpty(r?.decision_ref)) errors.push({ field: "decision_ref", reason: "empty" });
-  if (!nonEmpty(r?.reviewer)) errors.push({ field: "reviewer", reason: "empty" });
-  if (!nonEmpty(r?.what_happened)) errors.push({ field: "what_happened", reason: "empty" });
+  /* THE LOAD-BEARING REQUIREMENT. A review with no Effect would be a review
+     that restates an outcome nothing else knows about — the exact duplication
+     this record was rebuilt to remove. */
+  if (!nonEmpty(r?.effect_ref)) errors.push({ field: "effect_ref", reason: "empty" });
 
   if (typeof r?.expectation_met !== "string" || !OUTCOME_SET.has(r.expectation_met)) {
     errors.push({ field: "expectation_met", reason: "unknown_value" });
   }
-  if (typeof r?.verification_tier !== "string" || !TIER_SET.has(r.verification_tier)) {
-    errors.push({ field: "verification_tier", reason: "unknown_value" });
+  if (typeof r?.causal_relation !== "string" || !RELATION_SET.has(r.causal_relation)) {
+    errors.push({ field: "causal_relation", reason: "unknown_value" });
   }
-  if (typeof r?.causal_support !== "string" || !SUPPORT_SET.has(r.causal_support)) {
-    errors.push({ field: "causal_support", reason: "unknown_value" });
+
+  if (r?.causal_confidence !== undefined) {
+    const c = r.causal_confidence;
+    if (typeof c !== "number" || !Number.isFinite(c) || c < 0 || c > 1) {
+      errors.push({ field: "causal_confidence", reason: "not_a_probability" });
+    }
+  }
+
+  for (const field of [
+    "alternative_explanations",
+    "intervening_factors",
+    "counterevidence_refs",
+  ] as const) {
+    const list = r?.[field];
+    if (!Array.isArray(list) || list.some((x) => typeof x !== "string")) {
+      errors.push({ field, reason: "not_a_string_list" });
+    }
   }
 
   if (parseOffsetInstant(r?.reviewed_at) === null) {
@@ -183,111 +172,4 @@ export function validateDecisionReview(r: DecisionReview): DecisionReviewValidat
   }
 
   return { valid: errors.length === 0, errors };
-}
-
-export type CausalCapReason =
-  | "expectation_unresolved"
-  | "verification_below_stakes"
-  | "no_alternative_considered"
-  | "no_comparison_basis";
-
-export interface CausalClaimCheck {
-  /** The highest rung this evidence actually supports. */
-  entitled: CausalSupport;
-  /** What the review asked for. */
-  claimed: CausalSupport;
-  /** True when `claimed` exceeded `entitled` and was brought down. */
-  capped: boolean;
-  /** Why it could go no higher. Ordered weakest-blocking-condition first. */
-  reasons: CausalCapReason[];
-}
-
-function rung(c: CausalSupport): number {
-  return CAUSAL_SUPPORT.indexOf(c);
-}
-
-/**
- * The gate. Pure, total, never throws, never mutates its inputs.
- *
- * Returns the highest rung the supplied evidence supports, together with
- * every condition that stopped it going further — so a screen can say
- * "this is 'happened after' because nothing else was on the table" rather
- * than just showing a demoted word.
- *
- * Never rejects. A review whose claim is too strong is still recorded; it is
- * recorded at the rung it earns.
- */
-export function checkCausalClaim(input: {
-  claimed: CausalSupport;
-  decision: Pick<Decision, "stakes" | "alternatives_considered">;
-  expectation_met: ExpectationOutcome;
-  verification_tier: VerificationTier;
-  comparison_basis?: string;
-}): CausalClaimCheck {
-  const { claimed, decision, expectation_met, verification_tier, comparison_basis } = input;
-  const reasons: CausalCapReason[] = [];
-
-  const resolved = isResolved(expectation_met);
-  const meetsTier = tierAtLeast(verification_tier, requiredTierFor(decision.stakes));
-  const hasAlternative =
-    Array.isArray(decision.alternatives_considered) &&
-    decision.alternatives_considered.some((a) => typeof a === "string" && a.trim() !== "");
-  const hasComparison = typeof comparison_basis === "string" && comparison_basis.trim() !== "";
-
-  // Each condition is checked independently and ALL failures are reported —
-  // a review blocked by three separate things should say so once, not force
-  // three round trips.
-  if (!resolved) reasons.push("expectation_unresolved");
-  if (!meetsTier) reasons.push("verification_below_stakes");
-  if (!hasAlternative) reasons.push("no_alternative_considered");
-  if (!hasComparison) reasons.push("no_comparison_basis");
-
-  let ceiling: CausalSupport = "happened_after";
-  if (resolved) ceiling = "correlated";
-  if (resolved && meetsTier) ceiling = "plausibly_contributed";
-  if (resolved && meetsTier && hasAlternative) ceiling = "causally_supported";
-  if (resolved && meetsTier && hasAlternative && hasComparison) {
-    ceiling = "experimentally_shown";
-  }
-
-  const wanted = SUPPORT_SET.has(claimed) ? claimed : DEFAULT_CAUSAL_SUPPORT;
-  const entitled = rung(wanted) <= rung(ceiling) ? wanted : ceiling;
-
-  return {
-    entitled,
-    claimed: wanted,
-    capped: rung(wanted) > rung(ceiling),
-    // Only the reasons that actually bound THIS claim are interesting; a
-    // review claiming `correlated` does not need to hear about comparison
-    // bases it never wanted.
-    reasons: reasons.filter((why) => boundsClaim(why, wanted)),
-  };
-}
-
-/** Which rungs each condition is a precondition for. */
-function boundsClaim(reason: CausalCapReason, wanted: CausalSupport): boolean {
-  const w = rung(wanted);
-  switch (reason) {
-    case "expectation_unresolved":
-      return w >= rung("correlated");
-    case "verification_below_stakes":
-      return w >= rung("plausibly_contributed");
-    case "no_alternative_considered":
-      return w >= rung("causally_supported");
-    case "no_comparison_basis":
-      return w >= rung("experimentally_shown");
-  }
-}
-
-/**
- * Whether this review satisfies the verification floor its Decision's stakes
- * impose. Separate from the causal ladder on purpose: a `low`-stakes
- * decision self-attested is perfectly in order and must not be shown as
- * deficient, even though it can never reach `plausibly_contributed`.
- */
-export function meetsStakesFloor(
-  decision: Pick<Decision, "stakes">,
-  review: Pick<DecisionReview, "verification_tier">,
-): boolean {
-  return tierAtLeast(review.verification_tier, requiredTierFor(decision.stakes));
 }

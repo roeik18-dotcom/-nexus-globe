@@ -11,15 +11,19 @@ import {
 function decision(id: string, overrides: Partial<Decision> = {}): Decision {
   return {
     decision_id: id,
+    case_id: `case_${id}`,
     subject: "person_roei",
     statement: `החלטה ${id}`,
     because: "סיבה",
+    decision_logic: "שיקול",
     expected_outcome: "ציפייה",
     alternatives_considered: [],
+    observation_refs: [],
+    chosen_action: { kind: "action", action_ref: `act_${id}` },
     confidence: 0.5,
     stakes: "low",
     decided_at: "2026-08-01T09:00:00+03:00",
-    review_due: "2026-08-08T09:00:00+03:00",
+    review_horizon: "2026-08-08T09:00:00+03:00",
     record_origin: "REAL",
     ...overrides,
   };
@@ -28,12 +32,14 @@ function decision(id: string, overrides: Partial<Decision> = {}): Decision {
 function review(id: string, ref: string, overrides: Partial<DecisionReview> = {}): DecisionReview {
   return {
     review_id: id,
+    case_id: `case_${ref}`,
     decision_ref: ref,
-    reviewer: "person_roei",
-    what_happened: "מה שקרה",
+    effect_ref: `eff_${ref}`,
     expectation_met: "met",
-    verification_tier: "self_attested",
-    causal_support: "happened_after",
+    causal_relation: "occurred_after",
+    alternative_explanations: [],
+    intervening_factors: [],
+    counterevidence_refs: [],
     reviewed_at: "2026-08-08T10:00:00+03:00",
     reviewed_early: false,
     record_origin: "REAL",
@@ -52,7 +58,7 @@ describe("projectReviewQueue", () => {
 
   it("marks a decision whose horizon is still ahead as awaiting, owing nothing", () => {
     const [entry] = projectReviewQueue(
-      [decision("d1", { review_due: "2026-09-01T09:00:00+03:00" })],
+      [decision("d1", { review_horizon: "2026-09-01T09:00:00+03:00" })],
       [],
       NOW,
     );
@@ -62,7 +68,7 @@ describe("projectReviewQueue", () => {
 
   it("never reports a negative overdue count", () => {
     const entries = projectReviewQueue(
-      [decision("d1", { review_due: "2026-12-01T09:00:00+03:00" })],
+      [decision("d1", { review_horizon: "2026-12-01T09:00:00+03:00" })],
       [],
       NOW,
     );
@@ -94,7 +100,7 @@ describe("projectReviewQueue", () => {
   });
 
   it("calls an unparseable horizon awaiting rather than due", () => {
-    const [entry] = projectReviewQueue([decision("d1", { review_due: "whenever" })], [], NOW);
+    const [entry] = projectReviewQueue([decision("d1", { review_horizon: "whenever" })], [], NOW);
     expect(entry.status).toBe("awaiting");
   });
 
@@ -110,9 +116,9 @@ describe("inQueueOrder", () => {
   it("puts what is due first, most overdue at the top", () => {
     const entries = projectReviewQueue(
       [
-        decision("recent", { review_due: "2026-08-09T09:00:00+03:00" }),
-        decision("ancient", { review_due: "2026-07-01T09:00:00+03:00" }),
-        decision("future", { review_due: "2026-09-09T09:00:00+03:00" }),
+        decision("recent", { review_horizon: "2026-08-09T09:00:00+03:00" }),
+        decision("ancient", { review_horizon: "2026-07-01T09:00:00+03:00" }),
+        decision("future", { review_horizon: "2026-09-09T09:00:00+03:00" }),
       ],
       [],
       NOW,
@@ -163,31 +169,32 @@ describe("summariseOutcomes", () => {
     expect(s).toMatchObject({ met: 1, not_met: 1, partly: 1, cannot_tell: 1 });
   });
 
-  it("counts surprises, and ignores an empty surprise field", () => {
+  it("counts contradicted expectations — met teaches nothing", () => {
     const entries = projectReviewQueue(
-      [decision("a"), decision("b")],
+      [decision("a"), decision("b"), decision("c")],
       [
-        review("r1", "a", { surprise: "לא ציפיתי שהחלק הקשה יהיה הניסוח" }),
-        review("r2", "b", { surprise: "   " }),
+        review("r1", "a", { expectation_met: "not_met" }),
+        review("r2", "b", { expectation_met: "partly" }),
+        review("r3", "c", { expectation_met: "met" }),
       ],
       NOW,
     );
-    expect(summariseOutcomes(entries).surprises).toBe(1);
+    expect(summariseOutcomes(entries).contradicted_expectations).toBe(2);
   });
 
   it("reports how far up the causal ladder the reviews actually reached", () => {
     const entries = projectReviewQueue(
       [decision("a"), decision("b")],
       [
-        review("r1", "a", { causal_support: "happened_after" }),
-        review("r2", "b", { causal_support: "plausibly_contributed" }),
+        review("r1", "a", { causal_relation: "occurred_after" }),
+        review("r2", "b", { causal_relation: "probably_contributed" }),
       ],
       NOW,
     );
     const s = summariseOutcomes(entries);
-    expect(s.by_causal_support.happened_after).toBe(1);
-    expect(s.by_causal_support.plausibly_contributed).toBe(1);
-    expect(s.by_causal_support.causally_supported).toBe(0);
+    expect(s.by_causal_relation.occurred_after).toBe(1);
+    expect(s.by_causal_relation.probably_contributed).toBe(1);
+    expect(s.by_causal_relation.causally_supported).toBe(0);
   });
 
   it("exposes no rate, score or average — counts only", () => {
@@ -201,6 +208,6 @@ describe("summariseOutcomes", () => {
   });
 
   it("is empty and honest with no records at all", () => {
-    expect(summariseOutcomes([])).toMatchObject({ total: 0, reviewed: 0, surprises: 0 });
+    expect(summariseOutcomes([])).toMatchObject({ total: 0, reviewed: 0, contradicted_expectations: 0 });
   });
 });

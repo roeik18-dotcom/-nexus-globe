@@ -13,9 +13,9 @@
  */
 import { useActionState } from "react";
 
-import { CAUSAL_SUPPORT, EXPECTATION_OUTCOMES } from "@/app/lib/philos/decision/decisionReview";
+import { EXPECTATION_OUTCOMES } from "@/app/lib/philos/decision/decisionReview";
 import { recordReviewFormAction, type ReviewFormState } from "@/app/lib/philos/decision/decisionActions";
-import { VERIFICATION_TIERS } from "@/app/lib/philos/decision/decision";
+import { CAUSAL_RELATION } from "@/app/lib/philos/decision/evidenceAxes";
 
 const OUTCOME_LABEL: Record<string, string> = {
   met: "כן, זה קרה",
@@ -24,29 +24,32 @@ const OUTCOME_LABEL: Record<string, string> = {
   cannot_tell: "עדיין אי אפשר לדעת",
 };
 
-const TIER_LABEL: Record<string, string> = {
-  self_attested: "אני אומר את זה — אישור עצמי מסומן",
-  measured: "יש מדידה, קבלה או צד שני",
-  independent: "אדם אחר בדק ואישר",
+/** The OUTCOME axis, shown for orientation only — it is DERIVED from the
+ *  canon Effect and its verification, never chosen on this form. */
+const LEVEL_LABEL: Record<string, string> = {
+  self_attested: "דיווח עצמי מסומן",
+  measured: "מדידה או תיעוד",
+  corroborated: "אושש בידי הצד השני",
+  independently_verified: "אומת בידי גורם עצמאי",
 };
 
-const SUPPORT_LABEL: Record<string, string> = {
-  happened_after: "זה קרה אחרי",
-  correlated: "יש קשר",
-  plausibly_contributed: "כנראה תרם",
+const RELATION_LABEL: Record<string, string> = {
+  occurred_after: "זה קרה אחרי",
+  associated_with: "יש קשר",
+  probably_contributed: "כנראה תרם",
   causally_supported: "נתמך סיבתית",
-  experimentally_shown: "הוכח בחזרה או בביקורת",
+  experimentally_demonstrated: "הודגם בחזרה או בביקורת",
 };
 
 export default function ReviewDecisionForm({
   decisionId,
   expectation,
-  requiredTier,
+  requiredLevel,
   hasAlternatives,
 }: {
   decisionId: string;
   expectation: string;
-  requiredTier: string;
+  requiredLevel: string;
   hasAlternatives: boolean;
 }) {
   const [state, formAction, pending] = useActionState<ReviewFormState, FormData>(
@@ -59,7 +62,7 @@ export default function ReviewDecisionForm({
       <div dir="rtl" style={S.done}>
         <div style={S.doneTitle}>הסקירה נרשמה</div>
         <p style={S.doneBody}>
-          נרשם: <b>{SUPPORT_LABEL[state.causal_support ?? "happened_after"]}</b>.
+          נרשם: <b>{RELATION_LABEL[state.causal_relation ?? "occurred_after"]}</b>.
           {state.capped ? " זה פחות ממה שביקשת — הראיה שהצגת לא מספיקה לדרגה גבוהה יותר." : null}
         </p>
       </div>
@@ -83,29 +86,32 @@ export default function ReviewDecisionForm({
 
       <Field label="האם הציפייה התממשה">
         <select name="expectation_met" defaultValue="cannot_tell" style={S.input}>
-          {EXPECTATION_OUTCOMES.map((o) => (
+          {EXPECTATION_OUTCOMES.map((o: string) => (
             <option key={o} value={o}>{OUTCOME_LABEL[o]}</option>
           ))}
         </select>
       </Field>
 
       <Field
-        label="מה הפתיע אותך"
-        hint="השדה הכי שימושי כאן. ציפייה שהתממשה לא מלמדת כלום; הפתעה היא המקום היחיד שבו משהו באמת מתעדכן."
+        label="מה עוד יכול להסביר את התוצאה"
+        hint="שורה לכל הסבר חלופי. בלי לפחות אחד אי אפשר לטעון ״נתמך סיבתית״ — אין למה להשוות."
       >
-        <textarea name="surprise" rows={2} style={S.input} />
+        <textarea name="alternative_explanations" rows={2} style={S.input} />
       </Field>
 
-      <Field
-        label="איך אתה יודע"
-        hint={`רמת הסיכון של ההחלטה הזו דורשת לפחות: ${TIER_LABEL[requiredTier] ?? requiredTier}`}
-      >
-        <select name="verification_tier" defaultValue="self_attested" style={S.input}>
-          {VERIFICATION_TIERS.map((t) => (
-            <option key={t} value={t}>{TIER_LABEL[t]}</option>
-          ))}
-        </select>
+      <Field label="מה עוד קרה באותו זמן" hint="גורמים מתערבים. שורה לכל אחד.">
+        <textarea name="intervening_factors" rows={2} style={S.input} />
       </Field>
+
+      {/* THE OUTCOME AXIS IS NOT A FIELD. It is derived from the canon Effect
+          and whatever verification that Effect carries — offering it here
+          would let a person type a level the records do not support, which is
+          the duplication this rebuild removed. The floor is shown so the
+          reason a causal rung is unavailable is legible. */}
+      <div style={S.expectation}>
+        <span style={S.expectationLabel}>רמת האימות הנדרשת לסיכון הזה</span>
+        <p style={S.expectationText}>{LEVEL_LABEL[requiredLevel] ?? requiredLevel}</p>
+      </div>
 
       <Field
         label="עד כמה ההחלטה עצמה גרמה לזה"
@@ -115,15 +121,19 @@ export default function ReviewDecisionForm({
             : "לא נרשמה חלופה בזמן ההחלטה, ולכן ״נתמך סיבתית״ אינו זמין כאן — אין למה להשוות."
         }
       >
-        <select name="causal_support" defaultValue="happened_after" style={S.input}>
-          {CAUSAL_SUPPORT.map((c) => (
-            <option key={c} value={c}>{SUPPORT_LABEL[c]}</option>
+        <select name="causal_relation" defaultValue="occurred_after" style={S.input}>
+          {CAUSAL_RELATION.map((c: string) => (
+            <option key={c} value={c}>{RELATION_LABEL[c]}</option>
           ))}
         </select>
       </Field>
 
       <Field label="חזרה או ביקורת, אם יש" hint="נדרש רק לדרגה הגבוהה ביותר. אפשר להשאיר ריק.">
         <input name="comparison_basis" style={S.input} />
+      </Field>
+
+      <Field label="טווח הזמן שנבדק" hint="אפשר להשאיר ריק.">
+        <input name="time_window" style={S.input} />
       </Field>
 
       <div style={S.actions}>
