@@ -86,6 +86,7 @@ import { selectClosableStates } from "@/app/lib/philos/day/closableStates";
 import { loadDomainStates as _loadDS } from "@/app/lib/philos/canon/domainStateStoreAccessor";
 import { resolveWritableDay } from "@/app/lib/philos/day/resolveWritableDay";
 import { dayId as _dayId } from "@/app/lib/philos/day/dayEvent";
+import { chainEvidenceFlags, loadEvidenceAndLearning } from "@/app/lib/philos/crossTerminal/loadEvidenceAndLearning";
 
 export const metadata = { title: "Philos — היום" };
 
@@ -148,14 +149,17 @@ export default async function HubPage({
   const orientationFrame = await loadRealOrientationFrame(personRef.person_id, viewedDate);
   /* The day's real chain, read from the projection this page already
      loaded — no second source, no second answer. */
+  /* EVIDENCE AND LEARNING — the one shared read (`loadEvidenceAndLearning`),
+     so no two terminals can answer "was this checked by anyone else?"
+     differently. */
+  const evidenceFacts = await loadEvidenceAndLearning(personRef.person_id);
   const dayPair = aeProjection.pairs.find((x) => x.action_origin === "REAL");
   const dayChain = {
     hasObservation: orientationFrame.resolved,
     hasStateT0: orientationFrame.resolved,
     hasAction: !!dayPair,
     hasEffect: !!dayPair?.effect_id,
-    hasVerifiedEvidence: false,
-    hasLearning: false,
+    ...chainEvidenceFlags(evidenceFacts, dayPair?.effect_id),
     ...(dayPair ? { action_id: dayPair.action_id } : {}),
     ...(dayPair?.effect_id ? { effect_id: dayPair.effect_id } : {}),
   };

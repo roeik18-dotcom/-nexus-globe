@@ -35,11 +35,15 @@ export default function DayChainSummary({ session }: { session: DaySession }) {
         {links.map((l, i) => {
           const n = l.field.value?.length ?? 0;
           const ok = l.field.value !== null;
+          /* A Learning that exists but rests on nothing independent is not
+             UNKNOWN — the record is right there. Saying UNKNOWN would erase
+             it; saying a count would imply it counts. It gets its own word. */
+          const legacy = !ok && l.field.status === "UNSUPPORTED_LEGACY";
           return (
             <span key={l.label} style={S.seg}>
               <span style={{ ...S.node, borderColor: ok ? "#34d399" : "#fbbf24", color: ok ? COLOR.text : "#fbbf24" }}>
                 {l.label}
-                <b style={S.count}>{ok ? n : "UNKNOWN"}</b>
+                <b style={S.count}>{ok ? n : legacy ? `${l.field.refs.length} ללא ראיה` : "UNKNOWN"}</b>
               </span>
               {i < links.length - 1 && <span style={S.arrow}>←</span>}
             </span>

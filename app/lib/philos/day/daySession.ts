@@ -367,6 +367,8 @@ export function projectDaySession(input: ProjectDaySessionInput): DaySession {
   const effectIds: string[] = [];
   const evidenceIds: string[] = [];
   const learningIds: string[] = [];
+  /** Real, recorded Learnings whose Effect carries no independent evidence. */
+  const unsupportedLegacyLearningIds: string[] = [];
   for (const entry of entries) {
     for (const eff of entry.effects) {
       // Real shapes, not guessed: EffectWithLearning = { effect: EffectRecord;
@@ -378,7 +380,17 @@ export function projectDaySession(input: ProjectDaySessionInput): DaySession {
       // A verified Effect is the checkable signal that evidence was accepted;
       // an unverified one is absence of evidence, never evidence of absence.
       if (eff.verified) evidenceIds.push(eff.effect.effect.effect_id);
-      for (const l of eff.learnings) learningIds.push(l.learning.learning_id);
+      /* A LEARNING IS ONLY SUPPORTED IF ITS EFFECT IS EVIDENCE.
+         Learnings recorded before that precondition existed are still real
+         records and are still listed — but they were derived from an Effect
+         nobody independent ever checked, so they cannot close this gate.
+         Dropping them would hide them; counting them would let the old
+         self-verified path close the day through the back door. They are
+         surfaced as UNSUPPORTED_LEGACY instead, which is what they are. */
+      for (const l of eff.learnings) {
+        if (eff.verified) learningIds.push(l.learning.learning_id);
+        else unsupportedLegacyLearningIds.push(l.learning.learning_id);
+      }
     }
   }
 
@@ -399,8 +411,18 @@ export function projectDaySession(input: ProjectDaySessionInput): DaySession {
 
   const learning_refs: DayField<string[]> =
     learningIds.length > 0
-      ? knownField(learningIds, { refs: learningIds, status: "RECORDED" })
-      : unknownField("no Learning satisfies canon's Effect+Evidence precondition");
+      ? knownField(learningIds, { refs: learningIds, status: "SUPPORTED" })
+      : unsupportedLegacyLearningIds.length > 0
+        /* Named, not silently absent: a Learning exists, and the reason it
+           does not count is a fact about it, not a missing record. */
+        ? {
+            ...unknownField(
+              `${unsupportedLegacyLearningIds.length} Learning(s) recorded without independent evidence — UNSUPPORTED_LEGACY`,
+            ),
+            refs: unsupportedLegacyLearningIds,
+            status: "UNSUPPORTED_LEGACY",
+          }
+        : unknownField("no Learning satisfies canon's Effect+Evidence precondition");
 
   /* THE DAY'S OWN RECORD IS THE ONLY SOURCE. The Event/Observation pair is
      recorded on the opening and RESOLVED here against the canon event store;
@@ -534,7 +556,9 @@ export function projectDaySession(input: ProjectDaySessionInput): DaySession {
       reason:
         learningIds.length > 0
           ? null
-          : "no Learning satisfies canon's Effect+Evidence precondition",
+          : unsupportedLegacyLearningIds.length > 0
+            ? `${unsupportedLegacyLearningIds.length} Learning(s) exist but rest on an Effect nobody independent verified — UNSUPPORTED_LEGACY`
+            : "no Learning satisfies canon's Effect+Evidence precondition",
     },
     {
       gate: "StateT1Available",

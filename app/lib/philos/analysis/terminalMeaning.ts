@@ -48,7 +48,51 @@ export interface TerminalMeaning {
 
 const NOT_YET = "טרם נרשם";
 
-export function terminalMeaning(
+/**
+ * EVIDENCE AND LEARNING ARE SAID ON EVERY TERMINAL, IN BOTH STATES.
+ *
+ * Not only where absence happens to be interesting. A reader who lands on one
+ * page must be able to tell, from that page, whether anything here was
+ * checked by anyone other than the person who reported it — and a page that
+ * simply omits the question reads as though the question does not apply.
+ *
+ * Written for a person, not for the schema: no `verifier_type`, no
+ * `EvidencePresent`, no field names. What a reader needs to know is who
+ * checked, and whether a conclusion was allowed to rest on it.
+ */
+function evidenceSentence(c: DayChain): string {
+  if (c.hasVerifiedEvidence) {
+    return "התוצאה אומתה בידי אדם אחר — לא מי שביצע את הפעולה, ולא מי שהתוצאה נוגעת אליו. זו ראיה.";
+  }
+  if (c.hasEffect) {
+    return "אין ראיה: התוצאה דווחה, אך איש מלבד המדווח לא בדק אותה. דיווח עצמי אינו אימות.";
+  }
+  return "אין ראיה, מפני שטרם נרשמה תוצאה שאפשר לאמת.";
+}
+
+function learningSentence(c: DayChain): string {
+  if (c.hasLearning) return "נרשמה מסקנה, והיא נשענת על אותה ראיה עצמאית.";
+  if (c.hasVerifiedEvidence) return "טרם נרשמה מסקנה, אף שקיימת ראיה שאפשר להסיק ממנה.";
+  return "לא נרשמה מסקנה. מסקנה נרשמת רק אחרי שאדם אחר אימת את התוצאה.";
+}
+
+/**
+ * The public reading. Each terminal states its own material, and then BOTH
+ * facts are appended here rather than inside the nine cases — so a new
+ * terminal cannot be added that quietly says nothing about either.
+ */
+export function terminalMeaning(t: MeaningTerminal, c: DayChain): TerminalMeaning {
+  const m = terminalMeaningBody(t, c);
+  const evidence = evidenceSentence(c);
+  const learning = learningSentence(c);
+  return {
+    ...m,
+    known: [...m.known, ...(c.hasVerifiedEvidence ? [evidence] : []), ...(c.hasLearning ? [learning] : [])],
+    unknown: [...m.unknown, ...(c.hasVerifiedEvidence ? [] : [evidence]), ...(c.hasLearning ? [] : [learning])],
+  };
+}
+
+function terminalMeaningBody(
   t: MeaningTerminal, c: DayChain,
 ): TerminalMeaning {
   const chainWord = c.hasEffect
@@ -70,12 +114,16 @@ export function terminalMeaning(
                after: "מכאן החומר נקרא בכל שאר המסופים — כל אחד שואל עליו שאלה אחרת." },
       known: [`הרצף שנרשם: ${chainWord}.`, "הפעולה נרשמה בהסכמה מפורשת שלך."],
       unknown: [
-        "אין ראיה עצמאית — התוצאה דווחה על ידך, ואיש לא אימת אותה.",
-        "לא נרשמה למידה, ולא נרשם מצב סיום ליום.",
+        "לא נרשם מצב סיום ליום.",
       ],
-      nextAction: c.hasEffect
-        ? { label: "רשום מצב סיום וסגור את היום", href: "/hub#day-closing-record" }
-        : { label: "רשום פעולה ליום הזה", href: "/marketplace#action" },
+      /* THE HONEST NEXT STEP, not the most convenient one. While an outcome
+         is reported but unchecked, the thing actually missing is a second
+         person — so that is what this offers, ahead of closing the day. */
+      nextAction: c.hasEffect && !c.hasVerifiedEvidence
+        ? { label: "אימות התוצאה בידי אדם אחר", href: "/marketplace#verify-effect" }
+        : c.hasEffect
+          ? { label: "רשום מצב סיום וסגור את היום", href: "/hub#day-closing-record" }
+          : { label: "רשום פעולה ליום הזה", href: "/marketplace#action" },
     };
 
     case "brain": return {
@@ -221,19 +269,28 @@ export function terminalMeaning(
       title: "מה נטען ומה באמת הוכח",
       examines: "המסוף הזה מפריד בין תוצאה שדווחה לבין ראיה שאומתה. אלה שני דברים שונים.",
       material: [
-        c.hasEffect ? "דווחה תוצאה אחת, על ידך." : `תוצאה — ${NOT_YET}.`,
-        "מקור הדיווח: אתה. אותו אדם שביצע את הפעולה.",
-        `ראיה מאומתת — ${NOT_YET}.`,
-        `למידה — ${NOT_YET}.`,
+        c.hasEffect ? "דווחה תוצאה אחת, בידי מי שביצע את הפעולה." : `תוצאה — ${NOT_YET}.`,
+        c.hasVerifiedEvidence
+          ? "נרשם אימות נפרד, בידי אדם אחר — ולכן התוצאה נחשבת ראיה."
+          : `ראיה מאומתת — ${NOT_YET}.`,
+        c.hasLearning ? "נרשמה מסקנה הנשענת על אותה ראיה." : `למידה — ${NOT_YET}.`,
       ],
       chain: { before: "התוצאה נרשמה בשוק, מקושרת לפעולה.",
-               after: "בלי ראיה קבילה, לא ניתן לרשום למידה — היא דורשת תוצאה וראיה יחד." },
-      known: ["התוצאה נרשמה ומקושרת לפעולה. זה קישור מתועד, לא הוכחה."],
-      unknown: [
-        "אין מאמת עצמאי. אישור עצמי אינו אימות — כשאותו אדם גם מבצע וגם מאשר, לא נוסף מידע חדש.",
-        "לכן התוצאה אינה נחשבת ראיה, והלמידה נשארת חסומה.",
-      ],
-      nextAction: null,
+               after: c.hasVerifiedEvidence
+                 ? "מכאן אפשר לרשום מסקנה — היא דורשת תוצאה וראיה יחד, ושתיהן קיימות."
+                 : "בלי ראיה קבילה, לא ניתן לרשום למידה — היא דורשת תוצאה וראיה יחד." },
+      known: c.hasVerifiedEvidence
+        ? ["התוצאה נרשמה, ואדם נפרד אישר אותה. הדיווח והבדיקה הם שתי רשומות של שני אנשים."]
+        : ["התוצאה נרשמה ומקושרת לפעולה. זה קישור מתועד, לא הוכחה."],
+      unknown: c.hasVerifiedEvidence
+        ? ["אימות מאשר שהתוצאה התרחשה. הוא אינו מוכיח שהפעולה היא שגרמה לה."]
+        : [
+            "אין מאמת עצמאי. אישור עצמי אינו אימות — כשאותו אדם גם מבצע וגם מאשר, לא נוסף מידע חדש.",
+            "לכן התוצאה אינה נחשבת ראיה, והלמידה נשארת חסומה.",
+          ],
+      nextAction: c.hasEffect && !c.hasVerifiedEvidence
+        ? { label: "אימות התוצאה בידי אדם אחר", href: "/marketplace#verify-effect" }
+        : null,
     };
   }
 }

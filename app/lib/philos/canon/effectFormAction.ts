@@ -45,7 +45,6 @@ export async function createEffectForCurrentUserCore(formData: FormData): Promis
   const statement = String(formData.get("statement") ?? "").trim();
   const method = String(formData.get("method") ?? "").trim();
   const concerns_subject_internal_state = formData.get("concerns_subject_internal_state") === "on";
-  const self_verified = formData.get("self_verified") === "on";
   const confidence = Number(formData.get("confidence"));
 
   if (!action_ref) return { ok: false, message: "action_ref is required — pick a real, already-recorded Action" };
@@ -58,15 +57,24 @@ export async function createEffectForCurrentUserCore(formData: FormData): Promis
   }
 
   const now = systemClock.now();
-  const outcome = { statement, provenance, verifier_type: "self" as const, confidence, time: now, method };
+  /* A CLAIM, AND ONLY A CLAIM.
+     `verifier_type: "self"` is honest here — the person reporting their own
+     outcome IS the self-report, and canon §17 treats a self-report as
+     sufficient authority for what it is. What was wrong was copying this same
+     object into `verified_outcome`: that turned "I say this happened" into
+     "this was checked" with a checkbox, in one submission, by one person.
+     Verification is now a separate act, by a different signed-in person, in
+     its own store — see `verifyEffectAction.ts`. */
+  const claimed_outcome = { statement, provenance, verifier_type: "self" as const, confidence, time: now, method };
 
   const effect: Effect = {
     effect_id: createIdGenerator().next("effect"),
     action_ref,
     subject: viewer.subject_id,
     concerns_subject_internal_state,
-    claimed_outcome: outcome,
-    verified_outcome: self_verified ? { ...outcome } : undefined,
+    claimed_outcome,
+    /* Never set at claim time. Left absent so the record says, truthfully,
+       "not yet verified" until an independent verification exists. */
     context,
     time: now,
     provenance,

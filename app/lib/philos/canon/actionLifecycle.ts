@@ -55,7 +55,10 @@
 import { type Action, validateAction } from "./action";
 import { actionStore, loadActions } from "./actionStoreAccessor";
 import type { ActionRecord } from "./actionStore";
-import { type Effect, isEffectVerified } from "./effect";
+import { type Effect } from "./effect";
+import { findIndependentVerification } from "./independentEvidence";
+import type { OutcomeVerification } from "./outcomeVerification";
+import { loadVerifications } from "./outcomeVerificationStoreAccessor";
 import { effectStore, findEffectsForAction, loadEffects } from "./effectStoreAccessor";
 import type { EffectRecord } from "./effectStore";
 import { type DeriveLearningParams, deriveLearning } from "./learning";
@@ -255,6 +258,16 @@ export type EffectVerificationState = "no_effect_recorded" | "effect_claimed_onl
 export interface EffectWithLearning {
   effect: EffectRecord;
   verified: boolean;
+  /**
+   * The verification that made this Effect evidence, when one exists.
+   *
+   * Carried alongside `verified` because surfaces need to SHOW the check, not
+   * just report that one happened — who, how, when. Readers used to take this
+   * from `effect.verified_outcome`, which is now never set at claim time, so a
+   * reader still looking there would render "unverified" beside a `verified:
+   * true` flag from the same object.
+   */
+  verification?: OutcomeVerification;
   learnings: LearningRecord[];
 }
 
@@ -298,6 +311,10 @@ export async function buildActionLifecycleSummary(subject: string | undefined): 
   const allActions = await loadActions();
   const ownActions = allActions.filter((r) => r.action.owner === subject);
 
+  /* Verifications live in their own store because an Effect is written once
+     and never rewritten. Loaded once here, then joined per Effect. */
+  const verifications = await loadVerifications();
+
   const entries: ActionLifecycleEntry[] = [];
   let learningsWithStatePrime = 0;
 
@@ -307,7 +324,20 @@ export async function buildActionLifecycleSummary(subject: string | undefined): 
     for (const effectRecord of effectRecords) {
       const learnings = await findLearningsForEffect(effectRecord.effect.effect_id);
       learningsWithStatePrime += learnings.filter((l) => l.learning.result.kind === "state_prime").length;
-      effects.push({ effect: effectRecord, verified: isEffectVerified(effectRecord.effect), learnings });
+      /* `verified` means EVIDENCE — an independent person checked this. It
+         deliberately does not consult `effect.verified_outcome`, which the
+         reporter could once set on themselves in the same submission. */
+      const found = findIndependentVerification(
+        effectRecord.effect,
+        actionRecord.action.owner,
+        verifications,
+      );
+      effects.push({
+        effect: effectRecord,
+        verified: found !== undefined,
+        ...(found ? { verification: found.verification } : {}),
+        learnings,
+      });
     }
     entries.push({ action: actionRecord, effects, verification_state: classify(effects) });
   }

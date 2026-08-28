@@ -94,6 +94,7 @@ import { loadActionEffectProjection } from "@/app/lib/philos/crossTerminal/loadA
 import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel";
 import { loadRealOrientationFrame } from "@/app/lib/philos/analysis/loadRealOrientationFrame";
 import RealOrientationPanel from "@/app/lib/philos/analysis/RealOrientationPanel";
+import { chainEvidenceFlags, loadEvidenceAndLearning } from "@/app/lib/philos/crossTerminal/loadEvidenceAndLearning";
 
 /**
  * Real time-range counts over the real canon Observation log — computed
@@ -186,14 +187,17 @@ export default async function DynamicsPage({
   const orientationFrame = await loadRealOrientationFrame(personRef.person_id, todayIn(systemClock));
   /* The day's real chain, read from the projection this page already
      loaded — no second source, no second answer. */
+  /* EVIDENCE AND LEARNING — the one shared read (`loadEvidenceAndLearning`),
+     so no two terminals can answer "was this checked by anyone else?"
+     differently. */
+  const evidenceFacts = await loadEvidenceAndLearning(personRef.person_id);
   const dayPair = aeProjection.pairs.find((x) => x.action_origin === "REAL");
   const dayChain = {
     hasObservation: orientationFrame.resolved,
     hasStateT0: orientationFrame.resolved,
     hasAction: !!dayPair,
     hasEffect: !!dayPair?.effect_id,
-    hasVerifiedEvidence: false,
-    hasLearning: false,
+    ...chainEvidenceFlags(evidenceFacts, dayPair?.effect_id),
     ...(dayPair ? { action_id: dayPair.action_id } : {}),
     ...(dayPair?.effect_id ? { effect_id: dayPair.effect_id } : {}),
   };

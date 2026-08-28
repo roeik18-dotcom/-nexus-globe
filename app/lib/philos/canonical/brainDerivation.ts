@@ -142,8 +142,12 @@ export interface BrainDerivation {
   next_action: { label: string; reason: string } | null;
 }
 
-function describeVerification(v: { statement: string; method: string } | undefined, label: "VERIFIED" | "CLAIMED"): string {
-  return `[${label}] ${v!.statement} (${v!.method})`;
+/* No non-null assertion. The caller once guaranteed a value here by checking
+   `verified`, which stopped guaranteeing it the moment verification moved into
+   its own record — and the `!` turned that into a runtime crash instead of a
+   type error. An absent verification is now a statable outcome. */
+function describeVerification(v: { statement: string; method: string } | undefined, label: "VERIFIED" | "CLAIMED"): string | null {
+  return v ? `[${label}] ${v.statement} (${v.method})` : null;
 }
 
 /** Config-review markers — traced to a real `CanonicalRef` resolution's
@@ -229,19 +233,21 @@ export function buildBrainDerivation(params: {
 
   const changes: BrainChangeEntry[] = lifecycle.actions.map((entry) => {
     const primaryEffect = entry.effects[0];
-    const why_it_changed = primaryEffect?.effect.effect.verified_outcome
-      ? primaryEffect.effect.effect.verified_outcome.statement
-      : null;
+    /* THE VERIFICATION IS ITS OWN RECORD NOW. `verified_outcome` is kept as a
+       fallback only so Effects written before the separate store still read
+       correctly; nothing new ever sets it. */
+    const verification = primaryEffect?.verification ?? primaryEffect?.effect.effect.verified_outcome;
+    const why_it_changed = primaryEffect?.verified && verification ? verification.statement : null;
     const evidence = primaryEffect
       ? primaryEffect.verified
-        ? describeVerification(primaryEffect.effect.effect.verified_outcome, "VERIFIED")
+        ? describeVerification(verification, "VERIFIED")
         : describeVerification(primaryEffect.effect.effect.claimed_outcome, "CLAIMED")
       : null;
     // Same citation, structured — the one `OutcomeVerification` above, with
     // its own fields kept rather than dropped into a display string.
     const citedVerification = primaryEffect
       ? primaryEffect.verified
-        ? primaryEffect.effect.effect.verified_outcome!
+        ? verification ?? null
         : primaryEffect.effect.effect.claimed_outcome
       : null;
     const evidence_record: BrainEvidenceRecord | null = primaryEffect && citedVerification

@@ -480,6 +480,11 @@ function ActionEffectLearningFlow({ selected }: { selected: FoundContext }) {
   const effectEntry = entry.effects.length > 0
     ? [...entry.effects].sort((a, b) => b.effect.recorded_at.localeCompare(a.effect.recorded_at))[0]
     : null;
+  /* Fallback to `verified_outcome` only for Effects written before
+     verification became its own record. */
+  const observedVerification = effectEntry?.verified
+    ? effectEntry.verification ?? effectEntry.effect.effect.verified_outcome ?? null
+    : null;
   const learningRecord = effectEntry && effectEntry.learnings.length > 0
     ? [...effectEntry.learnings].sort((a, b) => b.recorded_at.localeCompare(a.recorded_at))[0]
     : null;
@@ -532,12 +537,15 @@ function ActionEffectLearningFlow({ selected }: { selected: FoundContext }) {
           {effectEntry ? <div style={stageTime}>{effectEntry.effect.effect.claimed_outcome.time}</div> : null}
         </div>
         <div style={arrow}>→</div>
-        <div style={stageBox(!!effectEntry?.effect.effect.verified_outcome, "#34d399")}>
+        {/* The Effect's own `verified_outcome` is no longer written at claim
+            time, so reading it here would report every checked outcome as
+            unchecked. `verified` is the fact; `verification` is the record. */}
+        <div style={stageBox(!!(effectEntry?.verified && observedVerification), "#34d399")}>
           <div style={stageLabel}>OBSERVED EFFECT</div>
           <div style={stageValue}>
-            {effectEntry?.effect.effect.verified_outcome ? effectEntry.effect.effect.verified_outcome.statement : "לא ידוע — לא אומת"}
+            {observedVerification ? observedVerification.statement : "לא ידוע — לא אומת"}
           </div>
-          {effectEntry?.effect.effect.verified_outcome ? <div style={stageTime}>{effectEntry.effect.effect.verified_outcome.time}</div> : null}
+          {observedVerification ? <div style={stageTime}>{observedVerification.time}</div> : null}
         </div>
         <div style={arrow}>→</div>
         <div style={stageBox(!!learningRecord?.delta, "#a78bfa")}>

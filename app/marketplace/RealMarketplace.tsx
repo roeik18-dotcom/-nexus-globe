@@ -44,10 +44,14 @@ export default function RealMarketplace({
   realGroup,
   groupRelations,
   realGroupOps,
+  verifiedEffectIds = [],
 }: {
   needs: NeedRecord[];
   offers: OfferRecord[];
   actions: ActionRecord[];
+  /** Effects an independent person verified — from the one shared read, not
+   *  from `effect.verified_outcome`, which the reporter could once set. */
+  verifiedEffectIds?: readonly string[];
   effects: EffectRecord[];
   identityLink: ShellIdentityLink;
   /** The REAL Value Group's name/central value — page.tsx already projects
@@ -88,7 +92,7 @@ export default function RealMarketplace({
   const realizedMatches = actions.filter((a) =>
     a.action.inputs.some((id) => needIds.has(id)) && a.action.inputs.some((id) => offerIds.has(id)));
   const lastMatch = last(realizedMatches, (a) => a.recorded_at);
-  const evidence = effects.filter((e) => e.effect.verified_outcome);
+  const evidence = effects.filter((e) => verifiedEffectIds.includes(e.effect.effect_id));
   const lastEvidence = last(evidence, (e) => e.recorded_at);
 
   const flowStages: FlowStage[] = [
@@ -135,11 +139,11 @@ export default function RealMarketplace({
     {
       key: "evidence", label: "EVIDENCE", gloss: "מה מאומת", count: evidence.length, href: "#result",
       sub: `מתוך ${effects.length} claims`,
-      latest: lastEvidence?.effect.verified_outcome
-        ? { text: lastEvidence.effect.verified_outcome.statement, owner: `${lastEvidence.effect.verified_outcome.verifier_type} · ${lastEvidence.effect.subject}`, time: lastEvidence.effect.verified_outcome.time }
+      latest: lastEvidence
+        ? { text: lastEvidence.effect.claimed_outcome.statement, owner: `אומת בנפרד · ${lastEvidence.effect.subject}`, time: lastEvidence.recorded_at }
         : null,
       provenance: "CANON",
-      note: lastEvidence ? undefined : effects.length > 0 ? "Effects נטענים בלבד — אין verified_outcome" : "אין Effect לאמת",
+      note: lastEvidence ? undefined : effects.length > 0 ? "תוצאות דווחו בלבד — אף אחת לא אומתה בידי אדם אחר" : "אין Effect לאמת",
     },
   ];
 
@@ -238,8 +242,8 @@ export default function RealMarketplace({
             {effects.map((e) => (
               <a key={e.effect.effect_id} href={`?ctx=${encodeURIComponent(`effect:${e.effect.effect_id}`)}`} style={{ ...S.listRow, textDecoration: "none", color: "inherit" }}>
                 <span style={S.listTitle}>{e.effect.claimed_outcome.statement}</span>
-                <span style={{ ...S.listMeta, color: e.effect.verified_outcome ? "#34d399" : "#6c86b5" }}>
-                  {e.effect.verified_outcome ? "VERIFIED" : "claimed only"}
+                <span style={{ ...S.listMeta, color: verifiedEffectIds.includes(e.effect.effect_id) ? "#34d399" : "#6c86b5" }}>
+                  {verifiedEffectIds.includes(e.effect.effect_id) ? "VERIFIED" : "claimed only"}
                 </span>
               </a>
             ))}

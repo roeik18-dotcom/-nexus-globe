@@ -14,6 +14,8 @@ import { _setEffectStore } from "../effectStoreAccessor";
 import type { OutcomeVerification } from "../outcomeVerification";
 import { InMemoryLearningStore } from "../learningStore";
 import { _setLearningStore } from "../learningStoreAccessor";
+import { InMemoryVerificationStore } from "../outcomeVerificationStore";
+import { _setVerificationStore } from "../outcomeVerificationStoreAccessor";
 import type { CellState } from "../cellState";
 import {
   ActionReferentialIntegrityError,
@@ -35,6 +37,18 @@ function verification(overrides: Partial<OutcomeVerification> = {}): OutcomeVeri
     method: "self_report_checkin",
     ...overrides,
   };
+}
+
+/** An INDEPENDENT verification: a different named person, an outside kind,
+ *  and — because `baseEffect` concerns the subject's internal state — the
+ *  subject's explicit consent, per canon §17. */
+function independentVerification(overrides: Partial<OutcomeVerification> = {}): OutcomeVerification {
+  return verification({
+    verifier_type: "counterparty",
+    verifier_id: "person_someone_else",
+    subject_consent: true,
+    ...overrides,
+  });
 }
 
 function baseAction(overrides: Partial<Action> = {}): Action {
@@ -69,10 +83,14 @@ function baseEffect(overrides: Partial<Effect> = {}): Effect {
 const priorState: CellState = { domain: "E", frame: "I", level: -2, stability: 0.4 };
 const candidateStatePrime: CellState = { domain: "E", frame: "I", level: -1, stability: 0.5 };
 
+let verificationStore: InMemoryVerificationStore;
+
 beforeEach(() => {
   _setActionStore(new InMemoryActionStore());
   _setEffectStore(new InMemoryEffectStore());
   _setLearningStore(new InMemoryLearningStore());
+  verificationStore = new InMemoryVerificationStore();
+  _setVerificationStore(verificationStore);
 });
 
 describe("recordAction", () => {
@@ -195,9 +213,18 @@ describe("buildActionLifecycleSummary — NO VERIFIED EFFECT != NO EFFECT, CHRON
     await recordEffect(baseEffect({ effect_id: "effect_claimed", action_ref: "action_claimed" }), "2026-08-15T12:00:01Z");
     await recordAction(baseAction({ action_id: "action_verified" }), "2026-08-15T10:00:03Z");
     await recordEffect(
-      baseEffect({ effect_id: "effect_verified", action_ref: "action_verified", verified_outcome: verification() }),
+      baseEffect({ effect_id: "effect_verified", action_ref: "action_verified" }),
       "2026-08-15T12:00:02Z",
     );
+    // EVIDENCE IS A SEPARATE RECORD BY A SEPARATE PERSON. Setting
+    // `verified_outcome` on the Effect itself no longer makes it verified —
+    // that field could be written by the reporter in the same submission.
+    await verificationStore.append([{
+      verification_id: "verification_1",
+      effect_id: "effect_verified",
+      recorded_at: "2026-08-15T13:00:00Z",
+      verification: independentVerification(),
+    }]);
 
     const summary = await buildActionLifecycleSummary("person_test_x");
     expect(summary.counts.actions_total).toBe(3);

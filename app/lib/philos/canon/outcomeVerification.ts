@@ -55,6 +55,18 @@ export interface OutcomeVerification {
    *  the subject's own internal state and `verifier_type !== "self"` — see
    *  `effect.ts::isEffectVerified`. */
   subject_consent?: boolean;
+  /**
+   * WHO VERIFIED. Optional, because every verification written before this
+   * field existed has no answer and must not be given one retroactively.
+   *
+   * `verifier_type` says what KIND of verification this is; it does not say
+   * who performed it, so nothing could tell an independent check from a
+   * person confirming their own work. A record claiming `third_party` while
+   * the person who acted also wrote it is not third-party in any sense that
+   * matters. This field is what makes that distinguishable — and it is set by
+   * the server from the authenticated viewer, never by a form.
+   */
+  verifier_id?: string;
 }
 
 export type OutcomeVerificationError =
@@ -64,7 +76,8 @@ export type OutcomeVerificationError =
   | { field: "confidence"; reason: "not_a_probability" }
   | { field: "time"; reason: "invalid_or_no_offset" }
   | { field: "method"; reason: "empty" }
-  | { field: "subject_consent"; reason: "not_a_boolean_if_present" };
+  | { field: "subject_consent"; reason: "not_a_boolean_if_present" }
+  | { field: "verifier_id"; reason: "empty_if_present" };
 
 export interface ValidationResult {
   valid: boolean;
@@ -109,6 +122,13 @@ export function validateOutcomeVerification(v: OutcomeVerification): ValidationR
 
   if (v.subject_consent !== undefined && typeof v.subject_consent !== "boolean") {
     errors.push({ field: "subject_consent", reason: "not_a_boolean_if_present" });
+  }
+  /* Absent is legitimate — records predating the field carry no verifier and
+     must not be given one. Present-but-empty is a claim to identify someone
+     while naming nobody, which is worse than saying nothing. */
+  if (v.verifier_id !== undefined
+      && (typeof v.verifier_id !== "string" || v.verifier_id.trim() === "")) {
+    errors.push({ field: "verifier_id", reason: "empty_if_present" });
   }
 
   return { valid: errors.length === 0, errors };

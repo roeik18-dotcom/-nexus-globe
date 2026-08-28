@@ -45,6 +45,7 @@ import { resolvePersonContext } from "@/app/lib/philos/person/personContext";
 import MatchActionFlow from "./MatchActionFlow";
 import OpportunityCandidates from "./OpportunityCandidates";
 import CreateEffectForm from "@/app/hub/CreateEffectForm";
+import VerifyEffectForm from "@/app/hub/VerifyEffectForm";
 import CreateLearningForm from "@/app/hub/CreateLearningForm";
 import { loadPhilosEvents } from "@/app/lib/philos-event-store";
 import { systemClock, todayIn } from "@/app/lib/philos/eventStore";
@@ -63,6 +64,7 @@ import { loadActionEffectProjection } from "@/app/lib/philos/crossTerminal/loadA
 import ActionEffectPanel from "@/app/lib/philos/crossTerminal/ActionEffectPanel";
 import { loadRealOrientationFrame } from "@/app/lib/philos/analysis/loadRealOrientationFrame";
 import RealOrientationPanel from "@/app/lib/philos/analysis/RealOrientationPanel";
+import { chainEvidenceFlags, loadEvidenceAndLearning } from "@/app/lib/philos/crossTerminal/loadEvidenceAndLearning";
 
 export const metadata = { title: "Marketplace — Philos" };
 
@@ -162,14 +164,17 @@ export default async function MarketplacePage({
   const orientationFrame = await loadRealOrientationFrame(viewer.subject_id, todayIn(systemClock));
   /* The day's real chain, read from the projection this page already
      loaded — no second source, no second answer. */
+  /* EVIDENCE AND LEARNING — the one shared read (`loadEvidenceAndLearning`),
+     so no two terminals can answer "was this checked by anyone else?"
+     differently. */
+  const evidenceFacts = await loadEvidenceAndLearning(viewer.subject_id);
   const dayPair = aeProjection.pairs.find((x) => x.action_origin === "REAL");
   const dayChain = {
     hasObservation: orientationFrame.resolved,
     hasStateT0: orientationFrame.resolved,
     hasAction: !!dayPair,
     hasEffect: !!dayPair?.effect_id,
-    hasVerifiedEvidence: false,
-    hasLearning: false,
+    ...chainEvidenceFlags(evidenceFacts, dayPair?.effect_id),
     ...(dayPair ? { action_id: dayPair.action_id } : {}),
     ...(dayPair?.effect_id ? { effect_id: dayPair.effect_id } : {}),
   };
@@ -394,6 +399,7 @@ export default async function MarketplacePage({
 
       <RealMarketplace
         needs={mineNeeds} offers={mineOffers} actions={mineActions} effects={mineEffects} identityLink={identityLink}
+        verifiedEffectIds={evidenceFacts.verified_effect_ids}
         realGroup={philosGroupsRealView ? { name: philosGroupsRealView.name, central_value: philosGroupsRealView.central_value } : undefined}
         realGroupOps={philosGroupsRealView ? {
           group_id: philosGroupsRealView.group_id,
@@ -490,6 +496,22 @@ export default async function MarketplacePage({
           actionOptions={actions
             .filter((a) => a.action.owner === personRef.person_id)
             .map((a) => ({ action_id: a.action.action_id, label: `${a.action.type} · ${a.action.reversibility} (${a.action.action_id.slice(0, 8)}…)` }))}
+        />
+        {/* VERIFICATION SITS BETWEEN REPORTING AND CONCLUDING, because that
+            is where it belongs in the real order: an outcome is reported, a
+            different person checks it, and only then may a conclusion rest on
+            it. Every recorded Effect is offered — including this viewer's
+            own, which the server will refuse — so the reason a person cannot
+            verify their own outcome is visible rather than hidden by an
+            empty list. */}
+        <VerifyEffectForm
+          effects={effects
+            .filter((e) => !evidenceFacts.verified_effect_ids.includes(e.effect.effect_id))
+            .map((e) => ({
+              effect_id: e.effect.effect_id,
+              concerns_subject_internal_state: e.effect.concerns_subject_internal_state,
+              label: `${e.effect.claimed_outcome?.statement ?? e.effect.effect_id} · ${e.effect.time.slice(0, 10)}`,
+            }))}
         />
         <CreateLearningForm
           effectOptions={effects

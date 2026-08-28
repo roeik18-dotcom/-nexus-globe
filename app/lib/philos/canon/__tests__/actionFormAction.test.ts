@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import { _setActionStore } from "../actionStoreAccessor";
+import { _setPhilosEventStore } from "@/app/lib/philos-event-store";
 import { InMemoryActionStore } from "../actionStore";
 import { createActionForCurrentUserCore } from "../actionFormAction";
 import { REAL_CURRENT_SUBJECT } from "@/app/lib/philos/subjectRegistry";
@@ -22,10 +26,42 @@ const VALID = {
   provenance: "self-initiated via /marketplace",
 };
 
+/**
+ * AN ACTION IS ONLY WRITABLE INTO AN OPEN DAY. The writer resolves the day
+ * itself (`resolveWritableDay`) rather than trusting a `day_ref` from the
+ * form, so every accepting case here has to open one — seeded as a real
+ * `day.opened` event in an isolated temp directory, never a stub.
+ */
+const OPENED_DAY = JSON.stringify({
+  event_id: "ev_open_day", actor_id: "p_you", entity_type: "person",
+  entity_id: "p_you", event_type: "day.opened", value_tags: [],
+  timestamp: "2026-08-27T06:00:00.000Z", visibility: "private", caused_by: [],
+  payload: {
+    day_id: `day_2026-08-27_${REAL_CURRENT_SUBJECT}`, subject_id: REAL_CURRENT_SUBJECT,
+    intention: "i", context: "c",
+    state_t0_refs: [], carry_forward_refs: [], consent: true, sourceRefs: [],
+  },
+});
+
 describe("createActionForCurrentUserCore — real Action creation (LOOP 5)", () => {
   let store: InMemoryActionStore;
-  beforeEach(() => { store = new InMemoryActionStore(); _setActionStore(store); });
-  afterEach(() => { _setActionStore(null); });
+  let dir: string;
+  let prevCanon: string | undefined, prevData: string | undefined;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), "philos-actionform-"));
+    prevCanon = process.env.CANON_DATA_DIR; prevData = process.env.PHILOS_DATA_DIR;
+    process.env.CANON_DATA_DIR = dir; process.env.PHILOS_DATA_DIR = dir;
+    writeFileSync(join(dir, "philos-events.jsonl"), OPENED_DAY + "\n", "utf8");
+    _setPhilosEventStore(null);
+    store = new InMemoryActionStore(); _setActionStore(store);
+  });
+  afterEach(() => {
+    if (prevCanon === undefined) delete process.env.CANON_DATA_DIR; else process.env.CANON_DATA_DIR = prevCanon;
+    if (prevData === undefined) delete process.env.PHILOS_DATA_DIR; else process.env.PHILOS_DATA_DIR = prevData;
+    _setActionStore(null); _setPhilosEventStore(null);
+    rmSync(dir, { recursive: true, force: true });
+  });
 
   it("rejects when consent is not checked — the CONSENT gate is never fabricated true", async () => {
     const result = await createActionForCurrentUserCore(formData(VALID));

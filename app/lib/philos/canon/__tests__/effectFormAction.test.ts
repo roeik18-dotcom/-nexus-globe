@@ -63,7 +63,13 @@ describe("createEffectForCurrentUserCore — real Effect creation (LOOP 6)", () 
     expect(stored[0].effect.verified_outcome).toBeUndefined();
   });
 
-  it("sets a real self-verified_outcome when self_verified is checked — self is always sufficient authority (canon §17)", async () => {
+  // THE SELF-VERIFICATION SHORTCUT IS GONE, AND STAYS GONE.
+  // This form once copied the claimed outcome into `verified_outcome` when a
+  // `self_verified` checkbox was ticked, so one person could report an
+  // outcome and certify it in a single submission. Submitting that field now
+  // does nothing at all — asserted here rather than merely deleted, because a
+  // deleted test cannot catch the shortcut being reintroduced.
+  it("ignores a submitted self_verified field entirely — a reporter cannot verify their own outcome", async () => {
     const storedAction = await recordAction(
       { action_id: "action_3", type: "non_transfer", owner: REAL_CURRENT_SUBJECT, mechanism_scope: "self_regulation", consent: true, inputs: [], reversibility: "reversible", time: new Date().toISOString(), provenance: "test" },
       new Date().toISOString(),
@@ -71,6 +77,8 @@ describe("createEffectForCurrentUserCore — real Effect creation (LOOP 6)", () 
     const result = await createEffectForCurrentUserCore(formData({ ...VALID_EFFECT, action_ref: storedAction.action.action_id, self_verified: "on" }));
     expect(result.ok).toBe(true);
     const stored = await effectStore.load();
-    expect(stored[0].effect.verified_outcome?.verifier_type).toBe("self");
+    expect(stored[0].effect.verified_outcome).toBeUndefined();
+    // The claim itself is still recorded, and still honestly labelled a self-report.
+    expect(stored[0].effect.claimed_outcome.verifier_type).toBe("self");
   });
 });

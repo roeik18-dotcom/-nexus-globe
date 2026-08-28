@@ -3,10 +3,9 @@
 /**
  * LOOP 6 (EFFECT/EVIDENCE) — the acquisition path for real Effect
  * creation, referencing one of person_roei's own real Actions.
- * `self_verified` maps to `verifier_type: "self"` on `verified_outcome` —
- * canon §17's own rule ("self is always sufficient authority"), not a
- * workaround. Leaving it unchecked keeps the Effect honestly
- * `effect_claimed_only`.
+ * This form records a CLAIM: what the person says happened. It cannot record
+ * a verification, and no longer offers to — verification is a separate act by
+ * a separate signed-in person (`verifyEffectAction.ts`).
  */
 import { useState, useTransition } from "react";
 import { createEffectForCurrentUser, type CreateEffectResult } from "@/app/lib/philos/canon/effectFormAction";
@@ -71,17 +70,14 @@ export default function CreateEffectForm({
       <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
         <input type="checkbox" name="concerns_subject_internal_state" /> concerns_subject_internal_state — האפקט נוגע במצב הפנימי שלי
       </label>
-      <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
-        <input type="checkbox" name="self_verified" /> self_verified — אני מאשר/ת שהתוצאה אכן קרתה בפועל
-      </label>
-      {/* WHAT TICKING THAT BOX IS WORTH. `verifier_type` is hardcoded "self"
-          in the writer, so the same person who claims the outcome is the one
-          confirming it. That is self-report, and calling it evidence on screen
-          would repeat exactly the defect the identity tier work removed. */}
+      {/* THE SELF-CONFIRMATION CHECKBOX WAS REMOVED, NOT HIDDEN.
+          It copied this same claim into `verified_outcome`, so one person
+          could report an outcome and certify it in a single submission. */}
       <div data-effect-evidence-note style={{ fontSize: 12, color: "#8fa3c9", lineHeight: 1.5 }}>
-        ללא סימון: <b>תוצאה דווחה ונקשרה לפעולה</b> — טרם קיימת ראיה קבילה, ואין אימות עצמאי.
-        עם סימון: זהו <b>אישור עצמי</b> של מדווח התוצאה בלבד (verifier_type = self),
-        לא ראיה עצמאית ולא אימות של גורם חיצוני.
+        מה שנרשם כאן הוא <b>דיווח על מה שקרה</b> — לא ראיה.
+        כדי שהתוצאה תיחשב ראיה, אדם אחר צריך להיכנס למערכת ולאמת אותה בנפרד —
+        אדם שאינו מבצע הפעולה ואינו מי שהתוצאה נוגעת אליו.
+        אישור עצמי אינו אימות, ולכן הוא אינו מוצע כאן.
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <button type="submit" disabled={pending} style={btnStyle}>{pending ? "רושם…" : "רשום אפקט · RECORD EFFECT"}</button>

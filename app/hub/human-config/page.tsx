@@ -56,6 +56,7 @@ import { loadActions as _ldA } from "@/app/lib/philos/canon/actionStoreAccessor"
 import { loadEffects as _ldE } from "@/app/lib/philos/canon/effectStoreAccessor";
 import { isActionAdmissible as _aOK } from "@/app/lib/philos/canon/actionStore";
 import { isEffectAdmissible as _eOK } from "@/app/lib/philos/canon/effectStore";
+import { chainEvidenceFlags, loadEvidenceAndLearning } from "@/app/lib/philos/crossTerminal/loadEvidenceAndLearning";
 
 export const metadata = { title: "Philos — Human Config" };
 
@@ -86,13 +87,16 @@ export default async function HumanConfigPage({
 
   const hcProj = await loadActionEffectProjection(viewer.subject_id);
 
+  /* EVIDENCE AND LEARNING — the one shared read, same as every other
+     terminal, so this page cannot answer the question differently. */
+  const evidenceFacts = await loadEvidenceAndLearning(viewer.subject_id);
   const hcPair = hcProj.pairs.find((x) => x.action_origin === "REAL");
 
   const hcChain = { hasObservation: hcFrame.resolved, hasStateT0: hcFrame.resolved,
 
     hasAction: !!hcPair, hasEffect: !!hcPair?.effect_id,
 
-    hasVerifiedEvidence: false, hasLearning: false,
+    ...chainEvidenceFlags(evidenceFacts, hcPair?.effect_id),
 
     ...(hcPair ? { action_id: hcPair.action_id } : {}),
 

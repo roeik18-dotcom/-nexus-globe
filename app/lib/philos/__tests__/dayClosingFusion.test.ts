@@ -15,6 +15,8 @@ import { _setEffectStore } from "../canon/effectStoreAccessor";
 import type { OutcomeVerification } from "../canon/outcomeVerification";
 import { InMemoryLearningStore } from "../canon/learningStore";
 import { _setLearningStore } from "../canon/learningStoreAccessor";
+import { InMemoryVerificationStore } from "../canon/outcomeVerificationStore";
+import { _setVerificationStore } from "../canon/outcomeVerificationStoreAccessor";
 import type { CellState } from "../canon/cellState";
 import { recordAction, recordEffect, recordLearning, buildActionLifecycleSummary } from "../canon/actionLifecycle";
 import type { NeedRecord } from "../canon/needStore";
@@ -96,10 +98,14 @@ const candidateStatePrime: CellState = { domain: "E", frame: "I", level: -1, sta
 
 const TODAY = "2026-08-15";
 
+let verificationStore: InMemoryVerificationStore;
+
 beforeEach(() => {
   _setActionStore(new InMemoryActionStore());
   _setEffectStore(new InMemoryEffectStore());
   _setLearningStore(new InMemoryLearningStore());
+  verificationStore = new InMemoryVerificationStore();
+  _setVerificationStore(verificationStore);
 });
 
 describe("buildDayClosingQuestions — every real question class", () => {
@@ -125,6 +131,14 @@ describe("buildDayClosingQuestions — every real question class", () => {
     await recordAction(baseAction(), "2026-08-15T10:00:01Z");
     const stmt = verification();
     await recordEffect(baseEffect({ verified_outcome: stmt }), "2026-08-15T12:00:01Z");
+    // An Effect is EVIDENCE only when a separate person verified it, in a
+    // separate record — the Effect vouching for itself no longer counts.
+    await verificationStore.append([{
+      verification_id: "ver_1",
+      effect_id: "effect_1",
+      recorded_at: "2026-08-15T12:30:00Z",
+      verification: { ...stmt, verifier_type: "counterparty", verifier_id: "person_someone_else", subject_consent: true },
+    }]);
     await recordLearning({
       learning_id: "learning_1",
       prior_state_ref: "cs_1",

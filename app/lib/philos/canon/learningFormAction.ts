@@ -13,10 +13,28 @@
  * `priorState` is never invented: it is derived (`deriveCellStateForPersisted
  * Observation`) from a real, already-persisted Observation the caller
  * picks by `canon_event_id` — the same derivation `cellStateDerivation.ts`
- * already uses elsewhere. `outcome_verification_ref` has no real id field
- * on `OutcomeVerification` (canon gives it none) — synthesized
- * deterministically from the real Effect's own id, traceable, not
- * fabricated data.
+ * already uses elsewhere.
+ *
+ * THE EVIDENCE PRECONDITION (added after the self-verification path was
+ * removed). Learning is the step where a claim is allowed to change what the
+ * system believes about a person. Canon is explicit that a claimed outcome
+ * must never update State' as though verified — so an Effect alone is not
+ * enough. There must ALSO be a verification, written separately, by a
+ * signed-in person who is neither the subject nor the actor
+ * (`independentEvidence.ts` holds that rule; this module does not restate
+ * it). Without one, this writer refuses and records nothing.
+ *
+ * WHY THE EFFECT IS JOINED, NOT MUTATED. `deriveLearning` is a pure canon
+ * function that reads `effect.verified_outcome` to decide whether a state
+ * change is permitted. The stored Effect deliberately no longer carries that
+ * field — the person reporting an outcome cannot certify it — so the
+ * verification is JOINED onto the Effect in memory, for this derivation only,
+ * from the real verification record. Nothing is invented and nothing is
+ * written back: the stored Effect still says, truthfully, "reported"; the
+ * separate verification record still says who checked it; and the pure
+ * function finally sees both, which is what it always needed.
+ *
+ * `outcome_verification_ref` cites that verification record's own id.
  */
 import { revalidatePath } from "next/cache";
 
@@ -24,11 +42,14 @@ import { recordLearning, LearningReferentialIntegrityError } from "./actionLifec
 import { deriveCellStateForPersistedObservation } from "./cellStateDerivation";
 import { canonEventStore } from "./canonEventStoreAccessor";
 import { loadEffects } from "./effectStoreAccessor";
+import { loadActions } from "./actionStoreAccessor";
+import { checkIndependentEvidence, type EvidenceRefusal } from "./independentEvidence";
+import { loadVerifications } from "./outcomeVerificationStoreAccessor";
 import { createIdGenerator, systemClock } from "@/app/lib/philos/eventStore";
 
 export type CreateLearningResult =
   | { ok: true; learning_id: string; outcome: "state_prime" | "no_update"; reason?: string }
-  | { ok: false; message: string };
+  | { ok: false; message: string; refusal?: "evidence_missing" | EvidenceRefusal };
 
 /** Testable core — no `revalidatePath`. */
 export async function createLearningForCurrentUserCore(formData: FormData): Promise<CreateLearningResult> {
@@ -52,9 +73,44 @@ export async function createLearningForCurrentUserCore(formData: FormData): Prom
 
   const now = systemClock.now();
 
-  const effects = await loadEffects();
+  const [effects, actions, verifications] = await Promise.all([
+    loadEffects(), loadActions(), loadVerifications(),
+  ]);
   const effectRecord = effects.find((r) => r.effect.effect_id === effect_ref);
   if (!effectRecord) return { ok: false, message: "no real, already-recorded Effect matches effect_ref" };
+
+  /* THE EVIDENCE PRECONDITION. See module header. */
+  const forThisEffect = verifications.filter((r) => r.effect_id === effect_ref);
+  if (forThisEffect.length === 0) {
+    return {
+      ok: false,
+      refusal: "evidence_missing",
+      message: "לתוצאה הזו אין עדיין אימות עצמאי — בלי ראיה אין מסקנה. אדם אחר, שאינו מי שביצע את הפעולה ואינו מי שהתוצאה נוגעת אליו, צריך לאמת אותה תחילה.",
+    };
+  }
+  /* The actor is read from the stored Action, never from the form. An Action
+     that cannot be found leaves the actor unknown, and `checkIndependent
+     Evidence` then fails closed rather than assuming independence. */
+  const actionRecord = actions.find((r) => r.action?.action_id === effectRecord.effect.action_ref);
+  let accepted: (typeof forThisEffect)[number] | undefined;
+  let lastRefusal: EvidenceRefusal = "no_verification";
+  for (const candidate of forThisEffect) {
+    const check = checkIndependentEvidence({
+      verification: candidate.verification,
+      subject: effectRecord.effect.subject,
+      actor: actionRecord?.action.owner,
+      concerns_subject_internal_state: effectRecord.effect.concerns_subject_internal_state,
+    });
+    if (check.independent) { accepted = candidate; break; }
+    lastRefusal = check.refusal;
+  }
+  if (!accepted) {
+    return {
+      ok: false,
+      refusal: lastRefusal,
+      message: "קיים אימות לתוצאה, אך הוא אינו עצמאי ולכן אינו ראיה קבילה — מסקנה לא נרשמה.",
+    };
+  }
 
   const derivation = await deriveCellStateForPersistedObservation(canonEventStore(), canon_event_id, now);
   if (derivation.kind !== "cell_state") {
@@ -67,14 +123,15 @@ export async function createLearningForCurrentUserCore(formData: FormData): Prom
     const stored = await recordLearning({
       learning_id: createIdGenerator().next("learning"),
       prior_state_ref: canon_event_id,
-      outcome_verification_ref: `${effectRecord.effect.effect_id}::verified_outcome`,
+      outcome_verification_ref: accepted.verification_id,
       update_method,
       provenance,
       confidence,
       time: now,
       context,
       effect_ref,
-      effect: effectRecord.effect,
+      /* JOINED, NOT MUTATED — see module header. */
+      effect: { ...effectRecord.effect, verified_outcome: accepted.verification },
       priorState,
       priorSystemicChannel,
       candidateStatePrime: { domain: priorState.domain, frame: priorState.frame, level: candidateLevel, stability: candidateStability },

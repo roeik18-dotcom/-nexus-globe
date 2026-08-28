@@ -153,7 +153,10 @@ export default function CausalChainFlow({
     : null;
   const latestAction = linkedAction;
   const latestEffect = linkedAction?.effects[0] ?? null;
-  const verifiedOutcome = latestEffect?.verified ? latestEffect.effect.effect.verified_outcome ?? null : null;
+  /* THE VERIFICATION RECORD, not the Effect's own field. `verified_outcome`
+     is no longer written at claim time, so reading it here would show
+     "unverified" beside a `verified: true` flag from the same object. */
+  const verifiedOutcome = latestEffect?.verified ? latestEffect.verification ?? null : null;
   const latestLearning = latestEffect?.learnings.find((l) => l.learning.result.kind === "state_prime")
     ?? latestEffect?.learnings[0]
     ?? null;
